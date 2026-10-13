@@ -4,29 +4,33 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
-    <!-- Home's Recent row: up to 8 game tiles, then the Play history tile. Its look follows the Dashboard's own tiles. -->
+    <!--
+        Home's Recent row: up to 8 game tiles, then the Play history tile. Sized from the console captures (H1-H3, #7):
+        square tiles of 154 px at 1080p, 30 px apart, sitting on one baseline. The focused tile grows to 262 px within the
+        row, pushing the tiles after it along, and shows its title.
+    -->
     <controls:PluginUserControl.Resources>
         <local:DecodedImageConverter x:Key="Image" />
 
-        <!-- A Home tile: it grows, rings in the accent and shows its title (from Tag) when focused. -->
+        <!-- A Home tile: square, growing in place, ringed in the accent and titled (from Tag) when focused. -->
         <Style x:Key="HomeTile" TargetType="Button">
-            <Setter Property="Width" Value="240" />
-            <Setter Property="Height" Value="360" />
-            <Setter Property="Margin" Value="12,0" />
+            <Setter Property="Width" Value="154" />
+            <Setter Property="Height" Value="154" />
+            <Setter Property="Margin" Value="0,0,30,0" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <ControlTemplate.Resources>
                             <Storyboard x:Key="FocusedOn">
-                                <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleX" To="1.12" Duration="0:0:0.15">
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="262" Duration="0:0:0.15">
                                     <DoubleAnimation.EasingFunction>
                                         <CubicEase EasingMode="EaseOut" />
                                     </DoubleAnimation.EasingFunction>
                                 </DoubleAnimation>
-                                <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleY" To="1.12" Duration="0:0:0.15">
+                                <DoubleAnimation Storyboard.TargetProperty="Height" To="262" Duration="0:0:0.15">
                                     <DoubleAnimation.EasingFunction>
                                         <CubicEase EasingMode="EaseOut" />
                                     </DoubleAnimation.EasingFunction>
@@ -35,16 +39,12 @@
                                                  To="1" BeginTime="0:0:0.05" Duration="0:0:0.15" />
                             </Storyboard>
                             <Storyboard x:Key="FocusedOff">
-                                <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
-                                <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                <DoubleAnimation Storyboard.TargetProperty="Width" To="154" Duration="0:0:0.15" />
+                                <DoubleAnimation Storyboard.TargetProperty="Height" To="154" Duration="0:0:0.15" />
                                 <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
                             </Storyboard>
                         </ControlTemplate.Resources>
-                        <Grid RenderTransformOrigin="0.5,0.5" Background="#FF1A1A1A">
-                            <Grid.RenderTransform>
-                                <ScaleTransform x:Name="Scale" ScaleX="1" ScaleY="1" />
-                            </Grid.RenderTransform>
-
+                        <Grid Background="#FF1A1A1A">
                             <ContentPresenter />
 
                             <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False">
@@ -54,15 +54,15 @@
                                         <GradientStop Color="#E6000000" Offset="1" />
                                     </LinearGradientBrush>
                                 </Border.Background>
-                                <TextBlock Text="{TemplateBinding Tag}" Margin="12,36,12,10"
-                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="56"
-                                           FontFamily="{DynamicResource XboxFont}" FontSize="20" Foreground="White" />
+                                <TextBlock Text="{TemplateBinding Tag}" Margin="12,28,12,10"
+                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
                             </Border>
 
-                            <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="6" Margin="-4"
+                            <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="4" Margin="-4"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                 <Border.Effect>
-                                    <DropShadowEffect ShadowDepth="0" Opacity="0.9" BlurRadius="24"
+                                    <DropShadowEffect ShadowDepth="0" Opacity="0.8" BlurRadius="16"
                                                       Color="{DynamicResource GlyphColor}" RenderingBias="Quality" />
                                 </Border.Effect>
                             </Border>
@@ -70,7 +70,6 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
-                                <Setter Property="Panel.ZIndex" Value="90" />
                                 <Trigger.EnterActions>
                                     <BeginStoryboard Storyboard="{StaticResource FocusedOn}" />
                                 </Trigger.EnterActions>
@@ -85,8 +84,9 @@
         </Style>
     </controls:PluginUserControl.Resources>
 
-    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="93,0,93,0">
-        <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False">
+    <!-- As tall as a focused tile, so focus never shifts the row; placed to sit where the console's row does at 1080p. -->
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Height="262" Margin="105,53,105,0">
+        <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False" VerticalAlignment="Bottom">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />
@@ -97,10 +97,10 @@
                     <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
                             Click="OnTileClick" GotKeyboardFocus="OnTileFocused">
                         <Grid>
-                            <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=360}"
+                            <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
                                    Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
-                            <TextBlock Text="{Binding Title}" Margin="16" TextWrapping="Wrap" VerticalAlignment="Center"
-                                       TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White">
+                            <TextBlock Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
+                                       TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White">
                                 <TextBlock.Style>
                                     <!-- Only for games with no cover. -->
                                     <Style TargetType="TextBlock">
@@ -113,9 +113,9 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Border x:Name="Running" Background="{DynamicResource GlyphBrush}" CornerRadius="3" Padding="8,3"
-                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8" Visibility="Collapsed">
-                                <TextBlock Text="Running" FontFamily="{DynamicResource XboxFont}" FontSize="14" Foreground="White" />
+                            <Border x:Name="Running" Background="{DynamicResource GlyphBrush}" CornerRadius="3" Padding="6,2"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Visibility="Collapsed">
+                                <TextBlock Text="Running" FontFamily="{DynamicResource XboxFont}" FontSize="13" Foreground="White" />
                             </Border>
                         </Grid>
                     </Button>
@@ -129,9 +129,9 @@
         </ItemsControl>
 
         <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history once that page exists (#35). -->
-        <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}">
+        <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history">
             <Grid>
-                <ItemsControl ItemsSource="{Binding PlayHistory}" Focusable="False">
+                <ItemsControl x:Name="Collage" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <UniformGrid Rows="2" Columns="2" />
@@ -139,18 +139,25 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=180}"
-                                   Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="1" />
+                            <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
+                                   Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Rectangle Fill="#80000000" />
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="&#xE81C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="44"
-                               Foreground="White" HorizontalAlignment="Center" />
-                    <TextBlock Text="Play history" FontFamily="{DynamicResource XboxFont}" FontSize="20"
-                               Foreground="White" HorizontalAlignment="Center" Margin="0,10,0,0" />
-                </StackPanel>
+                <!-- With nothing for the collage, the tile shows the history icon instead. -->
+                <TextBlock Text="&#xE81C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasItems, ElementName=Collage}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </Grid>
         </Button>
     </StackPanel>
