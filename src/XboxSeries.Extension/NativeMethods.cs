@@ -10,8 +10,6 @@ namespace XboxSeries.Extension
         public const uint SWP_SHOWWINDOW = 0x0040;
         public const int SW_RESTORE = 9;
         public const int WM_HOTKEY = 0x0312;
-        public const uint MOD_ALT = 0x0001;
-        public const uint MOD_CONTROL = 0x0002;
         public const uint MOD_NOREPEAT = 0x4000;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -42,11 +40,18 @@ namespace XboxSeries.Extension
         [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
 
         /// <summary>
-        /// Hands <paramref name="window"/> the foreground. A synthetic Alt tap first lets a background process win
-        /// <c>SetForegroundWindow</c> (validated by the #8 spike). Returns whether it is now in front.
+        /// Hands <paramref name="window"/> the foreground. Returns whether it is now in front.
+        /// When Windows refuses (we're in the background), a synthetic Alt tap lets us win <c>SetForegroundWindow</c>
+        /// (validated by the #8 spike). The tap is a last resort: it lands on whichever window ends up focused, and a
+        /// lone Alt puts a window such as Playnite's into menu mode, where it swallows the next keys.
         /// </summary>
         public static bool BringToForeground(IntPtr window)
         {
+            if (SetForegroundWindow(window) && GetForegroundWindow() == window)
+            {
+                return true;
+            }
+
             const byte VK_MENU = 0x12;
             const uint KEYEVENTF_KEYUP = 0x0002;
             keybd_event(VK_MENU, 0, 0, UIntPtr.Zero);

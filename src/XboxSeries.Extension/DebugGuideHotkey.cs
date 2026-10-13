@@ -7,7 +7,8 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Debug builds only: Ctrl+Alt+G anywhere acts as a tap of the Guide button, for testing without a controller.
+    /// Debug builds only: G anywhere acts as a tap of the Guide button, for testing without a controller
+    /// (and over Moonlight, which takes Ctrl+Alt). It swallows G system-wide while Playnite runs.
     /// A tap means a dismiss through it hands focus back at once rather than on release.
     /// </summary>
     internal sealed class DebugGuideHotkey : IDisposable
@@ -19,14 +20,18 @@ namespace XboxSeries.Extension
         private readonly ExtensionCore core;
         private readonly HwndSource window;
 
+        // HwndSource holds its hooks weakly; without this field the hook is collected and the hotkey silently stops.
+        private readonly HwndSourceHook hook;
+
         public DebugGuideHotkey(ExtensionCore core)
         {
             this.core = core;
             window = new HwndSource(new HwndSourceParameters("XboxSeries debug Guide hotkey") { ParentWindow = new IntPtr(-3) }); // HWND_MESSAGE
-            window.AddHook(OnMessage);
-            if (!NativeMethods.RegisterHotKey(window.Handle, HotkeyId, NativeMethods.MOD_CONTROL | NativeMethods.MOD_ALT | NativeMethods.MOD_NOREPEAT, VK_G))
+            hook = OnMessage;
+            window.AddHook(hook);
+            if (!NativeMethods.RegisterHotKey(window.Handle, HotkeyId, NativeMethods.MOD_NOREPEAT, VK_G))
             {
-                logger.Warn("Couldn't register the debug Guide hotkey Ctrl+Alt+G; another app may own it");
+                logger.Warn("Couldn't register the debug Guide hotkey G; another app may own it");
             }
         }
 
@@ -34,6 +39,7 @@ namespace XboxSeries.Extension
         {
             if (msg == NativeMethods.WM_HOTKEY && wParam.ToInt32() == HotkeyId)
             {
+                logger.Info("Debug Guide hotkey G pressed");
                 core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed);
                 core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
                 handled = true;
