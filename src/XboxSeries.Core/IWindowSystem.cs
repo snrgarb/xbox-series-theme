@@ -2,7 +2,7 @@ using System;
 
 namespace XboxSeries.Core
 {
-    /// <summary>Port for the Windows window system: the foreground window, and taking it for the Overlay.</summary>
+    /// <summary>Port for the Windows window system: the foreground window, taking it for the Overlay, and closing games.</summary>
     public interface IWindowSystem
     {
         /// <summary>The window currently in front, or <see cref="IntPtr.Zero"/> when there is none.</summary>
@@ -22,5 +22,11 @@ namespace XboxSeries.Core
 
         /// <summary>Hands the foreground to <paramref name="window"/>.</summary>
         void SetForeground(IntPtr window);
+
+        /// <summary>Asks <paramref name="window"/> to close, as its close button would, so a game can save and exit.</summary>
+        void CloseGracefully(IntPtr window);
+
+        /// <summary>Kills the program that owns <paramref name="window"/>, losing anything unsaved.</summary>
+        void ForceKill(IntPtr window);
     }
 }

@@ -166,12 +166,13 @@ namespace XboxSeries.Extension
                 case Key.S: return ControllerButton.DPadDown;
                 case Key.Enter: return ControllerButton.A;
                 case Key.Back: return ControllerButton.B;
+                case Key.M: return ControllerButton.Start;
                 default: return null;
             }
         }
 #endif
 
-        // Debug builds only: the mouse points at and picks entries. Release keeps clicks to closing the Guide (#10).
+        // Debug builds only: the mouse points at and picks entries and options. Release keeps clicks to closing the Guide (#10).
         private void OnEntryMouseEnter(object sender, MouseEventArgs e)
         {
 #if DEBUG
@@ -186,9 +187,23 @@ namespace XboxSeries.Extension
 #endif
         }
 
+        private void OnOptionMouseEnter(object sender, MouseEventArgs e)
+        {
+#if DEBUG
+            core.FocusOption((GuideDialogOption)((FrameworkElement)sender).DataContext);
+#endif
+        }
+
+        private void OnOptionClick(object sender, MouseButtonEventArgs e)
+        {
+#if DEBUG
+            core.ChooseOption((GuideDialogOption)((FrameworkElement)sender).DataContext);
+#endif
+        }
+
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            if (!GuidePanel.IsMouseOver)
+            if (!GuidePanel.IsMouseOver && !DialogPanel.IsMouseOver)
             {
                 core.DismissGuide();
             }

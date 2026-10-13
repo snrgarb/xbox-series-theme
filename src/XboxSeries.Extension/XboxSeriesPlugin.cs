@@ -58,6 +58,12 @@ namespace XboxSeries.Extension
             OnUiThread(() => core.OnGameStarted(id));
         }
 
+        public override void OnGameStartupCancelled(OnGameStartupCancelledEventArgs args)
+        {
+            var id = args.Game.Id;
+            OnUiThread(() => core.OnGameStartupCancelled(id));
+        }
+
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             var id = args.Game.Id;

@@ -11,6 +11,7 @@ namespace XboxSeries.Core
         private bool isOverlayShown;
         private IReadOnlyList<GuideItem> items = new GuideItem[0];
         private GuideItem focusedItem;
+        private GuideDialog dialog;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -62,6 +63,15 @@ namespace XboxSeries.Core
 
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FocusedItem)));
             }
+        }
+
+        /// <summary>
+        /// The menu or prompt shown over the Guide, which has the pad until it is answered; null when there is none.
+        /// </summary>
+        public GuideDialog Dialog
+        {
+            get => dialog;
+            internal set => Set(ref dialog, value, nameof(Dialog));
         }
 
         private void Set<T>(ref T field, T value, string name)
@@ -123,5 +133,87 @@ namespace XboxSeries.Core
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFocused)));
             }
         }
+    }
+
+    /// <summary>A menu or prompt over the Guide: a title, an optional message, and options to pick from.</summary>
+    public sealed class GuideDialog : INotifyPropertyChanged
+    {
+        private GuideDialogOption focusedOption;
+
+        internal GuideDialog(string title, string message, Action decline, params GuideDialogOption[] options)
+        {
+            Title = title;
+            Message = message;
+            Decline = decline;
+            Options = options;
+            FocusedOption = options[0];
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string Title { get; }
+
+        /// <summary>A line under the title, or null.</summary>
+        public string Message { get; }
+
+        public IReadOnlyList<GuideDialogOption> Options { get; }
+
+        /// <summary>The option with focus. Each option's <see cref="GuideDialogOption.IsFocused"/> follows it.</summary>
+        public GuideDialogOption FocusedOption
+        {
+            get => focusedOption;
+            internal set
+            {
+                if (focusedOption == value)
+                {
+                    return;
+                }
+
+                if (focusedOption != null)
+                {
+                    focusedOption.IsFocused = false;
+                }
+
+                focusedOption = value;
+                focusedOption.IsFocused = true;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FocusedOption)));
+            }
+        }
+
+        /// <summary>What B, or closing the Guide, does: the answer "no".</summary>
+        internal Action Decline { get; }
+    }
+
+    /// <summary>One choice in a <see cref="GuideDialog"/>.</summary>
+    public sealed class GuideDialogOption : INotifyPropertyChanged
+    {
+        private bool isFocused;
+
+        internal GuideDialogOption(string label, Action choose)
+        {
+            Label = label;
+            Choose = choose;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string Label { get; }
+
+        public bool IsFocused
+        {
+            get => isFocused;
+            internal set
+            {
+                if (isFocused == value)
+                {
+                    return;
+                }
+
+                isFocused = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFocused)));
+            }
+        }
+
+        internal Action Choose { get; }
     }
 }

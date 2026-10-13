@@ -283,26 +283,6 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_on_a_recent_game_starts_nothing_while_another_game_is_running()
-        {
-            var library = new FakeLibrary()
-                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
-                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 9));
-            core.OnLibraryChanged(library.Snapshot());
-            core.OnGameStarted(library.Id("Halo Infinite"));
-            Tap(ControllerButton.Guide);
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
-            Assert.Equal("Hades", Focused());
-
-            Tap(ControllerButton.A);
-
-            Assert.True(core.Guide.IsOpen);
-            Assert.Empty(playnite.StartedGames);
-        }
-
-        [Fact]
         public void Pointing_at_an_entry_focuses_it()
         {
             Tap(ControllerButton.Guide);

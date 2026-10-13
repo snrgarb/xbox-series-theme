@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Interop;
 using Playnite.SDK;
 using XboxSeries.Core;
@@ -48,6 +50,33 @@ namespace XboxSeries.Extension
             if (!NativeMethods.BringToForeground(window))
             {
                 logger.Warn($"Couldn't hand the foreground back to window {window}");
+            }
+        }
+
+        public void CloseGracefully(IntPtr window)
+        {
+            // What the window's close button sends, so the game can save and exit in its own way.
+            if (!NativeMethods.PostMessage(window, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero))
+            {
+                logger.Warn($"Couldn't ask window {window} to close");
+            }
+        }
+
+        public void ForceKill(IntPtr window)
+        {
+            var processId = NativeMethods.ProcessIdOf(window);
+            try
+            {
+                using (var process = Process.GetProcessById(processId))
+                {
+                    logger.Info($"Force-killing {process.ProcessName} ({processId})");
+                    process.Kill();
+                }
+            }
+            catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is Win32Exception)
+            {
+                // Gone already, or elevated beyond our reach.
+                logger.Warn(e, $"Couldn't force-kill the program of window {window}");
             }
         }
     }

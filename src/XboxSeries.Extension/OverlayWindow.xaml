@@ -14,46 +14,87 @@
     <Window.Background>
         <SolidColorBrush x:Name="Dim" Color="#66000000" Opacity="0" />
     </Window.Background>
-    <Border x:Name="GuidePanel"
-            Width="560"
-            HorizontalAlignment="Left"
-            Background="#FF1E1E1E"
-            BorderBrush="#FF107C10"
-            BorderThickness="0,0,4,0">
-        <Border.RenderTransform>
-            <TranslateTransform x:Name="Slide" X="-560" />
-        </Border.RenderTransform>
-        <!-- Landing tab: Home, My games & apps, then the running game and recent games under a divider. -->
-        <StackPanel Margin="32">
-            <TextBlock Text="Guide" Foreground="White" FontSize="30" FontWeight="SemiBold" Margin="0,0,0,24" />
-            <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <Border x:Name="Divider" Height="1" Margin="0,12" Background="#33FFFFFF" Visibility="Collapsed" />
-                            <Border x:Name="Entry" Padding="16,12" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent"
-                                    Background="Transparent" MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Title}" Foreground="White" FontSize="20" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock x:Name="Running" Text="Running" Foreground="#B3FFFFFF" FontSize="14" Visibility="Collapsed" />
-                                </StackPanel>
+    <Grid>
+        <Border x:Name="GuidePanel"
+                Width="560"
+                HorizontalAlignment="Left"
+                Background="#FF1E1E1E"
+                BorderBrush="#FF107C10"
+                BorderThickness="0,0,4,0">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="Slide" X="-560" />
+            </Border.RenderTransform>
+            <!-- Landing tab: Home, My games & apps, then the running game and recent games under a divider. -->
+            <StackPanel Margin="32">
+                <TextBlock Text="Guide" Foreground="White" FontSize="30" FontWeight="SemiBold" Margin="0,0,0,24" />
+                <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <Border x:Name="Divider" Height="1" Margin="0,12" Background="#33FFFFFF" Visibility="Collapsed" />
+                                <Border x:Name="Entry" Padding="16,12" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent"
+                                        Background="Transparent" MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" Foreground="White" FontSize="20" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="Running" Text="Running" Foreground="#B3FFFFFF" FontSize="14" Visibility="Collapsed" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding HasDividerAbove}" Value="True">
+                                    <Setter TargetName="Divider" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Kind}" Value="RunningGame">
+                                    <Setter TargetName="Running" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                    <Setter TargetName="Entry" Property="Background" Value="#33FFFFFF" />
+                                    <Setter TargetName="Entry" Property="BorderBrush" Value="White" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+        <!-- A menu or prompt over the Guide (Menu on the running game, force quit, "Quit X and start Y?"). It has the pad until answered. -->
+        <Border x:Name="DialogPanel"
+                DataContext="{Binding Dialog}"
+                Width="520"
+                Padding="32"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="#FF2B2B2B"
+                CornerRadius="4">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" Foreground="White" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock x:Name="DialogMessage" Text="{Binding Message}" Foreground="#B3FFFFFF" FontSize="16" TextWrapping="Wrap" Margin="0,8,0,0" />
+                <ItemsControl ItemsSource="{Binding Options}" Focusable="False" Margin="0,24,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="Option" Padding="16,10" Margin="0,0,0,8" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent"
+                                    Background="#1AFFFFFF" MouseEnter="OnOptionMouseEnter" MouseLeftButtonUp="OnOptionClick">
+                                <TextBlock Text="{Binding Label}" Foreground="White" FontSize="18" />
                             </Border>
-                        </StackPanel>
-                        <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding HasDividerAbove}" Value="True">
-                                <Setter TargetName="Divider" Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding Kind}" Value="RunningGame">
-                                <Setter TargetName="Running" Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsFocused}" Value="True">
-                                <Setter TargetName="Entry" Property="Background" Value="#33FFFFFF" />
-                                <Setter TargetName="Entry" Property="BorderBrush" Value="White" />
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
-    </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                    <Setter TargetName="Option" Property="Background" Value="#33FFFFFF" />
+                                    <Setter TargetName="Option" Property="BorderBrush" Value="White" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>
