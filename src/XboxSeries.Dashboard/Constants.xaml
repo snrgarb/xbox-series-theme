@@ -1,9 +1,33 @@
-<!-- Loaded after Playnite's Default Constants.xaml: only the keys defined here override it. -->
+<!-- Loaded after Playnite's Default Constants.xaml: keys it shares override Default's; Xbox* keys are the Dashboard's own. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Xbox accent green -->
     <Color x:Key="GlyphColor">#FF107C10</Color>
     <Color x:Key="GlyphLightColor">#FF2CA243</Color>
+
+    <!-- Microsoft's UI font and icon font, as on the console. Fluent Icons ships with Windows 11, MDL2 with Windows 10. -->
+    <FontFamily x:Key="XboxFont">Segoe UI</FontFamily>
+    <FontFamily x:Key="XboxFontSemibold">Segoe UI Semibold</FontFamily>
+    <FontFamily x:Key="XboxIconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <SolidColorBrush x:Key="XboxTextBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="XboxTextDimBrush" Color="#B3FFFFFF" />
+    <SolidColorBrush x:Key="XboxChipBrush" Color="#CC1A1A1A" />
+
+    <!-- Playnite's (misspelled) main background, also behind Game details: the console's dark background with a green glow. -->
+    <RadialGradientBrush x:Key="MainBackgourndBrush" GradientOrigin="0.1,1" Center="0.1,1" RadiusX="1.1" RadiusY="1.3">
+        <GradientStop Color="#FF0B4A0B" Offset="0" />
+        <GradientStop Color="#FF041A04" Offset="0.55" />
+        <GradientStop Color="#FF000000" Offset="1" />
+    </RadialGradientBrush>
+
+    <!-- Darkens the hero under the top bar and the tiles so they stay readable over any art. -->
+    <LinearGradientBrush x:Key="XboxHeroScrimBrush" StartPoint="0.5,0" EndPoint="0.5,1">
+        <GradientStop Color="#99000000" Offset="0" />
+        <GradientStop Color="#00000000" Offset="0.22" />
+        <GradientStop Color="#00000000" Offset="0.4" />
+        <GradientStop Color="#D9000000" Offset="1" />
+    </LinearGradientBrush>
 
 </ResourceDictionary>
