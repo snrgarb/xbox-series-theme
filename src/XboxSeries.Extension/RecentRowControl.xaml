@@ -1,10 +1,11 @@
-<UserControl x:Class="XboxSeries.Extension.RecentRowControl"
+<controls:PluginUserControl x:Class="XboxSeries.Extension.RecentRowControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:XboxSeries.Extension"
+             xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
     <!-- Home's Recent row: up to 8 game tiles, then the Play history tile. Its look follows the Dashboard's own tiles. -->
-    <UserControl.Resources>
+    <controls:PluginUserControl.Resources>
         <local:DecodedImageConverter x:Key="Image" />
 
         <!-- A Home tile: it grows, rings in the accent and shows its title (from Tag) when focused. -->
@@ -82,7 +83,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-    </UserControl.Resources>
+    </controls:PluginUserControl.Resources>
 
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="93,0,93,0">
         <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False">
@@ -153,4 +154,4 @@
             </Grid>
         </Button>
     </StackPanel>
-</UserControl>
+</controls:PluginUserControl>

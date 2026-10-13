@@ -6,15 +6,17 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Shapes;
+using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
 {
     /// <summary>
     /// The hero behind Home, injected as a custom element. It crossfades to the core's <see cref="HomeState.Hero"/>:
-    /// background art as it is, a cover blurred and darkened. It holds no Home logic.
+    /// background art as it is, a cover blurred and darkened. It holds no Home logic. A <see cref="PluginUserControl"/>
+    /// so that Playnite binds the selected game to its GameContext, not its DataContext.
     /// </summary>
-    public sealed class HeroControl : UserControl
+    public sealed class HeroControl : PluginUserControl
     {
         private static readonly Duration Crossfade = TimeSpan.FromMilliseconds(400);
 
