@@ -26,6 +26,7 @@ namespace XboxSeries.Extension
             InitializeComponent();
             offscreenX = Slide.X;
             this.core = core;
+            DataContext = core.Guide;
             core.Guide.PropertyChanged += OnGuideChanged;
         }
 

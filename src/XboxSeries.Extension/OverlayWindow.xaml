@@ -23,9 +23,36 @@
         <Border.RenderTransform>
             <TranslateTransform x:Name="Slide" X="-560" />
         </Border.RenderTransform>
-        <!-- Landing tab. Its contents come in later tickets. -->
+        <!-- Landing tab: Home, My games & apps, then the running game and recent games under a divider. -->
         <StackPanel Margin="32">
-            <TextBlock Text="Guide" Foreground="White" FontSize="30" FontWeight="SemiBold" />
+            <TextBlock Text="Guide" Foreground="White" FontSize="30" FontWeight="SemiBold" Margin="0,0,0,24" />
+            <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <Border x:Name="Divider" Height="1" Margin="0,12" Background="#33FFFFFF" Visibility="Collapsed" />
+                            <Border x:Name="Entry" Padding="16,12" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" Foreground="White" FontSize="20" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="Running" Text="Running" Foreground="#B3FFFFFF" FontSize="14" Visibility="Collapsed" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding HasDividerAbove}" Value="True">
+                                <Setter TargetName="Divider" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Kind}" Value="RunningGame">
+                                <Setter TargetName="Running" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                <Setter TargetName="Entry" Property="Background" Value="#33FFFFFF" />
+                                <Setter TargetName="Entry" Property="BorderBrush" Value="White" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
     </Border>
 </Window>

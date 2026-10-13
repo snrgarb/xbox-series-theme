@@ -55,6 +55,9 @@ namespace XboxSeries.Core.Tests.Fakes
             return this;
         }
 
+        /// <summary>The id of the game called <paramref name="name"/>.</summary>
+        public Guid Id(string name) => games.Single(g => g.Name == name).Id;
+
         public LibrarySnapshot Snapshot() =>
             new LibrarySnapshot(games.ToList(), filterPresets.ToList(), appsAvailable ? apps.ToList() : null);
     }
