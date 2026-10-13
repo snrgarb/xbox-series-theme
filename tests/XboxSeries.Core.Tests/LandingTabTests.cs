@@ -266,6 +266,31 @@ namespace XboxSeries.Core.Tests
             Assert.Empty(playnite.StartedGames);
         }
 
+        [Fact]
+        public void Pointing_at_an_entry_focuses_it()
+        {
+            Tap(ControllerButton.Guide);
+
+            core.FocusItem(core.Guide.Items[1]);
+
+            Assert.Equal("My games & apps", Focused());
+        }
+
+        [Fact]
+        public void Clicking_an_entry_selects_it_and_hands_focus_on_at_once()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10));
+            core.OnLibraryChanged(library.Snapshot());
+            Tap(ControllerButton.Guide);
+
+            core.ChooseItem(core.Guide.Items[2]);
+
+            Assert.False(core.Guide.IsOpen);
+            Assert.False(core.Guide.IsOverlayShown);
+            Assert.Equal(new[] { library.Id("Halo Infinite") }, playnite.StartedGames);
+        }
+
         private string Focused() => core.Guide.FocusedItem.Title;
 
         private string[] Titles() => core.Guide.Items.Select(i => i.Title).ToArray();

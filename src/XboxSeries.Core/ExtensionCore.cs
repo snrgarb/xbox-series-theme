@@ -100,7 +100,11 @@ namespace XboxSeries.Core
             }
             else if (button == ControllerButton.A && Guide.IsOpen)
             {
-                Select(Guide.FocusedItem);
+                var handBack = HandBackFor(Guide.FocusedItem);
+                if (handBack != null)
+                {
+                    Dismiss(button, handBack);
+                }
             }
             else if ((button == ControllerButton.DPadUp || button == ControllerButton.DPadDown) && Guide.IsOpen)
             {
@@ -112,32 +116,35 @@ namespace XboxSeries.Core
             }
         }
 
-        private void Select(GuideItem item)
+        /// <summary>
+        /// What selecting <paramref name="item"/> does once the Guide has closed and focus is handed back,
+        /// or null when it does nothing.
+        /// </summary>
+        private Action HandBackFor(GuideItem item)
         {
             switch (item.Kind)
             {
                 case GuideItemKind.Home:
-                    Dismiss(ControllerButton.A, () => playnite.BringToFront(DashboardPage.Home));
-                    break;
+                    return () => playnite.BringToFront(DashboardPage.Home);
                 case GuideItemKind.MyGamesAndApps:
-                    Dismiss(ControllerButton.A, () => playnite.BringToFront(DashboardPage.MyGamesAndApps));
-                    break;
+                    return () => playnite.BringToFront(DashboardPage.MyGamesAndApps);
                 case GuideItemKind.RunningGame:
-                    Dismiss(ControllerButton.A, ReturnToRecordedWindow);
-                    break;
+                    return ReturnToRecordedWindow;
                 case GuideItemKind.RecentGame:
-                    // With another game running, "Quit X and start Y?" comes first (#24); until then A does nothing.
-                    if (runningGame == null)
+                    // With another game running, "Quit X and start Y?" comes first (#24); until then this does nothing.
+                    if (runningGame != null)
                     {
-                        var gameId = item.GameId.Value;
-                        Dismiss(ControllerButton.A, () =>
-                        {
-                            ReturnToRecordedWindow();
-                            playnite.StartGame(gameId);
-                        });
+                        return null;
                     }
 
-                    break;
+                    var gameId = item.GameId.Value;
+                    return () =>
+                    {
+                        ReturnToRecordedWindow();
+                        playnite.StartGame(gameId);
+                    };
+                default:
+                    return null;
             }
         }
 
@@ -177,13 +184,41 @@ namespace XboxSeries.Core
         /// <summary>Esc, or a click on the dimmed area. No pad button is held, so focus goes back at once.</summary>
         public void DismissGuide()
         {
-            if (!Guide.IsOpen)
+            if (Guide.IsOpen)
+            {
+                DismissAtOnce(ReturnToRecordedWindow);
+            }
+        }
+
+        /// <summary>The mouse pointing at an entry.</summary>
+        public void FocusItem(GuideItem item)
+        {
+            if (Guide.IsOpen && Guide.Items.Contains(item))
+            {
+                Guide.FocusedItem = item;
+            }
+        }
+
+        /// <summary>A click on an entry. No pad button is held, so focus goes on at once.</summary>
+        public void ChooseItem(GuideItem item)
+        {
+            if (!Guide.IsOpen || !Guide.Items.Contains(item))
             {
                 return;
             }
 
+            Guide.FocusedItem = item;
+            var handBack = HandBackFor(item);
+            if (handBack != null)
+            {
+                DismissAtOnce(handBack);
+            }
+        }
+
+        private void DismissAtOnce(Action handBack)
+        {
             CloseGuide();
-            pendingHandBack = ReturnToRecordedWindow;
+            pendingHandBack = handBack;
             HandFocusBack();
         }
 
