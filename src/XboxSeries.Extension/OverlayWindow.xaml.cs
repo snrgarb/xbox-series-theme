@@ -5,6 +5,8 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
+using Playnite.SDK;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -17,9 +19,14 @@ namespace XboxSeries.Extension
     {
         private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(180);
         private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
+        private static readonly ILogger logger = LogManager.GetLogger();
 
         private readonly ExtensionCore core;
         private readonly double offscreenX;
+
+        // Once focus has gone back, WPF can stop rendering the Overlay's frames until the next input, leaving the
+        // slide-out stuck part way. This timer runs off the dispatcher, not rendering, and finishes the slide-out.
+        private readonly DispatcherTimer closeDeadline;
 
         public OverlayWindow(ExtensionCore core)
         {
@@ -28,6 +35,8 @@ namespace XboxSeries.Extension
             this.core = core;
             DataContext = core.Guide;
             core.Guide.PropertyChanged += OnGuideChanged;
+            closeDeadline = new DispatcherTimer { Interval = CloseDuration.TimeSpan + TimeSpan.FromMilliseconds(100) };
+            closeDeadline.Tick += (_, __) => FinishStalledSlideOut();
         }
 
         private void OnGuideChanged(object sender, PropertyChangedEventArgs e)
@@ -48,11 +57,13 @@ namespace XboxSeries.Extension
             {
                 if (guide.IsOpen)
                 {
+                    closeDeadline.Stop();
                     Animate(0, 1, OpenDuration, EasingMode.EaseOut, null);
                 }
                 else
                 {
                     Animate(offscreenX, 0, CloseDuration, EasingMode.EaseIn, HideWhenDone);
+                    closeDeadline.Start();
                 }
             }
         }
@@ -67,6 +78,22 @@ namespace XboxSeries.Extension
             {
                 Hide();
             }
+        }
+
+        private void FinishStalledSlideOut()
+        {
+            closeDeadline.Stop();
+            if (core.Guide.IsOpen || Slide.X <= offscreenX)
+            {
+                return;
+            }
+
+            logger.Info("Guide slide-out stalled; finishing it without the animation");
+            Slide.BeginAnimation(TranslateTransform.XProperty, null);
+            Slide.X = offscreenX;
+            Dim.BeginAnimation(Brush.OpacityProperty, null);
+            Dim.Opacity = 0;
+            HideWhenDone();
         }
 
         private void ShowOverForeground()
