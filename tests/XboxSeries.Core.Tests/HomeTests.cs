@@ -32,7 +32,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Recent_row_holds_at_most_8_games()
+        public void Recent_row_holds_at_most_7_games_so_it_fits_with_Play_history()
         {
             var library = new FakeLibrary();
             for (var day = 1; day <= 12; day++)
@@ -42,11 +42,11 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.Snapshot());
 
-            Assert.Equal(Enumerable.Range(5, 8).Reverse().Select(day => $"Game {day}"), RecentRow());
+            Assert.Equal(Enumerable.Range(6, 7).Reverse().Select(day => $"Game {day}"), RecentRow());
         }
 
         [Fact]
-        public void Recent_row_is_padded_with_recently_added_games_when_fewer_than_8_have_been_played()
+        public void Recent_row_is_padded_with_recently_added_games_when_fewer_than_7_have_been_played()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10), added: new DateTime(2026, 1, 1))
@@ -100,7 +100,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.Snapshot());
 
-            Assert.Equal(new[] { "Game 6", "Game 5", "Game 4", "Game 3" }, core.Home.PlayHistory.Select(t => t.Title));
+            Assert.Equal(new[] { "Game 7", "Game 6", "Game 5", "Game 4" }, core.Home.PlayHistory.Select(t => t.Title));
         }
 
         [Fact]
