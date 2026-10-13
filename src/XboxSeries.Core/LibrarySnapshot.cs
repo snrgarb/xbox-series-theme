@@ -37,7 +37,8 @@ namespace XboxSeries.Core
             bool installed,
             IReadOnlyList<string> series,
             IReadOnlyList<string> genres,
-            string source)
+            string source,
+            string installDirectory)
         {
             Id = id;
             Name = name;
@@ -48,6 +49,7 @@ namespace XboxSeries.Core
             Series = series;
             Genres = genres;
             Source = source;
+            InstallDirectory = installDirectory;
         }
 
         public Guid Id { get; }
@@ -61,6 +63,9 @@ namespace XboxSeries.Core
 
         /// <summary>The library source (Steam, Xbox, ...), or null for games without one.</summary>
         public string Source { get; }
+
+        /// <summary>Where the game is installed, with Playnite's variables expanded; null when unknown.</summary>
+        public string InstallDirectory { get; }
     }
 
     public sealed class FilterPreset

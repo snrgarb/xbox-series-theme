@@ -17,6 +17,16 @@ namespace XboxSeries.Extension
 
         public bool Exists(IntPtr window) => window != IntPtr.Zero && NativeMethods.IsWindow(window);
 
+        public IntPtr FindWindowUnder(string directory)
+        {
+            var prefix = directory.TrimEnd('\\') + "\\";
+            var window = NativeMethods.FindTopLevelWindow(path => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            logger.Info(window == IntPtr.Zero
+                ? $"No window found for a program under {prefix}"
+                : $"Found window {window} for a program under {prefix}");
+            return window;
+        }
+
         public void TakeForeground()
         {
             if (Overlay == null)

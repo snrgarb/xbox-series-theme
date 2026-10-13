@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using XboxSeries.Core;
 
 namespace XboxSeries.Core.Tests.Fakes
@@ -11,6 +12,7 @@ namespace XboxSeries.Core.Tests.Fakes
         public static readonly IntPtr Overlay = new IntPtr(1);
 
         private readonly HashSet<IntPtr> windows = new HashSet<IntPtr> { Overlay };
+        private readonly Dictionary<IntPtr, string> programs = new Dictionary<IntPtr, string>();
         private long nextHandle = 100;
 
         public IntPtr Foreground { get; private set; }
@@ -18,11 +20,12 @@ namespace XboxSeries.Core.Tests.Fakes
         /// <summary>When true, Windows refuses to hand the Overlay the foreground.</summary>
         public bool RefusesForeground { get; set; }
 
-        /// <summary>Opens a window (a game, an app, Playnite) and brings it to the front.</summary>
-        public IntPtr OpenWindow()
+        /// <summary>Opens a window (a game, an app, Playnite), owned by the program at <paramref name="programPath"/>, and brings it to the front.</summary>
+        public IntPtr OpenWindow(string programPath = null)
         {
             var window = new IntPtr(nextHandle++);
             windows.Add(window);
+            programs[window] = programPath;
             Foreground = window;
             return window;
         }
@@ -40,6 +43,11 @@ namespace XboxSeries.Core.Tests.Fakes
         IntPtr IWindowSystem.ForegroundWindow => Foreground;
 
         public bool Exists(IntPtr window) => windows.Contains(window);
+
+        public IntPtr FindWindowUnder(string directory) =>
+            windows.FirstOrDefault(w => programs.TryGetValue(w, out var path)
+                && path != null
+                && path.StartsWith(directory.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase));
 
         public void TakeForeground()
         {

@@ -83,7 +83,7 @@ namespace XboxSeries.Extension
 
         private void PushLibrary()
         {
-            core.OnLibraryChanged(PlayniteLibrary.Snapshot(PlayniteApi.Database));
+            core.OnLibraryChanged(PlayniteLibrary.Snapshot(PlayniteApi));
         }
     }
 }
