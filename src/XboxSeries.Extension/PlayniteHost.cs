@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
 using Playnite.SDK;
@@ -58,6 +59,23 @@ namespace XboxSeries.Extension
         public void StartGame(Guid gameId)
         {
             api.StartGame(gameId);
+        }
+
+        public void OpenGameHub(Guid gameId)
+        {
+            // The hub is Playnite's details view of the main list's selected game, which opens with focus on Play.
+            // A game outside the user's current filter can't be selected; opening details then would show another game.
+            api.MainView.SelectGame(gameId);
+            if (!api.MainView.SelectedGames.Any(g => g.Id == gameId))
+            {
+                logger.Warn($"Can't open the Game hub of {gameId}: it isn't in the main list's current filter");
+                return;
+            }
+
+            if (api.MainView.ActiveFullscreenView == FullscreenView.List)
+            {
+                api.MainView.ToggleFullscreenView();
+            }
         }
     }
 }

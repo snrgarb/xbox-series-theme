@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Controls;
 using System.Reflection;
 using Playnite.SDK;
 using Playnite.SDK.Events;
@@ -25,6 +27,23 @@ namespace XboxSeries.Extension
         {
             Properties = new GenericPluginProperties { HasSettings = false };
             core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost(api));
+
+            // Home's elements, placed by the Dashboard as ContentControls named XboxSeries_<element>.
+            AddCustomElementSupport(new AddCustomElementSupportArgs
+            {
+                SourceName = "XboxSeries",
+                ElementList = new List<string> { "Hero", "RecentRow" },
+            });
+        }
+
+        public override Control GetGameViewControl(GetGameViewControlArgs args)
+        {
+            switch (args.Name)
+            {
+                case "Hero": return new HeroControl(core.Home);
+                case "RecentRow": return new RecentRowControl(core);
+                default: return null;
+            }
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)

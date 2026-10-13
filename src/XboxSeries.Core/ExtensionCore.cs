@@ -13,6 +13,15 @@ namespace XboxSeries.Core
         /// <summary>How many recent games fit on the landing tab, as on the console.</summary>
         private const int RecentGameCount = 4;
 
+        /// <summary>How many games the Recent row on Home holds, before its Play history tile.</summary>
+        private const int RecentRowCount = 8;
+
+        /// <summary>How many games the Play history tile's collage shows.</summary>
+        private const int PlayHistoryCollageCount = 4;
+
+        /// <summary>How soon a second A on the same Home tile counts as a double-tap, which launches the game.</summary>
+        private static readonly TimeSpan DoubleTapWindow = TimeSpan.FromMilliseconds(300);
+
         private static readonly TimeSpan ReleaseFallback = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan RepeatDelay = TimeSpan.FromMilliseconds(700);
         private static readonly TimeSpan RepeatRate = TimeSpan.FromMilliseconds(80);
@@ -35,6 +44,9 @@ namespace XboxSeries.Core
         private IDisposable quitTimer;
         private Guid? startAfterQuit;
         private Guid? startingGame;
+        private Guid? heroGame;
+        private Guid? tappedGame;
+        private IDisposable tapTimer;
 
         public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite)
         {
@@ -45,9 +57,12 @@ namespace XboxSeries.Core
 
         public GuideState Guide { get; } = new GuideState();
 
+        public HomeState Home { get; } = new HomeState();
+
         public void OnLibraryChanged(LibrarySnapshot snapshot)
         {
             library = snapshot;
+            RefreshHome();
         }
 
         /// <summary>
@@ -84,6 +99,7 @@ namespace XboxSeries.Core
 
             runningGame = gameId;
             startingGame = null;
+            RefreshHome();
         }
 
         /// <summary>Playnite's game startup cancelled event: a launch that never got going.</summary>
@@ -109,6 +125,7 @@ namespace XboxSeries.Core
             }
 
             runningGame = null;
+            RefreshHome();
 
             // Any menu or prompt was about the game that has just gone.
             Guide.Dialog = null;
@@ -229,6 +246,101 @@ namespace XboxSeries.Core
                 heldDirection = button;
                 repeatTimer = clock.After(RepeatDelay, () => Repeat(by));
             }
+        }
+
+        /// <summary>A Recent-row tile got focus: the hero crossfades to its game's art, and keeps it once focus moves on.</summary>
+        public void FocusHomeTile(HomeTile tile)
+        {
+            // A game with no art at all leaves the last art up rather than blanking the hero.
+            var art = HeroArtOf(GameById(tile.GameId));
+            if (art != null)
+            {
+                heroGame = tile.GameId;
+                Home.Hero = art;
+            }
+        }
+
+        /// <summary>
+        /// A on a Home tile. It opens the game's Game hub, unless a second A on the same tile follows within the
+        /// double-tap window: that plays the game instead, so the hub waits out the window before opening.
+        /// </summary>
+        public void ChooseHomeTile(HomeTile tile)
+        {
+            var gameId = tile.GameId;
+            if (tapTimer != null && tappedGame == gameId)
+            {
+                CancelTap();
+                if (gameId == runningGame)
+                {
+                    ReturnToRunningGame();
+                }
+                else
+                {
+                    PlayGame(gameId);
+                }
+
+                return;
+            }
+
+            CancelTap();
+            tappedGame = gameId;
+            tapTimer = clock.After(DoubleTapWindow, () =>
+            {
+                CancelTap();
+                playnite.OpenGameHub(gameId);
+            });
+        }
+
+        private void CancelTap()
+        {
+            tappedGame = null;
+            tapTimer?.Dispose();
+            tapTimer = null;
+        }
+
+        /// <summary>
+        /// Rebuilds the Recent row: the running game first, then played games by last played, padded with recently
+        /// added ones, never hidden ones. The Play history tile's collage is the played games that come next.
+        /// </summary>
+        private void RefreshHome()
+        {
+            var running = GameById(runningGame);
+            var played = PlayedGames().ToList();
+            var unplayed = library.Games
+                .Where(g => g.LastActivity == null && !g.Hidden)
+                .OrderByDescending(g => g.Added ?? DateTime.MinValue);
+            var row = (running == null ? played : new[] { running }.Concat(played))
+                .Concat(unplayed)
+                .Distinct()
+                .Take(RecentRowCount)
+                .ToList();
+
+            Home.RecentRow = row.Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g == running)).ToList();
+            Home.PlayHistory = played.Where(g => !row.Contains(g))
+                .Take(PlayHistoryCollageCount)
+                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, isRunning: false))
+                .ToList();
+
+            // The hero stays on the last focused game while it exists, and starts on the first game in the row.
+            var hero = row.Concat(played).FirstOrDefault(g => g.Id == heroGame) ?? row.FirstOrDefault();
+            heroGame = hero?.Id;
+            Home.Hero = HeroArtOf(hero);
+        }
+
+        /// <summary>A game's background art, or its cover when it has none; null for no game or no art.</summary>
+        private static HeroArt HeroArtOf(LibraryGame game)
+        {
+            if (game == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(game.BackgroundImage))
+            {
+                return new HeroArt(game.Id, game.BackgroundImage, isCover: false);
+            }
+
+            return string.IsNullOrEmpty(game.CoverImage) ? null : new HeroArt(game.Id, game.CoverImage, isCover: true);
         }
 
         /// <summary>The Guide button, or a prompt that needs the Guide: open it on the landing tab, over whatever is in front.</summary>
@@ -519,7 +631,13 @@ namespace XboxSeries.Core
             playnite.StartGame(gameId);
         }
 
-        private string NameOf(Guid gameId) => library.Games.FirstOrDefault(g => g.Id == gameId)?.Name ?? "the game";
+        private string NameOf(Guid gameId) => GameById(gameId)?.Name ?? "the game";
+
+        private LibraryGame GameById(Guid? gameId) => library.Games.FirstOrDefault(g => g.Id == gameId);
+
+        /// <summary>Games that have been played, newest first, never hidden ones.</summary>
+        private IEnumerable<LibraryGame> PlayedGames() =>
+            library.Games.Where(g => g.LastActivity != null && !g.Hidden).OrderByDescending(g => g.LastActivity);
 
         /// <summary>A game went with the Guide open: rebuild the entries, keeping focus at the same place in the list.</summary>
         private void RefreshLandingTab()
@@ -532,11 +650,8 @@ namespace XboxSeries.Core
         /// <summary>The Guide always opens here: the landing tab, focus on Home.</summary>
         private void ShowLandingTab()
         {
-            var running = library.Games.FirstOrDefault(g => g.Id == runningGame);
-            var recent = library.Games
-                .Where(g => g.LastActivity != null && !g.Hidden && g != running)
-                .OrderByDescending(g => g.LastActivity)
-                .Take(RecentGameCount);
+            var running = GameById(runningGame);
+            var recent = PlayedGames().Where(g => g != running).Take(RecentGameCount);
             var games = running == null ? recent : new[] { running }.Concat(recent);
 
             // A divider separates the games from Home and My games & apps.
@@ -576,7 +691,7 @@ namespace XboxSeries.Core
         /// <summary>The running game's own window, found from its install directory; <see cref="IntPtr.Zero"/> when there is none.</summary>
         private IntPtr RunningGameWindow()
         {
-            var directory = library.Games.FirstOrDefault(g => g.Id == runningGame)?.InstallDirectory;
+            var directory = GameById(runningGame)?.InstallDirectory;
             return string.IsNullOrEmpty(directory) ? IntPtr.Zero : windowSystem.FindWindowUnder(directory);
         }
 
