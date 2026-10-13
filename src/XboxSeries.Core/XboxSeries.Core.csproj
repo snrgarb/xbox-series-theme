@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Playnite-free: never add a Playnite SDK reference here. The extension project is the only place Playnite types appear. -->
+  <PropertyGroup>
+    <RootNamespace>XboxSeries.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

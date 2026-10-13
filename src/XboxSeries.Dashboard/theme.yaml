@@ -1,0 +1,9 @@
+Id: {{ThemeId}}
+Name: Xbox Series
+Author: snrgarb
+Version: {{Version}}
+Mode: Fullscreen
+ThemeApiVersion: 2.10.0
+Links:
+  - Name: GitHub
+    Url: https://github.com/snrgarb/xbox-series-theme

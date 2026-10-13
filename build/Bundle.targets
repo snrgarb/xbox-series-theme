@@ -1,0 +1,44 @@
+<Project>
+  <!--
+    Packs the Bundle after every build of the extension:
+      artifacts/XboxSeries_Dashboard_<Version>.pthm   the Dashboard theme
+      artifacts/XboxSeries_<Version>.pext             the extension, with the matching .pthm inside
+    Both manifests are stamped with $(Version) from Directory.Build.props.
+  -->
+  <Target Name="PackBundle" AfterTargets="Build">
+    <!-- Set inside the target: IntermediateOutputPath isn't defined yet where this file is imported. -->
+    <PropertyGroup>
+      <PackDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)pack\</PackDir>
+      <ThemeStageDir>$(PackDir)theme\</ThemeStageDir>
+      <ExtensionStageDir>$(PackDir)extension\</ExtensionStageDir>
+      <ThemePackageName>$(ThemeId)_$(Version).pthm</ThemePackageName>
+      <ThemePackagePath>$(ArtifactsDir)$(ThemePackageName)</ThemePackagePath>
+      <ExtensionPackagePath>$(ArtifactsDir)XboxSeries_$(Version).pext</ExtensionPackagePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <DashboardFile Include="$(DashboardDir)**\*" Exclude="$(DashboardDir)theme.yaml" />
+      <ExtensionFile Include="$(TargetDir)*.dll;$(TargetDir)*.pdb" />
+    </ItemGroup>
+    <Error Condition="Exists('$(TargetDir)Playnite.SDK.dll')" Text="Playnite.SDK.dll must not ship in the .pext; Playnite provides it." />
+
+    <PropertyGroup>
+      <ThemeManifest>$([System.IO.File]::ReadAllText('$(DashboardDir)theme.yaml').Replace('{{ThemeId}}', '$(ThemeId)').Replace('{{Version}}', '$(Version)'))</ThemeManifest>
+      <ExtensionManifest>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\extension.yaml').Replace('{{ExtensionId}}', '$(ExtensionId)').Replace('{{Version}}', '$(Version)'))</ExtensionManifest>
+    </PropertyGroup>
+
+    <!-- Theme -->
+    <RemoveDir Directories="$(PackDir)" />
+    <Copy SourceFiles="@(DashboardFile)" DestinationFiles="@(DashboardFile->'$(ThemeStageDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <WriteLinesToFile File="$(ThemeStageDir)theme.yaml" Lines="$([MSBuild]::Escape($(ThemeManifest)))" Overwrite="true" />
+    <MakeDir Directories="$(ArtifactsDir)" />
+    <ZipDirectory SourceDirectory="$(ThemeStageDir)" DestinationFile="$(ThemePackagePath)" Overwrite="true" />
+
+    <!-- Extension, embedding the theme -->
+    <Copy SourceFiles="@(ExtensionFile);$(ThemePackagePath)" DestinationFolder="$(ExtensionStageDir)" />
+    <WriteLinesToFile File="$(ExtensionStageDir)extension.yaml" Lines="$([MSBuild]::Escape($(ExtensionManifest)))" Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(ExtensionStageDir)" DestinationFile="$(ExtensionPackagePath)" Overwrite="true" />
+
+    <Message Importance="high" Text="Bundle $(Version): $(ExtensionPackagePath) and $(ThemePackagePath)" />
+  </Target>
+</Project>

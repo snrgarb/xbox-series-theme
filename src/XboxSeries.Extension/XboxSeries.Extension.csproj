@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Generic extension: the only project that references the Playnite SDK. It wires real adapters to the core. -->
+  <PropertyGroup>
+    <RootNamespace>XboxSeries.Extension</RootNamespace>
+    <UseWPF>true</UseWPF>
+    <PluginGuid>eb759ff1-325b-4c34-9a64-d9704f72612b</PluginGuid>
+    <ExtensionId>XboxSeries_$(PluginGuid)</ExtensionId>
+    <ThemeId>XboxSeries_Dashboard</ThemeId>
+    <DashboardDir>$(RepoRoot)src\XboxSeries.Dashboard\</DashboardDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Playnite provides Playnite.SDK.dll at runtime, so it is never copied into the package. -->
+    <PackageReference Include="PlayniteSDK" Version="6.18.0" ExcludeAssets="runtime" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XboxSeries.Core\XboxSeries.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="extension.yaml" />
+    <AssemblyMetadata Include="PluginGuid" Value="$(PluginGuid)" />
+  </ItemGroup>
+  <Import Project="$(RepoRoot)build\Bundle.targets" />
+</Project>

@@ -1,0 +1,9 @@
+Id: {{ExtensionId}}
+Name: Xbox Series
+Author: snrgarb
+Version: {{Version}}
+Module: XboxSeries.Extension.dll
+Type: GenericPlugin
+Links:
+  - Name: GitHub
+    Url: https://github.com/snrgarb/xbox-series-theme
