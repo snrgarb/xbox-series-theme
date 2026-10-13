@@ -5,6 +5,9 @@
     <!-- Xbox accent green -->
     <Color x:Key="GlyphColor">#FF107C10</Color>
     <Color x:Key="GlyphLightColor">#FF2CA243</Color>
+    <!-- The brushes too: Default's resolve its own GlyphColor, so overriding the colours alone leaves them orange. -->
+    <SolidColorBrush x:Key="GlyphBrush" Color="#FF107C10" />
+    <SolidColorBrush x:Key="GlyphLightBrush" Color="#FF2CA243" />
 
     <!-- Microsoft's UI font and icon font, as on the console. Fluent Icons ships with Windows 11, MDL2 with Windows 10. -->
     <FontFamily x:Key="XboxFont">Segoe UI</FontFamily>
