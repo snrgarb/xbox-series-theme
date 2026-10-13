@@ -387,6 +387,57 @@ namespace XboxSeries.Core.Tests
             Assert.False(core.Guide.IsOpen);
         }
 
+        [Fact]
+        public void A_launch_from_the_Dashboard_with_nothing_running_goes_ahead()
+        {
+            core.OnGameStopped(library.Id("Halo Infinite"));
+
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+            Assert.False(core.Guide.IsOpen);
+        }
+
+        [Fact]
+        public void A_launch_from_the_Dashboard_while_another_game_runs_is_held_and_asks_Quit_X_and_start_Y()
+        {
+            playnite.BringToFront();
+
+            Assert.False(core.OnGameStarting(library.Id("Hades")));
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.Equal("Quit Halo Infinite and start Hades?", core.Guide.Dialog.Title);
+
+            Tap(ControllerButton.A);
+            HaloExits();
+
+            // The Guide's own launch comes back through Playnite's starting event and must go ahead.
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.StartedGames);
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+        }
+
+        [Fact]
+        public void A_second_launch_from_the_Dashboard_while_the_first_is_starting_is_cancelled()
+        {
+            core.OnGameStopped(library.Id("Halo Infinite"));
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+
+            Assert.False(core.OnGameStarting(library.Id("Tunic")));
+
+            Assert.Null(core.Guide.Dialog);
+            Assert.Empty(playnite.StartedGames);
+        }
+
+        [Fact]
+        public void A_launch_from_the_Dashboard_while_a_game_is_quitting_is_cancelled()
+        {
+            core.QuitGame(library.Id("Halo Infinite"));
+
+            Assert.False(core.OnGameStarting(library.Id("Hades")));
+
+            Assert.Null(core.Guide.Dialog);
+            HaloExits();
+            Assert.Empty(playnite.StartedGames);
+        }
+
         private string[] Options() => core.Guide.Dialog.Options.Select(o => o.Label).ToArray();
 
         private void OpenGuideOn(string title)
