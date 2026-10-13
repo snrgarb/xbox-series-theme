@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Interop;
 using Playnite.SDK;
@@ -9,6 +10,12 @@ namespace XboxSeries.Extension
     internal sealed class PlayniteHost : IPlayniteHost
     {
         private static readonly ILogger logger = LogManager.GetLogger();
+        private readonly IPlayniteAPI api;
+
+        public PlayniteHost(IPlayniteAPI api)
+        {
+            this.api = api;
+        }
 
         public void BringToFront()
         {
@@ -27,6 +34,30 @@ namespace XboxSeries.Extension
             }
 
             NativeMethods.BringToForeground(handle);
+        }
+
+        public void BringToFront(DashboardPage page)
+        {
+            BringToFront();
+            switch (page)
+            {
+                case DashboardPage.Home:
+                    // Home is Playnite's list view; a Game hub open on top of it is its details view.
+                    if (api.MainView.ActiveFullscreenView == FullscreenView.Details)
+                    {
+                        api.MainView.ToggleFullscreenView();
+                    }
+
+                    break;
+                case DashboardPage.MyGamesAndApps:
+                    // The page itself lands with #35; until then this only brings Playnite to the front.
+                    break;
+            }
+        }
+
+        public void StartGame(Guid gameId)
+        {
+            api.StartGame(gameId);
         }
     }
 }

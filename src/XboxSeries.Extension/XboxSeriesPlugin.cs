@@ -24,7 +24,7 @@ namespace XboxSeries.Extension
         public XboxSeriesPlugin(IPlayniteAPI api) : base(api)
         {
             Properties = new GenericPluginProperties { HasSettings = false };
-            core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost());
+            core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost(api));
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
@@ -50,6 +50,18 @@ namespace XboxSeries.Extension
             debugGuideHotkey?.Dispose();
 #endif
             windows.Overlay?.Close();
+        }
+
+        public override void OnGameStarted(OnGameStartedEventArgs args)
+        {
+            var id = args.Game.Id;
+            OnUiThread(() => core.OnGameStarted(id));
+        }
+
+        public override void OnGameStopped(OnGameStoppedEventArgs args)
+        {
+            var id = args.Game.Id;
+            OnUiThread(() => core.OnGameStopped(id));
         }
 
         public override void OnControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
