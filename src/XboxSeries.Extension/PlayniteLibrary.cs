@@ -8,8 +8,9 @@ namespace XboxSeries.Extension
     /// <summary>Adapter: reads Playnite's database into the core's <see cref="LibrarySnapshot"/>.</summary>
     internal static class PlayniteLibrary
     {
-        public static LibrarySnapshot Snapshot(IGameDatabaseAPI database)
+        public static LibrarySnapshot Snapshot(IPlayniteAPI api)
         {
+            var database = api.Database;
             var games = database.Games
                 .Select(g => new LibraryGame(
                     g.Id,
@@ -20,7 +21,8 @@ namespace XboxSeries.Extension
                     g.IsInstalled,
                     g.Series?.Select(s => s.Name).ToList() ?? new List<string>(),
                     g.Genres?.Select(s => s.Name).ToList() ?? new List<string>(),
-                    g.Source?.Name))
+                    g.Source?.Name,
+                    string.IsNullOrEmpty(g.InstallDirectory) ? null : api.ExpandGameVariables(g, g.InstallDirectory)))
                 .ToList();
 
             var presets = database.FilterPresets

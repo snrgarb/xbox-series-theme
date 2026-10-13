@@ -129,7 +129,7 @@ namespace XboxSeries.Core
                 case GuideItemKind.MyGamesAndApps:
                     return () => playnite.BringToFront(DashboardPage.MyGamesAndApps);
                 case GuideItemKind.RunningGame:
-                    return ReturnToRecordedWindow;
+                    return ReturnToRunningGame;
                 case GuideItemKind.RecentGame:
                     // With another game running, "Quit X and start Y?" comes first (#24); until then this does nothing.
                     if (runningGame != null)
@@ -253,6 +253,24 @@ namespace XboxSeries.Core
             CancelReleaseWait();
             handBack();
             Guide.IsOverlayShown = false;
+        }
+
+        /// <summary>
+        /// To the running game's own window, found from its install directory, because the Guide may have opened
+        /// over the Dashboard or another app. When it can't be found, back to the window that was in front.
+        /// </summary>
+        private void ReturnToRunningGame()
+        {
+            var directory = library.Games.FirstOrDefault(g => g.Id == runningGame)?.InstallDirectory;
+            var gameWindow = string.IsNullOrEmpty(directory) ? IntPtr.Zero : windowSystem.FindWindowUnder(directory);
+            if (gameWindow != IntPtr.Zero)
+            {
+                windowSystem.SetForeground(gameWindow);
+            }
+            else
+            {
+                ReturnToRecordedWindow();
+            }
         }
 
         /// <summary>Back to the window that was in front when the Guide opened, or to Playnite if it has gone.</summary>

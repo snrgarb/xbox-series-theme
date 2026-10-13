@@ -223,6 +223,42 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_on_the_running_game_over_the_Dashboard_brings_the_game_to_the_front()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Arma Reforger", lastActivity: new DateTime(2026, 10, 10), installDirectory: @"F:\SteamLibrary\steamapps\common\Arma Reforger");
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Arma Reforger"));
+            windows.OpenWindow(@"C:\Program Files (x86)\Steam\steam.exe");
+            var game = windows.OpenWindow(@"F:\SteamLibrary\steamapps\common\Arma Reforger\ArmaReforgerSteam.exe");
+            playnite.BringToFront();
+            Tap(ControllerButton.Guide);
+            Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
+
+            Tap(ControllerButton.A);
+
+            Assert.Equal(game, windows.Foreground);
+        }
+
+        [Fact]
+        public void A_on_the_running_game_falls_back_to_the_window_in_front_when_no_game_window_is_found()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Arma Reforger", lastActivity: new DateTime(2026, 10, 10), installDirectory: @"F:\SteamLibrary\steamapps\common\Arma Reforger");
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Arma Reforger"));
+            var game = windows.OpenWindow(@"D:\Elsewhere\Arma Reforger Launcher.exe");
+            Tap(ControllerButton.Guide);
+            Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
+
+            Tap(ControllerButton.A);
+
+            Assert.Equal(game, windows.Foreground);
+        }
+
+        [Fact]
         public void A_on_a_recent_game_launches_it_once_A_is_released_when_nothing_is_running()
         {
             var library = new FakeLibrary()

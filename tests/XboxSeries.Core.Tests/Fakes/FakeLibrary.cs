@@ -21,7 +21,8 @@ namespace XboxSeries.Core.Tests.Fakes
             bool installed = true,
             string[] series = null,
             string[] genres = null,
-            string source = null)
+            string source = null,
+            string installDirectory = null)
         {
             games.Add(new LibraryGame(
                 Guid.NewGuid(),
@@ -32,7 +33,8 @@ namespace XboxSeries.Core.Tests.Fakes
                 installed,
                 series ?? new string[0],
                 genres ?? new string[0],
-                source));
+                source,
+                installDirectory));
             return this;
         }
 
