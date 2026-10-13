@@ -4,6 +4,8 @@
       artifacts/XboxSeries_Dashboard_<Version>.pthm   the Dashboard theme
       artifacts/XboxSeries_<Version>.pext             the extension, with the matching .pthm inside
     Both manifests are stamped with $(Version) from Directory.Build.props.
+    Release builds pack into artifacts/Release/ instead, so they never replace the Debug packages
+    (with the debug Guide hotkey and keys) that get installed for testing.
   -->
   <Target Name="PackBundle" AfterTargets="Build">
     <!-- Set inside the target: IntermediateOutputPath isn't defined yet where this file is imported. -->
@@ -12,8 +14,10 @@
       <ThemeStageDir>$(PackDir)theme\</ThemeStageDir>
       <ExtensionStageDir>$(PackDir)extension\</ExtensionStageDir>
       <ThemePackageName>$(ThemeId)_$(Version).pthm</ThemePackageName>
-      <ThemePackagePath>$(ArtifactsDir)$(ThemePackageName)</ThemePackagePath>
-      <ExtensionPackagePath>$(ArtifactsDir)XboxSeries_$(Version).pext</ExtensionPackagePath>
+      <PackageDir>$(ArtifactsDir)</PackageDir>
+      <PackageDir Condition="'$(Configuration)' == 'Release'">$(ArtifactsDir)Release\</PackageDir>
+      <ThemePackagePath>$(PackageDir)$(ThemePackageName)</ThemePackagePath>
+      <ExtensionPackagePath>$(PackageDir)XboxSeries_$(Version).pext</ExtensionPackagePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -31,7 +35,7 @@
     <RemoveDir Directories="$(PackDir)" />
     <Copy SourceFiles="@(DashboardFile)" DestinationFiles="@(DashboardFile->'$(ThemeStageDir)%(RecursiveDir)%(Filename)%(Extension)')" />
     <WriteLinesToFile File="$(ThemeStageDir)theme.yaml" Lines="$([MSBuild]::Escape($(ThemeManifest)))" Overwrite="true" />
-    <MakeDir Directories="$(ArtifactsDir)" />
+    <MakeDir Directories="$(PackageDir)" />
     <ZipDirectory SourceDirectory="$(ThemeStageDir)" DestinationFile="$(ThemePackagePath)" Overwrite="true" />
 
     <!-- Extension, embedding the theme -->
