@@ -1,8 +1,9 @@
 <!--
     Home: the Dashboard's landing page, modelled on the Xbox Home screen.
     Works with the theme alone: the top bar, the hero and Playnite's main list styled as Xbox tiles
-    (DerivedStyles/ListGameItem*.xaml). The extension's own elements are never referenced by type;
-    the install notice is gated by {PluginStatus} on the extension's add-on id.
+    (DerivedStyles/ListGameItem*.xaml). With the extension, its hero and Recent row replace the theme-only
+    hero and list, injected as custom elements (ContentControls named XboxSeries_<element>). The extension's
+    own elements are never referenced by type; the switch is gated by {PluginStatus} on the extension's add-on id.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -57,6 +58,15 @@
         </Setter>
     </Style>
 
+    <!-- Theme-only layout: collapsed when the extension is installed, which injects its own elements in its place. -->
+    <Style x:Key="XboxThemeOnly" TargetType="FrameworkElement">
+        <Style.Triggers>
+            <DataTrigger Binding="{PluginStatus Plugin=XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b, Status=Installed}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style TargetType="{x:Type Main}">
         <Setter Property="Template">
             <Setter.Value>
@@ -72,9 +82,16 @@
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <!-- Hero: the selected game's background art (per the user's background settings) over the default background. -->
-                            <FadeImage x:Name="PART_ImageBackground" Grid.RowSpan="2"
-                                       HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            <!--
+                                Hero. Theme-only: the selected game's background art (per the user's background settings) over the
+                                default background. With the extension: the focused Recent-row game's art, from XboxSeries_Hero.
+                                Playnite binds the parts' own Visibility, so they are hidden through a wrapper.
+                            -->
+                            <Grid Grid.RowSpan="2" Style="{StaticResource XboxThemeOnly}">
+                                <FadeImage x:Name="PART_ImageBackground"
+                                           HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            </Grid>
+                            <ContentControl x:Name="XboxSeries_Hero" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
                             <Rectangle Grid.RowSpan="2" Fill="{DynamicResource XboxHeroScrimBrush}" IsHitTestVisible="False" />
 
                             <!-- Top bar: profile on the left, pages in the middle, status on the right. -->
@@ -224,7 +241,8 @@
                                     </Grid.RowDefinitions>
 
                                     <!-- What the main list is showing: the active filter preset, or the name filter from Y. -->
-                                    <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="105,0,105,8">
+                                    <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="105,0,105,8"
+                                                Style="{StaticResource XboxThemeOnly}">
                                         <TextBlock Text="{Binding ActiveFilterPreset.Name}" Style="{StaticResource XboxText}"
                                                    FontFamily="{DynamicResource XboxFontSemibold}" Margin="0,0,24,0" />
                                         <StackPanel x:Name="PART_ElemSearchActive" Orientation="Horizontal">
@@ -236,24 +254,30 @@
                                                    Margin="24,0,0,0" />
                                     </StackPanel>
 
-                                    <ListBoxEx x:Name="PART_ListGameItems" Grid.Row="1" Margin="80,0,80,0"
-                                               Background="Transparent" BorderThickness="0"
-                                               KeyboardNavigation.DirectionalNavigation="Once" />
+                                    <!-- Theme-only: Playnite's main list as Xbox tiles. It stays in the tree with the extension, hidden, because the Game hub shows its selected game. -->
+                                    <Grid Grid.Row="1" Style="{StaticResource XboxThemeOnly}">
+                                        <ListBoxEx x:Name="PART_ListGameItems" Margin="80,0,80,0"
+                                                   Background="Transparent" BorderThickness="0"
+                                                   KeyboardNavigation.DirectionalNavigation="Once" />
 
-                                    <TextBlock Grid.Row="1" Text="{DynamicResource LOCNoGamesFound}"
-                                               TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource XboxText}">
-                                                <Setter Property="FontSize" Value="32" />
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Items.Count, ElementName=PART_ListGameItems}" Value="0">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                        <TextBlock Text="{DynamicResource LOCNoGamesFound}"
+                                                   TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxText}">
+                                                    <Setter Property="FontSize" Value="32" />
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Items.Count, ElementName=PART_ListGameItems}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <!-- With the extension: the Recent row, injected. Empty, and so harmless, without it. -->
+                                    <ContentControl x:Name="XboxSeries_RecentRow" Grid.Row="1" Focusable="False" IsTabStop="False" />
                                 </Grid>
                             </DockPanel>
                         </Grid>

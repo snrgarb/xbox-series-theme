@@ -1,0 +1,94 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+
+namespace XboxSeries.Core
+{
+    /// <summary>What the extension's Home elements show. Views bind to it and hold no logic of their own.</summary>
+    public sealed class HomeState : INotifyPropertyChanged
+    {
+        private IReadOnlyList<HomeTile> recentRow = new HomeTile[0];
+        private IReadOnlyList<HomeTile> playHistory = new HomeTile[0];
+        private HeroArt hero;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>The Recent row's game tiles, left to right. The Play history tile follows them.</summary>
+        public IReadOnlyList<HomeTile> RecentRow
+        {
+            get => recentRow;
+            internal set => Set(ref recentRow, value, nameof(RecentRow));
+        }
+
+        /// <summary>The Play history tile's collage: up to 4 played games after those in the Recent row.</summary>
+        public IReadOnlyList<HomeTile> PlayHistory
+        {
+            get => playHistory;
+            internal set => Set(ref playHistory, value, nameof(PlayHistory));
+        }
+
+        /// <summary>The art behind Home, from the last Recent-row game to have focus; null when there is none.</summary>
+        public HeroArt Hero
+        {
+            get => hero;
+            internal set => Set(ref hero, value, nameof(Hero));
+        }
+
+        private void Set<T>(ref T field, T value, string name)
+        {
+            if (EqualityComparer<T>.Default.Equals(field, value))
+            {
+                return;
+            }
+
+            field = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+    }
+
+    /// <summary>One game tile on Home.</summary>
+    public sealed class HomeTile
+    {
+        internal HomeTile(Guid gameId, string title, string coverImage, bool isRunning)
+        {
+            GameId = gameId;
+            Title = title;
+            CoverImage = coverImage;
+            IsRunning = isRunning;
+        }
+
+        public Guid GameId { get; }
+        public string Title { get; }
+
+        /// <summary>The full path or URL of the game's cover art; null when it has none.</summary>
+        public string CoverImage { get; }
+
+        public bool IsRunning { get; }
+    }
+
+    /// <summary>The hero's art: a game's background art, or its cover to be shown blurred and darkened.</summary>
+    public sealed class HeroArt : IEquatable<HeroArt>
+    {
+        internal HeroArt(Guid gameId, string image, bool isCover)
+        {
+            GameId = gameId;
+            Image = image;
+            IsCover = isCover;
+        }
+
+        public Guid GameId { get; }
+
+        /// <summary>The full path or URL of the image.</summary>
+        public string Image { get; }
+
+        /// <summary>True when <see cref="Image"/> is the cover, standing in for missing background art.</summary>
+        public bool IsCover { get; }
+
+        public bool Equals(HeroArt other) =>
+            other != null && GameId == other.GameId && Image == other.Image && IsCover == other.IsCover;
+
+        public override bool Equals(object obj) => Equals(obj as HeroArt);
+
+        public override int GetHashCode() => GameId.GetHashCode() ^ (Image?.GetHashCode() ?? 0);
+    }
+}

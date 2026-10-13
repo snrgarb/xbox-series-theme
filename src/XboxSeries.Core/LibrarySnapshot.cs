@@ -38,7 +38,9 @@ namespace XboxSeries.Core
             IReadOnlyList<string> series,
             IReadOnlyList<string> genres,
             string source,
-            string installDirectory)
+            string installDirectory,
+            string backgroundImage = null,
+            string coverImage = null)
         {
             Id = id;
             Name = name;
@@ -50,6 +52,8 @@ namespace XboxSeries.Core
             Genres = genres;
             Source = source;
             InstallDirectory = installDirectory;
+            BackgroundImage = backgroundImage;
+            CoverImage = coverImage;
         }
 
         public Guid Id { get; }
@@ -66,6 +70,12 @@ namespace XboxSeries.Core
 
         /// <summary>Where the game is installed, with Playnite's variables expanded; null when unknown.</summary>
         public string InstallDirectory { get; }
+
+        /// <summary>The full path or URL of the game's background art; null when it has none.</summary>
+        public string BackgroundImage { get; }
+
+        /// <summary>The full path or URL of the game's cover art; null when it has none.</summary>
+        public string CoverImage { get; }
     }
 
     public sealed class FilterPreset

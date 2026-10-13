@@ -32,6 +32,11 @@ namespace XboxSeries.Core.Tests.Fakes
             Page = page;
         }
 
+        /// <summary>Every game whose Game hub Playnite was asked to open, in order.</summary>
+        public List<Guid> OpenedHubs { get; } = new List<Guid>();
+
         public void StartGame(Guid gameId) => StartedGames.Add(gameId);
+
+        public void OpenGameHub(Guid gameId) => OpenedHubs.Add(gameId);
     }
 }

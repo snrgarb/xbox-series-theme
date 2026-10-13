@@ -47,6 +47,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Home_hosts_the_extensions_hero_and_Recent_row_as_custom_elements()
+        {
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var elements = main.Descendants()
+                .Where(e => e.Name.LocalName == "ContentControl")
+                .Select(e => (string)e.Attribute(x + "Name"))
+                .Where(name => name != null && name.StartsWith("XboxSeries_"));
+
+            Assert.Equal(new[] { "XboxSeries_Hero", "XboxSeries_RecentRow" }, elements.OrderBy(n => n));
+        }
+
+        [Fact]
         public void Every_plugin_hook_names_the_extension_by_its_id()
         {
             var plugins = DashboardXaml()

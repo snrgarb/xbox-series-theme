@@ -1,0 +1,324 @@
+using System;
+using System.Linq;
+using XboxSeries.Core.Tests.Fakes;
+using Xunit;
+
+namespace XboxSeries.Core.Tests
+{
+    public class HomeTests
+    {
+        private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0));
+        private readonly FakeWindowSystem windows = new FakeWindowSystem();
+        private readonly FakePlayniteHost playnite;
+        private readonly ExtensionCore core;
+
+        public HomeTests()
+        {
+            playnite = new FakePlayniteHost(windows);
+            core = new ExtensionCore(clock, windows, playnite);
+        }
+
+        [Fact]
+        public void Recent_row_lists_played_games_newest_first_without_hidden_games()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
+                .WithGame("Forza Horizon 5", lastActivity: new DateTime(2026, 10, 12))
+                .WithGame("Hidden Game", lastActivity: new DateTime(2026, 10, 13), hidden: true)
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11))
+                .Snapshot());
+
+            Assert.Equal(new[] { "Forza Horizon 5", "Hades", "Halo Infinite" }, RecentRow());
+        }
+
+        [Fact]
+        public void Recent_row_holds_at_most_8_games()
+        {
+            var library = new FakeLibrary();
+            for (var day = 1; day <= 12; day++)
+            {
+                library.WithGame($"Game {day}", lastActivity: new DateTime(2026, 10, day));
+            }
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Equal(Enumerable.Range(5, 8).Reverse().Select(day => $"Game {day}"), RecentRow());
+        }
+
+        [Fact]
+        public void Recent_row_is_padded_with_recently_added_games_when_fewer_than_8_have_been_played()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10), added: new DateTime(2026, 1, 1))
+                .WithGame("Old Unplayed", added: new DateTime(2026, 2, 1))
+                .WithGame("New Unplayed", added: new DateTime(2026, 10, 1))
+                .WithGame("Hidden Unplayed", added: new DateTime(2026, 10, 2), hidden: true)
+                .WithGame("Never Dated")
+                .Snapshot());
+
+            Assert.Equal(new[] { "Halo Infinite", "New Unplayed", "Old Unplayed", "Never Dated" }, RecentRow());
+        }
+
+        [Fact]
+        public void The_running_game_comes_first_in_the_Recent_row()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11));
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            Assert.Equal(new[] { "Halo Infinite", "Hades" }, RecentRow());
+            Assert.True(core.Home.RecentRow[0].IsRunning);
+            Assert.False(core.Home.RecentRow[1].IsRunning);
+        }
+
+        [Fact]
+        public void The_Recent_row_goes_back_to_last_played_order_when_the_game_stops()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            core.OnGameStopped(library.Id("Halo Infinite"));
+
+            Assert.Equal(new[] { "Hades", "Halo Infinite" }, RecentRow());
+            Assert.DoesNotContain(core.Home.RecentRow, t => t.IsRunning);
+        }
+
+        [Fact]
+        public void Play_history_tile_shows_the_next_4_played_games_after_the_Recent_row()
+        {
+            var library = new FakeLibrary();
+            for (var day = 1; day <= 14; day++)
+            {
+                library.WithGame($"Game {day}", lastActivity: new DateTime(2026, 10, day));
+            }
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Equal(new[] { "Game 6", "Game 5", "Game 4", "Game 3" }, core.Home.PlayHistory.Select(t => t.Title));
+        }
+
+        [Fact]
+        public void Play_history_collage_is_empty_when_every_played_game_fits_in_the_Recent_row()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
+                .WithGame("New Unplayed", added: new DateTime(2026, 10, 1))
+                .Snapshot());
+
+            Assert.Empty(core.Home.PlayHistory);
+        }
+
+        [Fact]
+        public void Hero_starts_on_the_first_Recent_row_game()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
+                .Snapshot());
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void Hero_follows_the_focused_tile_to_its_background_art()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
+                .Snapshot());
+
+            core.FocusHomeTile(Tile("Hades"));
+
+            Assert.Equal(@"C:\art\hades-bg.jpg", core.Home.Hero.Image);
+            Assert.False(core.Home.Hero.IsCover);
+        }
+
+        [Fact]
+        public void Hero_falls_back_to_the_cover_when_a_game_has_no_background_art()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), coverImage: @"C:\art\hades-cover.jpg")
+                .Snapshot());
+
+            core.FocusHomeTile(Tile("Hades"));
+
+            Assert.Equal(@"C:\art\hades-cover.jpg", core.Home.Hero.Image);
+            Assert.True(core.Home.Hero.IsCover);
+        }
+
+        [Fact]
+        public void Hero_keeps_the_last_game_art_while_the_row_is_rebuilt()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg");
+            core.OnLibraryChanged(library.Snapshot());
+            core.FocusHomeTile(Tile("Hades"));
+
+            // Focus leaving the row tells the core nothing, so only a rebuild could move the hero; it must not.
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            Assert.Equal(@"C:\art\hades-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void Hero_picks_up_new_art_for_the_same_game()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), coverImage: @"C:\art\halo-cover.jpg");
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame(library.Id("Halo Infinite"), "Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .Snapshot());
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void A_game_with_no_art_at_all_leaves_the_hero_empty()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12))
+                .Snapshot());
+
+            Assert.Null(core.Home.Hero);
+        }
+
+        [Fact]
+        public void A_on_a_tile_opens_its_Game_hub_once_a_double_tap_can_no_longer_follow()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12));
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.ChooseHomeTile(Tile("Halo Infinite"));
+            Assert.Empty(playnite.OpenedHubs);
+
+            clock.Advance(TimeSpan.FromMilliseconds(300));
+
+            Assert.Equal(new[] { library.Id("Halo Infinite") }, playnite.OpenedHubs);
+            Assert.Empty(playnite.StartedGames);
+        }
+
+        [Fact]
+        public void Double_tap_A_on_a_tile_launches_the_game_without_opening_its_Game_hub()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12));
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.ChooseHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromMilliseconds(150));
+            core.ChooseHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { library.Id("Halo Infinite") }, playnite.StartedGames);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Taps_on_two_different_tiles_open_the_second_tiles_Game_hub()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12))
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11));
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.ChooseHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromMilliseconds(150));
+            core.ChooseHomeTile(Tile("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
+            Assert.Empty(playnite.StartedGames);
+        }
+
+        [Fact]
+        public void Double_tap_A_while_another_game_runs_asks_to_quit_it_first()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12))
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            core.ChooseHomeTile(Tile("Hades"));
+            core.ChooseHomeTile(Tile("Hades"));
+
+            Assert.Empty(playnite.StartedGames);
+            Assert.Equal("Quit Halo Infinite and start Hades?", core.Guide.Dialog.Title);
+        }
+
+        [Fact]
+        public void A_running_game_that_was_never_played_before_appears_once()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
+                .WithGame("Brand New", added: new DateTime(2026, 10, 13));
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.OnGameStarted(library.Id("Brand New"));
+
+            Assert.Equal(new[] { "Brand New", "Halo Infinite" }, RecentRow());
+        }
+
+        [Fact]
+        public void Focusing_a_game_with_no_art_keeps_the_last_art()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11))
+                .Snapshot());
+
+            core.FocusHomeTile(Tile("Hades"));
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void Hero_moves_off_a_game_once_it_is_hidden()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg");
+            core.OnLibraryChanged(library.Snapshot());
+            core.FocusHomeTile(Tile("Hades"));
+
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame(library.Id("Hades"), "Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg", hidden: true)
+                .Snapshot());
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void Double_tap_A_on_the_running_games_tile_returns_to_the_game()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: @"C:\Games\Halo");
+            core.OnLibraryChanged(library.Snapshot());
+            var game = windows.OpenWindow(@"C:\Games\Halo\halo.exe");
+            core.OnGameStarted(library.Id("Halo Infinite"));
+            playnite.BringToFront();
+
+            core.ChooseHomeTile(Tile("Halo Infinite"));
+            core.ChooseHomeTile(Tile("Halo Infinite"));
+
+            Assert.Equal(game, windows.Foreground);
+            Assert.Empty(playnite.StartedGames);
+            Assert.Null(core.Guide.Dialog);
+        }
+
+        private string[] RecentRow() => core.Home.RecentRow.Select(t => t.Title).ToArray();
+
+        private HomeTile Tile(string title) => core.Home.RecentRow.Single(t => t.Title == title);
+    }
+}
