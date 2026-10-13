@@ -31,7 +31,8 @@
                     <DataTemplate>
                         <StackPanel>
                             <Border x:Name="Divider" Height="1" Margin="0,12" Background="#33FFFFFF" Visibility="Collapsed" />
-                            <Border x:Name="Entry" Padding="16,12" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent">
+                            <Border x:Name="Entry" Padding="16,12" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent"
+                                    Background="Transparent" MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Title}" Foreground="White" FontSize="20" TextTrimming="CharacterEllipsis" />
                                     <TextBlock x:Name="Running" Text="Running" Foreground="#B3FFFFFF" FontSize="14" Visibility="Collapsed" />

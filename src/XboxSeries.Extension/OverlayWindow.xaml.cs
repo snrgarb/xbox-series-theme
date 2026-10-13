@@ -106,11 +106,57 @@ namespace XboxSeries.Extension
             {
                 core.DismissGuide();
             }
+#if DEBUG
+            else if (!e.IsRepeat && DebugButtonFor(e.Key) is ControllerButton button)
+            {
+                core.OnControllerButton(button, ButtonState.Pressed);
+            }
+#endif
         }
 
         protected override void OnPreviewKeyUp(KeyEventArgs e)
         {
             e.Handled = true;
+#if DEBUG
+            if (DebugButtonFor(e.Key) is ControllerButton button)
+            {
+                core.OnControllerButton(button, ButtonState.Released);
+            }
+#endif
+        }
+
+#if DEBUG
+        /// <summary>
+        /// Debug builds only: keys standing in for pad buttons, for testing without a controller. Not the arrows:
+        /// Playnite sends the pad's D-pad here as arrow keys, so they would move focus twice.
+        /// The core repeats held keys itself, so the keyboard's own auto-repeat is ignored.
+        /// </summary>
+        private static ControllerButton? DebugButtonFor(Key key)
+        {
+            switch (key)
+            {
+                case Key.W: return ControllerButton.DPadUp;
+                case Key.S: return ControllerButton.DPadDown;
+                case Key.Enter: return ControllerButton.A;
+                case Key.Back: return ControllerButton.B;
+                default: return null;
+            }
+        }
+#endif
+
+        // Debug builds only: the mouse points at and picks entries. Release keeps clicks to closing the Guide (#10).
+        private void OnEntryMouseEnter(object sender, MouseEventArgs e)
+        {
+#if DEBUG
+            core.FocusItem((GuideItem)((FrameworkElement)sender).DataContext);
+#endif
+        }
+
+        private void OnEntryClick(object sender, MouseButtonEventArgs e)
+        {
+#if DEBUG
+            core.ChooseItem((GuideItem)((FrameworkElement)sender).DataContext);
+#endif
         }
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
