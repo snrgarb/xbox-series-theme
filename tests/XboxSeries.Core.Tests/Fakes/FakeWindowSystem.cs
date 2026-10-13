@@ -17,6 +17,12 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public IntPtr Foreground { get; private set; }
 
+        /// <summary>Every window asked to close gracefully, in order. The fake never closes them itself: a test decides whether the game exits.</summary>
+        public List<IntPtr> CloseRequests { get; } = new List<IntPtr>();
+
+        /// <summary>Every window whose program was force-killed, in order.</summary>
+        public List<IntPtr> Killed { get; } = new List<IntPtr>();
+
         /// <summary>When true, Windows refuses to hand the Overlay the foreground.</summary>
         public bool RefusesForeground { get; set; }
 
@@ -64,5 +70,10 @@ namespace XboxSeries.Core.Tests.Fakes
                 Foreground = window;
             }
         }
+
+        public void CloseGracefully(IntPtr window) => CloseRequests.Add(window);
+
+        /// <summary>Records the kill. Like the real thing, Playnite's game stopped event is left to the test.</summary>
+        public void ForceKill(IntPtr window) => Killed.Add(window);
     }
 }

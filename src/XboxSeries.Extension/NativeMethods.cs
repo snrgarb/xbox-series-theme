@@ -4,7 +4,7 @@ using System.Text;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay over a monitor, and the debug hotkey.</summary>
+    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay over a monitor, and the debug hotkey and closing a game.</summary>
     internal static class NativeMethods
     {
         public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -12,6 +12,7 @@ namespace XboxSeries.Extension
         public const int SW_RESTORE = 9;
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_NOREPEAT = 0x4000;
+        public const uint WM_CLOSE = 0x0010;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -41,6 +42,7 @@ namespace XboxSeries.Extension
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);
         [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int index);
+        [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
         [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
         [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
@@ -101,6 +103,13 @@ namespace XboxSeries.Extension
                 return true;
             }, IntPtr.Zero);
             return found;
+        }
+
+        /// <summary>The id of the process that owns <paramref name="window"/>.</summary>
+        public static int ProcessIdOf(IntPtr window)
+        {
+            GetWindowThreadProcessId(window, out var processId);
+            return (int)processId;
         }
 
         private static string ProgramPathOf(uint processId)
