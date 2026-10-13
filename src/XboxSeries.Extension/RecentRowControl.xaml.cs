@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -13,8 +14,9 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The Recent row, injected into Home as a custom element. It follows the core's <see cref="HomeState"/> and
     /// tells the core which tile has focus and which one A was pressed on. It holds no Home logic.
+    /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
-    public partial class RecentRowControl : UserControl
+    public partial class RecentRowControl : PluginUserControl
     {
         private readonly ExtensionCore core;
         private Guid? lastFocusedGame;
