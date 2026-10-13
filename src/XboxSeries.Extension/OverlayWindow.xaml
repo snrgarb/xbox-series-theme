@@ -1,0 +1,31 @@
+<Window x:Class="XboxSeries.Extension.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Xbox Series Guide"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="True"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        Left="-32000" Top="-32000" Width="10" Height="10">
+    <!-- The Overlay: transparent, Topmost and full-screen. It hosts the Guide and nothing else. -->
+    <Window.Background>
+        <SolidColorBrush x:Name="Dim" Color="#66000000" Opacity="0" />
+    </Window.Background>
+    <Border x:Name="GuidePanel"
+            Width="560"
+            HorizontalAlignment="Left"
+            Background="#FF1E1E1E"
+            BorderBrush="#FF107C10"
+            BorderThickness="0,0,4,0">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="Slide" X="-560" />
+        </Border.RenderTransform>
+        <!-- Landing tab. Its contents come in later tickets. -->
+        <StackPanel Margin="32">
+            <TextBlock Text="Guide" Foreground="White" FontSize="30" FontWeight="SemiBold" />
+        </StackPanel>
+    </Border>
+</Window>

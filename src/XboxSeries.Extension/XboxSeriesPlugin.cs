@@ -12,6 +12,10 @@ namespace XboxSeries.Extension
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
+        private readonly Win32WindowSystem windows = new Win32WindowSystem();
+#if DEBUG
+        private DebugGuideHotkey debugGuideHotkey;
+#endif
 
         // Set once, as PluginGuid in the csproj, which also builds the manifest Id from it.
         public override Guid Id { get; } = Guid.Parse(typeof(XboxSeriesPlugin).Assembly
@@ -20,11 +24,16 @@ namespace XboxSeries.Extension
         public XboxSeriesPlugin(IPlayniteAPI api) : base(api)
         {
             Properties = new GenericPluginProperties { HasSettings = false };
-            core = new ExtensionCore(new DispatcherClock());
+            core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost());
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
+            // Created here, on the UI thread, which owns the Overlay and runs the core.
+            windows.Overlay = new OverlayWindow(core);
+#if DEBUG
+            debugGuideHotkey = new DebugGuideHotkey(core);
+#endif
             PushLibrary();
 
             // Database events can arrive on background threads; the core only runs on the UI thread.
@@ -33,6 +42,14 @@ namespace XboxSeries.Extension
             PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
             PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
             logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
+        }
+
+        public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
+        {
+#if DEBUG
+            debugGuideHotkey?.Dispose();
+#endif
+            windows.Overlay?.Close();
         }
 
         public override void OnControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
