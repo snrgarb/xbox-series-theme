@@ -33,6 +33,12 @@ namespace XboxSeries.Extension
             Overlay.Focus();
         }
 
-        public void SetForeground(IntPtr window) => NativeMethods.BringToForeground(window);
+        public void SetForeground(IntPtr window)
+        {
+            if (!NativeMethods.BringToForeground(window))
+            {
+                logger.Warn($"Couldn't hand the foreground back to window {window}");
+            }
+        }
     }
 }
