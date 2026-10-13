@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/XboxSeries.Core/XboxSeries.Core.csproj" />
+    <Project Path="src/XboxSeries.Extension/XboxSeries.Extension.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/XboxSeries.Core.Tests/XboxSeries.Core.Tests.csproj" />
+  </Folder>
+</Solution>

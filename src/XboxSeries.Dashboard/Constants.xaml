@@ -1,0 +1,9 @@
+<!-- Loaded after Playnite's Default Constants.xaml: only the keys defined here override it. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Xbox accent green -->
+    <Color x:Key="GlyphColor">#FF107C10</Color>
+    <Color x:Key="GlyphLightColor">#FF2CA243</Color>
+
+</ResourceDictionary>
