@@ -50,6 +50,28 @@ namespace XboxSeries.Core
             library = snapshot;
         }
 
+        /// <summary>
+        /// Playnite's game starting event, raised for every launch, including the Dashboard's own Play. Returns
+        /// whether the launch may go ahead. A launch while another game runs is held back and asks
+        /// "Quit X and start Y?" instead; one while a game is quitting or launching is simply refused.
+        /// </summary>
+        public bool OnGameStarting(Guid gameId)
+        {
+            if (gameId == startingGame || gameId == runningGame)
+            {
+                return true;
+            }
+
+            if (runningGame != null || IsQuittingOrLaunching)
+            {
+                PlayGame(gameId);
+                return false;
+            }
+
+            startingGame = gameId;
+            return true;
+        }
+
         /// <summary>Playnite's game started event.</summary>
         public void OnGameStarted(Guid gameId)
         {

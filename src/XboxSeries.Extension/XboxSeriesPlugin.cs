@@ -58,6 +58,18 @@ namespace XboxSeries.Extension
             OnUiThread(() => core.OnGameStarted(id));
         }
 
+        public override void OnGameStarting(OnGameStartingEventArgs args)
+        {
+            // The answer is needed before this returns, so ask the core synchronously on the UI thread (inline if already there).
+            var id = args.Game.Id;
+            var allowed = PlayniteApi.MainView.UIDispatcher.Invoke(() => core.OnGameStarting(id));
+            if (!allowed)
+            {
+                logger.Info($"Held back the launch of {args.Game.Name}: another game is running, quitting or launching");
+                args.CancelStartup = true;
+            }
+        }
+
         public override void OnGameStartupCancelled(OnGameStartupCancelledEventArgs args)
         {
             var id = args.Game.Id;
