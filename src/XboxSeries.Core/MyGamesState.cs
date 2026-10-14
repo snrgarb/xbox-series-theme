@@ -25,6 +25,7 @@ namespace XboxSeries.Core
                     isShown = value;
                     Changed(nameof(IsShown));
                     Changed(nameof(ShowsGameGrid));
+                    Changed(nameof(ShowsFullLibrary));
                 }
             }
         }
@@ -40,12 +41,19 @@ namespace XboxSeries.Core
                     item = value;
                     Changed(nameof(Item));
                     Changed(nameof(ShowsGameGrid));
+                    Changed(nameof(ShowsFullLibrary));
                 }
             }
         }
 
         /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games.</summary>
-        public bool ShowsGameGrid => IsShown && Item == MyGamesItem.Games;
+        public bool ShowsGameGrid => IsShown && Item != MyGamesItem.PlayHistory;
+
+        /// <summary>
+        /// Whether the page shows Full library: the main list under the user's own filter, with their filter presets as
+        /// tabs that Playnite's LB/RB switch. Elsewhere on the page LB/RB do nothing, as they would change the grid.
+        /// </summary>
+        public bool ShowsFullLibrary => IsShown && Item == MyGamesItem.FullLibrary;
 
         /// <summary>How many games Games shows, for the nav and the page's header.</summary>
         public int GameCount
@@ -80,6 +88,7 @@ namespace XboxSeries.Core
     {
         Games,
         PlayHistory,
+        FullLibrary,
     }
 
     /// <summary>One section of Play history: Today, Yesterday, This week and so on.</summary>

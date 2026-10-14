@@ -176,6 +176,55 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Full_library_is_the_main_list_under_the_users_own_filter_and_presets()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+
+            Assert.True(playnite.ShowsUsersOwnFilter);
+            Assert.True(core.MyGames.ShowsGameGrid);
+            Assert.True(core.MyGames.ShowsFullLibrary);
+        }
+
+        [Fact]
+        public void Full_library_opened_first_leaves_the_users_filter_alone()
+        {
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.LeaveMyGames();
+
+            Assert.True(playnite.ShowsUsersOwnFilter);
+            Assert.Equal(0, playnite.UserFilterRestores);
+        }
+
+        [Fact]
+        public void Games_after_Full_library_shows_installed_games_and_keeps_the_filter_chosen_there_for_Home()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite").WithGame("Not Installed", installed: false);
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+
+            core.OpenMyGames(MyGamesItem.Games);
+
+            Assert.Equal(new[] { "Halo Infinite" }, MainList(library));
+            core.LeaveMyGames();
+            Assert.True(playnite.ShowsUsersOwnFilter);
+        }
+
+        [Fact]
+        public void Only_Full_library_lets_LB_and_RB_switch_the_users_presets()
+        {
+            Assert.False(core.MyGames.ShowsFullLibrary);
+            core.OpenMyGames(MyGamesItem.Games);
+            Assert.False(core.MyGames.ShowsFullLibrary);
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            Assert.False(core.MyGames.ShowsFullLibrary);
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.LeaveMyGames();
+            Assert.False(core.MyGames.ShowsFullLibrary);
+        }
+
+        [Fact]
         public void Home_starts_without_the_page()
         {
             Assert.False(core.MyGames.IsShown);
