@@ -40,17 +40,8 @@
                                 <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
                             </Storyboard>
                         </ControlTemplate.Resources>
-                        <Grid x:Name="Tile" Background="#FF1A1A1A">
-                            <!-- Rounded corners, as on the console: the art, title and ring are all clipped to them. -->
-                            <Grid.OpacityMask>
-                                <VisualBrush>
-                                    <VisualBrush.Visual>
-                                        <Border Background="Black" CornerRadius="6"
-                                                Width="{Binding ActualWidth, ElementName=Tile}"
-                                                Height="{Binding ActualHeight, ElementName=Tile}" />
-                                    </VisualBrush.Visual>
-                                </VisualBrush>
-                            </Grid.OpacityMask>
+                        <!-- Rounded corners, as on the console: the art, title and ring are all clipped to them. -->
+                        <Grid Background="#FF1A1A1A" local:RoundedClip.Radius="6">
 
                             <ContentPresenter />
 
