@@ -123,6 +123,32 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_Groups_See_all_tile_shows_a_collage_of_its_next_4_games_like_Play_history()
+        {
+            var library = new FakeLibrary();
+            var names = Enumerable.Range(1, 14).Select(i => $"Game {i:00}").ToArray();
+            foreach (var name in names)
+            {
+                library.WithGame(name);
+            }
+
+            core.OnLibraryChanged(library.WithFilterPreset("Everything", showInFullscreenQuickSelection: true, games: names).Snapshot());
+
+            Assert.Equal(names.Skip(7).Take(4), core.Home.Groups.Single().SeeAll.Select(t => t.Title));
+        }
+
+        [Fact]
+        public void A_Group_that_fits_before_See_all_has_no_collage()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", favorite: true)
+                .WithGame("Hades", favorite: true);
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Empty(core.Home.Groups.Single().SeeAll);
+        }
+
+        [Fact]
         public void With_no_preset_flagged_Home_has_a_Favourites_Group_of_favourite_games_in_name_order_without_hidden_ones()
         {
             core.OnLibraryChanged(new FakeLibrary()

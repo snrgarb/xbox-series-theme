@@ -44,36 +44,9 @@
             </ItemsControl>
 
             <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history once that page exists (#35). -->
+            <!-- With nothing for the collage, the tile shows the history icon instead. -->
             <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0">
-                <Grid>
-                    <ItemsControl x:Name="Collage" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Rows="2" Columns="2" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
-                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <!-- With nothing for the collage, the tile shows the history icon instead. -->
-                    <TextBlock Text="&#xE81C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40" Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasItems, ElementName=Collage}" Value="False">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Grid>
+                <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding PlayHistory}" Tag="&#xE81C;" />
             </Button>
         </StackPanel>
     </Viewbox>
