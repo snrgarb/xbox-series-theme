@@ -138,14 +138,20 @@ namespace XboxSeries.Extension
 
         private void OnTileFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            var tile = (HomeTile)((FrameworkElement)sender).DataContext;
-            lastFocusedGame = tile.GameId;
-            core.FocusHomeTile(tile);
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                lastFocusedGame = tile.GameId;
+                core.FocusHomeTile(tile);
+            }
         }
 
         private void OnTileLeft(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.LeaveHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
+            // A tile a rebuild has thrown away holds WPF's disconnected item, not its game, by the time it loses focus.
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                core.LeaveHomeTile(tile);
+            }
         }
 
         // Playnite sends the pad's A as Enter, which clicks the focused tile.
