@@ -34,6 +34,12 @@ namespace XboxSeries.Core
 
         /// <summary>Shows <paramref name="filter"/>'s games in the main list, in its order, as a filter preset the extension builds.</summary>
         void ShowInMainList(GameListFilter filter);
+
+        /// <summary>
+        /// How many games the main list shows under the user's own filter: the one kept by <see cref="SaveUserFilter"/>
+        /// while the Dashboard's is up, otherwise the current one. Null when Playnite can't say yet.
+        /// </summary>
+        int? CountUserFilterGames();
     }
 
     /// <summary>The Dashboard pages the Guide can take the user to.</summary>

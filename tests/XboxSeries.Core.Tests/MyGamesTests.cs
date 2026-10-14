@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using XboxSeries.Core.Tests.Fakes;
 using Xunit;
@@ -9,13 +10,14 @@ namespace XboxSeries.Core.Tests
     {
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0));
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
+        private readonly FakeDrives drives = new FakeDrives();
         private readonly FakePlayniteHost playnite;
         private readonly ExtensionCore core;
 
         public MyGamesTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), drives);
         }
 
         [Fact]
@@ -46,6 +48,101 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             Assert.Equal(2, core.MyGames.GameCount);
+        }
+
+        [Fact]
+        public void The_nav_counts_the_games_Play_history_lists()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13))
+                .WithGame("Hades", lastActivity: new DateTime(2025, 1, 1), installed: false)
+                .WithGame("Never Played")
+                .WithGame("Hidden Game", lastActivity: new DateTime(2026, 10, 14), hidden: true)
+                .Snapshot());
+
+            Assert.Equal(2, core.MyGames.PlayHistoryCount);
+        }
+
+        [Fact]
+        public void The_nav_counts_the_games_the_users_own_filter_shows_for_Full_library()
+        {
+            playnite.UserFilterGameCount = 7;
+
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite").Snapshot());
+
+            Assert.Equal(7, core.MyGames.FullLibraryCount);
+        }
+
+        [Fact]
+        public void Full_librarys_count_follows_the_tab_the_user_switches_to()
+        {
+            playnite.UserFilterGameCount = 7;
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+
+            playnite.UserFilterGameCount = 3;
+            core.OnMainListChanged();
+
+            Assert.Equal(3, core.MyGames.FullLibraryCount);
+        }
+
+        [Fact]
+        public void The_storage_ring_shows_the_drive_holding_most_installed_games()
+        {
+            const long GB = 1L << 30;
+            drives.WithDrive(@"C:\", 100 * GB, 200 * GB).WithDrive(@"D:\", 412 * GB, 1843 * GB).WithDrive(@"E:\", 1 * GB, 2 * GB);
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", installDirectory: @"D:\Games\Halo Infinite")
+                .WithGame("Hades", installDirectory: @"d:\SteamLibrary\Hades")
+                .WithGame("Forza Horizon 5", installDirectory: @"C:\XboxGames\Forza Horizon 5")
+                .WithGame("Uninstalled 1", installDirectory: @"E:\Old\1", installed: false)
+                .WithGame("Uninstalled 2", installDirectory: @"E:\Old\2", installed: false)
+                .WithGame("Uninstalled 3", installDirectory: @"E:\Old\3", installed: false)
+                .Snapshot());
+
+            core.OpenMyGames(MyGamesItem.Games);
+
+            var storage = core.MyGames.Storage;
+            Assert.Equal("D:", storage.Drive);
+            Assert.Equal($"412 GB free of {1.8.ToString(CultureInfo.CurrentCulture)} TB", storage.Summary);
+            Assert.Equal(1431.0 / 1843, storage.UsedFraction, 3);
+        }
+
+        [Fact]
+        public void The_storage_ring_shows_a_drives_space_again_when_the_page_opens()
+        {
+            const long GB = 1L << 30;
+            drives.WithDrive(@"C:\", 100 * GB, 200 * GB);
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", installDirectory: @"C:\Games\Halo").Snapshot());
+
+            drives.WithDrive(@"C:\", 50 * GB, 200 * GB);
+            core.OpenMyGames(MyGamesItem.Games);
+
+            Assert.Equal("50 GB free of 200 GB", core.MyGames.Storage.Summary);
+        }
+
+        [Fact]
+        public void The_storage_ring_shows_a_size_that_rounds_to_1024_GB_as_1_TB()
+        {
+            drives.WithDrive(@"C:\", (1L << 40) - (1L << 28), 2L << 40);
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", installDirectory: @"C:\Games\Halo").Snapshot());
+
+            core.OpenMyGames(MyGamesItem.Games);
+
+            Assert.Equal("1 TB free of 2 TB", core.MyGames.Storage.Summary);
+        }
+
+        [Fact]
+        public void There_is_no_storage_ring_without_an_installed_game_on_a_drive_that_can_be_read()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("No Directory")
+                .WithGame("On A Share", installDirectory: @"\\nas\games\Halo")
+                .WithGame("Unreadable", installDirectory: @"Z:\Games\Hades")
+                .Snapshot());
+
+            core.OpenMyGames(MyGamesItem.Games);
+
+            Assert.Null(core.MyGames.Storage);
         }
 
         [Fact]

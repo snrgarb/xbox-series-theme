@@ -46,6 +46,7 @@ namespace XboxSeries.Core
         private readonly IWindowSystem windowSystem;
         private readonly IPlayniteHost playnite;
         private readonly ISoundPlayer sounds;
+        private readonly IDrives drives;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private Guid? runningGame;
         private IntPtr recordedForeground;
@@ -70,8 +71,9 @@ namespace XboxSeries.Core
         /// <summary>Whether My games &amp; apps has put its own filter on the main list, with the user's kept to give back.</summary>
         private bool ownsMainList;
 
-        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds)
+        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds, IDrives drives)
         {
+            this.drives = drives;
             this.clock = clock;
             this.windowSystem = windowSystem;
             this.playnite = playnite;
@@ -88,6 +90,22 @@ namespace XboxSeries.Core
         {
             library = snapshot;
             RefreshHome();
+            RefreshFullLibraryCount();
+
+            // The ring only shows on the page; Windows is asked for a drive's space no more often than that needs.
+            if (MyGames.IsShown)
+            {
+                RefreshStorage();
+            }
+        }
+
+        /// <summary>Playnite's main list changed its games. On Full library, that's the user switching tabs, so its count follows.</summary>
+        public void OnMainListChanged()
+        {
+            if (MyGames.ShowsFullLibrary)
+            {
+                RefreshFullLibraryCount();
+            }
         }
 
         /// <summary>
@@ -536,10 +554,13 @@ namespace XboxSeries.Core
                 }
             }
 
-            // On opening, for today's sections. Moving through the nav keeps it: rebuilding it rebuilds every row and its art.
+            // On opening, for today's sections, the drive's space now, and a Full library count Playnite couldn't give
+            // before its main view was up. Moving through the nav keeps Play history: rebuilding it rebuilds every row and its art.
             if (!MyGames.IsShown)
             {
                 RefreshPlayHistory();
+                RefreshFullLibraryCount();
+                RefreshStorage();
             }
 
             MyGames.Item = item;
@@ -577,6 +598,40 @@ namespace XboxSeries.Core
                 ownsMainList = false;
                 playnite.RestoreUserFilter();
             }
+        }
+
+        /// <summary>Full library's count: the games the user's own filter shows, as Playnite counts them.</summary>
+        private void RefreshFullLibraryCount()
+        {
+            MyGames.FullLibraryCount = playnite.CountUserFilterGames();
+        }
+
+        /// <summary>
+        /// The storage ring: the space on the drive holding most installed games (those Games shows), ties to the first
+        /// drive by name; none without such a game or when the drive can't be read.
+        /// </summary>
+        private void RefreshStorage()
+        {
+            var root = GameListFilter.Installed.Apply(library.Games)
+                .Select(g => DriveOf(g.InstallDirectory))
+                .Where(r => r != null)
+                .GroupBy(r => r)
+                .OrderByDescending(d => d.Count())
+                .ThenBy(d => d.Key, StringComparer.Ordinal)
+                .Select(d => d.Key)
+                .FirstOrDefault();
+            MyGames.Storage = root == null ? null : StorageRing.Of(root, drives.SpaceOf(root));
+        }
+
+        /// <summary>The drive a directory is on, such as C:\; null for none, or a network share.</summary>
+        private static string DriveOf(string directory)
+        {
+            if (string.IsNullOrEmpty(directory) || directory.Length < 2 || directory[1] != ':' || !char.IsLetter(directory[0]))
+            {
+                return null;
+            }
+
+            return char.ToUpperInvariant(directory[0]) + ":\\";
         }
 
         /// <summary>Rebuilds Play history: played games, newest first, never hidden ones, in sections by when they were played.</summary>

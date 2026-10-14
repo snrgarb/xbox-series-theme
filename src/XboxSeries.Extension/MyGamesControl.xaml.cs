@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
@@ -50,6 +51,9 @@ namespace XboxSeries.Extension
         /// <summary>The Games grid game focus left for "See full library", to go back up to.</summary>
         private int gameAboveFooter;
 
+        /// <summary>Whether the core is yet to hear of the main list's latest changes.</summary>
+        private bool mainListChangePending;
+
         internal MyGamesControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -60,6 +64,7 @@ namespace XboxSeries.Extension
             Unloaded += OnUnloaded;
             ShowHistory();
             ShowItem();
+            ShowStorage();
         }
 
         /// <summary>What the page shows, for the Dashboard to hide Home and place Playnite's main list by.</summary>
@@ -86,7 +91,7 @@ namespace XboxSeries.Extension
             {
                 mainList.SizeChanged += FitFiveToARow;
                 mainList.PreviewKeyDown += OnMainListPreviewKeyDown;
-                LibraryCount.SetBinding(TextBlock.TextProperty, new Binding("Items.Count") { Source = mainList, StringFormat = "{0} games" });
+                ((INotifyCollectionChanged)mainList.Items).CollectionChanged += OnMainListChanged;
             }
 
             gameDetails = HomeRows.FindPart(this, "PART_ElemGameDetails");
@@ -116,7 +121,7 @@ namespace XboxSeries.Extension
             {
                 mainList.SizeChanged -= FitFiveToARow;
                 mainList.PreviewKeyDown -= OnMainListPreviewKeyDown;
-                BindingOperations.ClearBinding(LibraryCount, TextBlock.TextProperty);
+                ((INotifyCollectionChanged)mainList.Items).CollectionChanged -= OnMainListChanged;
                 mainList = null;
             }
         }
@@ -136,6 +141,9 @@ namespace XboxSeries.Extension
                         FocusContentSoon();
                     }
 
+                    break;
+                case nameof(MyGamesState.Storage):
+                    ShowStorage();
                     break;
                 case nameof(MyGamesState.PlayHistory):
                     // Rebuilding Play history replaces its rows, and with them the focused one: put focus back on the same game.
@@ -170,6 +178,38 @@ namespace XboxSeries.Extension
             var empty = core.MyGames.PlayHistory.Count == 0;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
             NoHistory.Visibility = history && empty ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>The storage ring, filled round as far as the drive is used; hidden without a drive to show.</summary>
+        private void ShowStorage()
+        {
+            var storage = core.MyGames.Storage;
+            StorageRing.Visibility = storage == null ? Visibility.Collapsed : Visibility.Visible;
+            if (storage != null)
+            {
+                // Dashes are in stroke widths: the ring's centre line is π × (its width − the stroke) long.
+                var circumference = Math.PI * (StorageUsed.Width - StorageUsed.StrokeThickness) / StorageUsed.StrokeThickness;
+                StorageUsed.StrokeDashArray = new DoubleCollection { storage.UsedFraction * circumference, circumference };
+            }
+        }
+
+        /// <summary>
+        /// Under Full library, the user switching tabs: its count follows. Once a burst of changes is over, as a library
+        /// update adds its games one by one.
+        /// </summary>
+        private void OnMainListChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (mainListChangePending)
+            {
+                return;
+            }
+
+            mainListChangePending = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                mainListChangePending = false;
+                core.OnMainListChanged();
+            }));
         }
 
         /// <summary>The nav item of what the page shows.</summary>

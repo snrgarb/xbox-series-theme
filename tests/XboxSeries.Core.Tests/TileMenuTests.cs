@@ -18,7 +18,7 @@ namespace XboxSeries.Core.Tests
         public TileMenuTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives());
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: HaloDirectory)
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades.jpg")
