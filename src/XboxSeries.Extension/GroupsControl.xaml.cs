@@ -15,7 +15,7 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// Home's Groups, injected as a custom element: the screen below the Recent row. It follows the core's
-    /// <see cref="HomeState"/> and tells the core which tile A was pressed on. It holds no Home logic. A
+    /// <see cref="HomeState"/> and tells the core which tile has focus and which one A was pressed on. It holds no Home logic. A
     /// <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
     public partial class GroupsControl : PluginUserControl
@@ -195,6 +195,17 @@ namespace XboxSeries.Extension
                 var fits = top >= 0 && top + group.ActualHeight <= View.ActualHeight;
                 row.BeginAnimation(OpacityProperty, new DoubleAnimation(fits ? 1 : 0, ScrollDuration));
             }
+        }
+
+        // Menu on a game tile opens its tile menu.
+        private void OnTileFocused(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            core.FocusHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
+        }
+
+        private void OnTileLeft(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            core.LeaveHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
         }
 
         // Playnite sends the pad's A as Enter, which clicks the focused tile.

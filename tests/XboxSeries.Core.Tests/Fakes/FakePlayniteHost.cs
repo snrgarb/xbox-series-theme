@@ -38,5 +38,15 @@ namespace XboxSeries.Core.Tests.Fakes
         public void StartGame(Guid gameId) => StartedGames.Add(gameId);
 
         public void OpenGameHub(Guid gameId) => OpenedHubs.Add(gameId);
+
+        /// <summary>Every game whose game menu Playnite was asked to open, in order.</summary>
+        public List<Guid> OpenedGameMenus { get; } = new List<Guid>();
+
+        public void OpenGameMenu(Guid gameId) => OpenedGameMenus.Add(gameId);
+
+        /// <summary>Every change to a game's Favourite flag Playnite was asked to make, in order.</summary>
+        public List<(Guid GameId, bool Favourite)> FavouriteChanges { get; } = new List<(Guid, bool)>();
+
+        public void SetFavourite(Guid gameId, bool favourite) => FavouriteChanges.Add((gameId, favourite));
     }
 }

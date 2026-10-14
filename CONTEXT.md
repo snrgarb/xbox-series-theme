@@ -31,6 +31,10 @@ _Avoid_: tools, programs
 A row on **Home** below the **Recent row**, showing the games of one Playnite filter preset. Users don't create Groups in the **Bundle**; they flag filter presets in Playnite.
 _Avoid_: pin, collection, category
 
+**Tile menu**:
+The menu Menu opens on a game tile on **Home**: Play game (Quit while it runs), Add to / Remove from Favourites, and Manage game, which opens Playnite's own game menu. It floats on the tile, drawn like the **Guide**'s menus and prompts.
+_Avoid_: context menu, game menu (that is Playnite's own, behind Manage game)
+
 **Game hub**:
 The Dashboard's page for one game, modelled on the Xbox game hub: a header, a row of cards about the game, and its actions. It replaces Playnite's Game details view.
 _Avoid_: game page, game card, Manage game

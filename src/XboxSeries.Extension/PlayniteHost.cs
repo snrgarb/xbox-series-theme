@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using Playnite.SDK;
 using XboxSeries.Core;
@@ -64,18 +65,57 @@ namespace XboxSeries.Extension
         public void OpenGameHub(Guid gameId)
         {
             // The hub is Playnite's details view of the main list's selected game, which opens with focus on Play.
-            // A game outside the user's current filter can't be selected; opening details then would show another game.
-            api.MainView.SelectGame(gameId);
-            if (!api.MainView.SelectedGames.Any(g => g.Id == gameId))
-            {
-                logger.Warn($"Can't open the Game hub of {gameId}: it isn't in the main list's current filter");
-                return;
-            }
-
-            if (api.MainView.ActiveFullscreenView == FullscreenView.List)
+            if (SelectInMainList(gameId) && api.MainView.ActiveFullscreenView == FullscreenView.List)
             {
                 api.MainView.ToggleFullscreenView();
             }
+        }
+
+        public void OpenGameMenu(Guid gameId)
+        {
+            if (!SelectInMainList(gameId))
+            {
+                return;
+            }
+
+            // Not in the SDK: Fullscreen's main view model opens its game menu for the main list's selected game.
+            var model = Application.Current?.MainWindow?.DataContext;
+            if (model?.GetType().GetProperty("OpenGameMenuCommand")?.GetValue(model) is ICommand command)
+            {
+                command.Execute(null);
+            }
+            else
+            {
+                logger.Warn("Can't open Playnite's game menu: this Playnite build has no OpenGameMenuCommand");
+            }
+        }
+
+        public void SetFavourite(Guid gameId, bool favourite)
+        {
+            var game = api.Database.Games.Get(gameId);
+            if (game == null || game.Favorite == favourite)
+            {
+                return;
+            }
+
+            game.Favorite = favourite;
+            api.Database.Games.Update(game);
+        }
+
+        /// <summary>
+        /// Selects the game in Playnite's main list, which the Game hub and the game menu both show. A game outside the
+        /// user's current filter can't be selected; showing either then would show another game, so this returns false.
+        /// </summary>
+        private bool SelectInMainList(Guid gameId)
+        {
+            api.MainView.SelectGame(gameId);
+            if (api.MainView.SelectedGames.Any(g => g.Id == gameId))
+            {
+                return true;
+            }
+
+            logger.Warn($"Can't show {gameId}: it isn't in the main list's current filter");
+            return false;
         }
     }
 }

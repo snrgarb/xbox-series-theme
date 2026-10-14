@@ -34,6 +34,7 @@ namespace XboxSeries.Extension
             offscreenX = Slide.X;
             this.core = core;
             DataContext = core.Guide;
+            DialogPanel.Core = core;
             core.Guide.PropertyChanged += OnGuideChanged;
             closeDeadline = new DispatcherTimer { Interval = CloseDuration.TimeSpan + TimeSpan.FromMilliseconds(100) };
             closeDeadline.Tick += (_, __) => FinishStalledSlideOut();
@@ -134,7 +135,7 @@ namespace XboxSeries.Extension
                 core.DismissGuide();
             }
 #if DEBUG
-            else if (!e.IsRepeat && DebugButtonFor(e.Key) is ControllerButton button)
+            else if (!e.IsRepeat && PlayniteInput.DebugButtonFor(e.Key) is ControllerButton button)
             {
                 core.OnControllerButton(button, ButtonState.Pressed);
             }
@@ -145,34 +146,14 @@ namespace XboxSeries.Extension
         {
             e.Handled = true;
 #if DEBUG
-            if (DebugButtonFor(e.Key) is ControllerButton button)
+            if (PlayniteInput.DebugButtonFor(e.Key) is ControllerButton button)
             {
                 core.OnControllerButton(button, ButtonState.Released);
             }
 #endif
         }
 
-#if DEBUG
-        /// <summary>
-        /// Debug builds only: keys standing in for pad buttons, for testing without a controller. Not the arrows:
-        /// Playnite sends the pad's D-pad here as arrow keys, so they would move focus twice.
-        /// The core repeats held keys itself, so the keyboard's own auto-repeat is ignored.
-        /// </summary>
-        private static ControllerButton? DebugButtonFor(Key key)
-        {
-            switch (key)
-            {
-                case Key.W: return ControllerButton.DPadUp;
-                case Key.S: return ControllerButton.DPadDown;
-                case Key.Enter: return ControllerButton.A;
-                case Key.Back: return ControllerButton.B;
-                case Key.M: return ControllerButton.Start;
-                default: return null;
-            }
-        }
-#endif
-
-        // Debug builds only: the mouse points at and picks entries and options. Release keeps clicks to closing the Guide (#10).
+        // Debug builds only: the mouse points at and picks entries (and, in MenuPanel, options). Release keeps clicks to closing the Guide (#10).
         private void OnEntryMouseEnter(object sender, MouseEventArgs e)
         {
 #if DEBUG
@@ -184,20 +165,6 @@ namespace XboxSeries.Extension
         {
 #if DEBUG
             core.ChooseItem((GuideItem)((FrameworkElement)sender).DataContext);
-#endif
-        }
-
-        private void OnOptionMouseEnter(object sender, MouseEventArgs e)
-        {
-#if DEBUG
-            core.FocusOption((GuideDialogOption)((FrameworkElement)sender).DataContext);
-#endif
-        }
-
-        private void OnOptionClick(object sender, MouseButtonEventArgs e)
-        {
-#if DEBUG
-            core.ChooseOption((GuideDialogOption)((FrameworkElement)sender).DataContext);
 #endif
         }
 

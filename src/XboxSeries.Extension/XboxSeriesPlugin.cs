@@ -34,7 +34,7 @@ namespace XboxSeries.Extension
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu" },
             });
         }
 
@@ -52,6 +52,7 @@ namespace XboxSeries.Extension
                 case "Hero": return new HeroControl(core.Home);
                 case "RecentRow": return new RecentRowControl(core, homeScreen);
                 case "Groups": return new GroupsControl(core, homeScreen);
+                case "TileMenu": return new TileMenuControl(core);
                 default: return null;
             }
         }

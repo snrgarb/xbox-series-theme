@@ -2,7 +2,7 @@
     Home: the Dashboard's landing page, modelled on the Xbox Home screen.
     Works with the theme alone: the top bar, the hero and Playnite's main list styled as Xbox tiles
     (DerivedStyles/ListGameItem*.xaml). With the extension, its hero, Recent row and Groups replace the theme-only
-    hero and list, injected as custom elements (ContentControls named XboxSeries_<element>). The extension's
+    hero and list, and its tile menu floats over them, injected as custom elements (ContentControls named XboxSeries_<element>). The extension's
     own elements are never referenced by type; the switch is gated by {PluginStatus} on the extension's add-on id.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -289,6 +289,9 @@
 
                         <GameDetails x:Name="PART_ElemGameDetails"
                                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+                        <!-- With the extension, the tile menu: over the whole page, dimming it, beside the tile Menu was pressed on. -->
+                        <ContentControl x:Name="XboxSeries_TileMenu" Focusable="False" IsTabStop="False" />
 
                         <GameStatus x:Name="PART_ElemGameStatus"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />

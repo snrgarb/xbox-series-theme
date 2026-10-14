@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using Playnite.SDK.Events;
 using XboxSeries.Core;
 
@@ -31,5 +32,25 @@ namespace XboxSeries.Extension
 
         public static ButtonState ToState(ControllerInputState state) =>
             state == ControllerInputState.Pressed ? ButtonState.Pressed : ButtonState.Released;
+
+#if DEBUG
+        /// <summary>
+        /// Debug builds only: keys standing in for pad buttons in the Guide and the tile menu, for testing without a
+        /// controller. Not the arrows: Playnite sends the pad's D-pad as arrow keys, so they would move focus twice.
+        /// The core repeats held keys itself, so the keyboard's own auto-repeat is ignored.
+        /// </summary>
+        public static ControllerButton? DebugButtonFor(Key key)
+        {
+            switch (key)
+            {
+                case Key.W: return ControllerButton.DPadUp;
+                case Key.S: return ControllerButton.DPadDown;
+                case Key.Enter: return ControllerButton.A;
+                case Key.Back: return ControllerButton.B;
+                case Key.M: return ControllerButton.Start;
+                default: return null;
+            }
+        }
+#endif
     }
 }
