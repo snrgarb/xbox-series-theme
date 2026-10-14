@@ -112,6 +112,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Moving_through_the_nav_keeps_Play_history_as_it_is()
+        {
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13)).Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+            var history = core.MyGames.PlayHistory;
+
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.OpenMyGames(MyGamesItem.Games);
+
+            Assert.Same(history, core.MyGames.PlayHistory);
+        }
+
+        [Fact]
         public void A_on_a_Play_history_entry_opens_its_Game_hub()
         {
             var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13));
