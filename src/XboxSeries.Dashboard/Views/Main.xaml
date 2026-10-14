@@ -139,12 +139,14 @@
 
                             <!--
                                 Full library's tabs: the user's own filter presets, as Playnite cycles them with LB/RB and lights the
-                                active one (CustomControls/FilterPresetSelector.xaml).
+                                active one (CustomControls/FilterPresetSelector.xaml). Hidden, not collapsed, away from Full
+                                library: Playnite fills the tabs only into an applied template, and WPF applies none to a
+                                collapsed element.
                             -->
                             <Grid Grid.RowSpan="2" Margin="510,190,170,0" Height="56" VerticalAlignment="Top">
                                 <Grid.Style>
                                     <Style TargetType="Grid">
-                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Setter Property="Visibility" Value="Hidden" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Content.State.ShowsFullLibrary, ElementName=XboxSeries_MyGames}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible" />
