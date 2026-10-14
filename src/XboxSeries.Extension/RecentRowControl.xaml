@@ -47,25 +47,30 @@
                                 <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
                             </Storyboard>
                         </ControlTemplate.Resources>
-                        <!-- Rounded corners, as on the console: the art, title and ring are all clipped to them. -->
-                        <Grid Background="#FF1A1A1A" local:RoundedClip.Radius="6">
+                        <Grid>
+                            <!-- Rounded corners, as on the console: the art and title are clipped to them. -->
+                            <Grid Background="#FF1A1A1A" local:RoundedClip.Radius="6">
 
-                            <ContentPresenter />
+                                <ContentPresenter />
+
+                                <!--
+                                    A solid black band behind the title, as on the console, so it reads over any art. It shows only
+                                    with the focus ring, so it sits inside the ring, rounded to the ring's inner corners (7 - 4),
+                                    where nothing dark can show past the ring's edge.
+                                -->
+                                <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
+                                        Background="#E6000000" Margin="3,0,3,3" CornerRadius="0,0,3,3">
+                                    <TextBlock Text="{TemplateBinding Tag}" Margin="8,8,8,5"
+                                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
+                                               FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
+                                </Border>
+                            </Grid>
 
                             <!--
-                                A solid black band behind the title, as on the console, so it reads over any art. It shows only
-                                with the focus ring, so it sits inside the ring, rounded to the ring's inner corners (6 - 4),
-                                where nothing dark can show past the ring's edge.
+                                Outside the clip and 1 px past it, so it covers the art's anti-aliased rounded edge; on the same
+                                curve, bright art showed through at the corners. 1 px leaves the next tile 29 px away, clear of it.
                             -->
-                            <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
-                                    Background="#E6000000" Margin="4,0,4,4" CornerRadius="0,0,2,2">
-                                <TextBlock Text="{TemplateBinding Tag}" Margin="8,8,8,5"
-                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
-                                           FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
-                            </Border>
-
-                            <!-- Inside the tile's bounds, so the next tile, drawn after it, can't cover part of it. -->
-                            <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="6"
+                            <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="7" Margin="-1"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                         </Grid>
                         <ControlTemplate.Triggers>
