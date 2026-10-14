@@ -6,8 +6,8 @@
              Focusable="False">
     <!--
         Home's Groups: the screen below the Recent row, which flies in as the Recent row flies out. One row per Group,
-        its name over up to 7 game tiles and a See all tile: the Recent row's tiles, growing up on focus the same way, so
-        each row is the Recent row's width. The focused Group slides to the top of the screen.
+        its name over up to 7 game tiles and a See all tile: the Recent row's tiles at its size at rest, ringed and titled
+        on focus. Only the Recent row's tiles grow. The focused Group slides to the top of the screen.
     -->
     <controls:PluginUserControl.Resources>
         <ResourceDictionary>
@@ -38,14 +38,8 @@
                             <StackPanel Margin="0,0,0,40">
                                 <TextBlock Text="{Binding Name}" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"
                                            FontFamily="{DynamicResource XboxFontSemibold}" FontSize="24" Foreground="White" />
-
-                                <!--
-                                    As tall as a focused tile, so focus never shifts the rows or the name above them: the tiles
-                                    sit on its bottom and grow up into it. No layout rounding: rounding each growing tile to whole
-                                    pixels would nudge the tiles after it.
-                                -->
-                                <StackPanel Orientation="Horizontal" Height="245" UseLayoutRounding="False">
-                                    <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" VerticalAlignment="Bottom">
+                                <StackPanel Orientation="Horizontal">
+                                    <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <StackPanel Orientation="Horizontal" />

@@ -8,8 +8,8 @@ using System.Windows.Media;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Grows the focused one of a set of Home tiles, as on the console, and shrinks the rest back. Shared by the
-    /// Recent row and the Groups so that every tile on Home moves the same way.
+    /// Grows the focused one of a set of Home tiles, as on the console, and shrinks the rest back. Only the Recent
+    /// row's tiles grow; the Groups' are only ringed and titled.
     /// </summary>
     internal sealed class TileGrowth
     {
