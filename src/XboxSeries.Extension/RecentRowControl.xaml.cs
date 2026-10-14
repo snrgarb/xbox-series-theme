@@ -36,6 +36,9 @@ namespace XboxSeries.Extension
         private readonly Dictionary<Button, double> growth = new Dictionary<Button, double>();
         private readonly Stopwatch frameClock = new Stopwatch();
         private bool isAnimating;
+
+        /// <summary>Every tile, game tiles then Play history, found once per rebuild of the row; null when stale.</summary>
+        private List<Button> allTiles;
         private Guid? lastFocusedGame;
 
         /// <summary>Whether focus is in the row. Kept by hand: a rebuild removes the focused tile before this row hears of it.</summary>
@@ -55,6 +58,9 @@ namespace XboxSeries.Extension
                 StartGrowing();
             };
             LostKeyboardFocus += OnLostKeyboardFocus;
+
+            // New or regenerated tiles: find them again on the next frame that needs them.
+            Tiles.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -130,24 +136,21 @@ namespace XboxSeries.Extension
             frameClock.Restart();
             var step = 1 - Math.Exp(-elapsed.TotalMilliseconds / GrowthTimeConstant.TotalMilliseconds);
 
+            // No allocations here: this runs every frame while tiles change size.
             var tiles = AllTiles();
-            foreach (var gone in growth.Keys.Except(tiles).ToList())
-            {
-                growth.Remove(gone);
-            }
-
-            var targets = tiles.ToDictionary(t => t, t => t.IsKeyboardFocused ? 1.0 : 0.0);
-            var shares = tiles.ToDictionary(t => t, t =>
-            {
-                growth.TryGetValue(t, out var share);
-                return share + (targets[t] - share) * step;
-            });
-
-            // All tiles settle in the same frame, so snapping to the targets keeps the shares' total exact.
-            var settled = tiles.All(t => Math.Abs(targets[t] - shares[t]) < 0.002);
+            var settled = true;
             foreach (var tile in tiles)
             {
-                var share = settled ? targets[tile] : shares[tile];
+                if (Math.Abs(GrowthTarget(tile) - NextGrowth(tile, step)) >= 0.002)
+                {
+                    settled = false;
+                }
+            }
+
+            // All tiles settle in the same frame, so snapping to the targets keeps the shares' total exact.
+            foreach (var tile in tiles)
+            {
+                var share = settled ? GrowthTarget(tile) : NextGrowth(tile, step);
                 growth[tile] = share;
                 tile.Width = tile.Height = TileSize + FocusGrowth * share;
             }
@@ -202,10 +205,35 @@ namespace XboxSeries.Extension
                 .Where(button => button != null)
                 .ToList();
 
+        private static double GrowthTarget(Button tile) => tile.IsKeyboardFocused ? 1 : 0;
+
+        private double NextGrowth(Button tile, double step)
+        {
+            growth.TryGetValue(tile, out var share);
+            return share + (GrowthTarget(tile) - share) * step;
+        }
+
         private List<Button> AllTiles()
         {
+            if (allTiles != null)
+            {
+                return allTiles;
+            }
+
             var tiles = GameTiles();
+            var complete = tiles.Count == Tiles.Items.Count;
             tiles.Add(PlayHistoryTile);
+            foreach (var gone in growth.Keys.Except(tiles).ToList())
+            {
+                growth.Remove(gone);
+            }
+
+            // Kept only once every game tile is built; until then the next frame looks again.
+            if (complete)
+            {
+                allTiles = tiles;
+            }
+
             return tiles;
         }
 
