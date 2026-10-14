@@ -56,6 +56,10 @@ namespace XboxSeries.Core
         private Guid? heroGame;
         private Guid? tappedGame;
         private IDisposable tapTimer;
+        private HomeTile focusedTile;
+
+        /// <summary>Whether A, still held, answered the tile menu: Playnite's own Enter for it must not choose the tile.</summary>
+        private bool tileMenuHoldsA;
 
         public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite)
         {
@@ -190,11 +194,11 @@ namespace XboxSeries.Core
             }
 
             var running = runningGame.Value;
-            ShowDialog(new GuideDialog(
+            ShowDialog(new Dialog(
                 $"Quit {NameOf(running)} and start {NameOf(gameId)}?",
                 null,
                 CloseDialog,
-                new GuideDialogOption("Quit and start", () =>
+                new DialogOption("Quit and start", DialogIcon.Play, () =>
                 {
                     CloseDialog();
                     QuitGame(running);
@@ -203,7 +207,7 @@ namespace XboxSeries.Core
                         startAfterQuit = gameId;
                     }
                 }),
-                new GuideDialogOption("Cancel", CloseDialog)));
+                new DialogOption("Cancel", DialogIcon.Cancel, CloseDialog)));
         }
 
         public void OnControllerButton(ControllerButton button, ButtonState state)
@@ -220,34 +224,45 @@ namespace XboxSeries.Core
                     StopRepeat();
                 }
 
+                if (button == ControllerButton.A)
+                {
+                    tileMenuHoldsA = false;
+                }
+
                 return;
             }
 
+            var dialog = ActiveDialog;
             if (button == ControllerButton.Guide && !Guide.IsOpen)
             {
                 OpenGuide();
             }
-            else if (button == ControllerButton.B && Guide.Dialog != null)
+            else if (button == ControllerButton.B && dialog != null)
             {
-                Guide.Dialog.Decline();
+                dialog.Decline();
             }
             else if ((button == ControllerButton.Guide || button == ControllerButton.B) && Guide.IsOpen)
             {
                 Dismiss(button, ReturnToRecordedWindow);
             }
-            else if (button == ControllerButton.A && Guide.Dialog != null)
+            else if (button == ControllerButton.A && dialog != null)
             {
-                Guide.Dialog.FocusedOption.Choose();
+                tileMenuHoldsA = dialog == Home.TileMenu;
+                dialog.FocusedOption.Choose();
             }
             else if (button == ControllerButton.A && Guide.IsOpen)
             {
                 Select(Guide.FocusedItem, handBack => Dismiss(button, handBack));
             }
-            else if (button == ControllerButton.Start && Guide.IsOpen && Guide.Dialog == null)
+            else if (button == ControllerButton.Start && Guide.IsOpen && dialog == null)
             {
                 ShowMenuFor(Guide.FocusedItem);
             }
-            else if ((button == ControllerButton.DPadUp || button == ControllerButton.DPadDown) && Guide.IsOpen)
+            else if (button == ControllerButton.Start && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
+            {
+                ShowTileMenu(focusedTile);
+            }
+            else if ((button == ControllerButton.DPadUp || button == ControllerButton.DPadDown) && (Guide.IsOpen || dialog != null))
             {
                 StopRepeat();
                 var by = button == ControllerButton.DPadUp ? -1 : 1;
@@ -257,9 +272,18 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>A Recent-row tile got focus: the hero crossfades to its game's art, and keeps it once focus moves on.</summary>
+        /// <summary>
+        /// A game tile on Home got focus: Menu now opens its tile menu. A Recent-row tile also crossfades the hero to its
+        /// game's art, which stays once focus moves on.
+        /// </summary>
         public void FocusHomeTile(HomeTile tile)
         {
+            focusedTile = tile;
+            if (!Home.RecentRow.Contains(tile))
+            {
+                return;
+            }
+
             // A game with no art at all leaves the last art up rather than blanking the hero.
             var art = HeroArtOf(GameById(tile.GameId));
             if (art != null)
@@ -269,12 +293,69 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Focus left a game tile on Home, to elsewhere on the Dashboard or with Playnite leaving the foreground.</summary>
+        public void LeaveHomeTile(HomeTile tile)
+        {
+            if (focusedTile == tile)
+            {
+                focusedTile = null;
+            }
+        }
+
+        /// <summary>The tile menu went from the Dashboard without an answer, as when Playnite leaves the foreground.</summary>
+        public void CloseTileMenu()
+        {
+            if (Home.TileMenu != null)
+            {
+                StopRepeat();
+                Home.TileMenu = null;
+            }
+        }
+
+        /// <summary>
+        /// Menu on a game tile: Play game (Quit while it runs), Add to or Remove from Favourites, and Manage game.
+        /// Each closes the menu first, so focus is back on the tile before anything else opens.
+        /// </summary>
+        private void ShowTileMenu(HomeTile tile)
+        {
+            var game = GameById(tile.GameId);
+            if (game == null)
+            {
+                return;
+            }
+
+            var gameId = game.Id;
+            var play = gameId == runningGame
+                ? new DialogOption("Quit", DialogIcon.Quit, () => FromTileMenu(() => QuitGame(gameId)))
+                : new DialogOption("Play game", DialogIcon.Play, () => FromTileMenu(() => PlayGame(gameId)));
+            var favourite = game.Favorite
+                ? new DialogOption("Remove from Favourites", DialogIcon.Unfavourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, false)))
+                : new DialogOption("Add to Favourites", DialogIcon.Favourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, true)));
+            var manage = new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() => playnite.OpenGameMenu(gameId)));
+
+            // A pending A on the tile would otherwise open its Game hub under the menu.
+            CancelTap();
+            StopRepeat();
+            Home.TileMenu = new Dialog(game.Name, null, CloseTileMenu, play, favourite, manage);
+        }
+
+        private void FromTileMenu(Action action)
+        {
+            CloseTileMenu();
+            action();
+        }
+
         /// <summary>
         /// A on a Home tile. It opens the game's Game hub, unless a second A on the same tile follows within the
         /// double-tap window: that plays the game instead, so the hub waits out the window before opening.
         /// </summary>
         public void ChooseHomeTile(HomeTile tile)
         {
+            if (tileMenuHoldsA)
+            {
+                return;
+            }
+
             var gameId = tile.GameId;
             if (tapTimer != null && tappedGame == gameId)
             {
@@ -427,9 +508,14 @@ namespace XboxSeries.Core
             return string.IsNullOrEmpty(game.CoverImage) ? null : new HeroArt(game.Id, game.CoverImage, isCover: true);
         }
 
-        /// <summary>The Guide button, or a prompt that needs the Guide: open it on the landing tab, over whatever is in front.</summary>
+        /// <summary>
+        /// The Guide button, or a prompt that needs the Guide: open it on the landing tab, over whatever is in front.
+        /// It takes the pad, so any tile menu goes.
+        /// </summary>
         private void OpenGuide()
         {
+            CloseTileMenu();
+
             if (Guide.IsOverlayShown)
             {
                 // Reopened before focus was handed back: the Overlay is still in front, so keep the window recorded first.
@@ -522,11 +608,16 @@ namespace XboxSeries.Core
         /// <summary>Moves focus through the menu or prompt when one is showing, otherwise through the landing tab.</summary>
         private void MoveFocus(int by)
         {
-            var dialog = Guide.Dialog;
+            var dialog = ActiveDialog;
             if (dialog != null)
             {
                 var options = dialog.Options.ToList();
                 dialog.FocusedOption = options[Clamp(options.IndexOf(dialog.FocusedOption) + by, options.Count)];
+                return;
+            }
+
+            if (!Guide.IsOpen)
+            {
                 return;
             }
 
@@ -535,6 +626,9 @@ namespace XboxSeries.Core
         }
 
         private static int Clamp(int index, int count) => Math.Max(0, Math.Min(count - 1, index));
+
+        /// <summary>The menu or prompt that has the pad: the Guide's while the Guide is open, otherwise the tile menu.</summary>
+        private Dialog ActiveDialog => Guide.IsOpen ? Guide.Dialog : Home.TileMenu;
 
         /// <summary>Esc, or a click on the dimmed area. No pad button is held, so focus goes back at once.</summary>
         public void DismissGuide()
@@ -567,20 +661,22 @@ namespace XboxSeries.Core
         }
 
         /// <summary>The mouse pointing at a menu or prompt option.</summary>
-        public void FocusOption(GuideDialogOption option)
+        public void FocusOption(DialogOption option)
         {
-            if (Guide.Dialog != null && Guide.Dialog.Options.Contains(option))
+            var dialog = ActiveDialog;
+            if (dialog != null && dialog.Options.Contains(option))
             {
-                Guide.Dialog.FocusedOption = option;
+                dialog.FocusedOption = option;
             }
         }
 
         /// <summary>A click on a menu or prompt option.</summary>
-        public void ChooseOption(GuideDialogOption option)
+        public void ChooseOption(DialogOption option)
         {
-            if (Guide.Dialog != null && Guide.Dialog.Options.Contains(option))
+            var dialog = ActiveDialog;
+            if (dialog != null && dialog.Options.Contains(option))
             {
-                Guide.Dialog.FocusedOption = option;
+                dialog.FocusedOption = option;
                 option.Choose();
             }
         }
@@ -609,11 +705,11 @@ namespace XboxSeries.Core
             }
 
             var gameId = item.GameId.Value;
-            ShowDialog(new GuideDialog(
+            ShowDialog(new Dialog(
                 item.Title,
                 null,
                 CloseDialog,
-                new GuideDialogOption("Quit", () =>
+                new DialogOption("Quit", DialogIcon.Quit, () =>
                 {
                     CloseDialog();
                     QuitGame(gameId);
@@ -621,7 +717,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>Shows a menu or prompt over the Guide, opening the Guide first if it is closed.</summary>
-        private void ShowDialog(GuideDialog dialog)
+        private void ShowDialog(Dialog dialog)
         {
             if (!Guide.IsOpen)
             {
@@ -642,12 +738,12 @@ namespace XboxSeries.Core
         private void OfferForceQuit()
         {
             quitTimer = null;
-            ShowDialog(new GuideDialog(
+            ShowDialog(new Dialog(
                 $"Force quit {NameOf(quittingGame.Value)}?",
                 "It hasn't closed. Anything unsaved will be lost.",
                 DeclineForceQuit,
-                new GuideDialogOption("Force quit", ForceQuit),
-                new GuideDialogOption("Cancel", DeclineForceQuit)));
+                new DialogOption("Force quit", DialogIcon.Quit, ForceQuit),
+                new DialogOption("Cancel", DialogIcon.Cancel, DeclineForceQuit)));
         }
 
         private void ForceQuit()

@@ -11,6 +11,7 @@ namespace XboxSeries.Core
         private IReadOnlyList<HomeTile> playHistory = new HomeTile[0];
         private IReadOnlyList<HomeGroup> groups = new HomeGroup[0];
         private HeroArt hero;
+        private Dialog menu;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -40,6 +41,15 @@ namespace XboxSeries.Core
         {
             get => hero;
             internal set => Set(ref hero, value, nameof(Hero));
+        }
+
+        /// <summary>
+        /// The tile menu, shown beside the focused tile, which has the pad until it is closed; null when there is none.
+        /// </summary>
+        public Dialog TileMenu
+        {
+            get => menu;
+            internal set => Set(ref menu, value, nameof(TileMenu));
         }
 
         private void Set<T>(ref T field, T value, string name)

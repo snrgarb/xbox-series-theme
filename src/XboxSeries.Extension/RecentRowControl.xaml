@@ -38,7 +38,7 @@
                     <DataTemplate>
                         <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
                                 Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
-                                Click="OnTileClick" GotKeyboardFocus="OnTileFocused" />
+                                Click="OnTileClick" GotKeyboardFocus="OnTileFocused" LostKeyboardFocus="OnTileLeft" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

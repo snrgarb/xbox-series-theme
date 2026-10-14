@@ -52,6 +52,24 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_Guides_menus_and_prompts_give_each_option_its_icon()
+        {
+            OpenGuideOn("Halo Infinite");
+            Tap(ControllerButton.Start);
+            Assert.Equal(new[] { DialogIcon.Quit }, Icons());
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(10));
+            Assert.Equal(new[] { DialogIcon.Quit, DialogIcon.Cancel }, Icons());
+
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.Guide);
+            OpenGuideOn("Hades");
+            Tap(ControllerButton.A);
+            Assert.Equal(new[] { DialogIcon.Play, DialogIcon.Cancel }, Icons());
+        }
+
+        [Fact]
         public void B_closes_the_menu_without_quitting_and_the_Guide_stays_open()
         {
             OpenGuideOn("Halo Infinite");
@@ -439,6 +457,8 @@ namespace XboxSeries.Core.Tests
         }
 
         private string[] Options() => core.Guide.Dialog.Options.Select(o => o.Label).ToArray();
+
+        private DialogIcon[] Icons() => core.Guide.Dialog.Options.Select(o => o.Icon).ToArray();
 
         private void OpenGuideOn(string title)
         {

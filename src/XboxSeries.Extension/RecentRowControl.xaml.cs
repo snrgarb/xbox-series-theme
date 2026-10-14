@@ -143,6 +143,11 @@ namespace XboxSeries.Extension
             core.FocusHomeTile(tile);
         }
 
+        private void OnTileLeft(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            core.LeaveHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
+        }
+
         // Playnite sends the pad's A as Enter, which clicks the focused tile.
         private void OnTileClick(object sender, RoutedEventArgs e)
         {
