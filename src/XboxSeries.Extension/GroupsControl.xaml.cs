@@ -181,10 +181,32 @@ namespace XboxSeries.Extension
         /// <summary>Slides the Groups so that <paramref name="row"/> sits at the top of the screen.</summary>
         private void ScrollTo(FrameworkElement row)
         {
-            var top = row.TranslatePoint(new Point(0, 0), Rows).Y;
+            var scroll = -row.TranslatePoint(new Point(0, 0), Rows).Y;
             Scroll.BeginAnimation(
                 TranslateTransform.YProperty,
-                new DoubleAnimation(-top, ScrollDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                new DoubleAnimation(scroll, ScrollDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            ShowWholeGroupsOnly(scroll);
+        }
+
+        /// <summary>
+        /// Fades out every Group that won't fit wholly on screen once the Groups have slid by <paramref name="scroll"/>,
+        /// and fades in the rest, so that no Group is ever shown cut off at the screen's edge.
+        /// </summary>
+        private void ShowWholeGroupsOnly(double scroll)
+        {
+            for (var i = 0; i < Rows.Items.Count; i++)
+            {
+                if (!(Rows.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement row) || VisualTreeHelper.GetChildrenCount(row) == 0)
+                {
+                    continue;
+                }
+
+                // The Group itself, without the space after it.
+                var group = (FrameworkElement)VisualTreeHelper.GetChild(row, 0);
+                var top = group.TranslatePoint(new Point(0, 0), Rows).Y + scroll;
+                var fits = top >= 0 && top + group.ActualHeight <= View.ActualHeight;
+                row.BeginAnimation(OpacityProperty, new DoubleAnimation(fits ? 1 : 0, ScrollDuration));
+            }
         }
 
         // Playnite sends the pad's A as Enter, which clicks the focused tile.
