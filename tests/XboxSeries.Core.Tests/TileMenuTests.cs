@@ -52,10 +52,24 @@ namespace XboxSeries.Core.Tests
         public void Focus_on_a_Group_tile_leaves_the_hero_alone()
         {
             core.FocusHomeTile(RecentTile("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             core.FocusHomeTile(GroupTile("Tunic"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             Assert.Equal(library.Id("Hades"), core.Home.Hero.GameId);
+        }
+
+        [Fact]
+        public void Focus_moving_to_a_Group_tile_before_it_settles_leaves_the_hero()
+        {
+            var hero = core.Home.Hero?.GameId;
+            core.FocusHomeTile(RecentTile("Hades"));
+
+            core.FocusHomeTile(GroupTile("Tunic"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
+
+            Assert.Equal(hero, core.Home.Hero?.GameId);
         }
 
         [Fact]
