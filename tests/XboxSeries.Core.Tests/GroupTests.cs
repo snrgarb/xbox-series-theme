@@ -108,7 +108,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_Group_shows_at_most_10_games_before_See_all()
+        public void A_Group_shows_at_most_7_games_before_See_all_like_the_Recent_row()
         {
             var library = new FakeLibrary();
             var names = Enumerable.Range(1, 14).Select(i => $"Game {i:00}").ToArray();
@@ -119,7 +119,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.WithFilterPreset("Everything", showInFullscreenQuickSelection: true, games: names).Snapshot());
 
-            Assert.Equal(names.Take(10), GroupTitles("Everything"));
+            Assert.Equal(names.Take(7), GroupTitles("Everything"));
         }
 
         [Fact]
@@ -150,7 +150,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_Favourites_Group_holds_at_most_10_games()
+        public void The_Favourites_Group_holds_at_most_7_games()
         {
             var library = new FakeLibrary();
             for (var i = 1; i <= 12; i++)
@@ -160,7 +160,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.Snapshot());
 
-            Assert.Equal(10, core.Home.Groups.Single().Tiles.Count);
+            Assert.Equal(7, core.Home.Groups.Single().Tiles.Count);
         }
 
         [Fact]

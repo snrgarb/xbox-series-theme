@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,23 +19,9 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class RecentRowControl : PluginUserControl
     {
-        /// <summary>A tile's size at rest, and how much it grows when focused, at 1080p (the console captures, #7).</summary>
-        private const double TileSize = 153;
-        private const double FocusGrowth = 92;
-
-        /// <summary>How quickly a tile eases toward its size: about 98% of the way in 0.2 s, as on the console.</summary>
-        private static readonly TimeSpan GrowthTimeConstant = TimeSpan.FromMilliseconds(50);
-
         private readonly ExtensionCore core;
-        private readonly HomeFocus homeFocus;
-
-        // Each tile's share of the focus growth. Every frame each share eases toward 1 for the focused tile and 0 for the
-        // rest by the same fraction, so the shares always add up to the same total and the row's width never changes:
-        // only the tiles growing or shrinking move, however fast focus moves. Per-tile animations can't promise that
-        // once one is interrupted mid-way.
-        private readonly Dictionary<Button, double> growth = new Dictionary<Button, double>();
-        private readonly Stopwatch frameClock = new Stopwatch();
-        private bool isAnimating;
+        private readonly HomeScreen homeScreen;
+        private readonly TileGrowth growth;
 
         /// <summary>Every tile, game tiles then Play history, found once per rebuild of the row; null when stale.</summary>
         private List<Button> allTiles;
@@ -46,23 +31,24 @@ namespace XboxSeries.Extension
         private bool hasFocus;
         private FrameworkElement gameDetails;
 
-        internal RecentRowControl(ExtensionCore core, HomeFocus homeFocus)
+        internal RecentRowControl(ExtensionCore core, HomeScreen homeScreen)
         {
             InitializeComponent();
             this.core = core;
-            this.homeFocus = homeFocus;
+            this.homeScreen = homeScreen;
+            growth = new TileGrowth(AllTiles);
             DataContext = core.Home;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             GotKeyboardFocus += (_, __) =>
             {
                 hasFocus = true;
-                homeFocus.LastFocusedRow = this;
-                StartGrowing();
+                homeScreen.LastFocusedRow = this;
+                homeScreen.Show(groups: false);
+                growth.Start();
             };
             LostKeyboardFocus += OnLostKeyboardFocus;
-            PreviewKeyDown += (_, e) => HomeRows.MoveFocus(e);
-            RequestBringIntoView += OnRequestBringIntoView;
+            PreviewKeyDown += OnPreviewKeyDown;
 
             // New or regenerated tiles: find them again on the next frame that needs them.
             Tiles.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
@@ -71,6 +57,8 @@ namespace XboxSeries.Extension
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged += OnHomeChanged;
+            homeScreen.Changed += OnScreenChanged;
+            HomeRows.Fly(this, !homeScreen.ShowsGroups, -HomeRows.FlyDistance, animate: false);
 
             // Playnite focuses its main list on Home, which the Dashboard hides with the extension, and again when the
             // Game hub closes; the row takes focus instead.
@@ -86,7 +74,8 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged -= OnHomeChanged;
-            StopGrowing();
+            homeScreen.Changed -= OnScreenChanged;
+            growth.Stop();
             if (gameDetails != null)
             {
                 gameDetails.IsVisibleChanged -= OnGameDetailsVisibleChanged;
@@ -112,77 +101,38 @@ namespace XboxSeries.Extension
                 hasFocus = false;
             }
 
-            StartGrowing();
+            growth.Start();
         }
 
-        private void StartGrowing()
+        /// <summary>Down moves to the Groups' screen, when the Dashboard has them; other directions move focus as usual.</summary>
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!isAnimating)
+            if (e.Key == Key.Down && homeScreen.HasGroups)
             {
-                isAnimating = true;
-                frameClock.Restart();
-                CompositionTarget.Rendering += OnFrame;
+                e.Handled = true;
+                homeScreen.Show(groups: true);
+                return;
             }
+
+            HomeRows.MoveFocus(e);
         }
 
-        private void StopGrowing()
+        /// <summary>Flies the row out as the Groups come in, and back in, taking focus, as they go.</summary>
+        private void OnScreenChanged(object sender, EventArgs e)
         {
-            if (isAnimating)
+            HomeRows.Fly(this, !homeScreen.ShowsGroups, -HomeRows.FlyDistance);
+            if (!homeScreen.ShowsGroups)
             {
-                isAnimating = false;
-                CompositionTarget.Rendering -= OnFrame;
-            }
-        }
-
-        /// <summary>Eases every tile's share of the growth toward its target, and sizes the tiles from their shares.</summary>
-        private void OnFrame(object sender, EventArgs e)
-        {
-            var elapsed = frameClock.Elapsed;
-            frameClock.Restart();
-            var step = 1 - Math.Exp(-elapsed.TotalMilliseconds / GrowthTimeConstant.TotalMilliseconds);
-
-            // No allocations here: this runs every frame while tiles change size.
-            var tiles = AllTiles();
-            var settled = true;
-            foreach (var tile in tiles)
-            {
-                if (Math.Abs(GrowthTarget(tile) - NextGrowth(tile, step)) >= 0.002)
-                {
-                    settled = false;
-                }
-            }
-
-            // All tiles settle in the same frame, so snapping to the targets keeps the shares' total exact.
-            foreach (var tile in tiles)
-            {
-                var share = settled ? GrowthTarget(tile) : NextGrowth(tile, step);
-                growth[tile] = share;
-                tile.Width = tile.Height = TileSize + FocusGrowth * share;
-            }
-
-            if (settled)
-            {
-                StopGrowing();
+                FocusTileSoon();
             }
         }
 
         private void OnGameDetailsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             // Back from a Game hub opened here, or from anywhere when no row has had focus yet.
-            if (!(bool)e.NewValue && (homeFocus.LastFocusedRow == null || homeFocus.LastFocusedRow == this))
+            if (!(bool)e.NewValue && (homeScreen.LastFocusedRow == null || homeScreen.LastFocusedRow == this))
             {
                 FocusTileSoon();
-            }
-        }
-
-        /// <summary>The row is Home's top: with a tile focused, the Dashboard scrolls Home all the way back up.</summary>
-        private void OnRequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
-        {
-            var scroller = HomeRows.PageScroller(this);
-            if (scroller != null)
-            {
-                e.Handled = true;
-                scroller.ScrollToTop();
             }
         }
 
@@ -222,14 +172,6 @@ namespace XboxSeries.Extension
                 .Where(button => button != null)
                 .ToList();
 
-        private static double GrowthTarget(Button tile) => tile.IsKeyboardFocused ? 1 : 0;
-
-        private double NextGrowth(Button tile, double step)
-        {
-            growth.TryGetValue(tile, out var share);
-            return share + (GrowthTarget(tile) - share) * step;
-        }
-
         private List<Button> AllTiles()
         {
             if (allTiles != null)
@@ -240,10 +182,7 @@ namespace XboxSeries.Extension
             var tiles = GameTiles();
             var complete = tiles.Count == Tiles.Items.Count;
             tiles.Add(PlayHistoryTile);
-            foreach (var gone in growth.Keys.Except(tiles).ToList())
-            {
-                growth.Remove(gone);
-            }
+            growth.Forget(tiles);
 
             // Kept only once every game tile is built; until then the next frame looks again.
             if (complete)

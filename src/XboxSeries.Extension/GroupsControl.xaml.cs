@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Playnite.SDK.Controls;
 using XboxSeries.Core;
@@ -13,15 +14,21 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Home's Groups, injected below the Recent row as a custom element. It follows the core's <see cref="HomeState"/>
-    /// and tells the core which tile A was pressed on. It holds no Home logic. A <see cref="PluginUserControl"/>,
-    /// because Playnite binds any other custom element's DataContext to the selected game.
+    /// Home's Groups, injected as a custom element: the screen below the Recent row. It follows the core's
+    /// <see cref="HomeState"/> and tells the core which tile A was pressed on. It holds no Home logic. A
+    /// <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
     public partial class GroupsControl : PluginUserControl
     {
+        private static readonly Duration ScrollDuration = TimeSpan.FromMilliseconds(300);
+
         private readonly ExtensionCore core;
-        private readonly HomeFocus homeFocus;
+        private readonly HomeScreen homeScreen;
+        private readonly TileGrowth growth;
         private FrameworkElement gameDetails;
+
+        /// <summary>Every tile of every Group, found once per rebuild; null when stale.</summary>
+        private List<Button> allTiles;
 
         /// <summary>Whether focus is in the Groups. Kept by hand: a rebuild removes the focused tile before this hears of it.</summary>
         private bool hasFocus;
@@ -30,25 +37,29 @@ namespace XboxSeries.Extension
         private int lastGroup;
         private Guid? lastGame;
 
-        internal GroupsControl(ExtensionCore core, HomeFocus homeFocus)
+        internal GroupsControl(ExtensionCore core, HomeScreen homeScreen)
         {
             InitializeComponent();
             this.core = core;
-            this.homeFocus = homeFocus;
+            this.homeScreen = homeScreen;
+            growth = new TileGrowth(AllTiles);
             DataContext = core.Home;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             GotKeyboardFocus += OnGotKeyboardFocus;
             LostKeyboardFocus += OnLostKeyboardFocus;
-            PreviewKeyDown += (_, e) => HomeRows.MoveFocus(e);
+            PreviewKeyDown += OnPreviewKeyDown;
 
-            // Also when already handled: a Group's own sideways scroller handles the request before it gets here.
-            AddHandler(RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler(OnRequestBringIntoView), true);
+            // New or regenerated rows: find the tiles again on the next frame that needs them.
+            Rows.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged += OnHomeChanged;
+            homeScreen.Changed += OnScreenChanged;
+            homeScreen.HasGroups = true;
+            HomeRows.Fly(this, homeScreen.ShowsGroups, HomeRows.FlyDistance, animate: false);
             gameDetails = HomeRows.FindGameDetails(this);
             if (gameDetails != null)
             {
@@ -59,6 +70,9 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged -= OnHomeChanged;
+            homeScreen.Changed -= OnScreenChanged;
+            homeScreen.HasGroups = false;
+            growth.Stop();
             if (gameDetails != null)
             {
                 gameDetails.IsVisibleChanged -= OnGameDetailsVisibleChanged;
@@ -75,10 +89,22 @@ namespace XboxSeries.Extension
             }
         }
 
+        /// <summary>Flies the Groups in from below as the Recent row goes, onto the first Group, and back out as it returns.</summary>
+        private void OnScreenChanged(object sender, EventArgs e)
+        {
+            HomeRows.Fly(this, homeScreen.ShowsGroups, HomeRows.FlyDistance);
+            if (homeScreen.ShowsGroups)
+            {
+                lastGroup = 0;
+                lastGame = null;
+                FocusTileSoon();
+            }
+        }
+
         private void OnGameDetailsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             // Back from a Game hub opened from a Group.
-            if (!(bool)e.NewValue && homeFocus.LastFocusedRow == this)
+            if (!(bool)e.NewValue && homeScreen.LastFocusedRow == this)
             {
                 FocusTileSoon();
             }
@@ -87,11 +113,14 @@ namespace XboxSeries.Extension
         private void OnGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             hasFocus = true;
-            homeFocus.LastFocusedRow = this;
-            if (e.NewFocus is Button tile && Rows.ContainerFromElement(tile) is DependencyObject row)
+            homeScreen.LastFocusedRow = this;
+            homeScreen.Show(groups: true);
+            growth.Start();
+            if (e.NewFocus is Button tile && Rows.ContainerFromElement(tile) is FrameworkElement row)
             {
                 lastGroup = Rows.ItemContainerGenerator.IndexFromContainer(row);
                 lastGame = (tile.DataContext as HomeTile)?.GameId;
+                ScrollTo(row);
             }
         }
 
@@ -103,20 +132,59 @@ namespace XboxSeries.Extension
             {
                 hasFocus = false;
             }
+
+            growth.Start();
         }
 
-        /// <summary>A tile got focus: the Dashboard scrolls Home to centre its Group on screen, as far as the page goes.</summary>
-        private void OnRequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        /// <summary>
+        /// The D-pad moves along a Group and between Groups, keeping to the same place in the row as far as the next row
+        /// goes. Up from the first Group goes back to the Recent row.
+        /// </summary>
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
-            var scroller = HomeRows.PageScroller(this);
-            if (scroller == null || !(e.TargetObject is DependencyObject target) || !(Rows.ContainerFromElement(target) is FrameworkElement row))
+            if (!(Keyboard.FocusedElement is Button tile) || !(Rows.ContainerFromElement(tile) is DependencyObject row))
             {
                 return;
             }
 
+            var group = Rows.ItemContainerGenerator.IndexFromContainer(row);
+            var place = Tiles(row).IndexOf(tile);
+            switch (e.Key)
+            {
+                case Key.Left: Focus(group, place - 1); break;
+                case Key.Right: Focus(group, place + 1); break;
+                case Key.Down: Focus(group + 1, place); break;
+                case Key.Up when group == 0: homeScreen.Show(groups: false); break;
+                case Key.Up: Focus(group - 1, place); break;
+                default: return;
+            }
+
             e.Handled = true;
-            var bounds = row.TransformToAncestor(scroller).TransformBounds(new Rect(row.RenderSize));
-            scroller.ScrollToVerticalOffset(scroller.VerticalOffset + bounds.Top + bounds.Height / 2 - scroller.ViewportHeight / 2);
+        }
+
+        /// <summary>Focuses the tile at <paramref name="place"/> in a Group, or its last tile if the Group is shorter.</summary>
+        private void Focus(int group, int place)
+        {
+            if (group < 0 || group >= Rows.Items.Count || place < 0)
+            {
+                return;
+            }
+
+            var row = Rows.ItemContainerGenerator.ContainerFromIndex(group);
+            var tiles = row == null ? new List<Button>() : Tiles(row);
+            if (tiles.Count > 0)
+            {
+                tiles[Math.Min(place, tiles.Count - 1)].Focus();
+            }
+        }
+
+        /// <summary>Slides the Groups so that <paramref name="row"/> sits at the top of the screen.</summary>
+        private void ScrollTo(FrameworkElement row)
+        {
+            var top = row.TranslatePoint(new Point(0, 0), Rows).Y;
+            Scroll.BeginAnimation(
+                TranslateTransform.YProperty,
+                new DoubleAnimation(-top, ScrollDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
         }
 
         // Playnite sends the pad's A as Enter, which clicks the focused tile.
@@ -140,6 +208,31 @@ namespace XboxSeries.Extension
                 var tile = tiles.FirstOrDefault(b => (b.DataContext as HomeTile)?.GameId == lastGame) ?? tiles.FirstOrDefault();
                 tile?.Focus();
             }));
+        }
+
+        private int ExpectedTileCount() => core.Home.Groups.Sum(g => g.Tiles.Count + 1);
+
+        private List<Button> AllTiles()
+        {
+            if (allTiles != null)
+            {
+                return allTiles;
+            }
+
+            var tiles = Enumerable.Range(0, Rows.Items.Count)
+                .Select(i => Rows.ItemContainerGenerator.ContainerFromIndex(i))
+                .Where(row => row != null)
+                .SelectMany(Tiles)
+                .ToList();
+            growth.Forget(tiles);
+
+            // Kept only once every tile is built; until then the next frame looks again.
+            if (tiles.Count == ExpectedTileCount())
+            {
+                allTiles = tiles;
+            }
+
+            return tiles;
         }
 
         /// <summary>A Group's tiles, left to right, ending with See all.</summary>
