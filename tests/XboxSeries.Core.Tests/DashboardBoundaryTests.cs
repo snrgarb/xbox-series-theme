@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Xunit;
@@ -82,6 +83,18 @@ namespace XboxSeries.Core.Tests
                 .Select(match => match.Groups[1].Value);
 
             Assert.All(plugins, plugin => Assert.Equal(ExtensionId(), plugin));
+        }
+
+        [Theory]
+        [InlineData("navigation.wav")]
+        [InlineData("activation.wav")]
+        public void Dashboard_ships_the_console_sounds_Playnite_lets_it_replace(string file)
+        {
+            // Playnite plays these itself, with or without the extension, from the theme's audio folder.
+            var bytes = File.ReadAllBytes(Path.Combine(DashboardDir, "audio", file));
+
+            Assert.Equal("RIFF", Encoding.ASCII.GetString(bytes, 0, 4));
+            Assert.Equal("WAVE", Encoding.ASCII.GetString(bytes, 8, 4));
         }
 
         private static string ExtensionId()

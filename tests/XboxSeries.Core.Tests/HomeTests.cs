@@ -15,7 +15,7 @@ namespace XboxSeries.Core.Tests
         public HomeTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite);
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer());
         }
 
         [Fact]

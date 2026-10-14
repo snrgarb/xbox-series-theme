@@ -10,11 +10,13 @@ namespace XboxSeries.Core
     /// </summary>
     public sealed class Dialog : INotifyPropertyChanged
     {
+        private readonly bool isPrompt;
         private DialogOption focusedOption;
 
-        internal Dialog(string title, string message, Action decline, params DialogOption[] options)
+        internal Dialog(string title, string message, bool isPrompt, Action decline, params DialogOption[] options)
         {
             Title = title;
+            this.isPrompt = isPrompt;
             Message = message;
             Decline = decline;
             Options = options;
@@ -29,6 +31,15 @@ namespace XboxSeries.Core
         public string Message { get; }
 
         public IReadOnlyList<DialogOption> Options { get; }
+
+        /// <summary>The sound as it opens: a prompt asks about what just happened; a menu offers what can be done.</summary>
+        internal UiSound OpenSound => isPrompt ? UiSound.PromptOpen : UiSound.OpenMenu;
+
+        /// <summary>The sound as an option is chosen.</summary>
+        internal UiSound ChooseSound => isPrompt ? UiSound.PromptClose : UiSound.Enter;
+
+        /// <summary>The sound as B declines it.</summary>
+        internal UiSound DeclineSound => isPrompt ? UiSound.PromptClose : UiSound.Back;
 
         /// <summary>The option with focus. Each option's <see cref="DialogOption.IsFocused"/> follows it.</summary>
         public DialogOption FocusedOption
