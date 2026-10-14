@@ -87,7 +87,7 @@ namespace XboxSeries.Core
         public IReadOnlyList<HomeTile> SeeAll { get; }
     }
 
-    /// <summary>One game tile on Home.</summary>
+    /// <summary>One game tile on the Dashboard: on Home, or a game in My games &amp; apps' Play history.</summary>
     public sealed class HomeTile
     {
         internal HomeTile(Guid gameId, string title, string coverImage, string source, bool isRunning)

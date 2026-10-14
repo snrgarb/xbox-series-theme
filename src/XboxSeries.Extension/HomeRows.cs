@@ -111,13 +111,16 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>Playnite's Game details view in the Main template a row sits in; null if the theme has none.</summary>
-        public static FrameworkElement FindGameDetails(DependencyObject row)
+        public static FrameworkElement FindGameDetails(DependencyObject row) => FindPart(row, "PART_ElemGameDetails");
+
+        /// <summary>The element called <paramref name="name"/> in the template <paramref name="element"/> sits in; null if there is none.</summary>
+        public static FrameworkElement FindPart(DependencyObject element, string name)
         {
-            for (var node = row; node != null; node = VisualTreeHelper.GetParent(node))
+            for (var node = element; node != null; node = VisualTreeHelper.GetParent(node))
             {
-                if (node is Control control && control.Template?.FindName("PART_ElemGameDetails", control) is FrameworkElement details)
+                if (node is Control control && control.Template?.FindName(name, control) is FrameworkElement part)
                 {
-                    return details;
+                    return part;
                 }
             }
 
