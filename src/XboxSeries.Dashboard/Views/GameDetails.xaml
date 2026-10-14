@@ -79,7 +79,8 @@
             <Border x:Name="Slab" Background="{TemplateBinding Background}" CornerRadius="4" />
             <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="False"
                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}" />
+            <!-- As on the console, the ring stands off the green slab by a gap, unlike the cards' ring. -->
+            <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}" Margin="-8" CornerRadius="8" />
             <!-- What an icon-only action does, shown above it while it has focus. -->
             <Border x:Name="Label" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="-150,-48,-150,0"
                     Padding="10,4" CornerRadius="3" Background="{DynamicResource XboxChipBrush}"
@@ -390,7 +391,13 @@
                             </Rectangle>
                         </Grid>
 
-                        <Grid Margin="80,96,80,0">
+                        <!--
+                            The console's band: My games & apps' grey, across the whole width, with an equal gap of the art
+                            above and below it. Everything else sits inside it; the cards scroll across it to the edge.
+                        -->
+                        <Border x:Name="Band" Margin="0,88,0,88" Background="#E61F1F1F" IsHitTestVisible="False" />
+
+                        <Grid Margin="80,128,80,0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />

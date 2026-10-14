@@ -76,6 +76,23 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Game_hub_sits_on_a_full_width_band_centred_with_equal_gaps_above_and_below()
+        {
+            var hub = XDocument.Load(Path.Combine(DashboardDir, "Views", "GameDetails.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var band = hub.Descendants().Single(e => (string)e.Attribute(x + "Name") == "Band");
+            var content = band.ElementsAfterSelf().First();
+            int[] Margin(XElement e) => ((string)e.Attribute("Margin")).Split(',').Select(int.Parse).ToArray();
+
+            var gaps = Margin(band);
+            Assert.Equal(0, gaps[0]);
+            Assert.Equal(0, gaps[2]);
+            Assert.True(gaps[1] > 0);
+            Assert.Equal(gaps[1], gaps[3]);
+            Assert.True(Margin(content)[1] > gaps[1], "the header starts inside the band");
+        }
+
+        [Fact]
         public void Every_plugin_hook_names_the_extension_by_its_id()
         {
             var plugins = DashboardXaml()
