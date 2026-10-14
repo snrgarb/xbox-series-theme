@@ -60,7 +60,7 @@
                                 -->
                                 <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
                                         Background="#E6000000" Margin="3,0,3,3" CornerRadius="0,0,3,3">
-                                    <TextBlock Text="{TemplateBinding Tag}" Margin="8,8,8,5"
+                                    <TextBlock Text="{TemplateBinding Tag}" Margin="8"
                                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
                                                FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
                                 </Border>
