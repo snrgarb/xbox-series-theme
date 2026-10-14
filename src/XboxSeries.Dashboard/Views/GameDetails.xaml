@@ -636,11 +636,12 @@
                                 CardStripFrame lets the row keep its full width (a Grid would squeeze it to the screen's) and
                                 is never narrower than the screen, so a row that fits never moves.
                             -->
-                            <Grid x:Name="Cards" Grid.Row="2" Margin="-80,32,-80,0">
+                            <Grid x:Name="Cards" Grid.Row="2" Margin="-80,8,-80,-24">
                                 <StackPanel x:Name="CardStripFrame" Orientation="Horizontal" HorizontalAlignment="Left"
                                             MinWidth="{Binding ActualWidth, ElementName=Cards}">
-                                <!-- 64, not 80, on the right: the last card brings its own 16 of spacing. -->
-                                <StackPanel Orientation="Horizontal" Margin="80,0,64,0">
+                                <!-- 64, not 80, on the right: the last card brings its own 16 of spacing. 24 above and below (taken back by
+                                     Cards' margins) keep the focus ring's glow inside the clip a wider-than-screen row gets. -->
+                                <StackPanel Orientation="Horizontal" Margin="80,24,64,24">
 
                                     <!-- Cover, with the game's source (or platform) as a badge. -->
                                     <ContentControl Style="{StaticResource XboxHubCard}" Width="375" Padding="0">
