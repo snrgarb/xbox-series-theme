@@ -15,6 +15,7 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private readonly Win32WindowSystem windows = new Win32WindowSystem();
+        private bool libraryPushed;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
 #endif
@@ -38,6 +39,13 @@ namespace XboxSeries.Extension
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
+            // Playnite builds Home before it raises OnApplicationStarted, and can take seconds between the two. The
+            // database is already loaded by then, so Home's elements start from it rather than showing empty until then.
+            if (!libraryPushed && PlayniteApi.Database.IsOpen)
+            {
+                PushLibrary();
+            }
+
             switch (args.Name)
             {
                 case "Hero": return new HeroControl(core.Home);
@@ -120,6 +128,7 @@ namespace XboxSeries.Extension
 
         private void PushLibrary()
         {
+            libraryPushed = true;
             core.OnLibraryChanged(PlayniteLibrary.Snapshot(PlayniteApi));
         }
     }
