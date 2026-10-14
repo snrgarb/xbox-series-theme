@@ -102,8 +102,8 @@ namespace XboxSeries.Core.Tests
             core.OpenMyGames(MyGamesItem.Games);
 
             var storage = core.MyGames.Storage;
-            Assert.Equal("D:", storage.Drive);
-            Assert.Equal($"412 GB free of {1.8.ToString(CultureInfo.CurrentCulture)} TB", storage.Summary);
+            Assert.Equal($"{Tenths(412)} GB free", storage.Free);
+            Assert.Equal($"{Tenths(77.6)}%", storage.UsedPercent);
             Assert.Equal(1431.0 / 1843, storage.UsedFraction, 3);
         }
 
@@ -117,18 +117,19 @@ namespace XboxSeries.Core.Tests
             drives.WithDrive(@"C:\", 50 * GB, 200 * GB);
             core.OpenMyGames(MyGamesItem.Games);
 
-            Assert.Equal("50 GB free of 200 GB", core.MyGames.Storage.Summary);
+            Assert.Equal($"{Tenths(50)} GB free", core.MyGames.Storage.Free);
+            Assert.Equal($"{Tenths(75)}%", core.MyGames.Storage.UsedPercent);
         }
 
         [Fact]
-        public void The_storage_ring_shows_a_size_that_rounds_to_1024_GB_as_1_TB()
+        public void The_storage_ring_shows_free_space_that_rounds_to_1024_GB_in_TB()
         {
-            drives.WithDrive(@"C:\", (1L << 40) - (1L << 28), 2L << 40);
+            drives.WithDrive(@"C:\", (1L << 40) - (1L << 25), 2L << 40);
             core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", installDirectory: @"C:\Games\Halo").Snapshot());
 
             core.OpenMyGames(MyGamesItem.Games);
 
-            Assert.Equal("1 TB free of 2 TB", core.MyGames.Storage.Summary);
+            Assert.Equal($"{Tenths(1)} TB free", core.MyGames.Storage.Free);
         }
 
         [Fact]
@@ -415,6 +416,9 @@ namespace XboxSeries.Core.Tests
         /// <summary>The games Playnite's main list shows under the filter the core last applied.</summary>
         private string[] MainList(FakeLibrary library) =>
             playnite.MainListFilter.Apply(library.Snapshot().Games).Select(g => g.Name).ToArray();
+
+        /// <summary>A number to a tenth, as the user's culture writes it.</summary>
+        private static string Tenths(double value) => value.ToString("0.0", CultureInfo.CurrentCulture);
 
         private void Tap(ControllerButton button)
         {

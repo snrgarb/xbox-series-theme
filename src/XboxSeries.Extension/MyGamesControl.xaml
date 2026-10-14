@@ -174,25 +174,30 @@
         </StackPanel>
 
         <!--
-            The storage ring, at the foot of the nav: the drive holding most installed games, filled round by how much of
-            it is used, from the top. The code sets the fill's dashes from Storage.
+            The storage ring, at the foot of the nav, as on the console: All storage and the space free, beside a thin ring
+            filled round from the top by the share used, with that share inside it. Its storage is the drive holding most
+            installed games. The code sets the fill's dashes from Storage.
         -->
-        <StackPanel x:Name="StorageRing" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="75,0,0,64">
-            <Grid>
-                <Ellipse Width="54" Height="54" Stroke="{StaticResource DividerBrush}" StrokeThickness="6" />
-                <Ellipse x:Name="StorageUsed" Width="54" Height="54" Stroke="{DynamicResource GlyphBrush}" StrokeThickness="6"
+        <Grid x:Name="StorageRing" Grid.Column="0" VerticalAlignment="Bottom" Margin="75,0,0,66">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="206" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="All storage" Style="{StaticResource NavText}" />
+                <TextBlock Text="{Binding Storage.Free}" Style="{StaticResource NavText}" Margin="0,3,0,0" />
+            </StackPanel>
+            <Grid Grid.Column="1">
+                <Ellipse Width="95" Height="95" Stroke="{StaticResource SelectedBrush}" StrokeThickness="4" />
+                <Ellipse x:Name="StorageUsed" Width="95" Height="95" Stroke="{DynamicResource GlyphBrush}" StrokeThickness="4"
                          RenderTransformOrigin="0.5,0.5">
                     <Ellipse.RenderTransform>
                         <RotateTransform Angle="-90" />
                     </Ellipse.RenderTransform>
                 </Ellipse>
+                <TextBlock Text="{Binding Storage.UsedPercent}" Style="{StaticResource NavText}" HorizontalAlignment="Center" />
             </Grid>
-            <StackPanel Margin="18,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Storage.Drive}" Style="{StaticResource Text}" />
-                <TextBlock Text="{Binding Storage.Summary}" Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}"
-                           FontSize="20" />
-            </StackPanel>
-        </StackPanel>
+        </Grid>
 
         <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
 

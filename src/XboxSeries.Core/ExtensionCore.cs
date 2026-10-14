@@ -620,7 +620,7 @@ namespace XboxSeries.Core
                 .ThenBy(d => d.Key, StringComparer.Ordinal)
                 .Select(d => d.Key)
                 .FirstOrDefault();
-            MyGames.Storage = root == null ? null : StorageRing.Of(root, drives.SpaceOf(root));
+            MyGames.Storage = root == null ? null : StorageRing.Of(drives.SpaceOf(root));
         }
 
         /// <summary>The drive a directory is on, such as C:\; null for none, or a network share.</summary>
