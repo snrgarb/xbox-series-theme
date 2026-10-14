@@ -52,8 +52,12 @@ namespace XboxSeries.Extension
             PreviewKeyDown += OnPreviewKeyDown;
             IsVisibleChanged += OnVisibleChanged;
 
-            // New or regenerated tiles: find them again on the next frame that needs them.
-            Tiles.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
+            // New or regenerated tiles: find them again, and size and space them, on the next frame.
+            Tiles.ItemContainerGenerator.StatusChanged += (_, __) =>
+            {
+                allTiles = null;
+                growth.Start();
+            };
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -61,6 +65,7 @@ namespace XboxSeries.Extension
             core.Home.PropertyChanged += OnHomeChanged;
             homeScreen.Changed += OnScreenChanged;
             HomeRows.Fly(this, !homeScreen.ShowsGroups, -HomeRows.FlyDistance, animate: false);
+            growth.Start();
 
             // Playnite focuses its main list on Home, which the Dashboard hides with the extension, and again when the
             // Game hub closes; the row takes focus instead.

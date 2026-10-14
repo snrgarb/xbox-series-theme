@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -16,6 +17,9 @@ namespace XboxSeries.Extension
         /// <summary>A tile's size at rest, and how much it grows when focused, at 1080p (the console captures, #7).</summary>
         public const double TileSize = 153;
         public const double FocusGrowth = 92;
+
+        /// <summary>The gap between tiles with one focused; HomeTile's right margin.</summary>
+        public const double TileGap = 30;
 
         /// <summary>How quickly a tile eases toward its size: about 98% of the way in 0.2 s, as on the console.</summary>
         private static readonly TimeSpan GrowthTimeConstant = TimeSpan.FromMilliseconds(50);
@@ -84,11 +88,21 @@ namespace XboxSeries.Extension
             }
 
             // All tiles settle in the same frame, so snapping to the targets keeps the shares' total exact.
+            var total = 0.0;
             foreach (var tile in all)
             {
                 var share = settled ? GrowthTarget(tile) : NextGrowth(tile, step);
                 growth[tile] = share;
+                total += share;
                 tile.Width = tile.Height = TileSize + FocusGrowth * share;
+            }
+
+            // The growth no tile holds widens the gaps between them instead, so with no tile focused the row still
+            // spans its full width, as on the console, and the row's width never changes.
+            var gap = TileGap + (all.Count > 1 ? FocusGrowth * Math.Max(0, 1 - total) / (all.Count - 1) : 0);
+            for (var i = 0; i < all.Count; i++)
+            {
+                all[i].Margin = new Thickness(0, 0, i < all.Count - 1 ? gap : 0, 0);
             }
 
             if (settled)

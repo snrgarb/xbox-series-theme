@@ -7,7 +7,7 @@
     <!--
         Home's Recent row: up to 7 game tiles, then the Play history tile. Sized from the console captures (H1-H3, #7):
         square tiles of 153 px at 1080p, 30 px apart, sitting on one baseline. The focused tile grows to 245 px and shows
-        its title. The growth is sized in code (RecentRowControl.xaml.cs) so the row's total width never changes as focus
+        its title. The growth is sized in code (TileGrowth.cs) so the row's total width never changes as focus
         moves, however fast, and no tile but those growing or shrinking moves.
     -->
     <controls:PluginUserControl.Resources>
@@ -21,8 +21,8 @@
     <!--
         Laid out at a fixed 1080p width, the row with a tile focused (8 tiles, 7 gaps and the focus growth), and scaled
         to the width there is, so with a tile focused it spans the top bar on 16:9 and 16:10 screens alike: from the
-        avatar's left edge (105) to the notifications button's right edge (105 + its 10 margin). At rest it ends the
-        growth short, as on the console. The scale never changes as focus moves. As tall as a focused tile, so focus
+        avatar's left edge (105) to the notifications button's right edge (105 + its 10 margin). With no tile focused
+        the growth widens the gaps instead, so the row still spans it, as on the console. The scale never changes as focus moves. As tall as a focused tile, so focus
         never shifts the row; placed to sit where the console's row does.
     -->
     <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,53,115,0">
