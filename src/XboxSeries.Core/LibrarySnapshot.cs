@@ -46,7 +46,8 @@ namespace XboxSeries.Core
             ulong playCount = 0,
             DateTime? releaseDate = null,
             DateTime? modified = null,
-            string sortingName = null)
+            string sortingName = null,
+            string platform = null)
         {
             Id = id;
             Name = name;
@@ -66,6 +67,7 @@ namespace XboxSeries.Core
             ReleaseDate = releaseDate;
             Modified = modified;
             SortingName = string.IsNullOrEmpty(sortingName) ? name : sortingName;
+            Platform = platform;
         }
 
         public Guid Id { get; }
@@ -102,6 +104,9 @@ namespace XboxSeries.Core
 
         /// <summary>The name Playnite sorts the game by: its sorting name when it has one, otherwise its name.</summary>
         public string SortingName { get; }
+
+        /// <summary>The game's platform (the first, for games on several), or null for games without one.</summary>
+        public string Platform { get; }
     }
 
     /// <summary>A Playnite filter preset. Snapshots list them in Playnite's own order.</summary>

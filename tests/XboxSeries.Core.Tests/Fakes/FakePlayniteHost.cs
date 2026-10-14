@@ -48,5 +48,25 @@ namespace XboxSeries.Core.Tests.Fakes
         public List<(Guid GameId, bool Favourite)> FavouriteChanges { get; } = new List<(Guid, bool)>();
 
         public void SetFavourite(Guid gameId, bool favourite) => FavouriteChanges.Add((gameId, favourite));
+
+        private GameListFilter savedFilter;
+
+        /// <summary>The filter and sort the core last put on the main list; null while it shows the user's own.</summary>
+        public GameListFilter MainListFilter { get; private set; }
+
+        public bool ShowsUsersOwnFilter => MainListFilter == null;
+
+        /// <summary>How many times the user's own filter and sort were put back.</summary>
+        public int UserFilterRestores { get; private set; }
+
+        public void SaveUserFilter() => savedFilter = MainListFilter;
+
+        public void RestoreUserFilter()
+        {
+            MainListFilter = savedFilter;
+            UserFilterRestores++;
+        }
+
+        public void ShowInMainList(GameListFilter filter) => MainListFilter = filter;
     }
 }

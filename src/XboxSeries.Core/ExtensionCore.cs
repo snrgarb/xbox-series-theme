@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace XboxSeries.Core
@@ -66,6 +67,9 @@ namespace XboxSeries.Core
         /// <summary>Whether A, still held, answered the tile menu: Playnite's own Enter for it must not choose the tile.</summary>
         private bool tileMenuHoldsA;
 
+        /// <summary>Whether My games &amp; apps has put its own filter on the main list, with the user's kept to give back.</summary>
+        private bool ownsMainList;
+
         public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds)
         {
             this.clock = clock;
@@ -77,6 +81,8 @@ namespace XboxSeries.Core
         public GuideState Guide { get; } = new GuideState();
 
         public HomeState Home { get; } = new HomeState();
+
+        public MyGamesState MyGames { get; } = new MyGamesState();
 
         public void OnLibraryChanged(LibrarySnapshot snapshot)
         {
@@ -449,6 +455,7 @@ namespace XboxSeries.Core
                 .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
                 .ToList();
             Home.Groups = Groups();
+            RefreshPlayHistory();
 
             // The hero stays on the last focused game while it exists, and starts on the first game in the row.
             var hero = row.Concat(played).FirstOrDefault(g => g.Id == heroGame) ?? row.FirstOrDefault();
@@ -487,12 +494,12 @@ namespace XboxSeries.Core
         /// <summary>A Group of its first games, and the See all tile's collage of the ones after them.</summary>
         private HomeGroup Group(string name, Guid? presetId, IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction)
         {
-            var sorted = Sorted(games, sort, direction).ToList();
+            var sorted = GameListFilter.Sorted(games, sort, direction).ToList();
             return new HomeGroup(
                 name,
                 presetId,
                 sorted.Take(GroupTileCount)
-                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, g.Id == runningGame))
+                    .Select(TileOf)
                     .ToList(),
                 sorted.Skip(GroupTileCount)
                     .Take(PlayHistoryCollageCount)
@@ -500,34 +507,94 @@ namespace XboxSeries.Core
                     .ToList());
         }
 
-        /// <summary>Games in the order of a preset's sort, ties in name order, as Playnite lists them.</summary>
-        private static IEnumerable<LibraryGame> Sorted(IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction)
+        /// <summary>A game's tile, marked when the game is running.</summary>
+        private HomeTile TileOf(LibraryGame game) => new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame);
+
+        /// <summary>
+        /// Opens My games &amp; apps on <paramref name="item"/>, or moves it there. The first time the page takes over the
+        /// main list, the user's own filter and sort are kept, to give back when the page goes.
+        /// </summary>
+        public void OpenMyGames(MyGamesItem item)
         {
-            var byName = StringComparer.CurrentCultureIgnoreCase;
-            if (sort == GameSort.Name)
+            if (!ownsMainList)
             {
-                return direction == SortDirection.Ascending
-                    ? games.OrderBy(g => g.SortingName, byName)
-                    : games.OrderByDescending(g => g.SortingName, byName);
+                playnite.SaveUserFilter();
+                ownsMainList = true;
             }
 
-            Func<LibraryGame, IComparable> key;
-            switch (sort)
+            if (!MyGames.IsShown || MyGames.Item != item)
             {
-                case GameSort.LastActivity: key = g => g.LastActivity; break;
-                case GameSort.Added: key = g => g.Added; break;
-                case GameSort.Modified: key = g => g.Modified; break;
-                case GameSort.ReleaseDate: key = g => g.ReleaseDate; break;
-                case GameSort.Playtime: key = g => g.Playtime; break;
-                case GameSort.PlayCount: key = g => g.PlayCount; break;
-                default: throw new ArgumentOutOfRangeException(nameof(sort), sort, null);
+                playnite.ShowInMainList(item == MyGamesItem.Games ? GameListFilter.Installed : GameListFilter.LastPlayed);
             }
 
-            // Games without the field (never played, no release date) come last either way.
-            var ordered = direction == SortDirection.Ascending
-                ? games.OrderBy(g => key(g) == null).ThenBy(key)
-                : games.OrderBy(g => key(g) == null).ThenByDescending(key);
-            return ordered.ThenBy(g => g.SortingName, byName);
+            RefreshPlayHistory();
+            MyGames.Item = item;
+            MyGames.IsShown = true;
+        }
+
+        /// <summary>
+        /// B on the page: back to Home. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
+        /// prompt still showing answers the B instead.
+        /// </summary>
+        public void LeaveMyGames()
+        {
+            if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            {
+                CloseMyGames();
+            }
+        }
+
+        /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back.</summary>
+        public void OnApplicationStopped()
+        {
+            GiveBackMainList();
+        }
+
+        private void CloseMyGames()
+        {
+            MyGames.IsShown = false;
+            GiveBackMainList();
+        }
+
+        private void GiveBackMainList()
+        {
+            if (ownsMainList)
+            {
+                ownsMainList = false;
+                playnite.RestoreUserFilter();
+            }
+        }
+
+        /// <summary>Rebuilds Play history: played games, newest first, never hidden ones, in sections by when they were played.</summary>
+        private void RefreshPlayHistory()
+        {
+            var today = clock.Now.Date;
+            MyGames.PlayHistory = PlayedGames()
+                .GroupBy(g => PlayedWhen(g.LastActivity.Value, today))
+                .Select(section => new PlayHistorySection(
+                    section.Key,
+                    section.Select(g => new PlayHistoryEntry(TileOf(g), g.LastActivity.Value, g.Platform)).ToList()))
+                .ToList();
+        }
+
+        /// <summary>
+        /// The Play history section of a game last played at <paramref name="played"/>: Playnite's own last-activity
+        /// segments, by calendar day, week (from the culture's first day), month and year.
+        /// </summary>
+        private static string PlayedWhen(DateTime played, DateTime today)
+        {
+            var day = played.Date;
+            var firstDay = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+            var thisWeek = today.AddDays(-(((int)today.DayOfWeek - (int)firstDay + 7) % 7));
+            var thisMonth = new DateTime(today.Year, today.Month, 1);
+            return day >= today ? "Today"
+                : day == today.AddDays(-1) ? "Yesterday"
+                : day >= thisWeek ? "This week"
+                : day >= thisWeek.AddDays(-7) ? "Last week"
+                : day >= thisMonth ? "This month"
+                : day >= thisMonth.AddMonths(-1) ? "Last month"
+                : day.Year == today.Year ? "This year"
+                : "Older";
         }
 
         /// <summary>A game's background art, or its cover when it has none; null for no game or no art.</summary>
@@ -601,9 +668,17 @@ namespace XboxSeries.Core
             switch (item.Kind)
             {
                 case GuideItemKind.Home:
-                    return () => playnite.BringToFront(DashboardPage.Home);
+                    return () =>
+                    {
+                        CloseMyGames();
+                        playnite.BringToFront(DashboardPage.Home);
+                    };
                 case GuideItemKind.MyGamesAndApps:
-                    return () => playnite.BringToFront(DashboardPage.MyGamesAndApps);
+                    return () =>
+                    {
+                        playnite.BringToFront(DashboardPage.MyGamesAndApps);
+                        OpenMyGames(MyGamesItem.Games);
+                    };
                 case GuideItemKind.RunningGame:
                     return ReturnToRunningGame;
                 case GuideItemKind.RecentGame:

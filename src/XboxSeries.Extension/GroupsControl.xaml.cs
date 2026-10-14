@@ -44,6 +44,7 @@ namespace XboxSeries.Extension
             GotKeyboardFocus += OnGotKeyboardFocus;
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
+            IsVisibleChanged += OnVisibleChanged;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -88,6 +89,15 @@ namespace XboxSeries.Extension
             {
                 lastGroup = 0;
                 lastGame = null;
+                FocusTileSoon();
+            }
+        }
+
+        /// <summary>Back on Home from My games &amp; apps, which hides Home's rows: the Groups take focus if they are the screen showing.</summary>
+        private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue && homeScreen.ShowsGroups)
+            {
                 FocusTileSoon();
             }
         }

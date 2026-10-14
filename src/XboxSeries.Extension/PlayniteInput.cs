@@ -33,6 +33,14 @@ namespace XboxSeries.Extension
         public static ButtonState ToState(ControllerInputState state) =>
             state == ControllerInputState.Pressed ? ButtonState.Pressed : ButtonState.Released;
 
+        /// <summary>
+        /// The pad button behind one of Playnite's own key events; null for a real key. Playnite routes the pad's
+        /// buttons to the focused element as key events with no Key, before it raises them to extensions. Its event
+        /// type isn't in the SDK, so the button is read by name.
+        /// </summary>
+        public static ControllerInput? PadButtonOf(KeyEventArgs e) =>
+            e.GetType().GetProperty("Button")?.GetValue(e) as ControllerInput?;
+
 #if DEBUG
         /// <summary>
         /// Debug builds only: keys standing in for pad buttons in the Guide and the tile menu, for testing without a

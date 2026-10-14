@@ -43,9 +43,10 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history once that page exists (#35). -->
+            <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history. -->
             <!-- With nothing for the collage, the tile shows the history icon instead. -->
-            <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0">
+            <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0"
+                    Click="OnPlayHistoryClick" KeyDown="OnPlayHistoryKeyDown">
                 <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding PlayHistory}" Tag="&#xE81C;" />
             </Button>
         </StackPanel>

@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Playnite.SDK.Controls;
+using Playnite.SDK.Events;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -49,6 +50,7 @@ namespace XboxSeries.Extension
             };
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
+            IsVisibleChanged += OnVisibleChanged;
 
             // New or regenerated tiles: find them again on the next frame that needs them.
             Tiles.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
@@ -127,6 +129,15 @@ namespace XboxSeries.Extension
             }
         }
 
+        /// <summary>Back on Home from My games &amp; apps, which hides Home's rows: the row takes focus if it is the screen showing.</summary>
+        private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue && !homeScreen.ShowsGroups)
+            {
+                FocusTileSoon();
+            }
+        }
+
         private void OnGameDetailsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             // Back from a Game hub opened here, or from anywhere when no row has had focus yet.
@@ -151,6 +162,21 @@ namespace XboxSeries.Extension
             if (((FrameworkElement)sender).DataContext is HomeTile tile)
             {
                 core.LeaveHomeTile(tile);
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnPlayHistoryKeyDown.
+        private void OnPlayHistoryClick(object sender, RoutedEventArgs e)
+        {
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+        }
+
+        private void OnPlayHistoryKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            {
+                e.Handled = true;
+                core.OpenMyGames(MyGamesItem.PlayHistory);
             }
         }
 

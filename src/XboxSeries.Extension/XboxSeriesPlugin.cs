@@ -17,6 +17,7 @@ namespace XboxSeries.Extension
         private readonly Win32WindowSystem windows = new Win32WindowSystem();
         private readonly HomeScreen homeScreen = new HomeScreen();
         private readonly PlayniteSounds sounds;
+        private readonly PlayniteHost host;
         private bool libraryPushed;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
@@ -30,13 +31,14 @@ namespace XboxSeries.Extension
         {
             Properties = new GenericPluginProperties { HasSettings = false };
             sounds = new PlayniteSounds(api);
-            core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost(api), sounds);
+            host = new PlayniteHost(api, GetPluginUserDataPath());
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds);
 
-            // Home's elements, placed by the Dashboard as ContentControls named XboxSeries_<element>.
+            // Home's elements and My games & apps, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames" },
             });
         }
 
@@ -55,6 +57,7 @@ namespace XboxSeries.Extension
                 case "RecentRow": return new RecentRowControl(core, homeScreen);
                 case "Groups": return new GroupsControl(core, homeScreen);
                 case "TileMenu": return new TileMenuControl(core);
+                case "MyGames": return new MyGamesControl(core);
                 default: return null;
             }
         }
@@ -66,6 +69,11 @@ namespace XboxSeries.Extension
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
+            if (PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen)
+            {
+                host.RestoreLeftUserFilter();
+            }
+
             PushLibrary();
             GameHubFocusSounds.Register(sounds);
             sounds.Play(UiSound.Login);
@@ -84,6 +92,9 @@ namespace XboxSeries.Extension
             debugGuideHotkey?.Dispose();
 #endif
             windows.Overlay?.Close();
+
+            // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
+            PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
 
             // Playnite releases its audio engine only after this returns, so the sound gets to finish.
             sounds.PlayToEnd(UiSound.PowerOff);

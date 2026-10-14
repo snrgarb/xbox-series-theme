@@ -22,6 +22,18 @@ namespace XboxSeries.Core
 
         /// <summary>Marks the game as a favourite in Playnite's library, or unmarks it.</summary>
         void SetFavourite(Guid gameId, bool favourite);
+
+        /// <summary>
+        /// Keeps the user's own Fullscreen filter and sort, before the Dashboard first puts its own on the main list.
+        /// They are saved settings, so they are kept until <see cref="RestoreUserFilter"/>, even across a crash.
+        /// </summary>
+        void SaveUserFilter();
+
+        /// <summary>Puts the filter and sort kept by <see cref="SaveUserFilter"/> back on the main list.</summary>
+        void RestoreUserFilter();
+
+        /// <summary>Shows <paramref name="filter"/>'s games in the main list, in its order, as a filter preset the extension builds.</summary>
+        void ShowInMainList(GameListFilter filter);
     }
 
     /// <summary>The Dashboard pages the Guide can take the user to.</summary>

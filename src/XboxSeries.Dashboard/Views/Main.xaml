@@ -4,6 +4,8 @@
     (DerivedStyles/ListGameItem*.xaml). With the extension, its hero, Recent row and Groups replace the theme-only
     hero and list, and its tile menu floats over them, injected as custom elements (ContentControls named XboxSeries_<element>). The extension's
     own elements are never referenced by type; the switch is gated by {PluginStatus} on the extension's add-on id.
+    The extension's My games & apps page (XboxSeries_MyGames) replaces Home while its State.IsShown is true, with Playnite's
+    main list beside its nav while State.ShowsGameGrid is; both are read by path, so they are inert without it.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -67,6 +69,34 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Home only: hidden while the extension's My games & apps page is up. -->
+    <Style x:Key="XboxHomeOnly" TargetType="FrameworkElement">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_MyGames}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--
+        Playnite's main list: Home's tiles theme-only. With the extension it is hidden but stays in the tree, because the
+        Game hub shows its selected game, and it comes back as My games & apps' grid, beside the page's nav.
+    -->
+    <Style x:Key="XboxMainList" TargetType="Grid">
+        <Setter Property="Grid.Row" Value="1" />
+        <Style.Triggers>
+            <DataTrigger Binding="{PluginStatus Plugin=XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b, Status=Installed}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Content.State.ShowsGameGrid, ElementName=XboxSeries_MyGames}" Value="True">
+                <Setter Property="Visibility" Value="Visible" />
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.RowSpan" Value="3" />
+                <Setter Property="Margin" Value="400,-30,-20,0" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style TargetType="{x:Type Main}">
         <Setter Property="Template">
             <Setter.Value>
@@ -91,11 +121,16 @@
                                 <FadeImage x:Name="PART_ImageBackground"
                                            HorizontalAlignment="Center" VerticalAlignment="Top" />
                             </Grid>
-                            <ContentControl x:Name="XboxSeries_Hero" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
+                            <ContentControl x:Name="XboxSeries_Hero" Grid.RowSpan="2" Focusable="False" IsTabStop="False"
+                                            Style="{StaticResource XboxHomeOnly}" />
                             <Rectangle Grid.RowSpan="2" Fill="{DynamicResource XboxHeroScrimBrush}" IsHitTestVisible="False" />
 
+                            <!-- With the extension, My games & apps: its nav, header and Play history, over the whole page. -->
+                            <ContentControl x:Name="XboxSeries_MyGames" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
+
                             <!-- Top bar: profile on the left, pages in the middle, status on the right. -->
-                            <Grid Grid.Row="0" Margin="105,84,105,0" Height="60" VerticalAlignment="Top">
+                            <Grid Grid.Row="0" Margin="105,84,105,0" Height="60" VerticalAlignment="Top"
+                                  Style="{StaticResource XboxHomeOnly}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -135,19 +170,20 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <!-- My games & apps exists only with the extension; inert until that page is wired up. -->
-                                    <Button Tag="My games &amp; apps" Focusable="False">
-                                        <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource XboxTopBarButton}">
+                                    <!-- My games & apps exists only with the extension, which opens it on Games. -->
+                                    <ButtonEx Tag="My games &amp; apps"
+                                              Command="{Binding Content.OpenGamesCommand, ElementName=XboxSeries_MyGames}">
+                                        <ButtonEx.Style>
+                                            <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxTopBarButton}">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{PluginStatus Plugin=XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b, Status=Installed}" Value="False">
                                                         <Setter Property="Visibility" Value="Collapsed" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
-                                        </Button.Style>
+                                        </ButtonEx.Style>
                                         <TextBlock Text="&#xE8F1;" Style="{StaticResource XboxIcon}" />
-                                    </Button>
+                                    </ButtonEx>
                                     <!-- Playnite's name filter of the main list, as Y. Search proper is the extension's page. -->
                                     <ButtonEx x:Name="PART_ButtonSearch" Tag="Filter by name" Style="{StaticResource XboxTopBarButton}">
                                         <TextBlock Text="&#xE721;" Style="{StaticResource XboxIcon}" />
@@ -254,8 +290,8 @@
                                                    Margin="24,0,0,0" />
                                     </StackPanel>
 
-                                    <!-- Theme-only: Playnite's main list as Xbox tiles. It stays in the tree with the extension, hidden, because the Game hub shows its selected game. -->
-                                    <Grid Grid.Row="1" Style="{StaticResource XboxThemeOnly}">
+                                    <!-- Playnite's main list as Xbox tiles: Home theme-only, My games & apps' grid with the extension. -->
+                                    <Grid Style="{StaticResource XboxMainList}">
                                         <ListBoxEx x:Name="PART_ListGameItems" Margin="80,0,80,0"
                                                    Background="Transparent" BorderThickness="0"
                                                    KeyboardNavigation.DirectionalNavigation="Once" />
@@ -281,8 +317,10 @@
                                         Groups below it, over the whole page under the top bar. Only one shows at a time; the extension flies one
                                         out and the other in as focus moves between them. Empty, and so harmless, without it.
                                     -->
-                                    <ContentControl x:Name="XboxSeries_RecentRow" Grid.Row="1" Focusable="False" IsTabStop="False" />
-                                    <ContentControl x:Name="XboxSeries_Groups" Grid.RowSpan="3" Focusable="False" IsTabStop="False" />
+                                    <ContentControl x:Name="XboxSeries_RecentRow" Grid.Row="1" Focusable="False" IsTabStop="False"
+                                                    Style="{StaticResource XboxHomeOnly}" />
+                                    <ContentControl x:Name="XboxSeries_Groups" Grid.RowSpan="3" Focusable="False" IsTabStop="False"
+                                                    Style="{StaticResource XboxHomeOnly}" />
                                 </Grid>
                             </DockPanel>
                         </Grid>
