@@ -2,8 +2,8 @@
     The Game hub: the Dashboard's page for one game, modelled on the Xbox game hub. It replaces Playnite's Game details
     view and is complete with the theme alone: blurred art behind a header, a row of cards and the actions under them.
     Like the console, the hub has two pages that share the header and actions: Game hub (cover, stats, About and Info)
-    and Game details (cover, trailer, the full description, Info). The last action, or A on the About or Info card,
-    switches between them; only the cards change.
+    and Game details (cover, trailer, the full description, Info). The last action switches between them; only the
+    cards change. A on a card does nothing.
     The data context is the selected game (Playnite's GamesCollectionViewEntry). Playnite binds the PART_ elements and
     the hub's keys itself: B closes, LB/RB move to the previous or next game, and focus starts on the first visible
     focusable element, which is the main action. Menu is bound here, to Playnite's game menu.
@@ -135,7 +135,8 @@
 
     <!--
         A card: a translucent panel that takes the ring while it, or anything in it, has focus. Cards that hold their
-        own focusable content (About's scroller) set Focusable to False so the D-pad stops once.
+        own focusable content (the description's scroller) set Focusable to False so the D-pad stops once. Focusable cards
+        are ButtonEx, which Playnite sounds as focus lands on it, with nothing to do on A.
     -->
     <ControlTemplate x:Key="XboxHubCardTemplate" TargetType="ContentControl">
         <Grid>
@@ -644,7 +645,7 @@
                                 <StackPanel Orientation="Horizontal" Margin="80,24,64,24">
 
                                     <!-- Cover, with the game's source (or platform) as a badge. -->
-                                    <ContentControl Style="{StaticResource XboxHubCard}" Width="375" Padding="0">
+                                    <ButtonEx Style="{StaticResource XboxHubCard}" Width="375" Padding="0">
                                         <Grid ClipToBounds="True">
                                             <Image x:Name="PART_ImageCover" Stretch="UniformToFill"
                                                    RenderOptions.BitmapScalingMode="Fant" />
@@ -671,13 +672,13 @@
                                                 </Border.Style>
                                             </Border>
                                         </Grid>
-                                    </ContentControl>
+                                    </ButtonEx>
 
                                     <!-- Game hub. -->
                                     <StackPanel x:Name="HubCards" Orientation="Horizontal">
                                         <!-- Your game stats. -->
-                                        <ContentControl Width="416">
-                                            <ContentControl.Style>
+                                        <ButtonEx Width="416">
+                                            <ButtonEx.Style>
                                                 <Style TargetType="ContentControl" BasedOn="{StaticResource XboxHubCard}">
                                                     <Style.Triggers>
                                                         <MultiDataTrigger>
@@ -692,7 +693,7 @@
                                                         </MultiDataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
-                                            </ContentControl.Style>
+                                            </ButtonEx.Style>
                                             <StackPanel>
                                                 <TextBlock Text="Your game stats" Style="{StaticResource XboxHubCardTitle}" />
                                                 <StackPanel x:Name="StatsPlaytime">
@@ -779,22 +780,19 @@
                                                                  Value="{PluginSettings Plugin=PlayniteAchievements, Path=Percent}" />
                                                 </StackPanel>
                                             </StackPanel>
-                                        </ContentControl>
+                                        </ButtonEx>
 
-                                        <!--
-                                            About: the start of the description; A turns to Game details, which has all of it.
-                                            Bound to the page toggle, so pressing it flips the toggle too.
-                                        -->
-                                        <ToggleButtonEx Width="480" IsChecked="{Binding IsChecked, ElementName=PageToggle, Mode=TwoWay}">
-                                            <ToggleButtonEx.Style>
-                                                <Style TargetType="ToggleButtonEx" BasedOn="{StaticResource XboxHubCard}">
+                                        <!-- About: the start of the description; Game details has all of it. -->
+                                        <ButtonEx Width="480">
+                                            <ButtonEx.Style>
+                                                <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxHubCard}">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Description, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
                                                             <Setter Property="Visibility" Value="Collapsed" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
-                                            </ToggleButtonEx.Style>
+                                            </ButtonEx.Style>
                                             <DockPanel>
                                                 <TextBlock DockPanel.Dock="Top" Text="About" Style="{StaticResource XboxHubCardTitle}" />
                                                 <ContentPresenter DockPanel.Dock="Bottom" Content="{Binding}" ContentTemplate="{StaticResource XboxHubFeatureChips}" />
@@ -806,12 +804,11 @@
                                                               HtmlForeground="#E6FFFFFF"
                                                               LinkForeground="{DynamicResource GlyphLightColor}" />
                                             </DockPanel>
-                                        </ToggleButtonEx>
+                                        </ButtonEx>
 
-                                        <!-- Info; A, like About's, turns to Game details. -->
-                                        <ToggleButtonEx x:Name="HubInfo" Width="436" IsChecked="{Binding IsChecked, ElementName=PageToggle, Mode=TwoWay}"
-                                                        Content="{Binding}" ContentTemplate="{StaticResource XboxHubInfo}"
-                                                        Style="{StaticResource XboxHubInfoCard}" />
+                                        <!-- Info. -->
+                                        <ButtonEx x:Name="HubInfo" Width="436" Content="{Binding}" ContentTemplate="{StaticResource XboxHubInfo}"
+                                                  Style="{StaticResource XboxHubInfoCard}" />
                                     </StackPanel>
 
                                     <!-- Game details. -->
@@ -820,7 +817,7 @@
                                             Trailer: Extra Metadata Loader's player, muted, over the game's background art, or its
                                             cover when it has no art. Without the add-on, or a video, only the art shows.
                                         -->
-                                        <ContentControl Style="{StaticResource XboxHubCard}" Width="889" Padding="0">
+                                        <ButtonEx Style="{StaticResource XboxHubCard}" Width="889" Padding="0">
                                             <Grid ClipToBounds="True">
                                                 <Image Source="{Binding CoverImageObject}" Stretch="UniformToFill"
                                                        RenderOptions.BitmapScalingMode="Fant" />
@@ -828,7 +825,7 @@
                                                        RenderOptions.BitmapScalingMode="Fant" />
                                                 <ContentControl x:Name="ExtraMetadataLoader_VideoLoaderControl_NoControls_NoSound" Focusable="False" />
                                             </Grid>
-                                        </ContentControl>
+                                        </ButtonEx>
 
                                         <!-- Description: the whole of it, scrolled with the D-pad, and the features under it. -->
                                         <ContentControl x:Name="DetailsDescription" Width="480" Focusable="False">
@@ -857,9 +854,9 @@
                                             </DockPanel>
                                         </ContentControl>
 
-                                        <ContentControl x:Name="DetailsInfo" Width="436" Content="{Binding}"
-                                                        ContentTemplate="{StaticResource XboxHubInfo}"
-                                                        Style="{StaticResource XboxHubInfoCard}" />
+                                        <ButtonEx x:Name="DetailsInfo" Width="436" Content="{Binding}"
+                                                  ContentTemplate="{StaticResource XboxHubInfo}"
+                                                  Style="{StaticResource XboxHubInfoCard}" />
                                     </StackPanel>
                                 </StackPanel>
                                 </StackPanel>
@@ -899,8 +896,7 @@
                         <Trigger SourceName="PageToggle" Property="IsChecked" Value="True">
                             <Setter TargetName="HubCards" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="DetailsCards" Property="Visibility" Value="Visible" />
-                            <!-- A on About or Info hides the card it was pressed on; focus goes to the page toggle,
-                                 not nowhere. -->
+                            <!-- Focus stays on the page toggle, not on a card the page has hidden. -->
                             <Setter TargetName="Cards" Property="FocusManager.FocusedElement" Value="{Binding ElementName=PageToggle}" />
                         </Trigger>
 

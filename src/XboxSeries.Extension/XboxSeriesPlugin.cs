@@ -67,6 +67,7 @@ namespace XboxSeries.Extension
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
             PushLibrary();
+            GameHubFocusSounds.Register(sounds);
             sounds.Play(UiSound.Login);
 
             // Database events can arrive on background threads; the core only runs on the UI thread.
