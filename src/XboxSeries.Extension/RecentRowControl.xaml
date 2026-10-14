@@ -40,7 +40,18 @@
                                 <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
                             </Storyboard>
                         </ControlTemplate.Resources>
-                        <Grid Background="#FF1A1A1A">
+                        <Grid x:Name="Tile" Background="#FF1A1A1A">
+                            <!-- Rounded corners, as on the console: the art, title and ring are all clipped to them. -->
+                            <Grid.OpacityMask>
+                                <VisualBrush>
+                                    <VisualBrush.Visual>
+                                        <Border Background="Black" CornerRadius="6"
+                                                Width="{Binding ActualWidth, ElementName=Tile}"
+                                                Height="{Binding ActualHeight, ElementName=Tile}" />
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Grid.OpacityMask>
+
                             <ContentPresenter />
 
                             <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False">
@@ -56,7 +67,7 @@
                             </Border>
 
                             <!-- Inside the tile's bounds, so the next tile, drawn after it, can't cover part of it. -->
-                            <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="2"
+                            <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="6"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                         </Grid>
                         <ControlTemplate.Triggers>
