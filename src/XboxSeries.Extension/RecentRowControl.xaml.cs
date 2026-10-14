@@ -154,7 +154,7 @@ namespace XboxSeries.Extension
             }
         }
 
-        // Playnite sends the pad's A as Enter, which clicks the focused tile.
+        // The keyboard's Enter and the mouse click the tile; the pad's A reaches the core as a button instead.
         private void OnTileClick(object sender, RoutedEventArgs e)
         {
             core.ChooseHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
