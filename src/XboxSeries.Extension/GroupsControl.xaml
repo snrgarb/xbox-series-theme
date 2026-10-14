@@ -5,9 +5,9 @@
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
     <!--
-        Home's Groups, below the Recent row: one row per Group, its name over up to 10 game tiles and a See all tile.
-        The tiles are the Recent row's, at its size at rest; they don't grow on focus, which only rings and titles them.
-        A row longer than the screen scrolls sideways as focus moves along it.
+        Home's Groups: the screen below the Recent row, which flies in as the Recent row flies out. One row per Group,
+        its name over up to 7 game tiles and a See all tile: the Recent row's tiles, growing on focus the same way, so
+        each row is the Recent row's width. The focused Group slides to the top of the screen; the rest follow it.
     -->
     <controls:PluginUserControl.Resources>
         <ResourceDictionary>
@@ -17,44 +17,53 @@
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
-    <!-- At the Recent row's fixed 1080p width and scaled the same way, so the two line up at the same size. -->
-    <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,0,115,0">
-        <ItemsControl x:Name="Rows" ItemsSource="{Binding Groups}" Width="1526" Focusable="False">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="0,0,0,48">
-                        <TextBlock Text="{Binding Name}" Margin="0,0,0,14" TextTrimming="CharacterEllipsis"
-                                   FontFamily="{DynamicResource XboxFontSemibold}" FontSize="24" Foreground="White" />
+    <!--
+        At the Recent row's fixed 1080p width and scaled the same way, so the two line up at the same size. Short enough
+        that the width always sets the scale; Groups past its bottom, or scrolled past its top, are cut off there.
+    -->
+    <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,40,115,0">
+        <!-- 5 px wider each side than the row, cancelled by its margins, so the clip clears the focus ring. -->
+        <Grid Width="1536" Height="740" Margin="-5,0" ClipToBounds="True">
+            <ItemsControl x:Name="Rows" ItemsSource="{Binding Groups}" Focusable="False" VerticalAlignment="Top" Margin="5,0">
+                <ItemsControl.RenderTransform>
+                    <TranslateTransform x:Name="Scroll" />
+                </ItemsControl.RenderTransform>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- As tall as a focused tile and its name, so focus never shifts the rows; the name sits on the tallest tile. -->
+                        <Grid Height="290" Margin="0,0,0,40">
+                            <StackPanel VerticalAlignment="Bottom">
+                                <TextBlock Text="{Binding Name}" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"
+                                           FontFamily="{DynamicResource XboxFontSemibold}" FontSize="24" Foreground="White" />
 
-                        <!-- Room around the tiles, inside the clip, for the focus ring that sits just past them. -->
-                        <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
-                                      Focusable="False" Margin="-6">
-                            <StackPanel Orientation="Horizontal" Margin="6">
-                                <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
-                                                    Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
-                                                    Click="OnTileClick" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <!-- No layout rounding: rounding each growing tile to whole pixels would nudge the tiles after it. -->
+                                <StackPanel Orientation="Horizontal" UseLayoutRounding="False">
+                                    <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" VerticalAlignment="Bottom">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
+                                                        Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
+                                                        Click="OnTileClick" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
 
-                                <!-- See all: the whole Group, in My games & apps once that page exists (#37). -->
-                                <Button Style="{StaticResource HomeTile}" Tag="See all" Margin="0">
-                                    <TextBlock Text="&#xE8F1;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40"
-                                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Button>
+                                    <!-- See all: the whole Group, in My games & apps once that page exists (#37). -->
+                                    <Button Style="{StaticResource HomeTile}" Tag="See all" Margin="0">
+                                        <TextBlock Text="&#xE8F1;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40"
+                                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Button>
+                                </StackPanel>
                             </StackPanel>
-                        </ScrollViewer>
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
     </Viewbox>
 </controls:PluginUserControl>

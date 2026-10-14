@@ -15,7 +15,7 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private readonly Win32WindowSystem windows = new Win32WindowSystem();
-        private readonly HomeFocus homeFocus = new HomeFocus();
+        private readonly HomeScreen homeScreen = new HomeScreen();
         private bool libraryPushed;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
@@ -50,8 +50,8 @@ namespace XboxSeries.Extension
             switch (args.Name)
             {
                 case "Hero": return new HeroControl(core.Home);
-                case "RecentRow": return new RecentRowControl(core, homeFocus);
-                case "Groups": return new GroupsControl(core, homeFocus);
+                case "RecentRow": return new RecentRowControl(core, homeScreen);
+                case "Groups": return new GroupsControl(core, homeScreen);
                 default: return null;
             }
         }

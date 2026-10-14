@@ -277,19 +277,12 @@
                                     </Grid>
 
                                     <!--
-                                        With the extension: the Recent row, injected where the theme-only list sits, with the Groups
-                                        below it, peeking in at the bottom. Home scrolls down through the Groups as focus moves, under
-                                        the top bar; the extension's rows set where it scrolls to. Empty, and so harmless, without it.
+                                        With the extension, Home has two screens, injected: the Recent row, where the theme-only list sits, and the
+                                        Groups below it, over the whole page under the top bar. Only one shows at a time; the extension flies one
+                                        out and the other in as focus moves between them. Empty, and so harmless, without it.
                                     -->
-                                    <Border x:Name="HomeRowsTop" Grid.Row="0" />
-                                    <ScrollViewer Grid.RowSpan="3" Focusable="False"
-                                                  VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-                                        <StackPanel>
-                                            <Border Height="{Binding ActualHeight, ElementName=HomeRowsTop}" />
-                                            <ContentControl x:Name="XboxSeries_RecentRow" Height="560" Focusable="False" IsTabStop="False" />
-                                            <ContentControl x:Name="XboxSeries_Groups" Focusable="False" IsTabStop="False" />
-                                        </StackPanel>
-                                    </ScrollViewer>
+                                    <ContentControl x:Name="XboxSeries_RecentRow" Grid.Row="1" Focusable="False" IsTabStop="False" />
+                                    <ContentControl x:Name="XboxSeries_Groups" Grid.RowSpan="3" Focusable="False" IsTabStop="False" />
                                 </Grid>
                             </DockPanel>
                         </Grid>
