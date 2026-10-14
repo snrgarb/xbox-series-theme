@@ -39,6 +39,16 @@ namespace XboxSeries.Extension
             core.Guide.PropertyChanged += OnGuideChanged;
             closeDeadline = new DispatcherTimer { Interval = CloseDuration.TimeSpan + TimeSpan.FromMilliseconds(100) };
             closeDeadline.Tick += (_, __) => FinishStalledSlideOut();
+            SizeChanged += (_, __) => FitToScreen();
+        }
+
+        /// <summary>The Guide is laid out 1080 tall, as wide as the screen's aspect makes that, and scaled to fit.</summary>
+        private void FitToScreen()
+        {
+            if (ActualHeight > 0)
+            {
+                Root.Width = Root.Height * ActualWidth / ActualHeight;
+            }
         }
 
         private void OnGuideChanged(object sender, PropertyChangedEventArgs e)

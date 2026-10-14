@@ -293,6 +293,36 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_hold_still_opens_Power_when_a_busy_UI_thread_delivers_the_release_before_the_timer_fires()
+        {
+            // Opening the Guide can keep the UI thread busy past the hold, so the release, queued first, is handled
+            // before the hold timer's tick. The buttons' own times decide it.
+            windows.OpenWindow();
+            var pressedAt = clock.Now;
+
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed, pressedAt);
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Released, pressedAt + TimeSpan.FromSeconds(1.2));
+
+            Assert.Equal("What do you want to do?", core.Guide.Dialog?.Title);
+            Assert.False(core.Guide.ShowsPanel);
+        }
+
+        [Fact]
+        public void A_tap_handled_late_by_a_busy_UI_thread_is_still_a_tap()
+        {
+            windows.OpenWindow();
+            var pressedAt = clock.Now;
+            clock.Advance(TimeSpan.FromSeconds(2));
+
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed, pressedAt);
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Released, pressedAt + TimeSpan.FromSeconds(0.2));
+            clock.Advance(TimeSpan.FromSeconds(2));
+
+            Assert.Null(core.Guide.Dialog);
+            Assert.True(core.Guide.ShowsPanel);
+        }
+
+        [Fact]
         public void Holding_the_Guide_button_with_the_Guide_open_swaps_the_Guide_for_Power_and_keeps_the_window_to_return_to()
         {
             var game = windows.OpenWindow();
