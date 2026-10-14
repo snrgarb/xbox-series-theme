@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,7 +20,22 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class RecentRowControl : PluginUserControl
     {
+        /// <summary>A tile's size at rest, and how much it grows when focused, at 1080p (the console captures, #7).</summary>
+        private const double TileSize = 153;
+        private const double FocusGrowth = 92;
+
+        /// <summary>How quickly a tile eases toward its size: about 98% of the way in 0.2 s, as on the console.</summary>
+        private static readonly TimeSpan GrowthTimeConstant = TimeSpan.FromMilliseconds(50);
+
         private readonly ExtensionCore core;
+
+        // Each tile's share of the focus growth. Every frame each share eases toward 1 for the focused tile and 0 for the
+        // rest by the same fraction, so the shares always add up to the same total and the row's width never changes:
+        // only the tiles growing or shrinking move, however fast focus moves. Per-tile animations can't promise that
+        // once one is interrupted mid-way.
+        private readonly Dictionary<Button, double> growth = new Dictionary<Button, double>();
+        private readonly Stopwatch frameClock = new Stopwatch();
+        private bool isAnimating;
         private Guid? lastFocusedGame;
 
         /// <summary>Whether focus is in the row. Kept by hand: a rebuild removes the focused tile before this row hears of it.</summary>
@@ -32,7 +49,11 @@ namespace XboxSeries.Extension
             DataContext = core.Home;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-            GotKeyboardFocus += (_, __) => hasFocus = true;
+            GotKeyboardFocus += (_, __) =>
+            {
+                hasFocus = true;
+                StartGrowing();
+            };
             LostKeyboardFocus += OnLostKeyboardFocus;
         }
 
@@ -54,6 +75,7 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged -= OnHomeChanged;
+            StopGrowing();
             if (gameDetails != null)
             {
                 gameDetails.IsVisibleChanged -= OnGameDetailsVisibleChanged;
@@ -77,6 +99,62 @@ namespace XboxSeries.Extension
             if (e.NewFocus is UIElement element && element.IsVisible && !IsAncestorOf(element))
             {
                 hasFocus = false;
+            }
+
+            StartGrowing();
+        }
+
+        private void StartGrowing()
+        {
+            if (!isAnimating)
+            {
+                isAnimating = true;
+                frameClock.Restart();
+                CompositionTarget.Rendering += OnFrame;
+            }
+        }
+
+        private void StopGrowing()
+        {
+            if (isAnimating)
+            {
+                isAnimating = false;
+                CompositionTarget.Rendering -= OnFrame;
+            }
+        }
+
+        /// <summary>Eases every tile's share of the growth toward its target, and sizes the tiles from their shares.</summary>
+        private void OnFrame(object sender, EventArgs e)
+        {
+            var elapsed = frameClock.Elapsed;
+            frameClock.Restart();
+            var step = 1 - Math.Exp(-elapsed.TotalMilliseconds / GrowthTimeConstant.TotalMilliseconds);
+
+            var tiles = AllTiles();
+            foreach (var gone in growth.Keys.Except(tiles).ToList())
+            {
+                growth.Remove(gone);
+            }
+
+            var targets = tiles.ToDictionary(t => t, t => t.IsKeyboardFocused ? 1.0 : 0.0);
+            var shares = tiles.ToDictionary(t => t, t =>
+            {
+                growth.TryGetValue(t, out var share);
+                return share + (targets[t] - share) * step;
+            });
+
+            // All tiles settle in the same frame, so snapping to the targets keeps the shares' total exact.
+            var settled = tiles.All(t => Math.Abs(targets[t] - shares[t]) < 0.002);
+            foreach (var tile in tiles)
+            {
+                var share = settled ? targets[tile] : shares[tile];
+                growth[tile] = share;
+                tile.Width = tile.Height = TileSize + FocusGrowth * share;
+            }
+
+            if (settled)
+            {
+                StopGrowing();
             }
         }
 
@@ -111,14 +189,24 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                var tiles = Enumerable.Range(0, Tiles.Items.Count)
-                    .Select(i => Tiles.ItemContainerGenerator.ContainerFromIndex(i))
-                    .Select(container => container == null ? null : FindChild<Button>(container))
-                    .Where(button => button != null)
-                    .ToList();
+                var tiles = GameTiles();
                 var tile = tiles.FirstOrDefault(b => ((HomeTile)b.DataContext).GameId == lastFocusedGame) ?? tiles.FirstOrDefault();
                 (tile ?? PlayHistoryTile).Focus();
             }));
+        }
+
+        private List<Button> GameTiles() =>
+            Enumerable.Range(0, Tiles.Items.Count)
+                .Select(i => Tiles.ItemContainerGenerator.ContainerFromIndex(i))
+                .Select(container => container == null ? null : FindChild<Button>(container))
+                .Where(button => button != null)
+                .ToList();
+
+        private List<Button> AllTiles()
+        {
+            var tiles = GameTiles();
+            tiles.Add(PlayHistoryTile);
+            return tiles;
         }
 
         /// <summary>Playnite's Game details view in the Main template this row sits in; null if the theme has none.</summary>
