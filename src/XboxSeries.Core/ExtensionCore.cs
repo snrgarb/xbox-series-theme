@@ -13,11 +13,8 @@ namespace XboxSeries.Core
         /// <summary>How many recent games fit on the landing tab, as on the console.</summary>
         private const int RecentGameCount = 4;
 
-        /// <summary>
-        /// How many games the Recent row on Home holds, before its Play history tile. The console shows 8 and Play
-        /// history; 7 keeps the row to 8 tiles, which fit a 16:10 screen at a readable size.
-        /// </summary>
-        private const int RecentRowCount = 7;
+        /// <summary>How many games the Recent row on Home holds, before its Play history tile, as on the console.</summary>
+        private const int RecentRowCount = 8;
 
         /// <summary>How many games the Play history tile's collage shows.</summary>
         private const int PlayHistoryCollageCount = 4;
