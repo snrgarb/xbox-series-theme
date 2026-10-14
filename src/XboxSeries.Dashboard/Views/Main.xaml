@@ -1,7 +1,7 @@
 <!--
     Home: the Dashboard's landing page, modelled on the Xbox Home screen.
     Works with the theme alone: the top bar, the hero and Playnite's main list styled as Xbox tiles
-    (DerivedStyles/ListGameItem*.xaml). With the extension, its hero and Recent row replace the theme-only
+    (DerivedStyles/ListGameItem*.xaml). With the extension, its hero, Recent row and Groups replace the theme-only
     hero and list, injected as custom elements (ContentControls named XboxSeries_<element>). The extension's
     own elements are never referenced by type; the switch is gated by {PluginStatus} on the extension's add-on id.
 -->
@@ -276,8 +276,20 @@
                                         </TextBlock>
                                     </Grid>
 
-                                    <!-- With the extension: the Recent row, injected. Empty, and so harmless, without it. -->
-                                    <ContentControl x:Name="XboxSeries_RecentRow" Grid.Row="1" Focusable="False" IsTabStop="False" />
+                                    <!--
+                                        With the extension: the Recent row, injected where the theme-only list sits, with the Groups
+                                        below it, peeking in at the bottom. Home scrolls down through the Groups as focus moves, under
+                                        the top bar; the extension's rows set where it scrolls to. Empty, and so harmless, without it.
+                                    -->
+                                    <Border x:Name="HomeRowsTop" Grid.Row="0" />
+                                    <ScrollViewer Grid.RowSpan="3" Focusable="False"
+                                                  VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                                        <StackPanel>
+                                            <Border Height="{Binding ActualHeight, ElementName=HomeRowsTop}" />
+                                            <ContentControl x:Name="XboxSeries_RecentRow" Height="560" Focusable="False" IsTabStop="False" />
+                                            <ContentControl x:Name="XboxSeries_Groups" Focusable="False" IsTabStop="False" />
+                                        </StackPanel>
+                                    </ScrollViewer>
                                 </Grid>
                             </DockPanel>
                         </Grid>

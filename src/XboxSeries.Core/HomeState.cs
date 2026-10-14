@@ -9,6 +9,7 @@ namespace XboxSeries.Core
     {
         private IReadOnlyList<HomeTile> recentRow = new HomeTile[0];
         private IReadOnlyList<HomeTile> playHistory = new HomeTile[0];
+        private IReadOnlyList<HomeGroup> groups = new HomeGroup[0];
         private HeroArt hero;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -25,6 +26,13 @@ namespace XboxSeries.Core
         {
             get => playHistory;
             internal set => Set(ref playHistory, value, nameof(PlayHistory));
+        }
+
+        /// <summary>The Groups below the Recent row, top to bottom. Each ends in a See all tile.</summary>
+        public IReadOnlyList<HomeGroup> Groups
+        {
+            get => groups;
+            internal set => Set(ref groups, value, nameof(Groups));
         }
 
         /// <summary>The art behind Home, from the last Recent-row game to have focus; null when there is none.</summary>
@@ -44,6 +52,25 @@ namespace XboxSeries.Core
             field = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+    }
+
+    /// <summary>A Group on Home: a row of one filter preset's games, or of the user's favourites by default.</summary>
+    public sealed class HomeGroup
+    {
+        internal HomeGroup(string name, Guid? filterPresetId, IReadOnlyList<HomeTile> tiles)
+        {
+            Name = name;
+            FilterPresetId = filterPresetId;
+            Tiles = tiles;
+        }
+
+        public string Name { get; }
+
+        /// <summary>The filter preset the Group shows; null for the default Favourites Group.</summary>
+        public Guid? FilterPresetId { get; }
+
+        /// <summary>The Group's first games, left to right. The See all tile follows them.</summary>
+        public IReadOnlyList<HomeTile> Tiles { get; }
     }
 
     /// <summary>One game tile on Home.</summary>

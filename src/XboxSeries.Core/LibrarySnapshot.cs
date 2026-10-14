@@ -40,7 +40,13 @@ namespace XboxSeries.Core
             string source,
             string installDirectory,
             string backgroundImage = null,
-            string coverImage = null)
+            string coverImage = null,
+            bool favorite = false,
+            ulong playtime = 0,
+            ulong playCount = 0,
+            DateTime? releaseDate = null,
+            DateTime? modified = null,
+            string sortingName = null)
         {
             Id = id;
             Name = name;
@@ -54,6 +60,12 @@ namespace XboxSeries.Core
             InstallDirectory = installDirectory;
             BackgroundImage = backgroundImage;
             CoverImage = coverImage;
+            Favorite = favorite;
+            Playtime = playtime;
+            PlayCount = playCount;
+            ReleaseDate = releaseDate;
+            Modified = modified;
+            SortingName = string.IsNullOrEmpty(sortingName) ? name : sortingName;
         }
 
         public Guid Id { get; }
@@ -76,15 +88,39 @@ namespace XboxSeries.Core
 
         /// <summary>The full path or URL of the game's cover art; null when it has none.</summary>
         public string CoverImage { get; }
+
+        public bool Favorite { get; }
+
+        /// <summary>Total time played, in seconds.</summary>
+        public ulong Playtime { get; }
+
+        public ulong PlayCount { get; }
+        public DateTime? ReleaseDate { get; }
+
+        /// <summary>When the game's data was last changed in Playnite.</summary>
+        public DateTime? Modified { get; }
+
+        /// <summary>The name Playnite sorts the game by: its sorting name when it has one, otherwise its name.</summary>
+        public string SortingName { get; }
     }
 
+    /// <summary>A Playnite filter preset. Snapshots list them in Playnite's own order.</summary>
     public sealed class FilterPreset
     {
-        public FilterPreset(Guid id, string name, bool showInFullscreenQuickSelection)
+        public FilterPreset(
+            Guid id,
+            string name,
+            bool showInFullscreenQuickSelection,
+            IReadOnlyList<Guid> games = null,
+            GameSort? sort = null,
+            SortDirection sortDirection = SortDirection.Ascending)
         {
             Id = id;
             Name = name;
             ShowInFullscreenQuickSelection = showInFullscreenQuickSelection;
+            Games = games ?? new Guid[0];
+            Sort = sort;
+            SortDirection = sortDirection;
         }
 
         public Guid Id { get; }
@@ -92,6 +128,32 @@ namespace XboxSeries.Core
 
         /// <summary>The Playnite flag that makes this preset a Group on Home.</summary>
         public bool ShowInFullscreenQuickSelection { get; }
+
+        /// <summary>The games the preset's filter matches, as Playnite evaluates it, in no particular order.</summary>
+        public IReadOnlyList<Guid> Games { get; }
+
+        /// <summary>The preset's own sort; null when it has none, or one the core doesn't support, so name order applies.</summary>
+        public GameSort? Sort { get; }
+
+        public SortDirection SortDirection { get; }
+    }
+
+    /// <summary>The fields a Group can be sorted by: those of Playnite's sort orders the core supports.</summary>
+    public enum GameSort
+    {
+        Name,
+        LastActivity,
+        Added,
+        Modified,
+        ReleaseDate,
+        Playtime,
+        PlayCount,
+    }
+
+    public enum SortDirection
+    {
+        Ascending,
+        Descending,
     }
 
     /// <summary>One of Playnite's Software tools, shown under My games &amp; apps. Not a game.</summary>
