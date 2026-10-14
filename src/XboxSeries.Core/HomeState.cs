@@ -49,11 +49,12 @@ namespace XboxSeries.Core
     /// <summary>One game tile on Home.</summary>
     public sealed class HomeTile
     {
-        internal HomeTile(Guid gameId, string title, string coverImage, bool isRunning)
+        internal HomeTile(Guid gameId, string title, string coverImage, string source, bool isRunning)
         {
             GameId = gameId;
             Title = title;
             CoverImage = coverImage;
+            Source = source;
             IsRunning = isRunning;
         }
 
@@ -62,6 +63,9 @@ namespace XboxSeries.Core
 
         /// <summary>The full path or URL of the game's cover art; null when it has none.</summary>
         public string CoverImage { get; }
+
+        /// <summary>The game's library source (Steam, Xbox, ...), shown as its icon; null for games without one.</summary>
+        public string Source { get; }
 
         public bool IsRunning { get; }
     }
