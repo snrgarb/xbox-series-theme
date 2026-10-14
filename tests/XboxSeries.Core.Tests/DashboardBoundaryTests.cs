@@ -8,7 +8,7 @@ using Xunit;
 namespace XboxSeries.Core.Tests
 {
     // The Dashboard is loose XAML that Playnite loads with or without the extension, so the XAML itself
-    // isn't run here. These checks guard the theme's boundary with the extension instead.
+    // isn't run here. These checks guard the theme's boundaries instead: with the extension, and with the parts Playnite drives.
     public class DashboardBoundaryTests
     {
         private static readonly string RepoRoot = FindRepoRoot();
@@ -57,6 +57,21 @@ namespace XboxSeries.Core.Tests
                 .Where(name => name != null && name.StartsWith("XboxSeries_"));
 
             Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_RecentRow", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
+        }
+
+        [Fact]
+        public void Game_hub_keeps_the_parts_Playnite_drives()
+        {
+            var hub = XDocument.Load(Path.Combine(DashboardDir, "Views", "GameDetails.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var names = hub.Descendants()
+                .Select(e => (string)e.Attribute(x + "Name"))
+                .Where(name => name != null)
+                .ToList();
+
+            Assert.All(
+                new[] { "PART_ViewHost", "PART_ButtonContext", "PART_ButtonOptions", "PART_ImageCover", "PART_ImageBackground", "PART_HtmlDescription", "PART_ScrollHtmlDescription" },
+                part => Assert.Contains(part, names));
         }
 
         [Fact]

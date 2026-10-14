@@ -1,0 +1,729 @@
+<!--
+    The Game hub: the Dashboard's page for one game, modelled on the Xbox game hub. It replaces Playnite's Game details
+    view and is complete with the theme alone: blurred art behind a header, the actions, and a row of cards.
+    The data context is the selected game (Playnite's GamesCollectionViewEntry). Playnite binds the PART_ elements and
+    the hub's keys itself: B closes, LB/RB move to the previous or next game, and focus starts on the first visible
+    focusable element, which is the main action. Menu is bound here, to Playnite's game menu.
+    Achievements come from PlayniteAchievements through {PluginSettings}; without it the row stays hidden.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:input="clr-namespace:Playnite.Input;assembly=Playnite"
+                    mc:Ignorable="d">
+
+    <!--
+        Simple Icons (CC0, simpleicons.org; Xbox from v9.21.0, the last release to carry it), on a 24x24 box.
+        The same marks as Home's tiles.
+    -->
+    <Geometry x:Key="XboxHubSourceSteam">M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z</Geometry>
+    <Geometry x:Key="XboxHubSourceXbox">M4.102 21.033C6.211 22.881 8.977 24 12 24c3.026 0 5.789-1.119 7.902-2.967 1.877-1.912-4.316-8.709-7.902-11.417-3.582 2.708-9.779 9.505-7.898 11.417zm11.16-14.406c2.5 2.961 7.484 10.313 6.076 12.912C23.002 17.48 24 14.861 24 12.004c0-3.34-1.365-6.362-3.57-8.536 0 0-.027-.022-.082-.042-.063-.022-.152-.045-.281-.045-.592 0-1.985.434-4.805 3.246zM3.654 3.426c-.057.02-.082.041-.086.042C1.365 5.642 0 8.664 0 12.004c0 2.854.998 5.473 2.661 7.533-1.401-2.605 3.579-9.951 6.08-12.91-2.82-2.813-4.216-3.245-4.806-3.245-.131 0-.223.021-.281.046v-.002zM12 3.551S9.055 1.828 6.755 1.746c-.903-.033-1.454.295-1.521.339C7.379.646 9.659 0 11.984 0H12c2.334 0 4.605.646 6.766 2.085-.068-.046-.615-.372-1.52-.339C14.946 1.828 12 3.545 12 3.545v.006z</Geometry>
+
+    <Style x:Key="XboxHubText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style x:Key="XboxHubDimText" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextDimBrush}" />
+    </Style>
+
+    <Style x:Key="XboxHubCardTitle" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
+        <Setter Property="FontFamily" Value="{DynamicResource XboxFontSemibold}" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="Margin" Value="0,0,0,14" />
+    </Style>
+
+    <!-- One label/value line of a card. -->
+    <Style x:Key="XboxHubRowLabel" TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
+        <Setter Property="FontSize" Value="16" />
+    </Style>
+    <Style x:Key="XboxHubRowValue" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
+        <Setter Property="FontSize" Value="19" />
+        <Setter Property="Margin" Value="0,0,0,10" />
+    </Style>
+
+    <!-- The "•" before a header item: Collapsed unless an earlier item shows (set per item with DataTriggers). -->
+    <Style x:Key="XboxHubDot" TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
+        <Setter Property="Text" Value="•" />
+        <Setter Property="Margin" Value="12,0,12,0" />
+    </Style>
+
+    <!-- An action: a flat rounded slab, ringed in white when focused, as the console rings its buttons. -->
+    <Style x:Key="XboxHubAction" TargetType="ButtonEx">
+        <Setter Property="Background" Value="#33FFFFFF" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+        <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Height" Value="64" />
+        <Setter Property="MinWidth" Value="64" />
+        <Setter Property="Padding" Value="28,0" />
+        <Setter Property="Margin" Value="0,0,16,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonEx">
+                    <Grid>
+                        <Border x:Name="Slab" Background="{TemplateBinding Background}" CornerRadius="4" />
+                        <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="False"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border x:Name="Ring" BorderThickness="3" CornerRadius="6" Margin="-5"
+                                BorderBrush="{DynamicResource XboxTextBrush}" Visibility="Collapsed" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The main action, Play or Install, in the accent. -->
+    <Style x:Key="XboxHubDefaultAction" TargetType="ButtonEx" BasedOn="{StaticResource XboxHubAction}">
+        <Setter Property="Background" Value="{DynamicResource GlyphBrush}" />
+        <Setter Property="MinWidth" Value="260" />
+    </Style>
+
+    <Style x:Key="XboxHubCard" TargetType="Border">
+        <Setter Property="Background" Value="#B3141414" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="24,20" />
+        <Setter Property="Height" Value="300" />
+        <Setter Property="Margin" Value="0,0,20,0" />
+    </Style>
+
+    <Style x:Key="XboxHubProgressBar" TargetType="ProgressBar">
+        <Setter Property="Height" Value="6" />
+        <Setter Property="Minimum" Value="0" />
+        <Setter Property="Maximum" Value="100" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid>
+                        <Border x:Name="PART_Track" Background="#33FFFFFF" CornerRadius="3" />
+                        <Border x:Name="PART_Indicator" Background="{DynamicResource GlyphLightBrush}" CornerRadius="3"
+                                HorizontalAlignment="Left" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type GameDetails}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type GameDetails}">
+                    <Grid x:Name="PART_ViewHost"
+                          Background="{DynamicResource MainBackgourndBrush}"
+                          d:DesignWidth="{StaticResource DesignWidth}"
+                          d:DesignHeight="{StaticResource DesignHeight}"
+                          d:DataContext="{x:Static DesignMainViewModel.DesignSelectedGameIntance}"
+                          KeyboardNavigation.DirectionalNavigation="Contained"
+                          KeyboardNavigation.TabNavigation="Cycle"
+                          KeyboardNavigation.ControlTabNavigation="Cycle">
+                        <!-- Playnite adds B, LB and RB to these; Menu opens its game menu, as Manage does. -->
+                        <Grid.InputBindings>
+                            <input:GameControllerInputBinding Button="Start" Command="{MainViewModel OpenGameMenuCommand, DirectValue=True}" />
+                        </Grid.InputBindings>
+
+                        <!--
+                            Background: the game's own background art, blurred and dimmed; without one, its cover, blurred and
+                            dimmed; without either, the plain dashboard background behind them.
+                        -->
+                        <Grid ClipToBounds="True" IsHitTestVisible="False">
+                            <Image Source="{Binding CoverImageObject}" Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="LowQuality" RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform>
+                                    <!-- Grown so the blur's soft edges fall off screen. -->
+                                    <ScaleTransform ScaleX="1.15" ScaleY="1.15" />
+                                </Image.RenderTransform>
+                                <Image.Effect>
+                                    <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
+                                </Image.Effect>
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    <Condition Binding="{Binding CoverImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+
+                            <!-- Playnite sets the part's source, so it is hidden through a wrapper when the game has no art of its own. -->
+                            <Grid>
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <FadeImage x:Name="PART_ImageBackground" Stretch="UniformToFill"
+                                           IsBlurEnabled="True" BlurAmount="30" />
+                            </Grid>
+
+                            <Rectangle>
+                                <Rectangle.Style>
+                                    <Style TargetType="Rectangle">
+                                        <Setter Property="Fill">
+                                            <Setter.Value>
+                                                <!-- Dimmed overall, and more so at the left and bottom where the text and cards sit. -->
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <GradientStop Color="#CC000000" Offset="0" />
+                                                    <GradientStop Color="#66000000" Offset="0.55" />
+                                                    <GradientStop Color="#99000000" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    <Condition Binding="{Binding CoverImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Rectangle.Style>
+                            </Rectangle>
+                        </Grid>
+
+                        <Grid Margin="105,0,105,70">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Header: title; Publisher • Release year • Install size • Platform • Source; age rating. -->
+                            <StackPanel Grid.Row="1" Margin="0,0,0,36">
+                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource XboxHubText}"
+                                           FontFamily="{DynamicResource XboxFontSemibold}" FontSize="60" Margin="0,0,0,10" />
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="HeaderPublisher"
+                                               Text="{Binding Publishers, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Publishers.Count}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <StackPanel x:Name="HeaderYear" Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ReleaseYear}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding ReleaseYear}" Style="{StaticResource XboxHubDimText}" />
+                                    </StackPanel>
+
+                                    <!-- Installed games only. -->
+                                    <StackPanel x:Name="HeaderInstallSize" Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding InstallSize}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding InstallSize}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderYear}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding InstallSize, Converter={StaticResource NullableUlongBytesSizeToStringConverter}}"
+                                                   Style="{StaticResource XboxHubDimText}" />
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="HeaderPlatform" Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Platforms.Count}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderYear}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderInstallSize}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Platforms, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}"
+                                                   Style="{StaticResource XboxHubDimText}" />
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SourceId}" Value="{x:Static sys:Guid.Empty}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <TextBlock>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderYear}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderInstallSize}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPlatform}" Value="Visible">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Source.Name}" Style="{StaticResource XboxHubDimText}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <Border HorizontalAlignment="Left" Margin="0,14,0,0" Padding="10,3"
+                                        BorderBrush="#80FFFFFF" BorderThickness="1" CornerRadius="3">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding AgeRatings.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding AgeRatings, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}"
+                                               Style="{StaticResource XboxHubText}" FontSize="16" />
+                                </Border>
+                            </StackPanel>
+
+                            <!--
+                                Actions. Playnite gives the main action its label and command (Play, Install, or a prompt to stop
+                                monitoring while the game runs). While the game runs the hub shows Running instead, which does
+                                nothing. Running comes first so that it, not the hidden part, takes focus when the hub opens.
+                            -->
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,40">
+                                <ButtonEx Content="Running">
+                                    <ButtonEx.Style>
+                                        <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxHubDefaultAction}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ButtonEx.Style>
+                                </ButtonEx>
+                                <ButtonEx x:Name="PART_ButtonContext">
+                                    <ButtonEx.Style>
+                                        <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxHubDefaultAction}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ButtonEx.Style>
+                                </ButtonEx>
+                                <ButtonEx x:Name="PART_ButtonOptions" Style="{StaticResource XboxHubAction}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE712;" FontFamily="{DynamicResource XboxIconFont}" FontSize="22"
+                                                   VerticalAlignment="Center" Margin="0,0,14,0" />
+                                        <TextBlock Text="Manage" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </ButtonEx>
+                            </StackPanel>
+
+                            <!-- Cards. Any with nothing to show is hidden. -->
+                            <StackPanel Grid.Row="3" Orientation="Horizontal" Height="300">
+
+                                <!-- Cover, with the game's source (or platform) as a badge. -->
+                                <Border Style="{StaticResource XboxHubCard}" Padding="0" Width="225" ClipToBounds="True">
+                                    <Grid>
+                                        <Image x:Name="PART_ImageCover" Stretch="UniformToFill"
+                                               RenderOptions.BitmapScalingMode="Fant" />
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10"
+                                                Padding="8,4" CornerRadius="3" Background="{DynamicResource XboxChipBrush}">
+                                            <Grid>
+                                                <Path x:Name="BadgeIcon" Width="20" Height="20" Stretch="Uniform" Fill="{DynamicResource XboxTextBrush}"
+                                                      Visibility="Collapsed" />
+                                                <TextBlock x:Name="BadgeText" Style="{StaticResource XboxHubText}" FontSize="14"
+                                                           MaxWidth="180" Text="{Binding Source.Name}" />
+                                            </Grid>
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding SourceId}" Value="{x:Static sys:Guid.Empty}" />
+                                                                <Condition Binding="{Binding Platforms.Count}" Value="0" />
+                                                            </MultiDataTrigger.Conditions>
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Your game stats. -->
+                                <Border Width="400">
+                                    <Border.Style>
+                                        <Style TargetType="Border" BasedOn="{StaticResource XboxHubCard}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Visibility, ElementName=StatsPlaytime}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=StatsPlayCount}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=StatsLastPlayed}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=StatsCompletion}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=StatsAchievements}" Value="Collapsed" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel>
+                                        <TextBlock Text="Your game stats" Style="{StaticResource XboxHubCardTitle}" />
+                                        <UniformGrid Columns="2">
+                                            <StackPanel x:Name="StatsPlaytime">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Playtime}" Value="0">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Time played" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding Playtime, Converter={StaticResource PlayTimeToStringConverter}}"
+                                                           Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="StatsPlayCount">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding PlayCount}" Value="0">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Times played" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding PlayCount}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="StatsLastPlayed">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding LastActivity}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Last played" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding LastActivity, Converter={StaticResource DateTimeToLastPlayedConverter}}"
+                                                           Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="StatsCompletion">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding CompletionStatusId}" Value="{x:Static sys:Guid.Empty}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Completion" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding CompletionStatus.Name}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                        </UniformGrid>
+
+                                        <!-- Only when PlayniteAchievements has data for this game; without the add-on the binding fails and it stays hidden. -->
+                                        <StackPanel x:Name="StatsAchievements" Margin="0,6,0,0">
+                                            <StackPanel.Style>
+                                                <Style TargetType="StackPanel">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{PluginSettings Plugin=PlayniteAchievements, Path=HasAchievements}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </StackPanel.Style>
+                                            <DockPanel Margin="0,0,0,8">
+                                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource XboxHubDimText}" FontSize="17"
+                                                           Text="{PluginSettings Plugin=PlayniteAchievements, Path=Percent, StringFormat='{}{0:0}%'}" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="Achievements " Style="{StaticResource XboxHubText}" FontSize="17" />
+                                                    <TextBlock Text="{PluginSettings Plugin=PlayniteAchievements, Path=Unlocked}"
+                                                               Style="{StaticResource XboxHubText}" FontSize="17" />
+                                                    <TextBlock Text="/" Style="{StaticResource XboxHubText}" FontSize="17" />
+                                                    <TextBlock Text="{PluginSettings Plugin=PlayniteAchievements, Path=Total}"
+                                                               Style="{StaticResource XboxHubText}" FontSize="17" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                            <ProgressBar Style="{StaticResource XboxHubProgressBar}"
+                                                         Value="{PluginSettings Plugin=PlayniteAchievements, Path=Percent}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- About: the description, scrolled with the D-pad when focused. -->
+                                <Border Width="520">
+                                    <Border.Style>
+                                        <Style TargetType="Border" BasedOn="{StaticResource XboxHubCard}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Description, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Self}}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource XboxTextBrush}" />
+                                                    <Setter Property="BorderThickness" Value="3" />
+                                                    <Setter Property="Padding" Value="21,17" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top" Text="About" Style="{StaticResource XboxHubCardTitle}" />
+                                        <ScrollViewerEx x:Name="PART_ScrollHtmlDescription" CustomScrollAmount="42"
+                                                        Focusable="True" FocusVisualStyle="{x:Null}"
+                                                        VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                                            <HtmlTextView x:Name="PART_HtmlDescription"
+                                                          HtmlFontSize="17"
+                                                          HtmlFontFamily="{DynamicResource XboxFont}"
+                                                          HtmlForeground="#E6FFFFFF"
+                                                          LinkForeground="{DynamicResource GlyphLightColor}"
+                                                          FocusVisualStyle="{x:Null}" />
+                                        </ScrollViewerEx>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Info, two to a line like the stats. -->
+                                <Border Width="480">
+                                    <Border.Style>
+                                        <Style TargetType="Border" BasedOn="{StaticResource XboxHubCard}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoGenres}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoDeveloper}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoFeatures}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoSeries}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoCriticScore}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoCommunityScore}" Value="Collapsed" />
+                                                        <Condition Binding="{Binding Visibility, ElementName=InfoUserScore}" Value="Collapsed" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <StackPanel>
+                                        <TextBlock Text="Info" Style="{StaticResource XboxHubCardTitle}" />
+                                        <UniformGrid Columns="2">
+                                            <StackPanel x:Name="InfoGenres">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Genres.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Genres" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding Genres, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="InfoDeveloper">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Developers.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Developer" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding Developers, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="InfoFeatures">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Features.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Features" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding Features, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="InfoSeries">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Series.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Series" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding Series, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="InfoCriticScore">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding CriticScore}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Critic score" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding CriticScore}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="InfoCommunityScore">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding CommunityScore}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Community score" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding CommunityScore}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                            <StackPanel x:Name="InfoUserScore">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding UserScore}" Value="{x:Null}">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Your score" Style="{StaticResource XboxHubRowLabel}" />
+                                                <TextBlock Text="{Binding UserScore}" Style="{StaticResource XboxHubRowValue}" />
+                                            </StackPanel>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- The badge: the source's mark where there is one, else its name, else the platform's. -->
+                        <DataTrigger Binding="{Binding Source.Name}" Value="Steam">
+                            <Setter TargetName="BadgeIcon" Property="Data" Value="{StaticResource XboxHubSourceSteam}" />
+                            <Setter TargetName="BadgeIcon" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="BadgeText" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Source.Name}" Value="Xbox">
+                            <Setter TargetName="BadgeIcon" Property="Data" Value="{StaticResource XboxHubSourceXbox}" />
+                            <Setter TargetName="BadgeIcon" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="BadgeText" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding SourceId}" Value="{x:Static sys:Guid.Empty}">
+                            <Setter TargetName="BadgeText" Property="Text"
+                                    Value="{Binding Platforms, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}" />
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
