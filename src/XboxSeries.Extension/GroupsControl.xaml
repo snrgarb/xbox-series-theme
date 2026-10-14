@@ -54,10 +54,12 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                    <!-- See all: the whole Group, in My games & apps once that page exists (#37). -->
+                                    <!--
+                                        See all: the whole Group, in My games & apps once that page exists (#37). A collage
+                                        of the Group's next games, like Play history's, or the library icon when they all fit.
+                                    -->
                                     <Button Style="{StaticResource HomeTile}" Tag="See all" Margin="0">
-                                        <TextBlock Text="&#xE8F1;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40"
-                                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding SeeAll}" Tag="&#xE8F1;" />
                                     </Button>
                                 </StackPanel>
                             </StackPanel>

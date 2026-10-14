@@ -365,14 +365,21 @@ namespace XboxSeries.Core
             return groups;
         }
 
-        private HomeGroup Group(string name, Guid? presetId, IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction) =>
-            new HomeGroup(
+        /// <summary>A Group of its first games, and the See all tile's collage of the ones after them.</summary>
+        private HomeGroup Group(string name, Guid? presetId, IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction)
+        {
+            var sorted = Sorted(games, sort, direction).ToList();
+            return new HomeGroup(
                 name,
                 presetId,
-                Sorted(games, sort, direction)
-                    .Take(GroupTileCount)
+                sorted.Take(GroupTileCount)
                     .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, g.Id == runningGame))
+                    .ToList(),
+                sorted.Skip(GroupTileCount)
+                    .Take(PlayHistoryCollageCount)
+                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
                     .ToList());
+        }
 
         /// <summary>Games in the order of a preset's sort, ties in name order, as Playnite lists them.</summary>
         private static IEnumerable<LibraryGame> Sorted(IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction)

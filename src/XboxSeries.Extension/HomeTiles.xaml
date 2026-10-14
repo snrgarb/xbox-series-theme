@@ -122,4 +122,44 @@
             </DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
+
+    <!--
+        A collage of up to 4 games' covers, 2 by 2, for the tiles that open a list of games: Play history and See all.
+        Items are HomeTiles. With none, it shows the icon glyph in Tag instead.
+    -->
+    <Style x:Key="TileCollage" TargetType="ItemsControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="2" Columns="2" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
+                           Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ItemsControl">
+                    <Grid>
+                        <ItemsPresenter Margin="4" />
+                        <TextBlock x:Name="Icon" Text="{TemplateBinding Tag}" FontFamily="{DynamicResource XboxIconFont}"
+                                   FontSize="40" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="Collapsed" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasItems" Value="False">
+                            <Setter TargetName="Icon" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

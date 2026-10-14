@@ -57,11 +57,12 @@ namespace XboxSeries.Core
     /// <summary>A Group on Home: a row of one filter preset's games, or of the user's favourites by default.</summary>
     public sealed class HomeGroup
     {
-        internal HomeGroup(string name, Guid? filterPresetId, IReadOnlyList<HomeTile> tiles)
+        internal HomeGroup(string name, Guid? filterPresetId, IReadOnlyList<HomeTile> tiles, IReadOnlyList<HomeTile> seeAll)
         {
             Name = name;
             FilterPresetId = filterPresetId;
             Tiles = tiles;
+            SeeAll = seeAll;
         }
 
         public string Name { get; }
@@ -71,6 +72,9 @@ namespace XboxSeries.Core
 
         /// <summary>The Group's first games, left to right. The See all tile follows them.</summary>
         public IReadOnlyList<HomeTile> Tiles { get; }
+
+        /// <summary>The See all tile's collage: the Group's next games after its tiles, like Play history's. Empty when they all fit.</summary>
+        public IReadOnlyList<HomeTile> SeeAll { get; }
     }
 
     /// <summary>One game tile on Home.</summary>
