@@ -85,6 +85,68 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_pads_A_on_a_focused_Recent_row_tile_opens_its_Game_hub()
+        {
+            core.FocusHomeTile(RecentTile("Hades"));
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void The_pads_A_on_a_focused_Group_tile_opens_its_Game_hub()
+        {
+            core.FocusHomeTile(GroupTile("Tunic"));
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { library.Id("Tunic") }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void A_double_tap_of_the_pads_A_on_a_focused_tile_plays_the_game()
+        {
+            core.FocusHomeTile(RecentTile("Hades"));
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromMilliseconds(150));
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.StartedGames);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void The_pads_A_once_focus_has_left_the_tiles_does_nothing()
+        {
+            var tile = RecentTile("Hades");
+            core.FocusHomeTile(tile);
+            core.LeaveHomeTile(tile);
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void The_pads_A_while_the_Guide_is_still_handing_focus_back_does_not_choose_the_tile()
+        {
+            core.FocusHomeTile(RecentTile("Hades"));
+            Tap(ControllerButton.Guide);
+            Press(ControllerButton.B);
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
         public void Menu_while_the_Guide_is_open_does_not_open_the_tile_menu()
         {
             core.FocusHomeTile(RecentTile("Hades"));

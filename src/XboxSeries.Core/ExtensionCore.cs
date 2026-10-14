@@ -271,6 +271,11 @@ namespace XboxSeries.Core
             {
                 ShowTileMenu(focusedTile);
             }
+            else if (button == ControllerButton.A && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
+            {
+                // Playnite hands the pad's A to WPF as a key with no Key, which never clicks the tile.
+                ChooseHomeTile(focusedTile);
+            }
             else if ((button == ControllerButton.DPadUp || button == ControllerButton.DPadDown) && (Guide.IsOpen || dialog != null))
             {
                 StopRepeat();
