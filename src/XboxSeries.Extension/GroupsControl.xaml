@@ -23,7 +23,7 @@
     -->
     <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,40,115,0">
         <!-- 5 px wider each side than the row, cancelled by its margins, so the clip clears the focus ring. -->
-        <Grid Width="1536" Height="740" Margin="-5,0" ClipToBounds="True">
+        <Grid x:Name="View" Width="1536" Height="740" Margin="-5,0" ClipToBounds="True">
             <!--
                 On a Canvas, which never cuts its content to its own size: the Groups run on past the bottom, and a layout
                 clip on them would slide up with them as they scroll, cutting off the Groups coming into view.
