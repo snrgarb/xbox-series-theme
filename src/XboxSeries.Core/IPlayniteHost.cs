@@ -40,6 +40,21 @@ namespace XboxSeries.Core
         /// while the Dashboard's is up, otherwise the current one. Null when Playnite can't say yet.
         /// </summary>
         int? CountUserFilterGames();
+
+        /// <summary>Opens Playnite's own Fullscreen settings.</summary>
+        void OpenSettings();
+
+        /// <summary>Carries out <paramref name="command"/> as Playnite's own Fullscreen menu does, closing Playnite cleanly first where it must.</summary>
+        void Power(PowerCommand command);
+    }
+
+    /// <summary>What the Guide's Power can do, beyond Close.</summary>
+    public enum PowerCommand
+    {
+        TurnOffPc,
+        RestartPc,
+        Sleep,
+        ExitPlaynite,
     }
 
     /// <summary>The Dashboard pages the Guide can take the user to.</summary>

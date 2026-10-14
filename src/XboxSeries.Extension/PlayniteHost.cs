@@ -82,15 +82,61 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            // Not in the SDK: Fullscreen's main view model opens its game menu for the main list's selected game.
-            var model = Application.Current?.MainWindow?.DataContext;
-            if (model?.GetType().GetProperty("OpenGameMenuCommand")?.GetValue(model) is ICommand command)
+            // Fullscreen's game menu is for the main list's selected game.
+            FullscreenCommand("OpenGameMenuCommand")?.Execute(null);
+        }
+
+        public void OpenSettings()
+        {
+            Later(FullscreenCommand("OpenSettingsCommand"));
+        }
+
+        public void Power(PowerCommand command)
+        {
+            switch (command)
             {
-                command.Execute(null);
+                case PowerCommand.TurnOffPc:
+                    Later(FullscreenCommand("ShutdownSystemCommand"));
+                    break;
+                case PowerCommand.RestartPc:
+                    Later(FullscreenCommand("RestartSystemCommand"));
+                    break;
+                case PowerCommand.Sleep:
+                    Later(FullscreenCommand("SleepSystemCommand"));
+                    break;
+                case PowerCommand.ExitPlaynite:
+                    Later(FullscreenCommand("ExitCommand"));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(command), command, null);
             }
-            else
+        }
+
+        /// <summary>
+        /// Not in the SDK: one of the commands Fullscreen's own menus run, from its main view model. Null, and logged,
+        /// on a Playnite build without it.
+        /// </summary>
+        private static ICommand FullscreenCommand(string name)
+        {
+            var model = Application.Current?.MainWindow?.DataContext;
+            if (model?.GetType().GetProperty(name)?.GetValue(model) is ICommand command)
             {
-                logger.Warn("Can't open Playnite's game menu: this Playnite build has no OpenGameMenuCommand");
+                return command;
+            }
+
+            logger.Warn($"Can't run Playnite's {name}: this Playnite build has no such command");
+            return null;
+        }
+
+        /// <summary>
+        /// Runs <paramref name="command"/> once the caller is done: settings is a modal window, and the Guide has to
+        /// finish handing focus back before it opens.
+        /// </summary>
+        private static void Later(ICommand command)
+        {
+            if (command != null)
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => command.Execute(null)));
             }
         }
 

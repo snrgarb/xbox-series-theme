@@ -35,6 +35,7 @@ namespace XboxSeries.Extension
             this.core = core;
             DataContext = core.Guide;
             DialogPanel.Core = core;
+            WidePanel.Core = core;
             core.Guide.PropertyChanged += OnGuideChanged;
             closeDeadline = new DispatcherTimer { Interval = CloseDuration.TimeSpan + TimeSpan.FromMilliseconds(100) };
             closeDeadline.Tick += (_, __) => FinishStalledSlideOut();
@@ -54,12 +55,20 @@ namespace XboxSeries.Extension
                     HideWhenDone();
                 }
             }
-            else if (e.PropertyName == nameof(GuideState.IsOpen))
+            else if (e.PropertyName == nameof(GuideState.IsOpen) || (e.PropertyName == nameof(GuideState.ShowsPanel) && guide.IsOpen))
             {
                 if (guide.IsOpen)
                 {
+                    // Power on its own keeps the dim but not the panel, which slides out if it was in.
                     closeDeadline.Stop();
-                    Animate(0, 1, OpenDuration, EasingMode.EaseOut, null);
+                    if (guide.ShowsPanel)
+                    {
+                        Animate(0, 1, OpenDuration, EasingMode.EaseOut, null);
+                    }
+                    else
+                    {
+                        Animate(offscreenX, 1, CloseDuration, EasingMode.EaseIn, null);
+                    }
                 }
                 else
                 {
@@ -170,7 +179,7 @@ namespace XboxSeries.Extension
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            if (!GuidePanel.IsMouseOver && !DialogPanel.IsMouseOver)
+            if (!GuidePanel.IsMouseOver && !DialogPanel.IsMouseOver && !WidePanel.IsMouseOver)
             {
                 core.DismissGuide();
             }

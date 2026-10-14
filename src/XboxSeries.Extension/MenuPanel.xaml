@@ -7,12 +7,15 @@
         a dark grey panel with softly rounded corners, the title top left in the regular weight, then full-width rows of
         a white line icon and a label, with no fill at rest. The focused row is filled a little lighter and wears the
         Home tiles' green focus ring. Shared by the Guide and the tile menu, so the two can't drift apart. Sized at 1080p.
-        Collapsed when there is no Dialog.
+        Collapsed when there is no Dialog, and for a wide one, which WideDialogPanel draws.
     -->
     <UserControl.Style>
         <Style TargetType="UserControl">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsWide}" Value="True">
                     <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </Style.Triggers>

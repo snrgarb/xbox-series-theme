@@ -11,17 +11,81 @@
         Topmost="True"
         WindowStartupLocation="Manual"
         Left="-32000" Top="-32000" Width="10" Height="10">
-    <!-- The Overlay: transparent, Topmost and full-screen. It hosts the Guide and nothing else. -->
+    <!--
+        The Overlay: transparent, Topmost and full-screen. It hosts the Guide and nothing else. The Guide is drawn after
+        the console's (the captures under docs/reference/console/G-guide, scaled from 720p to 1080p): a panel with
+        rounded corners down the left, dark at the top and green toward the bottom, its tab icons along the top over a
+        green underline on the tab showing, and the hints beside it.
+    -->
+    <Window.Resources>
+        <local:DecodedImageConverter x:Key="Image" />
+        <!-- The Xbox sphere, 24 units square (Simple Icons' xbox, CC0). -->
+        <Geometry x:Key="XboxLogo">M4.102 21.033C6.211 22.881 8.977 24 12 24c3.026 0 5.789-1.119 7.902-2.967 1.877-1.912-4.316-8.709-7.902-11.417-3.582 2.708-9.779 9.505-7.898 11.417zm11.16-14.406c2.5 2.961 7.484 10.313 6.076 12.912C23.002 17.48 24 14.861 24 12.004c0-3.34-1.365-6.362-3.57-8.536 0 0-.027-.022-.082-.042-.063-.022-.152-.045-.281-.045-.592 0-1.985.434-4.805 3.246zM3.654 3.426c-.057.02-.082.041-.086.042C1.365 5.642 0 8.664 0 12.004c0 2.854.998 5.473 2.661 7.533-1.401-2.605 3.579-9.951 6.08-12.91-2.82-2.813-4.216-3.245-4.806-3.245-.131 0-.223.021-.281.046v-.002zM12 3.551S9.055 1.828 6.755 1.746c-.903-.033-1.454.295-1.521.339C7.379.646 9.659 0 11.984 0H12c2.334 0 4.605.646 6.766 2.085-.068-.046-.615-.372-1.52-.339C14.946 1.828 12 3.545 12 3.545v.006z</Geometry>
+        <Style x:Key="GuideText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="GuideIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
     <Window.Background>
         <SolidColorBrush x:Name="Dim" Color="#66000000" Opacity="0" />
     </Window.Background>
     <Grid>
+        <!-- The hints beside the panel, as on the console. Only with the panel: Power on its own has none. -->
+        <ItemsControl ItemsSource="{Binding Hints}" Focusable="False" Margin="675,168,0,0"
+                      HorizontalAlignment="Left" VerticalAlignment="Top"
+                      Opacity="{Binding Opacity, ElementName=Dim}">
+            <ItemsControl.Style>
+                <Style TargetType="ItemsControl">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ShowsPanel}" Value="False">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ItemsControl.Style>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Height="45">
+                        <Grid Width="27" Height="27" VerticalAlignment="Center">
+                            <!-- The Guide button: the Xbox sphere. -->
+                            <Path x:Name="GuideGlyph" Data="{StaticResource XboxLogo}" Fill="White" Stretch="Uniform" />
+                            <!-- Menu: a ring round three lines. -->
+                            <Grid x:Name="MenuGlyph" Visibility="Collapsed">
+                                <Ellipse Stroke="White" StrokeThickness="2" />
+                                <TextBlock Text="&#xE700;" Style="{StaticResource GuideIcon}" FontSize="12" HorizontalAlignment="Center" />
+                            </Grid>
+                        </Grid>
+                        <TextBlock Text="{Binding Text}" Style="{StaticResource GuideText}" FontSize="24" Margin="14,0,0,0" />
+                    </StackPanel>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Button}" Value="Start">
+                            <Setter TargetName="GuideGlyph" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="MenuGlyph" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <Border x:Name="GuidePanel"
-                Width="560"
+                Width="536"
+                Margin="78,33,0,35"
                 HorizontalAlignment="Left"
-                Background="#FF1E1E1E"
-                BorderBrush="#FF107C10"
-                BorderThickness="0,0,4,0">
+                CornerRadius="12">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="#FF262626" Offset="0" />
+                    <GradientStop Color="#FF232A23" Offset="0.35" />
+                    <GradientStop Color="#FF1B4A1E" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
             <!-- Blurred behind a menu or prompt, so the dialog reads clearly over it. -->
             <Border.Style>
                 <Style TargetType="Border">
@@ -38,40 +102,174 @@
                 </Style>
             </Border.Style>
             <Border.RenderTransform>
-                <TranslateTransform x:Name="Slide" X="-560" />
+                <TranslateTransform x:Name="Slide" X="-620" />
             </Border.RenderTransform>
-            <!-- Landing tab: Home, My games & apps, then the running game and recent games under a divider. -->
-            <StackPanel Margin="32">
-                <TextBlock Text="Guide" Foreground="White" FontSize="30" FontWeight="SemiBold" Margin="0,0,0,24" />
-                <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+            <Grid local:RoundedClip.Radius="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="102" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- The tabs: the landing tab's Xbox sphere, then Profile & system's account picture. -->
+                <Border Background="#FF1F1F1F" />
+                <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel>
-                                <Border x:Name="Divider" Height="1" Margin="0,12" Background="#33FFFFFF" Visibility="Collapsed" />
-                                <Border x:Name="Entry" Padding="16,12" CornerRadius="4" BorderThickness="2" BorderBrush="Transparent"
-                                        Background="Transparent" MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Title}" Foreground="White" FontSize="20" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock x:Name="Running" Text="Running" Foreground="#B3FFFFFF" FontSize="14" Visibility="Collapsed" />
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
+                            <Grid Width="84" Height="102">
+                                <Path x:Name="Logo" Data="{StaticResource XboxLogo}" Fill="#FFD0D0D0" Width="33" Height="33" Stretch="Uniform" />
+                                <Grid x:Name="Picture" Width="54" Height="54" Visibility="Collapsed">
+                                    <Ellipse Fill="#FF4A4A4A" />
+                                    <Ellipse>
+                                        <Ellipse.Fill>
+                                            <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=108}" Stretch="UniformToFill" />
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                </Grid>
+                                <Border x:Name="Underline" Height="5" VerticalAlignment="Bottom" Margin="0,0,0,0" CornerRadius="2"
+                                        Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden" />
+                            </Grid>
                             <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding HasDividerAbove}" Value="True">
-                                    <Setter TargetName="Divider" Property="Visibility" Value="Visible" />
+                                <DataTrigger Binding="{Binding Kind}" Value="ProfileAndSystem">
+                                    <Setter TargetName="Logo" Property="Visibility" Value="Collapsed" />
+                                    <Setter TargetName="Picture" Property="Visibility" Value="Visible" />
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding Kind}" Value="RunningGame">
-                                    <Setter TargetName="Running" Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
-                                    <Setter TargetName="Entry" Property="Background" Value="#33FFFFFF" />
-                                    <Setter TargetName="Entry" Property="BorderBrush" Value="White" />
+                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                    <Setter TargetName="Underline" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="Logo" Property="Fill" Value="White" />
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,30,0,0">
+                    <!-- Profile & system's heading. The landing tab has none. -->
+                    <TextBlock Text="Profile &amp; system" FontSize="33" Margin="28,-4,0,12">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Tab}" Value="ProfileAndSystem">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <!--
+                        The tab's entries. Home and My games & apps are an icon and a title; games show their cover; the
+                        profile card shows the account picture; Settings and Power are a smaller icon and title, each
+                        under a divider. The focused entry is filled a little lighter and wears the tiles' green ring.
+                    -->
+                    <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Style.Triggers>
+                                    <!-- The landing tab's Home sits a little lower, where the other tab has its heading. -->
+                                    <DataTrigger Binding="{Binding Tab}" Value="Landing">
+                                        <Setter Property="Margin" Value="0,18,0,0" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <Border x:Name="Divider" Height="1" Margin="30,14,30,26" Background="#33FFFFFF" Visibility="Collapsed" />
+                                    <Grid x:Name="Entry" Height="105" Margin="9,0,9,3" Background="Transparent"
+                                          MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
+                                        <Border x:Name="Fill" CornerRadius="4" Background="Transparent" />
+                                        <TextBlock x:Name="Glyph" Style="{StaticResource GuideIcon}" FontSize="30" Width="36"
+                                                   HorizontalAlignment="Left" Margin="33,0,0,0" />
+                                        <Grid x:Name="Cover" Width="90" Height="90" HorizontalAlignment="Left" Margin="6,0,0,0"
+                                              Background="#FF1A1A1A" Visibility="Collapsed">
+                                            <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=180}" Stretch="UniformToFill" />
+                                        </Grid>
+                                        <Grid x:Name="Avatar" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
+                                            <Ellipse Fill="#FF4A4A4A" />
+                                            <Ellipse>
+                                                <Ellipse.Fill>
+                                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" Stretch="UniformToFill" />
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                        </Grid>
+                                        <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
+                                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
+                                            <TextBlock x:Name="Running" Text="Running" Style="{StaticResource GuideText}" FontSize="22"
+                                                       Foreground="#B3FFFFFF" Visibility="Collapsed" />
+                                        </StackPanel>
+                                        <!-- The tiles' ring, 1 px past the entry as theirs is past their art. -->
+                                        <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="6"
+                                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                    </Grid>
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding HasDividerAbove}" Value="True">
+                                        <Setter TargetName="Divider" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <!-- Segoe Fluent Icons / MDL2 Assets glyphs. -->
+                                    <DataTrigger Binding="{Binding Kind}" Value="Home">
+                                        <Setter TargetName="Glyph" Property="Text" Value="&#xE80F;" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="MyGamesAndApps">
+                                        <Setter TargetName="Glyph" Property="Text" Value="&#xE8F1;" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="RunningGame">
+                                        <Setter TargetName="Running" Property="Visibility" Value="Visible" />
+                                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="Cover" Property="Visibility" Value="Visible" />
+                                        <Setter TargetName="Entry" Property="Height" Value="96" />
+                                        <Setter TargetName="Entry" Property="Margin" Value="9,0,9,12" />
+                                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="RecentGame">
+                                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="Cover" Property="Visibility" Value="Visible" />
+                                        <Setter TargetName="Entry" Property="Height" Value="96" />
+                                        <Setter TargetName="Entry" Property="Margin" Value="9,0,9,12" />
+                                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Profile">
+                                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="Avatar" Property="Visibility" Value="Visible" />
+                                        <Setter TargetName="Entry" Property="Height" Value="138" />
+                                        <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
+                                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                                    </DataTrigger>
+                                    <!-- Settings and Power: smaller rows, the icon further left, as on the console. -->
+                                    <DataTrigger Binding="{Binding Kind}" Value="Settings">
+                                        <Setter TargetName="Glyph" Property="Text" Value="&#xE713;" />
+                                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Power">
+                                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7E8;" />
+                                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                        <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
+                                        <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
         </Border>
         <!-- Darkens everything behind a menu or prompt, the Guide included. -->
         <Border Background="#B3000000">
@@ -87,5 +285,7 @@
         </Border>
         <!-- A menu or prompt over the Guide (Menu on the running game, force quit, "Quit X and start Y?"), centred. It has the pad until answered. -->
         <local:MenuPanel x:Name="DialogPanel" DataContext="{Binding Dialog}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <!-- Power: the console's "What do you want to do?" band across the screen. -->
+        <local:WideDialogPanel x:Name="WidePanel" DataContext="{Binding Dialog}" />
     </Grid>
 </Window>
