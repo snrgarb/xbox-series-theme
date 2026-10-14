@@ -16,6 +16,7 @@ namespace XboxSeries.Extension
         private readonly ExtensionCore core;
         private readonly Win32WindowSystem windows = new Win32WindowSystem();
         private readonly HomeScreen homeScreen = new HomeScreen();
+        private readonly PlayniteSounds sounds;
         private bool libraryPushed;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
@@ -28,7 +29,8 @@ namespace XboxSeries.Extension
         public XboxSeriesPlugin(IPlayniteAPI api) : base(api)
         {
             Properties = new GenericPluginProperties { HasSettings = false };
-            core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost(api));
+            sounds = new PlayniteSounds(api);
+            core = new ExtensionCore(new DispatcherClock(), windows, new PlayniteHost(api), sounds);
 
             // Home's elements, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
@@ -65,6 +67,7 @@ namespace XboxSeries.Extension
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
             PushLibrary();
+            sounds.Play(UiSound.Startup);
 
             // Database events can arrive on background threads; the core only runs on the UI thread.
             PlayniteApi.Database.Games.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
@@ -80,6 +83,9 @@ namespace XboxSeries.Extension
             debugGuideHotkey?.Dispose();
 #endif
             windows.Overlay?.Close();
+
+            // Playnite releases its audio engine only after this returns, so the sound gets to finish.
+            sounds.PlayToEnd(UiSound.PowerOff);
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)

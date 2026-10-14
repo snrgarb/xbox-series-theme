@@ -41,6 +41,7 @@ namespace XboxSeries.Core
         private readonly IClock clock;
         private readonly IWindowSystem windowSystem;
         private readonly IPlayniteHost playnite;
+        private readonly ISoundPlayer sounds;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private Guid? runningGame;
         private IntPtr recordedForeground;
@@ -61,11 +62,12 @@ namespace XboxSeries.Core
         /// <summary>Whether A, still held, answered the tile menu: Playnite's own Enter for it must not choose the tile.</summary>
         private bool tileMenuHoldsA;
 
-        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite)
+        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds)
         {
             this.clock = clock;
             this.windowSystem = windowSystem;
             this.playnite = playnite;
+            this.sounds = sounds;
         }
 
         public GuideState Guide { get; } = new GuideState();
@@ -197,6 +199,7 @@ namespace XboxSeries.Core
             ShowDialog(new Dialog(
                 $"Quit {NameOf(running)} and start {NameOf(gameId)}?",
                 null,
+                isPrompt: true,
                 CloseDialog,
                 new DialogOption("Quit and start", DialogIcon.Play, () =>
                 {
@@ -235,20 +238,23 @@ namespace XboxSeries.Core
             var dialog = ActiveDialog;
             if (button == ControllerButton.Guide && !Guide.IsOpen)
             {
+                sounds.Play(UiSound.OpenMenu);
                 OpenGuide();
             }
             else if (button == ControllerButton.B && dialog != null)
             {
+                sounds.Play(dialog.DeclineSound);
                 dialog.Decline();
             }
             else if ((button == ControllerButton.Guide || button == ControllerButton.B) && Guide.IsOpen)
             {
+                sounds.Play(UiSound.Back);
                 Dismiss(button, ReturnToRecordedWindow);
             }
             else if (button == ControllerButton.A && dialog != null)
             {
                 tileMenuHoldsA = dialog == Home.TileMenu;
-                dialog.FocusedOption.Choose();
+                Choose(dialog, dialog.FocusedOption);
             }
             else if (button == ControllerButton.A && Guide.IsOpen)
             {
@@ -336,7 +342,8 @@ namespace XboxSeries.Core
             // A pending A on the tile would otherwise open its Game hub under the menu.
             CancelTap();
             StopRepeat();
-            Home.TileMenu = new Dialog(game.Name, null, CloseTileMenu, play, favourite, manage);
+            sounds.Play(UiSound.OpenMenu);
+            Home.TileMenu = new Dialog(game.Name, null, isPrompt: false, CloseTileMenu, play, favourite, manage);
         }
 
         private void FromTileMenu(Action action)
@@ -540,6 +547,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void Select(GuideItem item, Action<Action> dismiss)
         {
+            sounds.Play(UiSound.Enter);
             if (item.Kind == GuideItemKind.RecentGame && (runningGame != null || IsQuittingOrLaunching))
             {
                 PlayGame(item.GameId.Value);
@@ -605,14 +613,16 @@ namespace XboxSeries.Core
             repeatTimer = null;
         }
 
-        /// <summary>Moves focus through the menu or prompt when one is showing, otherwise through the landing tab.</summary>
+        /// <summary>
+        /// Moves focus through the menu or prompt when one is showing, otherwise through the landing tab. Only a move
+        /// that lands somewhere new makes a sound: none at either end.
+        /// </summary>
         private void MoveFocus(int by)
         {
             var dialog = ActiveDialog;
             if (dialog != null)
             {
-                var options = dialog.Options.ToList();
-                dialog.FocusedOption = options[Clamp(options.IndexOf(dialog.FocusedOption) + by, options.Count)];
+                dialog.FocusedOption = Step(dialog.Options, dialog.FocusedOption, by);
                 return;
             }
 
@@ -621,8 +631,20 @@ namespace XboxSeries.Core
                 return;
             }
 
-            var items = Guide.Items.ToList();
-            Guide.FocusedItem = items[Clamp(items.IndexOf(Guide.FocusedItem) + by, items.Count)];
+            Guide.FocusedItem = Step(Guide.Items, Guide.FocusedItem, by);
+        }
+
+        /// <summary>The entry <paramref name="by"/> places from <paramref name="focused"/>, held at either end; navigate sounds if it moved.</summary>
+        private T Step<T>(IReadOnlyList<T> entries, T focused, int by) where T : class
+        {
+            var list = entries.ToList();
+            var next = list[Clamp(list.IndexOf(focused) + by, list.Count)];
+            if (next != focused)
+            {
+                sounds.Play(UiSound.Navigate);
+            }
+
+            return next;
         }
 
         private static int Clamp(int index, int count) => Math.Max(0, Math.Min(count - 1, index));
@@ -635,6 +657,7 @@ namespace XboxSeries.Core
         {
             if (Guide.IsOpen)
             {
+                sounds.Play(UiSound.Back);
                 DismissAtOnce(ReturnToRecordedWindow);
             }
         }
@@ -677,8 +700,15 @@ namespace XboxSeries.Core
             if (dialog != null && dialog.Options.Contains(option))
             {
                 dialog.FocusedOption = option;
-                option.Choose();
+                Choose(dialog, option);
             }
+        }
+
+        /// <summary>Answers a menu or prompt with <paramref name="option"/>.</summary>
+        private void Choose(Dialog dialog, DialogOption option)
+        {
+            sounds.Play(dialog.ChooseSound);
+            option.Choose();
         }
 
         private void DismissAtOnce(Action handBack)
@@ -708,6 +738,7 @@ namespace XboxSeries.Core
             ShowDialog(new Dialog(
                 item.Title,
                 null,
+                isPrompt: false,
                 CloseDialog,
                 new DialogOption("Quit", DialogIcon.Quit, () =>
                 {
@@ -725,6 +756,7 @@ namespace XboxSeries.Core
             }
 
             StopRepeat();
+            sounds.Play(dialog.OpenSound);
             Guide.Dialog = dialog;
         }
 
@@ -741,6 +773,7 @@ namespace XboxSeries.Core
             ShowDialog(new Dialog(
                 $"Force quit {NameOf(quittingGame.Value)}?",
                 "It hasn't closed. Anything unsaved will be lost.",
+                isPrompt: true,
                 DeclineForceQuit,
                 new DialogOption("Force quit", DialogIcon.Quit, ForceQuit),
                 new DialogOption("Cancel", DialogIcon.Cancel, DeclineForceQuit)));

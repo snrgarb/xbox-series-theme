@@ -23,6 +23,7 @@
     <ItemGroup>
       <DashboardFile Include="$(DashboardDir)**\*" Exclude="$(DashboardDir)theme.yaml" />
       <ExtensionFile Include="$(TargetDir)*.dll;$(TargetDir)*.pdb" />
+      <ExtensionSound Include="$(MSBuildProjectDirectory)\Sounds\*.wav" />
     </ItemGroup>
     <Error Condition="Exists('$(TargetDir)Playnite.SDK.dll')" Text="Playnite.SDK.dll must not ship in the .pext; Playnite provides it." />
 
@@ -40,6 +41,7 @@
 
     <!-- Extension, embedding the theme -->
     <Copy SourceFiles="@(ExtensionFile);$(ThemePackagePath)" DestinationFolder="$(ExtensionStageDir)" />
+    <Copy SourceFiles="@(ExtensionSound)" DestinationFolder="$(ExtensionStageDir)Sounds\" />
     <WriteLinesToFile File="$(ExtensionStageDir)extension.yaml" Lines="$([MSBuild]::Escape($(ExtensionManifest)))" Overwrite="true" />
     <ZipDirectory SourceDirectory="$(ExtensionStageDir)" DestinationFile="$(ExtensionPackagePath)" Overwrite="true" />
 
