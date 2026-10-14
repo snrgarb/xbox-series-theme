@@ -10,6 +10,7 @@ namespace XboxSeries.Core.Tests.Fakes
     {
         private readonly List<LibraryGame> games = new List<LibraryGame>();
         private readonly List<FilterPreset> filterPresets = new List<FilterPreset>();
+        private readonly List<string[]> presetGames = new List<string[]>();
         private readonly List<App> apps = new List<App>();
         private bool appsAvailable = true;
 
@@ -24,8 +25,15 @@ namespace XboxSeries.Core.Tests.Fakes
             string source = null,
             string installDirectory = null,
             string backgroundImage = null,
-            string coverImage = null) =>
-            WithGame(Guid.NewGuid(), name, lastActivity, added, hidden, installed, series, genres, source, installDirectory, backgroundImage, coverImage);
+            string coverImage = null,
+            bool favorite = false,
+            ulong playtime = 0,
+            ulong playCount = 0,
+            DateTime? releaseDate = null,
+            DateTime? modified = null,
+            string sortingName = null) =>
+            WithGame(Guid.NewGuid(), name, lastActivity, added, hidden, installed, series, genres, source, installDirectory, backgroundImage, coverImage,
+                favorite, playtime, playCount, releaseDate, modified, sortingName);
 
         /// <summary>A game with a known id, to stand for the same game in a later snapshot.</summary>
         public FakeLibrary WithGame(
@@ -40,7 +48,13 @@ namespace XboxSeries.Core.Tests.Fakes
             string source = null,
             string installDirectory = null,
             string backgroundImage = null,
-            string coverImage = null)
+            string coverImage = null,
+            bool favorite = false,
+            ulong playtime = 0,
+            ulong playCount = 0,
+            DateTime? releaseDate = null,
+            DateTime? modified = null,
+            string sortingName = null)
         {
             games.Add(new LibraryGame(
                 id,
@@ -54,13 +68,29 @@ namespace XboxSeries.Core.Tests.Fakes
                 source,
                 installDirectory,
                 backgroundImage,
-                coverImage));
+                coverImage,
+                favorite,
+                playtime,
+                playCount,
+                releaseDate,
+                modified,
+                sortingName));
             return this;
         }
 
-        public FakeLibrary WithFilterPreset(string name, bool showInFullscreenQuickSelection = false)
+        /// <summary>
+        /// A filter preset matching the games named in <paramref name="games"/>, as Playnite evaluates its filter,
+        /// in no particular order. Presets reach the core in the order they are added, standing for Playnite's order.
+        /// </summary>
+        public FakeLibrary WithFilterPreset(
+            string name,
+            bool showInFullscreenQuickSelection = false,
+            string[] games = null,
+            GameSort? sort = null,
+            SortDirection direction = SortDirection.Ascending)
         {
-            filterPresets.Add(new FilterPreset(Guid.NewGuid(), name, showInFullscreenQuickSelection));
+            presetGames.Add(games ?? new string[0]);
+            filterPresets.Add(new FilterPreset(Guid.NewGuid(), name, showInFullscreenQuickSelection, new Guid[0], sort, direction));
             return this;
         }
 
@@ -80,7 +110,16 @@ namespace XboxSeries.Core.Tests.Fakes
         /// <summary>The id of the game called <paramref name="name"/>.</summary>
         public Guid Id(string name) => games.Single(g => g.Name == name).Id;
 
+        /// <summary>The id of the filter preset called <paramref name="name"/>.</summary>
+        public Guid PresetId(string name) => filterPresets.Single(p => p.Name == name).Id;
+
         public LibrarySnapshot Snapshot() =>
-            new LibrarySnapshot(games.ToList(), filterPresets.ToList(), appsAvailable ? apps.ToList() : null);
+            new LibrarySnapshot(
+                games.ToList(),
+                filterPresets
+                    .Select((p, i) => new FilterPreset(
+                        p.Id, p.Name, p.ShowInFullscreenQuickSelection, presetGames[i].Select(Id).ToList(), p.Sort, p.SortDirection))
+                    .ToList(),
+                appsAvailable ? apps.ToList() : null);
     }
 }

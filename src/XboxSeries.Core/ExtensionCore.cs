@@ -22,6 +22,9 @@ namespace XboxSeries.Core
         /// <summary>How many games the Play history tile's collage shows.</summary>
         private const int PlayHistoryCollageCount = 4;
 
+        /// <summary>How many games a Group on Home shows before its See all tile.</summary>
+        private const int GroupTileCount = 10;
+
         /// <summary>How soon a second A on the same Home tile counts as a double-tap, which launches the game.</summary>
         private static readonly TimeSpan DoubleTapWindow = TimeSpan.FromMilliseconds(300);
 
@@ -323,11 +326,79 @@ namespace XboxSeries.Core
                 .Take(PlayHistoryCollageCount)
                 .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
                 .ToList();
+            Home.Groups = Groups();
 
             // The hero stays on the last focused game while it exists, and starts on the first game in the row.
             var hero = row.Concat(played).FirstOrDefault(g => g.Id == heroGame) ?? row.FirstOrDefault();
             heroGame = hero?.Id;
             Home.Hero = HeroArtOf(hero);
+        }
+
+        /// <summary>
+        /// One Group per filter preset flagged for Fullscreen quick selection, in Playnite's order, sorted by the
+        /// preset's own sort. With none flagged, a Favourites Group stands in, in name order and without hidden games.
+        /// </summary>
+        private IReadOnlyList<HomeGroup> Groups()
+        {
+            var groups = library.FilterPresets
+                .Where(p => p.ShowInFullscreenQuickSelection)
+                .Select(p => Group(
+                    p.Name,
+                    p.Id,
+                    p.Games.Select(id => GameById(id)).Where(g => g != null),
+                    p.Sort ?? GameSort.Name,
+                    p.SortDirection))
+                .ToList();
+            if (groups.Count == 0)
+            {
+                groups.Add(Group(
+                    "Favourites",
+                    null,
+                    library.Games.Where(g => g.Favorite && !g.Hidden),
+                    GameSort.Name,
+                    SortDirection.Ascending));
+            }
+
+            return groups;
+        }
+
+        private HomeGroup Group(string name, Guid? presetId, IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction) =>
+            new HomeGroup(
+                name,
+                presetId,
+                Sorted(games, sort, direction)
+                    .Take(GroupTileCount)
+                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, g.Id == runningGame))
+                    .ToList());
+
+        /// <summary>Games in the order of a preset's sort, ties in name order, as Playnite lists them.</summary>
+        private static IEnumerable<LibraryGame> Sorted(IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction)
+        {
+            var byName = StringComparer.CurrentCultureIgnoreCase;
+            if (sort == GameSort.Name)
+            {
+                return direction == SortDirection.Ascending
+                    ? games.OrderBy(g => g.SortingName, byName)
+                    : games.OrderByDescending(g => g.SortingName, byName);
+            }
+
+            Func<LibraryGame, IComparable> key;
+            switch (sort)
+            {
+                case GameSort.LastActivity: key = g => g.LastActivity; break;
+                case GameSort.Added: key = g => g.Added; break;
+                case GameSort.Modified: key = g => g.Modified; break;
+                case GameSort.ReleaseDate: key = g => g.ReleaseDate; break;
+                case GameSort.Playtime: key = g => g.Playtime; break;
+                case GameSort.PlayCount: key = g => g.PlayCount; break;
+                default: throw new ArgumentOutOfRangeException(nameof(sort), sort, null);
+            }
+
+            // Games without the field (never played, no release date) come last either way.
+            var ordered = direction == SortDirection.Ascending
+                ? games.OrderBy(g => key(g) == null).ThenBy(key)
+                : games.OrderBy(g => key(g) == null).ThenByDescending(key);
+            return ordered.ThenBy(g => g.SortingName, byName);
         }
 
         /// <summary>A game's background art, or its cover when it has none; null for no game or no art.</summary>

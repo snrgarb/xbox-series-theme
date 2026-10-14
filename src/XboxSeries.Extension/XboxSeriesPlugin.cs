@@ -15,6 +15,7 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private readonly Win32WindowSystem windows = new Win32WindowSystem();
+        private readonly HomeFocus homeFocus = new HomeFocus();
         private bool libraryPushed;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
@@ -33,7 +34,7 @@ namespace XboxSeries.Extension
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups" },
             });
         }
 
@@ -49,7 +50,8 @@ namespace XboxSeries.Extension
             switch (args.Name)
             {
                 case "Hero": return new HeroControl(core.Home);
-                case "RecentRow": return new RecentRowControl(core);
+                case "RecentRow": return new RecentRowControl(core, homeFocus);
+                case "Groups": return new GroupsControl(core, homeFocus);
                 default: return null;
             }
         }

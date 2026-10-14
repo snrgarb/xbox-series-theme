@@ -28,6 +28,7 @@ namespace XboxSeries.Extension
         private static readonly TimeSpan GrowthTimeConstant = TimeSpan.FromMilliseconds(50);
 
         private readonly ExtensionCore core;
+        private readonly HomeFocus homeFocus;
 
         // Each tile's share of the focus growth. Every frame each share eases toward 1 for the focused tile and 0 for the
         // rest by the same fraction, so the shares always add up to the same total and the row's width never changes:
@@ -45,19 +46,23 @@ namespace XboxSeries.Extension
         private bool hasFocus;
         private FrameworkElement gameDetails;
 
-        public RecentRowControl(ExtensionCore core)
+        internal RecentRowControl(ExtensionCore core, HomeFocus homeFocus)
         {
             InitializeComponent();
             this.core = core;
+            this.homeFocus = homeFocus;
             DataContext = core.Home;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             GotKeyboardFocus += (_, __) =>
             {
                 hasFocus = true;
+                homeFocus.LastFocusedRow = this;
                 StartGrowing();
             };
             LostKeyboardFocus += OnLostKeyboardFocus;
+            PreviewKeyDown += (_, e) => HomeRows.MoveFocus(e);
+            RequestBringIntoView += OnRequestBringIntoView;
 
             // New or regenerated tiles: find them again on the next frame that needs them.
             Tiles.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
@@ -69,7 +74,7 @@ namespace XboxSeries.Extension
 
             // Playnite focuses its main list on Home, which the Dashboard hides with the extension, and again when the
             // Game hub closes; the row takes focus instead.
-            gameDetails = FindGameDetails();
+            gameDetails = HomeRows.FindGameDetails(this);
             if (gameDetails != null)
             {
                 gameDetails.IsVisibleChanged += OnGameDetailsVisibleChanged;
@@ -163,9 +168,21 @@ namespace XboxSeries.Extension
 
         private void OnGameDetailsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (!(bool)e.NewValue)
+            // Back from a Game hub opened here, or from anywhere when no row has had focus yet.
+            if (!(bool)e.NewValue && (homeFocus.LastFocusedRow == null || homeFocus.LastFocusedRow == this))
             {
                 FocusTileSoon();
+            }
+        }
+
+        /// <summary>The row is Home's top: with a tile focused, the Dashboard scrolls Home all the way back up.</summary>
+        private void OnRequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        {
+            var scroller = HomeRows.PageScroller(this);
+            if (scroller != null)
+            {
+                e.Handled = true;
+                scroller.ScrollToTop();
             }
         }
 
@@ -201,7 +218,7 @@ namespace XboxSeries.Extension
         private List<Button> GameTiles() =>
             Enumerable.Range(0, Tiles.Items.Count)
                 .Select(i => Tiles.ItemContainerGenerator.ContainerFromIndex(i))
-                .Select(container => container == null ? null : FindChild<Button>(container))
+                .Select(container => container == null ? null : HomeRows.FindChild<Button>(container))
                 .Where(button => button != null)
                 .ToList();
 
@@ -235,40 +252,6 @@ namespace XboxSeries.Extension
             }
 
             return tiles;
-        }
-
-        /// <summary>Playnite's Game details view in the Main template this row sits in; null if the theme has none.</summary>
-        private FrameworkElement FindGameDetails()
-        {
-            for (DependencyObject node = this; node != null; node = VisualTreeHelper.GetParent(node))
-            {
-                if (node is Control control && control.Template?.FindName("PART_ElemGameDetails", control) is FrameworkElement details)
-                {
-                    return details;
-                }
-            }
-
-            return null;
-        }
-
-        private static T FindChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T match)
-                {
-                    return match;
-                }
-
-                var nested = FindChild<T>(child);
-                if (nested != null)
-                {
-                    return nested;
-                }
-            }
-
-            return null;
         }
     }
 }
