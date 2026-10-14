@@ -52,14 +52,10 @@
 
                             <ContentPresenter />
 
-                            <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                                        <GradientStop Color="#00000000" Offset="0" />
-                                        <GradientStop Color="#E6000000" Offset="1" />
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <TextBlock Text="{TemplateBinding Tag}" Margin="12,28,12,10"
+                            <!-- A solid black band behind the title, as on the console, so it reads over any art. -->
+                            <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
+                                    Background="#E6000000">
+                                <TextBlock Text="{TemplateBinding Tag}" Margin="12,8,12,9"
                                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
                                            FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
                             </Border>
