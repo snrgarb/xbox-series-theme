@@ -29,8 +29,9 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
 
         /// <summary>
-        /// The console's grid: square tiles, scrolling down, three rows to the screen, which in the Dashboard's place for
-        /// it makes five columns. Playnite's own panel, laid out by its own settings (Home's single row) unless replaced.
+        /// The console's grid: square tiles, scrolling down. Playnite's own panel, laid out by its own settings (Home's single
+        /// row) unless replaced. It sizes its cells from its height, 3.5 of them to it, and fits as many to a row as its
+        /// width allows, so <see cref="FitFiveToARow"/> keeps the list 3.5 fifths of its width tall.
         /// </summary>
         private const string GameGridPanel =
             "<ItemsPanelTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">" +
@@ -83,6 +84,7 @@ namespace XboxSeries.Extension
             UseGameGridPanel();
             if (mainList != null)
             {
+                mainList.SizeChanged += FitFiveToARow;
                 mainList.PreviewKeyDown += OnMainListPreviewKeyDown;
                 LibraryCount.SetBinding(TextBlock.TextProperty, new Binding("Items.Count") { Source = mainList, StringFormat = "{0} games" });
             }
@@ -112,6 +114,7 @@ namespace XboxSeries.Extension
 
             if (mainList != null)
             {
+                mainList.SizeChanged -= FitFiveToARow;
                 mainList.PreviewKeyDown -= OnMainListPreviewKeyDown;
                 BindingOperations.ClearBinding(LibraryCount, TextBlock.TextProperty);
                 mainList = null;
@@ -200,6 +203,20 @@ namespace XboxSeries.Extension
             catch (Exception e)
             {
                 logger.Error(e, "Can't lay Games out as a grid: this Playnite build has no FullscreenTilePanel as expected");
+            }
+        }
+
+        /// <summary>
+        /// Five tiles to a row, as on the console, whatever the screen's shape: Playnite makes the Dashboard 1080 tall and
+        /// as wide as the screen's aspect ratio, so the list's width varies, and a fixed height would fit fewer cells to a
+        /// row on a narrower screen. Floored, so rounding never makes a cell wider than a fifth.
+        /// </summary>
+        private static void FitFiveToARow(object sender, SizeChangedEventArgs e)
+        {
+            var list = (FrameworkElement)sender;
+            if (e.WidthChanged && list.ActualWidth > 0)
+            {
+                list.Height = Math.Floor(list.ActualWidth / 5 * 3.5);
             }
         }
 
