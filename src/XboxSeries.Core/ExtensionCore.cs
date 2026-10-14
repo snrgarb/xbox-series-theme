@@ -318,10 +318,10 @@ namespace XboxSeries.Core
                 .Take(RecentRowCount)
                 .ToList();
 
-            Home.RecentRow = row.Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g == running)).ToList();
+            Home.RecentRow = row.Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, g == running)).ToList();
             Home.PlayHistory = played.Where(g => !row.Contains(g))
                 .Take(PlayHistoryCollageCount)
-                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, isRunning: false))
+                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
                 .ToList();
 
             // The hero stays on the last focused game while it exists, and starts on the first game in the row.

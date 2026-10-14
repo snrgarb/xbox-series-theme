@@ -317,6 +317,18 @@ namespace XboxSeries.Core.Tests
             Assert.Null(core.Guide.Dialog);
         }
 
+        [Fact]
+        public void Tiles_carry_their_games_library_source()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), source: "Xbox")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), source: "Steam")
+                .WithGame("Emulated", lastActivity: new DateTime(2026, 10, 10))
+                .Snapshot());
+
+            Assert.Equal(new[] { "Xbox", "Steam", null }, core.Home.RecentRow.Select(t => t.Source));
+        }
+
         private string[] RecentRow() => core.Home.RecentRow.Select(t => t.Title).ToArray();
 
         private HomeTile Tile(string title) => core.Home.RecentRow.Single(t => t.Title == title);
