@@ -19,11 +19,11 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class TileMenuControl : PluginUserControl
     {
-        private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(200);
+        private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(250);
         private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
 
         /// <summary>How far the menu flies up as it opens, and back down as it closes, at 1080p.</summary>
-        private const double FlyDistance = 40;
+        private const double FlyDistance = 80;
 
         private readonly ExtensionCore core;
         private readonly TranslateTransform rise = new TranslateTransform();
@@ -85,23 +85,25 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>The menu flies up into place and fades in as the screen dims.</summary>
+        /// <summary>The screen dims at once, and the menu flies up into place, fading in.</summary>
         private void Open(Dialog menu)
         {
             Panel.DataContext = menu;
             Root.Visibility = Visibility.Visible;
+            Dim.Visibility = Visibility.Visible;
             Root.IsHitTestVisible = true;
-            Animate(0, 1, OpenDuration, EasingMode.EaseOut, from: FlyDistance, completed: null);
+            Fly(0, 1, OpenDuration, EasingMode.EaseOut, from: FlyDistance, completed: null);
         }
 
         /// <summary>
-        /// The opposite: down and out, the dim lifting. The menu keeps showing what it held as it goes, and nothing on it
-        /// can be clicked meanwhile.
+        /// The opposite: the dim goes at once, and the menu flies back down, fading out. It keeps showing what it held as
+        /// it goes, and nothing on it can be clicked meanwhile.
         /// </summary>
         private void Close()
         {
+            Dim.Visibility = Visibility.Collapsed;
             Root.IsHitTestVisible = false;
-            Animate(FlyDistance, 0, CloseDuration, EasingMode.EaseIn, from: null, completed: () =>
+            Fly(FlyDistance, 0, CloseDuration, EasingMode.EaseIn, from: null, completed: () =>
             {
                 // Reopened while closing: the open animation has taken over.
                 if (core.Home.TileMenu == null)
@@ -112,26 +114,26 @@ namespace XboxSeries.Extension
             });
         }
 
-        private void Animate(double riseTo, double opacityTo, Duration duration, EasingMode easing, double? from, Action completed)
+        private void Fly(double riseTo, double opacityTo, Duration duration, EasingMode easing, double? from, Action completed)
         {
             var ease = new CubicEase { EasingMode = easing };
-            var rise = new DoubleAnimation(riseTo, duration) { EasingFunction = ease };
-            var fade = new DoubleAnimation(opacityTo, duration) { EasingFunction = ease };
+            var move = new DoubleAnimation(riseTo, duration) { EasingFunction = ease };
+            var fade = new DoubleAnimation(opacityTo, duration);
 
             // Opening starts from below and clear; closing goes on from wherever it is, so a quick close never jumps.
             if (from != null)
             {
-                rise.From = from;
+                move.From = from;
                 fade.From = 0;
             }
 
             if (completed != null)
             {
-                fade.Completed += (_, __) => completed();
+                move.Completed += (_, __) => completed();
             }
 
-            rise.BeginAnimation(TranslateTransform.YProperty, rise);
-            Root.BeginAnimation(OpacityProperty, fade);
+            rise.BeginAnimation(TranslateTransform.YProperty, move);
+            Panel.BeginAnimation(OpacityProperty, fade);
         }
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)
