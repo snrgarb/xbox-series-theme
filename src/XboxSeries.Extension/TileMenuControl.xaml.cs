@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
@@ -16,7 +19,14 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class TileMenuControl : PluginUserControl
     {
+        private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(200);
+        private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
+
+        /// <summary>How far the menu flies up as it opens, and back down as it closes, at 1080p.</summary>
+        private const double FlyDistance = 40;
+
         private readonly ExtensionCore core;
+        private readonly TranslateTransform rise = new TranslateTransform();
         private Window window;
 #if DEBUG
         private readonly HashSet<Key> debugKeysDown = new HashSet<Key>();
@@ -28,12 +38,14 @@ namespace XboxSeries.Extension
             this.core = core;
             DataContext = core.Home;
             Panel.Core = core;
+            Panel.RenderTransform = rise;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            core.Home.PropertyChanged += OnHomeChanged;
             window = Window.GetWindow(this);
             if (window != null)
             {
@@ -45,6 +57,7 @@ namespace XboxSeries.Extension
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            core.Home.PropertyChanged -= OnHomeChanged;
             if (window != null)
             {
                 window.PreviewKeyDown -= OnWindowKeyDown;
@@ -52,6 +65,73 @@ namespace XboxSeries.Extension
                 window.Deactivated -= OnWindowDeactivated;
                 window = null;
             }
+        }
+
+        private void OnHomeChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(HomeState.TileMenu))
+            {
+                return;
+            }
+
+            var menu = core.Home.TileMenu;
+            if (menu != null)
+            {
+                Open(menu);
+            }
+            else if (Root.Visibility == Visibility.Visible)
+            {
+                Close();
+            }
+        }
+
+        /// <summary>The menu flies up into place and fades in as the screen dims.</summary>
+        private void Open(Dialog menu)
+        {
+            Panel.DataContext = menu;
+            Root.Visibility = Visibility.Visible;
+            Root.IsHitTestVisible = true;
+            Animate(0, 1, OpenDuration, EasingMode.EaseOut, from: FlyDistance, completed: null);
+        }
+
+        /// <summary>
+        /// The opposite: down and out, the dim lifting. The menu keeps showing what it held as it goes, and nothing on it
+        /// can be clicked meanwhile.
+        /// </summary>
+        private void Close()
+        {
+            Root.IsHitTestVisible = false;
+            Animate(FlyDistance, 0, CloseDuration, EasingMode.EaseIn, from: null, completed: () =>
+            {
+                // Reopened while closing: the open animation has taken over.
+                if (core.Home.TileMenu == null)
+                {
+                    Root.Visibility = Visibility.Collapsed;
+                    Panel.DataContext = null;
+                }
+            });
+        }
+
+        private void Animate(double riseTo, double opacityTo, Duration duration, EasingMode easing, double? from, Action completed)
+        {
+            var ease = new CubicEase { EasingMode = easing };
+            var rise = new DoubleAnimation(riseTo, duration) { EasingFunction = ease };
+            var fade = new DoubleAnimation(opacityTo, duration) { EasingFunction = ease };
+
+            // Opening starts from below and clear; closing goes on from wherever it is, so a quick close never jumps.
+            if (from != null)
+            {
+                rise.From = from;
+                fade.From = 0;
+            }
+
+            if (completed != null)
+            {
+                fade.Completed += (_, __) => completed();
+            }
+
+            rise.BeginAnimation(TranslateTransform.YProperty, rise);
+            Root.BeginAnimation(OpacityProperty, fade);
         }
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)
