@@ -67,7 +67,7 @@ namespace XboxSeries.Extension
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
             PushLibrary();
-            sounds.Play(UiSound.Startup);
+            sounds.Play(UiSound.Login);
 
             // Database events can arrive on background threads; the core only runs on the UI thread.
             PlayniteApi.Database.Games.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);

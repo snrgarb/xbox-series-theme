@@ -24,8 +24,8 @@ namespace XboxSeries.Core
         /// <summary>A prompt was answered either way, or a menu closed without a choice.</summary>
         PromptClose,
 
-        /// <summary>Playnite Fullscreen started.</summary>
-        Startup,
+        /// <summary>Playnite Fullscreen started, with the console's sign-in sound.</summary>
+        Login,
 
         /// <summary>Playnite is closing.</summary>
         PowerOff,
