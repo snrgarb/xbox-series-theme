@@ -248,7 +248,6 @@ namespace XboxSeries.Core
             }
             else if ((button == ControllerButton.Guide || button == ControllerButton.B) && Guide.IsOpen)
             {
-                sounds.Play(UiSound.Back);
                 Dismiss(button, ReturnToRecordedWindow);
             }
             else if (button == ControllerButton.A && dialog != null)
@@ -657,7 +656,6 @@ namespace XboxSeries.Core
         {
             if (Guide.IsOpen)
             {
-                sounds.Play(UiSound.Back);
                 DismissAtOnce(ReturnToRecordedWindow);
             }
         }
