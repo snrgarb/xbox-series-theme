@@ -76,6 +76,26 @@
                 </Setter>
             </Style>
 
+            <!-- The console's flat grey button, filled with the accent when focused. -->
+            <Style x:Key="FooterButton" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="52" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Back" Background="#FF333333" Padding="26,0,26,0" CornerRadius="2">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <!--
                 A Play history row: the game's square art, its title, and when it was last played and on what. The focus
                 ring sits in the row's own 4 px edge, round the row, so the list's scrolling never clips it.
@@ -142,12 +162,18 @@
                         <TextBlock Text="Play history" Style="{StaticResource NavText}" />
                     </DockPanel>
                 </Button>
+                <Button x:Name="FullLibraryItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
+                    <DockPanel>
+                        <TextBlock Text="&#xE8F1;" Style="{StaticResource NavIcon}" />
+                        <TextBlock Text="Full library" Style="{StaticResource NavText}" />
+                    </DockPanel>
+                </Button>
             </StackPanel>
         </StackPanel>
 
         <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
 
-        <Grid Grid.Column="2" Margin="77,72,88,0">
+        <Grid Grid.Column="2" Margin="77,72,170,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="118" />
                 <RowDefinition Height="*" />
@@ -156,6 +182,9 @@
             <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" VerticalAlignment="Top" />
             <TextBlock x:Name="Count" Text="{Binding GameCount, StringFormat='{}{0} games'}" Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
+            <!-- Full library's count: the games Playnite's main list shows under the user's filter, bound by the code. -->
+            <TextBlock x:Name="LibraryCount" Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}"
+                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
 
             <!--
                 Play history, in its sections. Virtualized: only the rows on screen are built, and their art read, so a long
@@ -217,6 +246,15 @@
 
             <TextBlock x:Name="NoHistory" Grid.Row="1" Text="Games you play show up here." Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" Margin="28,0,0,0" VerticalAlignment="Top" />
+
+            <!-- Under Games' grid, as on the console: the way to every game, under the user's own filter. -->
+            <StackPanel x:Name="LookingForMore" Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="3,0,0,20">
+                <TextBlock Text="Looking for more?" Style="{StaticResource Text}" Margin="0,0,0,12" />
+                <Button x:Name="SeeFullLibrary" Style="{StaticResource FooterButton}" Click="OnSeeFullLibrary"
+                        PreviewKeyDown="OnSeeFullLibraryKeyDown">
+                    <TextBlock Text="SEE FULL LIBRARY" Style="{StaticResource Text}" FontSize="22" />
+                </Button>
+            </StackPanel>
         </Grid>
     </Grid>
 </controls:PluginUserControl>

@@ -46,6 +46,9 @@ namespace XboxSeries.Extension
         /// <summary>The Play history game that last had focus, to put focus back on after a rebuild or its Game hub.</summary>
         private Guid? lastFocusedGame;
 
+        /// <summary>The Games grid game focus left for "See full library", to go back up to.</summary>
+        private int gameAboveFooter;
+
         internal MyGamesControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -73,10 +76,17 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown += OnViewHostKeyDown;
+                viewHost.PreviewKeyDown += OnViewHostPreviewKeyDown;
             }
 
             mainList = HomeRows.FindPart(this, "PART_ListGameItems") as ListBox;
             UseGameGridPanel();
+            if (mainList != null)
+            {
+                mainList.PreviewKeyDown += OnMainListPreviewKeyDown;
+                LibraryCount.SetBinding(TextBlock.TextProperty, new Binding("Items.Count") { Source = mainList, StringFormat = "{0} games" });
+            }
+
             gameDetails = HomeRows.FindPart(this, "PART_ElemGameDetails");
             if (gameDetails != null)
             {
@@ -90,6 +100,7 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
+                viewHost.PreviewKeyDown -= OnViewHostPreviewKeyDown;
                 viewHost = null;
             }
 
@@ -99,7 +110,12 @@ namespace XboxSeries.Extension
                 gameDetails = null;
             }
 
-            mainList = null;
+            if (mainList != null)
+            {
+                mainList.PreviewKeyDown -= OnMainListPreviewKeyDown;
+                BindingOperations.ClearBinding(LibraryCount, TextBlock.TextProperty);
+                mainList = null;
+            }
         }
 
         private void OnStateChanged(object sender, PropertyChangedEventArgs e)
@@ -131,18 +147,31 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>The header, the lit nav item, and Play history or the note that it's empty.</summary>
+        /// <summary>
+        /// The header and its count, the lit nav item, Games' way to Full library, and Play history or the note that
+        /// it's empty.
+        /// </summary>
         private void ShowItem()
         {
-            var history = core.MyGames.Item == MyGamesItem.PlayHistory;
-            Header.Text = history ? "Play history" : "Games";
-            GamesItem.Tag = history ? null : "Selected";
+            var item = core.MyGames.Item;
+            var games = item == MyGamesItem.Games;
+            var history = item == MyGamesItem.PlayHistory;
+            var library = item == MyGamesItem.FullLibrary;
+            Header.Text = history ? "Play history" : library ? "Full library" : "Games";
+            GamesItem.Tag = games ? "Selected" : null;
             PlayHistoryItem.Tag = history ? "Selected" : null;
+            FullLibraryItem.Tag = library ? "Selected" : null;
+            Count.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
+            LibraryCount.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
+            LookingForMore.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
             var empty = core.MyGames.PlayHistory.Count == 0;
-            Count.Visibility = history ? Visibility.Collapsed : Visibility.Visible;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
             NoHistory.Visibility = history && empty ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        /// <summary>The nav item of what the page shows.</summary>
+        private Button NavItemOf(MyGamesItem item) =>
+            item == MyGamesItem.PlayHistory ? PlayHistoryItem : item == MyGamesItem.FullLibrary ? FullLibraryItem : GamesItem;
 
         /// <summary>Play history's games, top to bottom, in their sections.</summary>
         private void ShowHistory()
@@ -154,8 +183,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Lays Playnite's main list out as the console's grid. With the extension the main list shows only as Games, so
-        /// it keeps this layout; Home's tiles are the extension's own rows.
+        /// Lays Playnite's main list out as the console's grid. With the extension the main list shows only as Games and
+        /// Full library, so it keeps this layout; Home's tiles are the extension's own rows.
         /// </summary>
         private void UseGameGridPanel()
         {
@@ -171,6 +200,87 @@ namespace XboxSeries.Extension
             catch (Exception e)
             {
                 logger.Error(e, "Can't lay Games out as a grid: this Playnite build has no FullscreenTilePanel as expected");
+            }
+        }
+
+        /// <summary>
+        /// Playnite's LB/RB switch the user's filter presets, which only Full library shows; elsewhere on the page they
+        /// would swap the grid's games for a preset's, so they do nothing.
+        /// </summary>
+        private void OnViewHostPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var button = PlayniteInput.PadButtonOf(e);
+            if (core.MyGames.IsShown && !core.MyGames.ShowsFullLibrary
+                && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder))
+            {
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// In the grid, left from its first column goes back to the nav item it belongs to, and down from Games' last row
+        /// to "See full library", under it.
+        /// </summary>
+        private void OnMainListPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!core.MyGames.ShowsGameGrid
+                || (e.Key != Key.Left && e.Key != Key.Down)
+                || !(ItemsControl.ContainerFromElement(mainList, e.OriginalSource as DependencyObject) is ListBoxItem game)
+                || !(VisualTreeHelper.GetParent(game) is Panel panel))
+            {
+                return;
+            }
+
+            // The grid lays out as many columns as fit, so its rows are read from where the tiles are: the focused one's
+            // row is on screen, so built.
+            var top = Math.Round(game.TranslatePoint(new Point(), panel).Y);
+            var row = panel.Children.OfType<ListBoxItem>()
+                .Where(c => Math.Round(c.TranslatePoint(new Point(), panel).Y) == top)
+                .ToList();
+            var index = mainList.ItemContainerGenerator.IndexFromContainer(game);
+            if (e.Key == Key.Left && row.All(c => c.TranslatePoint(new Point(), panel).X >= game.TranslatePoint(new Point(), panel).X))
+            {
+                e.Handled = true;
+                NavItemOf(core.MyGames.Item).Focus();
+            }
+            else if (e.Key == Key.Down && core.MyGames.Item == MyGamesItem.Games
+                && row.Max(c => mainList.ItemContainerGenerator.IndexFromContainer(c)) == mainList.Items.Count - 1)
+            {
+                e.Handled = true;
+                gameAboveFooter = index;
+                SeeFullLibrary.Focus();
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnSeeFullLibraryKeyDown.
+        private void OnSeeFullLibrary(object sender, RoutedEventArgs e)
+        {
+            // The nav item shows Full library as it takes focus; focus then goes on to its first game.
+            FullLibraryItem.Focus();
+            FocusContentSoon();
+        }
+
+        /// <summary>The pad's A opens Full library; up goes back into the grid, left to the nav.</summary>
+        private void OnSeeFullLibraryKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            {
+                e.Handled = true;
+                OnSeeFullLibrary(sender, e);
+            }
+            else if (e.Key == Key.Up)
+            {
+                e.Handled = true;
+                FocusGame(gameAboveFooter);
+            }
+            else if (e.Key == Key.Left)
+            {
+                e.Handled = true;
+                GamesItem.Focus();
+            }
+            else if (e.Key == Key.Right || e.Key == Key.Down)
+            {
+                e.Handled = true;
             }
         }
 
@@ -195,7 +305,7 @@ namespace XboxSeries.Extension
 
         private void OnNavFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.OpenMyGames(sender == GamesItem ? MyGamesItem.Games : MyGamesItem.PlayHistory);
+            core.OpenMyGames(Enum.GetValues(typeof(MyGamesItem)).Cast<MyGamesItem>().First(item => NavItemOf(item) == sender));
         }
 
         // The keyboard's Enter and the mouse; the pad's A arrives as OnNavKeyDown.
@@ -292,9 +402,9 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                if (core.MyGames.Item == MyGamesItem.Games)
+                if (core.MyGames.ShowsGameGrid)
                 {
-                    FocusFirstGame();
+                    FocusGame(0);
                     return;
                 }
 
@@ -312,21 +422,23 @@ namespace XboxSeries.Extension
             }));
         }
 
-        private void FocusFirstGame()
+        /// <summary>Focuses and selects the grid's game at <paramref name="index"/>; with no games, the nav item.</summary>
+        private void FocusGame(int index)
         {
             if (mainList == null || mainList.Items.Count == 0)
             {
-                GamesItem.Focus();
+                NavItemOf(core.MyGames.Item).Focus();
                 return;
             }
 
             // Selected too: the Game hub, opened by A, shows the main list's selected game.
-            mainList.SelectedIndex = 0;
-            mainList.ScrollIntoView(mainList.Items[0]);
+            index = Math.Min(index, mainList.Items.Count - 1);
+            mainList.SelectedIndex = index;
+            mainList.ScrollIntoView(mainList.Items[index]);
             mainList.UpdateLayout();
-            if (mainList.ItemContainerGenerator.ContainerFromIndex(0) is UIElement first)
+            if (mainList.ItemContainerGenerator.ContainerFromIndex(index) is UIElement game)
             {
-                first.Focus();
+                game.Focus();
             }
         }
 

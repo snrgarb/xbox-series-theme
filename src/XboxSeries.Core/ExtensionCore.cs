@@ -512,20 +512,28 @@ namespace XboxSeries.Core
         private HomeTile TileOf(LibraryGame game) => new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame);
 
         /// <summary>
-        /// Opens My games &amp; apps on <paramref name="item"/>, or moves it there. The first time the page takes over the
-        /// main list, the user's own filter and sort are kept, to give back when the page goes.
+        /// Opens My games &amp; apps on <paramref name="item"/>, or moves it there. Full library is the main list under the
+        /// user's own filter and sort. Games and Play history take the main list over, keeping the user's filter and sort
+        /// first (as Full library last left them), to give back on Full library or when the page goes.
         /// </summary>
         public void OpenMyGames(MyGamesItem item)
         {
-            if (!ownsMainList)
+            if (item == MyGamesItem.FullLibrary)
             {
-                playnite.SaveUserFilter();
-                ownsMainList = true;
+                GiveBackMainList();
             }
-
-            if (!MyGames.IsShown || MyGames.Item != item)
+            else
             {
-                playnite.ShowInMainList(item == MyGamesItem.Games ? GameListFilter.Installed : GameListFilter.LastPlayed);
+                if (!ownsMainList)
+                {
+                    playnite.SaveUserFilter();
+                    ownsMainList = true;
+                }
+
+                if (!MyGames.IsShown || MyGames.Item != item)
+                {
+                    playnite.ShowInMainList(item == MyGamesItem.Games ? GameListFilter.Installed : GameListFilter.LastPlayed);
+                }
             }
 
             // On opening, for today's sections. Moving through the nav keeps it: rebuilding it rebuilds every row and its art.
