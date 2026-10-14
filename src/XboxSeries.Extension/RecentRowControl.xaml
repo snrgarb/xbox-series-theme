@@ -52,10 +52,14 @@
 
                             <ContentPresenter />
 
-                            <!-- A solid black band behind the title, as on the console, so it reads over any art. -->
+                            <!--
+                                A solid black band behind the title, as on the console, so it reads over any art. It shows only
+                                with the focus ring, so it sits inside the ring, rounded to the ring's inner corners (6 - 4),
+                                where nothing dark can show past the ring's edge.
+                            -->
                             <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
-                                    Background="#E6000000">
-                                <TextBlock Text="{TemplateBinding Tag}" Margin="12,8,12,9"
+                                    Background="#E6000000" Margin="4,0,4,4" CornerRadius="0,0,2,2">
+                                <TextBlock Text="{TemplateBinding Tag}" Margin="8,8,8,5"
                                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
                                            FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
                             </Border>
