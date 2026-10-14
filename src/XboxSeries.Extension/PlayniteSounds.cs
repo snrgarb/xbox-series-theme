@@ -23,7 +23,6 @@ namespace XboxSeries.Extension
         {
             [UiSound.Navigate] = new[] { "Navigate1.wav", "Navigate2.wav", "Navigate3.wav", "Navigate4.wav" },
             [UiSound.Enter] = new[] { "Enter.wav" },
-            [UiSound.Back] = new[] { "Back.wav" },
             [UiSound.OpenMenu] = new[] { "OpenMenu.wav" },
             [UiSound.PromptOpen] = new[] { "PromptOpen.wav" },
             [UiSound.PromptClose] = new[] { "PromptClose.wav" },

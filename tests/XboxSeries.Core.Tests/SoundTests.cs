@@ -38,25 +38,25 @@ namespace XboxSeries.Core.Tests
         [Theory]
         [InlineData(ControllerButton.B)]
         [InlineData(ControllerButton.Guide)]
-        public void Closing_the_Guide_from_the_pad_plays_back(ControllerButton button)
+        public void Closing_the_Guide_from_the_pad_is_silent(ControllerButton button)
         {
             Tap(ControllerButton.Guide);
             sounds.Played.Clear();
 
             Tap(button);
 
-            Assert.Equal(new[] { UiSound.Back }, sounds.Played);
+            Assert.Empty(sounds.Played);
         }
 
         [Fact]
-        public void Esc_closing_the_Guide_plays_back()
+        public void Esc_closing_the_Guide_is_silent()
         {
             Tap(ControllerButton.Guide);
             sounds.Played.Clear();
 
             core.DismissGuide();
 
-            Assert.Equal(new[] { UiSound.Back }, sounds.Played);
+            Assert.Empty(sounds.Played);
         }
 
         [Fact]

@@ -15,9 +15,6 @@ namespace XboxSeries.Core
         /// <summary>A: a Guide entry or a menu option was chosen.</summary>
         Enter,
 
-        /// <summary>B: the Guide closed.</summary>
-        Back,
-
         /// <summary>The Guide opened.</summary>
         OpenMenu,
 
