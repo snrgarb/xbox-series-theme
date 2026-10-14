@@ -200,12 +200,19 @@ namespace XboxSeries.Extension
         // Menu on a game tile opens its tile menu.
         private void OnTileFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.FocusHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                core.FocusHomeTile(tile);
+            }
         }
 
         private void OnTileLeft(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.LeaveHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
+            // A tile a rebuild has thrown away holds WPF's disconnected item, not its game, by the time it loses focus.
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                core.LeaveHomeTile(tile);
+            }
         }
 
         // Playnite sends the pad's A as Enter, which clicks the focused tile.
