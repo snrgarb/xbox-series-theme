@@ -24,11 +24,7 @@ namespace XboxSeries.Extension
 
         private readonly ExtensionCore core;
         private readonly HomeScreen homeScreen;
-        private readonly TileGrowth growth;
         private FrameworkElement gameDetails;
-
-        /// <summary>Every tile of every Group, found once per rebuild; null when stale.</summary>
-        private List<Button> allTiles;
 
         /// <summary>Whether focus is in the Groups. Kept by hand: a rebuild removes the focused tile before this hears of it.</summary>
         private bool hasFocus;
@@ -42,16 +38,12 @@ namespace XboxSeries.Extension
             InitializeComponent();
             this.core = core;
             this.homeScreen = homeScreen;
-            growth = new TileGrowth(AllTiles);
             DataContext = core.Home;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             GotKeyboardFocus += OnGotKeyboardFocus;
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
-
-            // New or regenerated rows: find the tiles again on the next frame that needs them.
-            Rows.ItemContainerGenerator.StatusChanged += (_, __) => allTiles = null;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -72,7 +64,6 @@ namespace XboxSeries.Extension
             core.Home.PropertyChanged -= OnHomeChanged;
             homeScreen.Changed -= OnScreenChanged;
             homeScreen.HasGroups = false;
-            growth.Stop();
             if (gameDetails != null)
             {
                 gameDetails.IsVisibleChanged -= OnGameDetailsVisibleChanged;
@@ -115,7 +106,6 @@ namespace XboxSeries.Extension
             hasFocus = true;
             homeScreen.LastFocusedRow = this;
             homeScreen.Show(groups: true);
-            growth.Start();
             if (e.NewFocus is Button tile && Rows.ContainerFromElement(tile) is FrameworkElement row)
             {
                 lastGroup = Rows.ItemContainerGenerator.IndexFromContainer(row);
@@ -132,8 +122,6 @@ namespace XboxSeries.Extension
             {
                 hasFocus = false;
             }
-
-            growth.Start();
         }
 
         /// <summary>
@@ -230,31 +218,6 @@ namespace XboxSeries.Extension
                 var tile = tiles.FirstOrDefault(b => (b.DataContext as HomeTile)?.GameId == lastGame) ?? tiles.FirstOrDefault();
                 tile?.Focus();
             }));
-        }
-
-        private int ExpectedTileCount() => core.Home.Groups.Sum(g => g.Tiles.Count + 1);
-
-        private List<Button> AllTiles()
-        {
-            if (allTiles != null)
-            {
-                return allTiles;
-            }
-
-            var tiles = Enumerable.Range(0, Rows.Items.Count)
-                .Select(i => Rows.ItemContainerGenerator.ContainerFromIndex(i))
-                .Where(row => row != null)
-                .SelectMany(Tiles)
-                .ToList();
-            growth.Forget(tiles);
-
-            // Kept only once every tile is built; until then the next frame looks again.
-            if (tiles.Count == ExpectedTileCount())
-            {
-                allTiles = tiles;
-            }
-
-            return tiles;
         }
 
         /// <summary>A Group's tiles, left to right, ending with See all.</summary>
