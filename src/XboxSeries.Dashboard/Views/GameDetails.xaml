@@ -631,14 +631,16 @@
 
                             <!--
                                 Cards. The cover leads both pages; the rest swap with the page. Any card with nothing to show
-                                is hidden. Game details is wider than the screen, so its row slides left while Info has focus,
-                                as the console scrolls its row.
+                                is hidden. A row can be wider than the screen, so it runs to the screen's edges and, while a
+                                card near its end has focus, lines its end up with the right margin instead.
+                                CardStripFrame lets the row keep its full width (a Grid would squeeze it to the screen's) and
+                                is never narrower than the screen, so a row that fits never moves.
                             -->
-                            <Canvas x:Name="Cards" Grid.Row="2" Height="500" Margin="0,32,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <StackPanel.RenderTransform>
-                                        <TranslateTransform x:Name="CardStripSlide" />
-                                    </StackPanel.RenderTransform>
+                            <Grid x:Name="Cards" Grid.Row="2" Margin="-80,32,-80,0">
+                                <StackPanel x:Name="CardStripFrame" Orientation="Horizontal" HorizontalAlignment="Left"
+                                            MinWidth="{Binding ActualWidth, ElementName=Cards}">
+                                <!-- 64, not 80, on the right: the last card brings its own 16 of spacing. -->
+                                <StackPanel Orientation="Horizontal" Margin="80,0,64,0">
 
                                     <!-- Cover, with the game's source (or platform) as a badge. -->
                                     <ContentControl Style="{StaticResource XboxHubCard}" Width="375" Padding="0">
@@ -806,7 +808,7 @@
                                         </ToggleButtonEx>
 
                                         <!-- Info; A, like About's, turns to Game details. -->
-                                        <ToggleButtonEx Width="436" IsChecked="{Binding IsChecked, ElementName=PageToggle, Mode=TwoWay}"
+                                        <ToggleButtonEx x:Name="HubInfo" Width="436" IsChecked="{Binding IsChecked, ElementName=PageToggle, Mode=TwoWay}"
                                                         Content="{Binding}" ContentTemplate="{StaticResource XboxHubInfo}"
                                                         Style="{StaticResource XboxHubInfoCard}" />
                                     </StackPanel>
@@ -828,7 +830,7 @@
                                         </ContentControl>
 
                                         <!-- Description: the whole of it, scrolled with the D-pad, and the features under it. -->
-                                        <ContentControl Width="480" Focusable="False">
+                                        <ContentControl x:Name="DetailsDescription" Width="480" Focusable="False">
                                             <ContentControl.Style>
                                                 <Style TargetType="ContentControl" BasedOn="{StaticResource XboxHubCard}">
                                                     <Style.Triggers>
@@ -859,7 +861,8 @@
                                                         Style="{StaticResource XboxHubInfoCard}" />
                                     </StackPanel>
                                 </StackPanel>
-                            </Canvas>
+                                </StackPanel>
+                            </Grid>
 
                         </Grid>
                     </Grid>
@@ -900,36 +903,15 @@
                             <Setter TargetName="Cards" Property="FocusManager.FocusedElement" Value="{Binding ElementName=PageToggle}" />
                         </Trigger>
 
-                        <!--
-                            Game details overruns the screen: slide its row left while Info has focus, just far enough to
-                            show Info whole. 468 = the row (375 + 889 + 480 + 436 wide cards, 16 between them) less the
-                            1760 between the hub's 80 margins; change a card's width and this changes with it.
-                        -->
+                        <!-- Cards near a row's end: line the row's end up with the right margin, so they show whole. -->
+                        <Trigger SourceName="HubInfo" Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="CardStripFrame" Property="HorizontalAlignment" Value="Right" />
+                        </Trigger>
+                        <Trigger SourceName="DetailsDescription" Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="CardStripFrame" Property="HorizontalAlignment" Value="Right" />
+                        </Trigger>
                         <Trigger SourceName="DetailsInfo" Property="IsKeyboardFocusWithin" Value="True">
-                            <Trigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="CardStripSlide" Storyboard.TargetProperty="X"
-                                                         To="-468" Duration="0:0:0.25">
-                                            <DoubleAnimation.EasingFunction>
-                                                <CubicEase EasingMode="EaseOut" />
-                                            </DoubleAnimation.EasingFunction>
-                                        </DoubleAnimation>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="CardStripSlide" Storyboard.TargetProperty="X"
-                                                         To="0" Duration="0:0:0.25">
-                                            <DoubleAnimation.EasingFunction>
-                                                <CubicEase EasingMode="EaseOut" />
-                                            </DoubleAnimation.EasingFunction>
-                                        </DoubleAnimation>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.ExitActions>
+                            <Setter TargetName="CardStripFrame" Property="HorizontalAlignment" Value="Right" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
