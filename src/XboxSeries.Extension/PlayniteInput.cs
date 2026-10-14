@@ -56,6 +56,11 @@ namespace XboxSeries.Extension
                 case Key.Enter: return ControllerButton.A;
                 case Key.Back: return ControllerButton.B;
                 case Key.M: return ControllerButton.Start;
+                case Key.A: return ControllerButton.DPadLeft;
+                case Key.D: return ControllerButton.DPadRight;
+                case Key.Q: return ControllerButton.LeftShoulder;
+                case Key.E: return ControllerButton.RightShoulder;
+                case Key.P: return ControllerButton.Guide;
                 default: return null;
             }
         }

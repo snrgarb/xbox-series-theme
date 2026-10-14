@@ -1,0 +1,109 @@
+<UserControl x:Class="XboxSeries.Extension.WideDialogPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="clr-namespace:XboxSeries.Core;assembly=XboxSeries.Core"
+             Focusable="False"
+             VerticalAlignment="Top">
+    <!--
+        A wide Dialog, drawn after the console's "What do you want to do?" (G5-power-dialog-a/b, scaled from 720p to
+        1080p): a dark grey band across the screen with the title top left in a large regular weight, the options as
+        grey tiles of a line icon and a label in rows of three, and a CLOSE button below them. The focused tile or
+        button is filled a little lighter and wears the tiles' green ring. Collapsed unless the Dialog is wide.
+    -->
+    <UserControl.Style>
+        <Style TargetType="UserControl">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsWide}" Value="True">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Style>
+    <UserControl.Resources>
+        <Style x:Key="Ring" TargetType="Border">
+            <Setter Property="Margin" Value="-1" />
+            <Setter Property="BorderThickness" Value="4" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
+            <Setter Property="Visibility" Value="Collapsed" />
+        </Style>
+    </UserControl.Resources>
+
+    <Border Height="808" Margin="0,134,0,0" Background="#FF2D2D2D">
+        <!-- The console's margins: tiles three to a row span all but the right 245, narrowing on a narrower screen. -->
+        <StackPanel Margin="132,78,229,0">
+            <TextBlock Text="{Binding Title}" FontFamily="{DynamicResource XboxFont}" FontSize="54" Foreground="White" />
+            <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" Margin="0,79,0,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+
+                        <UniformGrid Columns="{x:Static core:Dialog.Columns}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Height="129" Margin="0,0,16,18" MouseEnter="OnOptionMouseEnter" MouseLeftButtonUp="OnOptionClick">
+                            <Border x:Name="Fill" CornerRadius="2" Background="#FF3B3B3B" />
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="Icon" Width="36" Margin="48,0,0,0" FontFamily="{DynamicResource XboxIconFont}" FontSize="30"
+                                           Foreground="White" TextAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Label}" Margin="42,0,0,0" VerticalAlignment="Center"
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="25" Foreground="White" />
+                            </StackPanel>
+                            <Border x:Name="FocusRing" Style="{StaticResource Ring}" />
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                <Setter TargetName="Fill" Property="Background" Value="#FF4A4A4A" />
+                                <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <!-- Segoe Fluent Icons / MDL2 Assets glyphs. -->
+                            <DataTrigger Binding="{Binding Icon}" Value="TurnOff">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE7E8;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Restart">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE72C;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Sleep">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE708;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Exit">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xF3B1;" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Close, in the console's bold capitals. -->
+            <Grid DataContext="{Binding CloseOption}" Width="312" Height="104" Margin="-6,80,0,0" HorizontalAlignment="Left"
+                  MouseEnter="OnOptionMouseEnter" MouseLeftButtonUp="OnOptionClick">
+                <Border CornerRadius="2">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#FF3B3B3B" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                    <Setter Property="Background" Value="#FF4A4A4A" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+                <TextBlock Text="CLOSE" FontFamily="{DynamicResource XboxFont}" FontSize="21" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Border>
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource Ring}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -36,6 +36,9 @@ namespace XboxSeries.Core
         private static readonly TimeSpan HeroSettle = TimeSpan.FromSeconds(1.5);
 
         private static readonly TimeSpan ReleaseFallback = TimeSpan.FromSeconds(1);
+
+        /// <summary>How long the Guide button has to be held to open Power, as on the console.</summary>
+        private static readonly TimeSpan HoldForPower = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan RepeatDelay = TimeSpan.FromMilliseconds(700);
         private static readonly TimeSpan RepeatRate = TimeSpan.FromMilliseconds(80);
 
@@ -47,12 +50,21 @@ namespace XboxSeries.Core
         private readonly IPlayniteHost playnite;
         private readonly ISoundPlayer sounds;
         private readonly IDrives drives;
+        private readonly IUserAccount account;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private Guid? runningGame;
         private IntPtr recordedForeground;
         private ControllerButton? dismissButton;
         private IDisposable releaseFallback;
         private Action pendingHandBack;
+        private IDisposable holdTimer;
+
+        /// <summary>
+        /// Set by a menu or prompt option that closes the Guide once answered: what hands focus on. The answer's button
+        /// is only known where it was pressed, which closes the Guide with it.
+        /// </summary>
+        private Action answerHandBack;
+
         private ControllerButton? heldDirection;
         private IDisposable repeatTimer;
         private Guid? quittingGame;
@@ -71,9 +83,10 @@ namespace XboxSeries.Core
         /// <summary>Whether My games &amp; apps has put its own filter on the main list, with the user's kept to give back.</summary>
         private bool ownsMainList;
 
-        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds, IDrives drives)
+        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds, IDrives drives, IUserAccount account)
         {
             this.drives = drives;
+            this.account = account;
             this.clock = clock;
             this.windowSystem = windowSystem;
             this.playnite = playnite;
@@ -136,7 +149,7 @@ namespace XboxSeries.Core
             if (quittingGame != null && quittingGame != gameId)
             {
                 // Another game started from elsewhere mid-quit; the quit, and any prompt about it, no longer applies.
-                Guide.Dialog = null;
+                CloseGameDialog();
                 EndQuit();
             }
 
@@ -171,16 +184,25 @@ namespace XboxSeries.Core
             RefreshHome();
 
             // Any menu or prompt was about the game that has just gone.
-            Guide.Dialog = null;
+            CloseGameDialog();
             var next = quittingGame == gameId ? startAfterQuit : null;
             EndQuit();
             if (next != null)
             {
                 LaunchAfterQuit(next.Value);
             }
-            else if (Guide.IsOpen)
+            else if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
             {
                 RefreshLandingTab();
+            }
+        }
+
+        /// <summary>Takes away a menu or prompt about a game. Power is about the PC, so it stays.</summary>
+        private void CloseGameDialog()
+        {
+            if (Guide.Dialog != null && !Guide.Dialog.IsWide)
+            {
+                Guide.Dialog = null;
             }
         }
 
@@ -260,7 +282,19 @@ namespace XboxSeries.Core
                     tileMenuHoldsA = false;
                 }
 
+                if (button == ControllerButton.Guide)
+                {
+                    CancelHold();
+                }
+
                 return;
+            }
+
+            if (button == ControllerButton.Guide)
+            {
+                // Armed before a press that closes the Guide arms its release fallback, so a hold wins the tie.
+                CancelHold();
+                holdTimer = clock.After(HoldForPower, OpenPowerFromHold);
             }
 
             var dialog = ActiveDialog;
@@ -273,6 +307,7 @@ namespace XboxSeries.Core
             {
                 sounds.Play(UiSound.PromptClose);
                 dialog.Decline();
+                AfterAnswer(handBack => Dismiss(button, handBack));
             }
             else if ((button == ControllerButton.Guide || button == ControllerButton.B) && Guide.IsOpen)
             {
@@ -282,6 +317,7 @@ namespace XboxSeries.Core
             {
                 tileMenuHoldsA = dialog == Home.TileMenu;
                 Choose(dialog, dialog.FocusedOption);
+                AfterAnswer(handBack => Dismiss(button, handBack));
             }
             else if (button == ControllerButton.A && Guide.IsOpen)
             {
@@ -300,14 +336,158 @@ namespace XboxSeries.Core
                 // Playnite hands the pad's A to WPF as a key with no Key, which never clicks the tile.
                 ChooseHomeTile(focusedTile);
             }
-            else if ((button == ControllerButton.DPadUp || button == ControllerButton.DPadDown) && (Guide.IsOpen || dialog != null))
+            else if ((button == ControllerButton.LeftShoulder || button == ControllerButton.RightShoulder) && Guide.IsOpen && dialog == null)
+            {
+                SwitchTab(button == ControllerButton.LeftShoulder ? -1 : 1);
+            }
+            else if (IsDirection(button) && (Guide.IsOpen || dialog != null))
             {
                 StopRepeat();
-                var by = button == ControllerButton.DPadUp ? -1 : 1;
-                MoveFocus(by);
+                MoveFocus(button);
                 heldDirection = button;
-                repeatTimer = clock.After(RepeatDelay, () => Repeat(by));
+                repeatTimer = clock.After(RepeatDelay, () => Repeat(button));
             }
+        }
+
+        private static bool IsDirection(ControllerButton button) =>
+            button == ControllerButton.DPadUp || button == ControllerButton.DPadDown
+            || button == ControllerButton.DPadLeft || button == ControllerButton.DPadRight;
+
+        private void CancelHold()
+        {
+            holdTimer?.Dispose();
+            holdTimer = null;
+        }
+
+        /// <summary>
+        /// The Guide button held: Power on its own over the dim, as on the console, whether the press opened the Guide
+        /// or closed it. Closing it from there hands focus back to the window in front.
+        /// </summary>
+        private void OpenPowerFromHold()
+        {
+            holdTimer = null;
+            if (Guide.Dialog != null)
+            {
+                Guide.Dialog.Decline();
+                answerHandBack = null;
+            }
+
+            if (Guide.IsOpen)
+            {
+                StopRepeat();
+                Guide.ShowsPanel = false;
+            }
+            else
+            {
+                OpenGuide(showsPanel: false);
+            }
+
+            ShowPower();
+        }
+
+        /// <summary>
+        /// "What do you want to do?": Turn off PC, Restart PC, Sleep and Exit Playnite, with focus on Close. Close only
+        /// takes it away, back to the Guide, or, with Power on its own, back to the window in front.
+        /// </summary>
+        private void ShowPower()
+        {
+            void Close()
+            {
+                CloseDialog();
+                if (!Guide.ShowsPanel)
+                {
+                    answerHandBack = ReturnToRecordedWindow;
+                }
+            }
+
+            ShowDialog(Dialog.Wide(
+                "What do you want to do?",
+                Close,
+                new DialogOption("Close", DialogIcon.Cancel, Close),
+                PowerOption("Turn off PC", DialogIcon.TurnOff, PowerCommand.TurnOffPc),
+                PowerOption("Restart PC", DialogIcon.Restart, PowerCommand.RestartPc),
+                PowerOption("Sleep", DialogIcon.Sleep, PowerCommand.Sleep),
+                PowerOption("Exit Playnite", DialogIcon.Exit, PowerCommand.ExitPlaynite)));
+        }
+
+        /// <summary>
+        /// A Power option, carried out once the Guide has closed. Playnite comes to the front first, so anything it asks
+        /// on the way shows; Sleep instead goes back to the window in front, so the PC wakes into it.
+        /// </summary>
+        private DialogOption PowerOption(string label, DialogIcon icon, PowerCommand command) =>
+            new DialogOption(label, icon, () =>
+            {
+                CloseDialog();
+                answerHandBack = () =>
+                {
+                    if (command == PowerCommand.Sleep)
+                    {
+                        ReturnToRecordedWindow();
+                    }
+                    else
+                    {
+                        playnite.BringToFront();
+                    }
+
+                    playnite.Power(command);
+                };
+            });
+
+        /// <summary>A menu or prompt was answered: if the answer closes the Guide, close it with <paramref name="dismiss"/>.</summary>
+        private void AfterAnswer(Action<Action> dismiss)
+        {
+            var handBack = answerHandBack;
+            answerHandBack = null;
+            if (handBack != null)
+            {
+                dismiss(handBack);
+            }
+        }
+
+        /// <summary>LB or RB: the tab <paramref name="by"/> places along, held at either end.</summary>
+        private void SwitchTab(int by)
+        {
+            var kinds = Guide.Tabs.Select(t => t.Kind).ToList();
+            var next = kinds[Clamp(kinds.IndexOf(Guide.Tab) + by, kinds.Count)];
+            if (next == Guide.Tab)
+            {
+                return;
+            }
+
+            StopRepeat();
+            sounds.Play(UiSound.Navigate);
+            ShowTab(next);
+        }
+
+        /// <summary>Shows a tab, focus on its first entry.</summary>
+        private void ShowTab(GuideTabKind tab)
+        {
+            Guide.Tabs = new[]
+            {
+                new GuideTab(GuideTabKind.Landing, tab == GuideTabKind.Landing),
+                new GuideTab(GuideTabKind.ProfileAndSystem, tab == GuideTabKind.ProfileAndSystem, account.Picture),
+            };
+            Guide.Tab = tab;
+            if (tab == GuideTabKind.Landing)
+            {
+                ShowLandingTab();
+            }
+            else
+            {
+                ShowProfileTab();
+            }
+        }
+
+        /// <summary>Profile &amp; system: the profile card with the Windows user, then Settings and Power, each under a divider.</summary>
+        private void ShowProfileTab()
+        {
+            Guide.Items = new[]
+            {
+                new GuideItem(GuideItemKind.Profile, account.Name, image: account.Picture),
+                new GuideItem(GuideItemKind.Settings, "Settings", hasDividerAbove: true),
+                new GuideItem(GuideItemKind.Power, "Power", hasDividerAbove: true),
+            };
+            Guide.FocusedItem = Guide.Items[0];
         }
 
         /// <summary>
@@ -684,9 +864,9 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The Guide button, or a prompt that needs the Guide: open it on the landing tab, over whatever is in front.
-        /// It takes the pad, so any tile menu goes.
+        /// It takes the pad, so any tile menu goes. Without <paramref name="showsPanel"/>, only a dialog shows.
         /// </summary>
-        private void OpenGuide()
+        private void OpenGuide(bool showsPanel = true)
         {
             CloseTileMenu();
 
@@ -700,8 +880,9 @@ namespace XboxSeries.Core
                 recordedForeground = windowSystem.ForegroundWindow;
             }
 
-            ShowLandingTab();
+            ShowTab(GuideTabKind.Landing);
             Guide.IsOverlayShown = true;
+            Guide.ShowsPanel = showsPanel;
             Guide.IsOpen = true;
 
             // Taking the foreground can fail; the Overlay is Topmost and the Guide follows Playnite's callback either way.
@@ -714,7 +895,18 @@ namespace XboxSeries.Core
         /// </summary>
         private void Select(GuideItem item, Action<Action> dismiss)
         {
+            if (item.Kind == GuideItemKind.Profile)
+            {
+                return;
+            }
+
             sounds.Play(UiSound.Enter);
+            if (item.Kind == GuideItemKind.Power)
+            {
+                ShowPower();
+                return;
+            }
+
             if (item.Kind == GuideItemKind.RecentGame && (runningGame != null || IsQuittingOrLaunching))
             {
                 PlayGame(item.GameId.Value);
@@ -757,6 +949,12 @@ namespace XboxSeries.Core
                         ReturnToRecordedWindow();
                         Launch(gameId);
                     };
+                case GuideItemKind.Settings:
+                    return () =>
+                    {
+                        playnite.BringToFront();
+                        playnite.OpenSettings();
+                    };
                 default:
                     return null;
             }
@@ -775,10 +973,10 @@ namespace XboxSeries.Core
         }
 
         /// <summary>D-pad hold-repeat, at Playnite's own speed.</summary>
-        private void Repeat(int by)
+        private void Repeat(ControllerButton direction)
         {
-            MoveFocus(by);
-            repeatTimer = clock.After(RepeatRate, () => Repeat(by));
+            MoveFocus(direction);
+            repeatTimer = clock.After(RepeatRate, () => Repeat(direction));
         }
 
         private void StopRepeat()
@@ -789,24 +987,28 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Moves focus through the menu or prompt when one is showing, otherwise through the landing tab. Only a move
-        /// that lands somewhere new makes a sound: none at either end.
+        /// Moves focus through the menu or prompt when one is showing, otherwise up and down the tab. Only a move that
+        /// lands somewhere new makes a sound: none at either end.
         /// </summary>
-        private void MoveFocus(int by)
+        private void MoveFocus(ControllerButton direction)
         {
             var dialog = ActiveDialog;
             if (dialog != null)
             {
-                dialog.FocusedOption = Step(dialog.Options, dialog.FocusedOption, by);
+                var next = dialog.Towards(direction);
+                if (next != dialog.FocusedOption)
+                {
+                    sounds.Play(UiSound.Navigate);
+                    dialog.FocusedOption = next;
+                }
+
                 return;
             }
 
-            if (!Guide.IsOpen)
+            if (Guide.IsOpen && (direction == ControllerButton.DPadUp || direction == ControllerButton.DPadDown))
             {
-                return;
+                Guide.FocusedItem = Step(Guide.Items, Guide.FocusedItem, direction == ControllerButton.DPadUp ? -1 : 1);
             }
-
-            Guide.FocusedItem = Step(Guide.Items, Guide.FocusedItem, by);
         }
 
         /// <summary>The entry <paramref name="by"/> places from <paramref name="focused"/>, held at either end; navigate sounds if it moved.</summary>
@@ -875,6 +1077,7 @@ namespace XboxSeries.Core
             {
                 dialog.FocusedOption = option;
                 Choose(dialog, option);
+                AfterAnswer(DismissAtOnce);
             }
         }
 
@@ -897,13 +1100,14 @@ namespace XboxSeries.Core
         {
             StopRepeat();
             Guide.Dialog?.Decline();
+            answerHandBack = null;
             Guide.IsOpen = false;
         }
 
         /// <summary>Menu on an entry. Only the running game has a menu, with Quit.</summary>
         private void ShowMenuFor(GuideItem item)
         {
-            if (item.Kind != GuideItemKind.RunningGame)
+            if (!item.HasMenu)
             {
                 return;
             }
@@ -1034,7 +1238,7 @@ namespace XboxSeries.Core
             Guide.FocusedItem = Guide.Items[Clamp(index, Guide.Items.Count)];
         }
 
-        /// <summary>The Guide always opens here: the landing tab, focus on Home.</summary>
+        /// <summary>The landing tab, where the Guide always opens, focus on Home.</summary>
         private void ShowLandingTab()
         {
             var running = GameById(runningGame);
@@ -1045,7 +1249,7 @@ namespace XboxSeries.Core
             var home = new GuideItem(GuideItemKind.Home, "Home");
             Guide.Items = new[] { home, new GuideItem(GuideItemKind.MyGamesAndApps, "My games & apps") }
                 .Concat(games.Select((g, index) => new GuideItem(
-                    g == running ? GuideItemKind.RunningGame : GuideItemKind.RecentGame, g.Name, g.Id, hasDividerAbove: index == 0)))
+                    g == running ? GuideItemKind.RunningGame : GuideItemKind.RecentGame, g.Name, g.Id, hasDividerAbove: index == 0, image: g.CoverImage)))
                 .ToList();
             Guide.FocusedItem = home;
         }
