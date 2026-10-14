@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Playnite.SDK;
@@ -23,6 +24,18 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class MyGamesControl : PluginUserControl
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
+
+        /// <summary>
+        /// The console's grid: square tiles, scrolling down, three rows to the screen, which in the Dashboard's place for
+        /// it makes five columns. Playnite's own panel, laid out by its own settings (Home's single row) unless replaced.
+        /// </summary>
+        private const string GameGridPanel =
+            "<ItemsPanelTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">" +
+            "<FullscreenTilePanel UseHorizontalLayout=\"False\" Rows=\"3\" ItemAspectRatio=\"1:1\"" +
+            " SmoothScrollEnabled=\"{Settings Fullscreen.SmoothScrolling}\" />" +
+            "</ItemsPanelTemplate>";
+
         private readonly ExtensionCore core;
         private FrameworkElement viewHost;
         private ListBox mainList;
@@ -60,6 +73,7 @@ namespace XboxSeries.Extension
             }
 
             mainList = HomeRows.FindPart(this, "PART_ListGameItems") as ListBox;
+            UseGameGridPanel();
             gameDetails = HomeRows.FindPart(this, "PART_ElemGameDetails");
             if (gameDetails != null)
             {
@@ -121,8 +135,30 @@ namespace XboxSeries.Extension
             GamesItem.Tag = history ? null : "Selected";
             PlayHistoryItem.Tag = history ? "Selected" : null;
             var empty = core.MyGames.PlayHistory.Count == 0;
+            Count.Visibility = history ? Visibility.Collapsed : Visibility.Visible;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
             NoHistory.Visibility = history && empty ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Lays Playnite's main list out as the console's grid. With the extension the main list shows only as Games, so
+        /// it keeps this layout; Home's tiles are the extension's own rows.
+        /// </summary>
+        private void UseGameGridPanel()
+        {
+            if (mainList == null)
+            {
+                return;
+            }
+
+            try
+            {
+                mainList.ItemsPanel = (ItemsPanelTemplate)XamlReader.Parse(GameGridPanel);
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, "Can't lay Games out as a grid: this Playnite build has no FullscreenTilePanel as expected");
+            }
         }
 
         /// <summary>B on the page, from Playnite: back to Home. B on the Game hub or a menu never gets here.</summary>

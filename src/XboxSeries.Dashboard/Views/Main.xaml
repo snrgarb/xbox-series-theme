@@ -92,7 +92,11 @@
                 <Setter Property="Visibility" Value="Visible" />
                 <Setter Property="Grid.Row" Value="0" />
                 <Setter Property="Grid.RowSpan" Value="3" />
-                <Setter Property="Margin" Value="400,-30,-20,0" />
+                <!--
+                    Beside the nav, under the page's header, to the screen's bottom: the extension's three rows of square
+                    tiles then come 262 tall, five to a row (x 510 to 1846, y 163 to 1080, within the list's own margins).
+                -->
+                <Setter Property="Margin" Value="430,-37,-6,0" />
             </DataTrigger>
         </Style.Triggers>
     </Style>

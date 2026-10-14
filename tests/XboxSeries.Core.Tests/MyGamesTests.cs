@@ -36,6 +36,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_nav_counts_the_games_Games_shows()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite")
+                .WithGame("Not Installed", installed: false)
+                .WithGame("Hidden Game", hidden: true)
+                .WithGame("Hades")
+                .Snapshot());
+
+            Assert.Equal(2, core.MyGames.GameCount);
+        }
+
+        [Fact]
         public void Play_history_lists_played_games_newest_first_grouped_by_when_they_were_last_played()
         {
             core.OnLibraryChanged(new FakeLibrary()
