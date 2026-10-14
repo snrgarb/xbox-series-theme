@@ -5,7 +5,7 @@
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
     <!--
-        Home's Recent row: up to 8 game tiles, then the Play history tile. Sized from the console captures (H1-H3, #7):
+        Home's Recent row: up to 7 game tiles, then the Play history tile. Sized from the console captures (H1-H3, #7):
         square tiles of 153 px at 1080p, 30 px apart, sitting on one baseline. The focused tile grows to 245 px and shows
         its title. The growth is sized in code (RecentRowControl.xaml.cs) so the row's total width never changes as focus
         moves, however fast, and no tile but those growing or shrinking moves.
@@ -84,109 +84,107 @@
     </controls:PluginUserControl.Resources>
 
     <!--
-        Laid out at a fixed 1080p width, the row at rest (9 tiles and 8 gaps), and scaled to the width between the margins,
-        so at rest it spans the top bar exactly on 16:9 and 16:10 screens alike. A focused tile's growth (92) spills into
-        the right margin (105), which holds it at any scale up to 1.14. The scale never changes as focus moves.
-        The Canvas sets that width without clipping the growth past it. As tall as a focused tile, so focus never shifts
-        the row; placed to sit where the console's row does.
+        Laid out at a fixed 1080p width, the row with a tile focused (8 tiles, 7 gaps and the focus growth), and scaled
+        to the width there is, so with a tile focused it spans the top bar on 16:9 and 16:10 screens alike: from the
+        avatar's left edge (105) to the notifications button's right edge (105 + its 10 margin). At rest it ends the
+        growth short, as on the console. The scale never changes as focus moves. As tall as a focused tile, so focus
+        never shifts the row; placed to sit where the console's row does.
     -->
-    <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,53,105,0">
-        <Canvas Width="1617" Height="245">
-            <!-- No layout rounding: rounding each growing tile to whole pixels would nudge the tiles after it. -->
-            <StackPanel Orientation="Horizontal" Height="245" UseLayoutRounding="False">
-                <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False" VerticalAlignment="Bottom">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
-                                    Click="OnTileClick" GotKeyboardFocus="OnTileFocused">
-                                <Grid>
-                                    <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
-                                           Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
-                                    <TextBlock Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
-                                               TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White">
-                                        <TextBlock.Style>
-                                            <!-- Only for games with no cover. -->
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-                                    <!-- The game's library source, bottom left like the console's badges; the title replaces it on focus. -->
-                                    <Path x:Name="SourceIcon" Width="20" Height="20" Margin="10" Stretch="Uniform"
-                                          HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">
-                                        <Path.Effect>
-                                            <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
-                                        </Path.Effect>
-                                    </Path>
-                                    <Border x:Name="Running" Background="{DynamicResource GlyphBrush}" CornerRadius="3" Padding="6,2"
-                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Visibility="Collapsed">
-                                        <TextBlock Text="Running" FontFamily="{DynamicResource XboxFont}" FontSize="13" Foreground="White" />
-                                    </Border>
-                                </Grid>
-                            </Button>
-                        <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding Source}" Value="Steam">
-                                    <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceSteam}" />
-                                    <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Source}" Value="Xbox">
-                                    <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceXbox}" />
-                                    <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
-                                    <Setter TargetName="SourceIcon" Property="Opacity" Value="0" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                    <Setter TargetName="Running" Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+    <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,53,115,0">
+        <!-- No layout rounding: rounding each growing tile to whole pixels would nudge the tiles after it. -->
+        <StackPanel Orientation="Horizontal" Width="1526" Height="245" UseLayoutRounding="False">
+            <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False" VerticalAlignment="Bottom">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
+                                Click="OnTileClick" GotKeyboardFocus="OnTileFocused">
+                            <Grid>
+                                <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
+                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+                                <TextBlock Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
+                                           TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White">
+                                    <TextBlock.Style>
+                                        <!-- Only for games with no cover. -->
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <!-- The game's library source, bottom left like the console's badges; the title replaces it on focus. -->
+                                <Path x:Name="SourceIcon" Width="20" Height="20" Margin="10" Stretch="Uniform"
+                                      HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">
+                                    <Path.Effect>
+                                        <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
+                                    </Path.Effect>
+                                </Path>
+                                <Border x:Name="Running" Background="{DynamicResource GlyphBrush}" CornerRadius="3" Padding="6,2"
+                                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Visibility="Collapsed">
+                                    <TextBlock Text="Running" FontFamily="{DynamicResource XboxFont}" FontSize="13" Foreground="White" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                    <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Source}" Value="Steam">
+                                <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceSteam}" />
+                                <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Source}" Value="Xbox">
+                                <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceXbox}" />
+                                <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                                <Setter TargetName="SourceIcon" Property="Opacity" Value="0" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                <Setter TargetName="Running" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-                <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history once that page exists (#35). -->
-                <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0">
-                    <Grid>
-                        <ItemsControl x:Name="Collage" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Rows="2" Columns="2" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
-                                           Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <!-- With nothing for the collage, the tile shows the history icon instead. -->
-                        <TextBlock Text="&#xE81C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasItems, ElementName=Collage}" Value="False">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
-                </Button>
-            </StackPanel>
-        </Canvas>
+            <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history once that page exists (#35). -->
+            <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0">
+                <Grid>
+                    <ItemsControl x:Name="Collage" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="2" Columns="2" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
+                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- With nothing for the collage, the tile shows the history icon instead. -->
+                    <TextBlock Text="&#xE81C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasItems, ElementName=Collage}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Button>
+        </StackPanel>
     </Viewbox>
 </controls:PluginUserControl>
