@@ -31,6 +31,9 @@ namespace XboxSeries.Core
         /// <summary>How soon a second A on the same Home tile counts as a double-tap, which launches the game.</summary>
         private static readonly TimeSpan DoubleTapWindow = TimeSpan.FromMilliseconds(300);
 
+        /// <summary>How long focus has to stay on a Recent-row tile before the hero follows it, so scrolling past doesn't flicker it.</summary>
+        private static readonly TimeSpan HeroSettle = TimeSpan.FromSeconds(1.5);
+
         private static readonly TimeSpan ReleaseFallback = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan RepeatDelay = TimeSpan.FromMilliseconds(700);
         private static readonly TimeSpan RepeatRate = TimeSpan.FromMilliseconds(80);
@@ -57,6 +60,7 @@ namespace XboxSeries.Core
         private Guid? heroGame;
         private Guid? tappedGame;
         private IDisposable tapTimer;
+        private IDisposable heroTimer;
         private HomeTile focusedTile;
 
         /// <summary>Whether A, still held, answered the tile menu: Playnite's own Enter for it must not choose the tile.</summary>
@@ -278,24 +282,24 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A game tile on Home got focus: Menu now opens its tile menu. A Recent-row tile also crossfades the hero to its
-        /// game's art, which stays once focus moves on.
+        /// A game tile on Home got focus: Menu now opens its tile menu. Once focus has stayed on a Recent-row tile for a
+        /// moment, the hero also crossfades to its game's art, which stays once focus moves on.
         /// </summary>
         public void FocusHomeTile(HomeTile tile)
         {
             focusedTile = tile;
+            CancelHeroFollow();
             if (!Home.RecentRow.Contains(tile))
             {
                 return;
             }
 
-            // A game with no art at all leaves the last art up rather than blanking the hero.
-            var art = HeroArtOf(GameById(tile.GameId));
-            if (art != null)
+            var gameId = tile.GameId;
+            heroTimer = clock.After(HeroSettle, () =>
             {
-                heroGame = tile.GameId;
-                Home.Hero = art;
-            }
+                heroTimer = null;
+                ShowHeroOf(gameId);
+            });
         }
 
         /// <summary>Focus left a game tile on Home, to elsewhere on the Dashboard or with Playnite leaving the foreground.</summary>
@@ -304,7 +308,30 @@ namespace XboxSeries.Core
             if (focusedTile == tile)
             {
                 focusedTile = null;
+                CancelHeroFollow();
             }
+        }
+
+        /// <summary>Puts the game's art behind Home. A game with no art at all leaves the last art up rather than blanking the hero.</summary>
+        private void ShowHeroOf(Guid gameId)
+        {
+            if (!Home.RecentRow.Any(t => t.GameId == gameId))
+            {
+                return;
+            }
+
+            var art = HeroArtOf(GameById(gameId));
+            if (art != null)
+            {
+                heroGame = gameId;
+                Home.Hero = art;
+            }
+        }
+
+        private void CancelHeroFollow()
+        {
+            heroTimer?.Dispose();
+            heroTimer = null;
         }
 
         /// <summary>The tile menu went from the Dashboard without an answer, as when Playnite leaves the foreground.</summary>

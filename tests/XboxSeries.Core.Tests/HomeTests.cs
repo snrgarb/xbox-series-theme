@@ -134,9 +134,65 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             core.FocusHomeTile(Tile("Hades"));
+            Settle();
 
             Assert.Equal(@"C:\art\hades-bg.jpg", core.Home.Hero.Image);
             Assert.False(core.Home.Hero.IsCover);
+        }
+
+        [Fact]
+        public void Hero_waits_for_focus_to_settle_on_a_tile_before_following_it()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
+                .Snapshot());
+
+            core.FocusHomeTile(Tile("Hades"));
+            clock.Advance(TimeSpan.FromMilliseconds(1499));
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+
+            Assert.Equal(@"C:\art\hades-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void Scrolling_past_tiles_leaves_the_hero_until_focus_settles()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
+                .WithGame("Tunic", lastActivity: new DateTime(2026, 10, 10), backgroundImage: @"C:\art\tunic-bg.jpg")
+                .Snapshot());
+
+            core.FocusHomeTile(Tile("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.LeaveHomeTile(Tile("Hades"));
+            core.FocusHomeTile(Tile("Tunic"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+
+            Assert.Equal(@"C:\art\tunic-bg.jpg", core.Home.Hero.Image);
+        }
+
+        [Fact]
+        public void Focus_leaving_the_row_before_it_settles_leaves_the_hero()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
+                .Snapshot());
+
+            core.FocusHomeTile(Tile("Hades"));
+            core.LeaveHomeTile(Tile("Hades"));
+            Settle();
+
+            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
         }
 
         [Fact]
@@ -148,6 +204,7 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             core.FocusHomeTile(Tile("Hades"));
+            Settle();
 
             Assert.Equal(@"C:\art\hades-cover.jpg", core.Home.Hero.Image);
             Assert.True(core.Home.Hero.IsCover);
@@ -161,6 +218,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg");
             core.OnLibraryChanged(library.Snapshot());
             core.FocusHomeTile(Tile("Hades"));
+            Settle();
 
             // Focus leaving the row tells the core nothing, so only a rebuild could move the hero; it must not.
             core.OnLibraryChanged(library.Snapshot());
@@ -278,6 +336,7 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             core.FocusHomeTile(Tile("Hades"));
+            Settle();
 
             Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
         }
@@ -290,6 +349,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg");
             core.OnLibraryChanged(library.Snapshot());
             core.FocusHomeTile(Tile("Hades"));
+            Settle();
 
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
@@ -330,6 +390,9 @@ namespace XboxSeries.Core.Tests
         }
 
         private string[] RecentRow() => core.Home.RecentRow.Select(t => t.Title).ToArray();
+
+        /// <summary>Focus stays put long enough for the hero to follow it.</summary>
+        private void Settle() => clock.Advance(TimeSpan.FromSeconds(1.5));
 
         private HomeTile Tile(string title) => core.Home.RecentRow.Single(t => t.Title == title);
     }
