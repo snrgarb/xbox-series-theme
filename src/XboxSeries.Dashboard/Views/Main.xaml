@@ -290,7 +290,7 @@
                         <GameDetails x:Name="PART_ElemGameDetails"
                                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-                        <!-- With the extension, the tile menu: over the whole page, dimming it, beside the tile Menu was pressed on. -->
+                        <!-- With the extension, the tile menu: over the whole page, dimming it, centred. -->
                         <ContentControl x:Name="XboxSeries_TileMenu" Focusable="False" IsTabStop="False" />
 
                         <GameStatus x:Name="PART_ElemGameStatus"

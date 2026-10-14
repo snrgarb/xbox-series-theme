@@ -32,7 +32,7 @@ A row on **Home** below the **Recent row**, showing the games of one Playnite fi
 _Avoid_: pin, collection, category
 
 **Tile menu**:
-The menu Menu opens on a game tile on **Home**: Play game (Quit while it runs), Add to / Remove from Favourites, and Manage game, which opens Playnite's own game menu. It floats on the tile, drawn like the **Guide**'s menus and prompts.
+The menu Menu opens on a game tile on **Home**: Play game (Quit while it runs), Add to / Remove from Favourites, and Manage game, which opens Playnite's own game menu. It sits centred over the dimmed screen, drawn like the **Guide**'s menus and prompts.
 _Avoid_: context menu, game menu (that is Playnite's own, behind Manage game)
 
 **Game hub**:
