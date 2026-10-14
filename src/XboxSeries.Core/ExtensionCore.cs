@@ -243,7 +243,7 @@ namespace XboxSeries.Core
             }
             else if (button == ControllerButton.B && dialog != null)
             {
-                sounds.Play(dialog.DeclineSound);
+                sounds.Play(UiSound.PromptClose);
                 dialog.Decline();
             }
             else if ((button == ControllerButton.Guide || button == ControllerButton.B) && Guide.IsOpen)
@@ -342,7 +342,7 @@ namespace XboxSeries.Core
             // A pending A on the tile would otherwise open its Game hub under the menu.
             CancelTap();
             StopRepeat();
-            sounds.Play(UiSound.OpenMenu);
+            sounds.Play(UiSound.PromptOpen);
             Home.TileMenu = new Dialog(game.Name, null, isPrompt: false, CloseTileMenu, play, favourite, manage);
         }
 
@@ -756,7 +756,7 @@ namespace XboxSeries.Core
             }
 
             StopRepeat();
-            sounds.Play(dialog.OpenSound);
+            sounds.Play(UiSound.PromptOpen);
             Guide.Dialog = dialog;
         }
 

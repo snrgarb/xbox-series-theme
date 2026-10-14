@@ -32,14 +32,11 @@ namespace XboxSeries.Core
 
         public IReadOnlyList<DialogOption> Options { get; }
 
-        /// <summary>The sound as it opens: a prompt asks about what just happened; a menu offers what can be done.</summary>
-        internal UiSound OpenSound => isPrompt ? UiSound.PromptOpen : UiSound.OpenMenu;
-
-        /// <summary>The sound as an option is chosen.</summary>
+        /// <summary>
+        /// The sound as an option is chosen. Menus and prompts open and close alike, but a prompt asks about what just
+        /// happened, so any answer closes it, while a menu offers what can be done, so a choice goes on with it.
+        /// </summary>
         internal UiSound ChooseSound => isPrompt ? UiSound.PromptClose : UiSound.Enter;
-
-        /// <summary>The sound as B declines it.</summary>
-        internal UiSound DeclineSound => isPrompt ? UiSound.PromptClose : UiSound.Back;
 
         /// <summary>The option with focus. Each option's <see cref="DialogOption.IsFocused"/> follows it.</summary>
         public DialogOption FocusedOption

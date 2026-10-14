@@ -117,7 +117,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_running_games_menu_opens_with_open_menu_and_B_closes_it_with_back()
+        public void The_running_games_menu_opens_with_prompt_open_and_B_closes_it_with_prompt_close()
         {
             HaloRuns();
             OpenGuideOn("Halo Infinite");
@@ -126,7 +126,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.Start);
             Tap(ControllerButton.B);
 
-            Assert.Equal(new[] { UiSound.OpenMenu, UiSound.Back }, sounds.Played);
+            Assert.Equal(new[] { UiSound.PromptOpen, UiSound.PromptClose }, sounds.Played);
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_tile_menu_opens_with_open_menu_moves_with_navigate_and_answers_with_enter()
+        public void The_tile_menu_opens_with_prompt_open_moves_with_navigate_and_answers_with_enter()
         {
             core.FocusHomeTile(core.Home.RecentRow.Single(t => t.Title == "Hades"));
 
@@ -151,11 +151,11 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.A);
 
-            Assert.Equal(new[] { UiSound.OpenMenu, UiSound.Navigate, UiSound.Enter }, sounds.Played);
+            Assert.Equal(new[] { UiSound.PromptOpen, UiSound.Navigate, UiSound.Enter }, sounds.Played);
         }
 
         [Fact]
-        public void B_on_the_tile_menu_plays_back()
+        public void B_on_the_tile_menu_plays_prompt_close()
         {
             core.FocusHomeTile(core.Home.RecentRow.Single(t => t.Title == "Hades"));
             Tap(ControllerButton.Start);
@@ -163,7 +163,7 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.B);
 
-            Assert.Equal(new[] { UiSound.Back }, sounds.Played);
+            Assert.Equal(new[] { UiSound.PromptClose }, sounds.Played);
         }
 
         [Fact]
