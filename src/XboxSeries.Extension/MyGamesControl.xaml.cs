@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
@@ -52,6 +54,7 @@ namespace XboxSeries.Extension
             OpenGamesCommand = new RelayCommand(() => core.OpenMyGames(MyGamesItem.Games));
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            ShowHistory();
             ShowItem();
         }
 
@@ -117,6 +120,7 @@ namespace XboxSeries.Extension
                     break;
                 case nameof(MyGamesState.PlayHistory):
                     // Rebuilding Play history replaces its rows, and with them the focused one: put focus back on the same game.
+                    ShowHistory();
                     ShowItem();
                     if (History.IsKeyboardFocusWithin)
                     {
@@ -138,6 +142,15 @@ namespace XboxSeries.Extension
             Count.Visibility = history ? Visibility.Collapsed : Visibility.Visible;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
             NoHistory.Visibility = history && empty ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>Play history's games, top to bottom, in their sections.</summary>
+        private void ShowHistory()
+        {
+            var sections = core.MyGames.PlayHistory;
+            var view = new ListCollectionView(sections.SelectMany(s => s.Entries).ToList());
+            view.GroupDescriptions.Add(new SectionOf(sections));
+            History.ItemsSource = view;
         }
 
         /// <summary>
@@ -209,7 +222,7 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Left goes back to the nav; up and down move through Play history.</summary>
+        /// <summary>Left goes back to the nav. The list itself moves up and down, building rows as they come on screen.</summary>
         private void OnHistoryKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Left)
@@ -217,9 +230,8 @@ namespace XboxSeries.Extension
                 e.Handled = true;
                 PlayHistoryItem.Focus();
             }
-            else if (e.Key == Key.Up || e.Key == Key.Down)
+            else if (e.Key == Key.Right)
             {
-                HomeRows.MoveFocus(e);
                 e.Handled = true;
             }
         }
@@ -243,10 +255,27 @@ namespace XboxSeries.Extension
             }
         }
 
-        // The keyboard's Enter and the mouse click the row; the pad's A reaches the core as a button instead.
-        private void OnEntryClick(object sender, RoutedEventArgs e)
+        // The keyboard's Enter and the mouse choose the row; the pad's A reaches the core as a button instead.
+        private void OnEntryKeyDown(object sender, KeyEventArgs e)
         {
-            core.ChooseHomeTile(((PlayHistoryEntry)((FrameworkElement)sender).DataContext).Tile);
+            if (e.Key == Key.Enter && PlayniteInput.PadButtonOf(e) == null)
+            {
+                e.Handled = true;
+                ChooseEntry(sender);
+            }
+        }
+
+        private void OnEntryClick(object sender, MouseButtonEventArgs e)
+        {
+            ChooseEntry(sender);
+        }
+
+        private void ChooseEntry(object row)
+        {
+            if (((FrameworkElement)row).DataContext is PlayHistoryEntry entry)
+            {
+                core.ChooseHomeTile(entry.Tile);
+            }
         }
 
         /// <summary>
@@ -269,9 +298,17 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                var rows = EntryRows(Sections);
-                var row = rows.FirstOrDefault(b => (b.DataContext as PlayHistoryEntry)?.Tile.GameId == lastFocusedGame) ?? rows.FirstOrDefault();
-                (row ?? PlayHistoryItem).Focus();
+                var entries = History.Items.Cast<PlayHistoryEntry>().ToList();
+                var entry = entries.FirstOrDefault(g => g.Tile.GameId == lastFocusedGame) ?? entries.FirstOrDefault();
+                if (entry == null)
+                {
+                    PlayHistoryItem.Focus();
+                    return;
+                }
+
+                History.ScrollIntoView(entry);
+                History.UpdateLayout();
+                ((UIElement)RowOf(History, entry) ?? PlayHistoryItem).Focus();
             }));
         }
 
@@ -293,24 +330,37 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Play history's rows, top to bottom.</summary>
-        private static List<Button> EntryRows(DependencyObject parent)
+        /// <summary>
+        /// The row built for <paramref name="entry"/>; null if it isn't on screen. Grouped, the list's own lookup only
+        /// knows its sections, so this looks through what's built.
+        /// </summary>
+        private static ListBoxItem RowOf(DependencyObject parent, PlayHistoryEntry entry)
         {
-            var rows = new List<Button>();
             for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
             {
                 var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is Button row)
+                var row = child is ListBoxItem item && item.DataContext == entry ? item : RowOf(child, entry);
+                if (row != null)
                 {
-                    rows.Add(row);
-                }
-                else
-                {
-                    rows.AddRange(EntryRows(child));
+                    return row;
                 }
             }
 
-            return rows;
+            return null;
+        }
+
+        /// <summary>Puts each Play history game in its section, keeping the sections' order.</summary>
+        private sealed class SectionOf : GroupDescription
+        {
+            private readonly Dictionary<PlayHistoryEntry, string> sections;
+
+            public SectionOf(IEnumerable<PlayHistorySection> sections)
+            {
+                this.sections = sections.SelectMany(s => s.Entries.Select(e => new { s.Title, Entry = e }))
+                    .ToDictionary(p => p.Entry, p => p.Title);
+            }
+
+            public override object GroupNameFromItem(object item, int level, CultureInfo culture) => sections[(PlayHistoryEntry)item];
         }
     }
 }

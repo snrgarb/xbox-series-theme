@@ -528,7 +528,12 @@ namespace XboxSeries.Core
                 playnite.ShowInMainList(item == MyGamesItem.Games ? GameListFilter.Installed : GameListFilter.LastPlayed);
             }
 
-            RefreshPlayHistory();
+            // On opening, for today's sections. Moving through the nav keeps it: rebuilding it rebuilds every row and its art.
+            if (!MyGames.IsShown)
+            {
+                RefreshPlayHistory();
+            }
+
             MyGames.Item = item;
             MyGames.IsShown = true;
         }

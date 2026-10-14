@@ -76,18 +76,26 @@
                 </Setter>
             </Style>
 
-            <!-- A Play history row: the game's square art, its title, and when it was last played and on what. -->
-            <Style x:Key="HistoryRow" TargetType="Button">
+            <!--
+                A Play history row: the game's square art, its title, and when it was last played and on what. The focus
+                ring sits in the row's own 4 px edge, round the row, so the list's scrolling never clips it.
+            -->
+            <Style x:Key="HistoryRow" TargetType="ListBoxItem">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                <Setter Property="Height" Value="168" />
-                <Setter Property="Margin" Value="0,0,0,15" />
+                <Setter Property="Height" Value="176" />
+                <Setter Property="Margin" Value="0,0,0,7" />
+                <EventSetter Event="GotKeyboardFocus" Handler="OnEntryFocused" />
+                <EventSetter Event="LostKeyboardFocus" Handler="OnEntryLeft" />
+                <EventSetter Event="KeyDown" Handler="OnEntryKeyDown" />
+                <EventSetter Event="MouseLeftButtonUp" Handler="OnEntryClick" />
                 <Setter Property="Template">
                     <Setter.Value>
-                        <ControlTemplate TargetType="Button">
+                        <ControlTemplate TargetType="ListBoxItem">
                             <Grid>
-                                <Border Background="{StaticResource RowBrush}" />
-                                <ContentPresenter />
-                                <Border x:Name="FocusRing" CornerRadius="4" Margin="-4" BorderThickness="4"
+                                <Border Margin="4" Background="{StaticResource RowBrush}">
+                                    <ContentPresenter />
+                                </Border>
+                                <Border x:Name="FocusRing" CornerRadius="4" BorderThickness="4"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -149,49 +157,63 @@
             <TextBlock x:Name="Count" Text="{Binding GameCount, StringFormat='{}{0} games'}" Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
 
-            <!-- Play history. Elsewhere this space is Playnite's main list, placed by the Dashboard. -->
-            <ScrollViewer x:Name="History" Grid.Row="1" Focusable="False"
-                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled"
-                          PreviewKeyDown="OnHistoryKeyDown">
-                <ItemsControl x:Name="Sections" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4,0,4,80">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="0,0,0,24">
-                                <TextBlock Text="{Binding Title}" Style="{StaticResource Text}" FontSize="30" Margin="28,0,0,18" />
-                                <ItemsControl ItemsSource="{Binding Entries}" Focusable="False">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource HistoryRow}"
-                                                    Click="OnEntryClick" GotKeyboardFocus="OnEntryFocused" LostKeyboardFocus="OnEntryLeft">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="168" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <Grid Background="#FF1A1A1A">
-                                                        <Image Source="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}"
-                                                               Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
-                                                    </Grid>
-                                                    <StackPanel Grid.Column="1" Margin="22,0,24,0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="28"
-                                                                   FontFamily="{DynamicResource XboxFontSemibold}" />
-                                                        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
-                                                            <TextBlock Text="{Binding LastPlayed, StringFormat=d, ConverterCulture={x:Static glob:CultureInfo.CurrentCulture}}"
-                                                                       Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}" />
-                                                            <TextBlock Text="{Binding Platform, StringFormat='{}  •  {0}'}" Style="{StaticResource Text}"
-                                                                       Foreground="{StaticResource DimBrush}" />
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+            <!--
+                Play history, in its sections. Virtualized: only the rows on screen are built, and their art read, so a long
+                history opens at once. Elsewhere this space is Playnite's main list, placed by the Dashboard.
+            -->
+            <ListBox x:Name="History" Grid.Row="1" ItemContainerStyle="{StaticResource HistoryRow}"
+                     Background="Transparent" BorderThickness="0" Padding="0,0,0,80"
+                     ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Pixel" KeyboardNavigation.DirectionalNavigation="Contained"
+                     PreviewKeyDown="OnHistoryKeyDown">
+                <ListBox.Template>
+                    <ControlTemplate TargetType="ListBox">
+                        <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBox.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="30" Margin="32,0,0,18" />
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                        <GroupStyle.ContainerStyle>
+                            <Style TargetType="GroupItem">
+                                <Setter Property="Margin" Value="0,0,0,24" />
+                            </Style>
+                        </GroupStyle.ContainerStyle>
+                    </GroupStyle>
+                </ListBox.GroupStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="168" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Background="#FF1A1A1A">
+                                <Image Source="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}"
+                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+                            </Grid>
+                            <StackPanel Grid.Column="1" Margin="22,0,24,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="28"
+                                           FontFamily="{DynamicResource XboxFontSemibold}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                                    <TextBlock Text="{Binding LastPlayed, StringFormat=d, ConverterCulture={x:Static glob:CultureInfo.CurrentCulture}}"
+                                               Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}" />
+                                    <TextBlock Text="{Binding Platform, StringFormat='{}  •  {0}'}" Style="{StaticResource Text}"
+                                               Foreground="{StaticResource DimBrush}" />
+                                </StackPanel>
                             </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
 
             <TextBlock x:Name="NoHistory" Grid.Row="1" Text="Games you play show up here." Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" Margin="28,0,0,0" VerticalAlignment="Top" />
