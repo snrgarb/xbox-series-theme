@@ -58,6 +58,7 @@ namespace XboxSeries.Core
         private IDisposable releaseFallback;
         private Action pendingHandBack;
         private IDisposable holdTimer;
+        private DateTime guidePressedAt;
 
         /// <summary>
         /// Set by a menu or prompt option that closes the Guide once answered: what hands focus on. The answer's button
@@ -263,10 +264,22 @@ namespace XboxSeries.Core
                 new DialogOption("Cancel", DialogIcon.Cancel, CloseDialog)));
         }
 
-        public void OnControllerButton(ControllerButton button, ButtonState state)
+        public void OnControllerButton(ControllerButton button, ButtonState state) => OnControllerButton(button, state, clock.Now);
+
+        /// <summary>
+        /// A button, stamped <paramref name="at"/> when the pad reported it. A busy UI thread can handle a Guide release
+        /// before the hold timer's tick, so a hold is judged by the stamps, not only by the timer.
+        /// </summary>
+        public void OnControllerButton(ControllerButton button, ButtonState state, DateTime at)
         {
             if (state == ButtonState.Released)
             {
+                if (button == ControllerButton.Guide && holdTimer != null && at - guidePressedAt >= HoldForPower)
+                {
+                    CancelHold();
+                    OpenPowerFromHold();
+                }
+
                 if (button == dismissButton)
                 {
                     HandFocusBack();
@@ -294,7 +307,9 @@ namespace XboxSeries.Core
             {
                 // Armed before a press that closes the Guide arms its release fallback, so a hold wins the tie.
                 CancelHold();
-                holdTimer = clock.After(HoldForPower, OpenPowerFromHold);
+                guidePressedAt = at;
+                var left = HoldForPower - (clock.Now - at);
+                holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
             }
 
             var dialog = ActiveDialog;

@@ -138,8 +138,15 @@ namespace XboxSeries.Extension
                 return;
             }
 
+            // Stamped here, as the pad reports it: the UI thread can be busy for longer than a hold.
             var state = PlayniteInput.ToState(args.State);
-            OnUiThread(() => core.OnControllerButton(button.Value, state));
+            var at = DateTime.Now;
+            if (button == ControllerButton.Guide)
+            {
+                logger.Info($"Guide button {state} at {at:HH:mm:ss.fff}");
+            }
+
+            OnUiThread(() => core.OnControllerButton(button.Value, state, at));
         }
 
         private void OnUiThread(Action action)
