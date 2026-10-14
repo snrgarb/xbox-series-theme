@@ -15,7 +15,7 @@ namespace XboxSeries.Core.Tests
         public LandingTabTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives());
         }
 
         [Fact]

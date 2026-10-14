@@ -68,5 +68,10 @@ namespace XboxSeries.Core.Tests.Fakes
         }
 
         public void ShowInMainList(GameListFilter filter) => MainListFilter = filter;
+
+        /// <summary>How many games the user's own filter shows; null when Playnite can't say.</summary>
+        public int? UserFilterGameCount { get; set; }
+
+        public int? CountUserFilterGames() => UserFilterGameCount;
     }
 }

@@ -21,6 +21,9 @@ namespace XboxSeries.Extension
         /// <summary>The user's own filter and sort while My games &amp; apps has its own on the main list; there is none otherwise.</summary>
         private readonly string userFilterFile;
 
+        /// <summary>The user's own filter while My games &amp; apps has its own on the main list; null otherwise.</summary>
+        private FilterPresetSettings savedSettings;
+
         public PlayniteHost(IPlayniteAPI api, string dataDirectory)
         {
             this.api = api;
@@ -116,6 +119,7 @@ namespace XboxSeries.Extension
             };
             Directory.CreateDirectory(Path.GetDirectoryName(userFilterFile));
             File.WriteAllText(userFilterFile, Serialization.ToJson(saved));
+            savedSettings = saved.Settings;
         }
 
         public void RestoreUserFilter()
@@ -127,6 +131,7 @@ namespace XboxSeries.Extension
             }
 
             var saved = Serialization.FromJsonFile<UserFilter>(userFilterFile);
+            savedSettings = null;
 
             // As the user's preset, so Playnite keeps it selected, with the settings and sort they had, edits and all.
             api.MainView.ApplyFilterPreset(new Playnite.SDK.Models.FilterPreset
@@ -197,6 +202,21 @@ namespace XboxSeries.Extension
                     ? SortOrderDirection.Descending
                     : SortOrderDirection.Ascending,
             });
+        }
+
+        public int? CountUserFilterGames()
+        {
+            try
+            {
+                // As Playnite's own lists evaluate a filter, as the preset Groups are.
+                return api.Database.GetFilteredGames(savedSettings ?? api.MainView.GetCurrentFilterSettings()).Count();
+            }
+            catch (Exception e)
+            {
+                // Home's elements can be built before Playnite's main view is fully up.
+                logger.Warn(e, "Couldn't count the games under the user's filter");
+                return null;
+            }
         }
 
         private static SortOrder ToSortOrder(GameSort sort)
