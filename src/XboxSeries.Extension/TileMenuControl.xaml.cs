@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
 using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
@@ -12,22 +9,15 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// The tile menu, injected over Home as a custom element. It follows the core's <see cref="HomeState.TileMenu"/>,
-    /// placing it on the focused tile, and holds no menu logic: the core drives it from the pad, as it does the Guide.
+    /// centred on the screen, and holds no menu logic: the core drives it from the pad, as it does the Guide.
     /// Focus stays on the tile underneath, so the tile keeps its ring and size; Playnite's own keys for the pad are
     /// swallowed instead, so nothing behind the menu reacts to them.
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
     public partial class TileMenuControl : PluginUserControl
     {
-        /// <summary>How far the menu rises above its tile, so the title sits over the tile's top edge and the rows on it.</summary>
-        private const double TitleRise = 38;
-
-        /// <summary>The menu keeps at least this far from the screen's edges.</summary>
-        private const double EdgeMargin = 40;
-
         private readonly ExtensionCore core;
         private Window window;
-        private FrameworkElement tile;
 #if DEBUG
         private readonly HashSet<Key> debugKeysDown = new HashSet<Key>();
 #endif
@@ -44,7 +34,6 @@ namespace XboxSeries.Extension
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            core.Home.PropertyChanged += OnHomeChanged;
             window = Window.GetWindow(this);
             if (window != null)
             {
@@ -56,7 +45,6 @@ namespace XboxSeries.Extension
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            core.Home.PropertyChanged -= OnHomeChanged;
             if (window != null)
             {
                 window.PreviewKeyDown -= OnWindowKeyDown;
@@ -65,44 +53,6 @@ namespace XboxSeries.Extension
                 window = null;
             }
         }
-
-        private void OnHomeChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName != nameof(HomeState.TileMenu) || core.Home.TileMenu == null)
-            {
-                return;
-            }
-
-            // The tile Menu was pressed on still has focus. Hidden until placed, once the new menu has been laid out.
-            tile = Keyboard.FocusedElement as FrameworkElement;
-            Panel.Opacity = 0;
-            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(PlaceOnTile));
-        }
-
-        /// <summary>Puts the menu on its tile, left edges together, kept on screen; centred if the tile can't be found.</summary>
-        private void PlaceOnTile()
-        {
-            if (core.Home.TileMenu == null)
-            {
-                return;
-            }
-
-            var size = new Size(Panel.ActualWidth, Panel.ActualHeight);
-            var left = (ActualWidth - size.Width) / 2;
-            var top = (ActualHeight - size.Height) / 2;
-            if (tile != null && tile.IsVisible && Window.GetWindow(tile) == window)
-            {
-                var bounds = tile.TransformToVisual(this).TransformBounds(new Rect(tile.RenderSize));
-                left = bounds.Left;
-                top = bounds.Top - TitleRise;
-            }
-
-            Canvas.SetLeft(Panel, Clamp(left, EdgeMargin, ActualWidth - size.Width - EdgeMargin));
-            Canvas.SetTop(Panel, Clamp(top, EdgeMargin, ActualHeight - size.Height - EdgeMargin));
-            Panel.Opacity = 1;
-        }
-
-        private static double Clamp(double value, double min, double max) => Math.Max(min, Math.Min(max, value));
 
         private void OnWindowKeyDown(object sender, KeyEventArgs e)
         {

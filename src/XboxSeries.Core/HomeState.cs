@@ -44,7 +44,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The tile menu, shown beside the focused tile, which has the pad until it is closed; null when there is none.
+        /// The tile menu, shown centred over Home for the focused tile, which has the pad until it is closed; null when there is none.
         /// </summary>
         public Dialog TileMenu
         {

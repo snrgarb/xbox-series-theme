@@ -6,7 +6,7 @@ namespace XboxSeries.Core
 {
     /// <summary>
     /// A menu or prompt: a title, an optional message, and options to pick from. The Guide shows them over itself; Home
-    /// shows the tile menu beside its tile. Both are drawn alike, after the console's context menu.
+    /// shows the tile menu centred over it. Both are drawn alike, after the console's context menu.
     /// </summary>
     public sealed class Dialog : INotifyPropertyChanged
     {

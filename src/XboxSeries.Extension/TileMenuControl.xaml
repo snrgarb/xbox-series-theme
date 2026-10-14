@@ -5,8 +5,8 @@
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
     <!--
-        The tile menu, placed by the Dashboard over the whole of Home: the screen dims, and the menu floats on the
-        focused tile, overlapping it, as the console's context menu does. Collapsed, and so never in the way, without one.
+        The tile menu, placed by the Dashboard over the whole of Home: the screen dims, and the menu sits dead centre,
+        as the Guide's do. Collapsed, and so never in the way, without one.
     -->
     <Grid>
         <Grid.Style>
@@ -19,8 +19,6 @@
             </Style>
         </Grid.Style>
         <Border Background="#99000000" MouseLeftButtonDown="OnDimClick" />
-        <Canvas>
-            <local:MenuPanel x:Name="Panel" DataContext="{Binding TileMenu}" />
-        </Canvas>
+        <local:MenuPanel x:Name="Panel" DataContext="{Binding TileMenu}" HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Grid>
 </controls:PluginUserControl>
