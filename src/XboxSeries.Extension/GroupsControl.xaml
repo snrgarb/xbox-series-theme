@@ -6,19 +6,14 @@
              Focusable="False">
     <!--
         Home's Groups: the screen below the Recent row, which flies in as the Recent row flies out. One row per Group,
-        its name over up to 7 game tiles and a See all tile: the Recent row's tiles, growing on focus the same way (down,
-        away from the name), so each row is the Recent row's width. The focused Group slides to the top of the screen.
+        its name over up to 7 game tiles and a See all tile: the Recent row's tiles, growing up on focus the same way, so
+        each row is the Recent row's width. The focused Group slides to the top of the screen.
     -->
     <controls:PluginUserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <local:HomeTiles />
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- A Home tile hung from its top edge, so it grows down, away from its Group's name. -->
-            <Style x:Key="GroupTile" TargetType="Button" BasedOn="{StaticResource HomeTile}">
-                <Setter Property="VerticalAlignment" Value="Top" />
-            </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
@@ -45,12 +40,12 @@
                                            FontFamily="{DynamicResource XboxFontSemibold}" FontSize="24" Foreground="White" />
 
                                 <!--
-                                    As tall as a focused tile, so focus never shifts the rows. The tiles grow down from the name,
-                                    which stays put. No layout rounding: rounding each growing tile to whole pixels would nudge
-                                    the tiles after it.
+                                    As tall as a focused tile, so focus never shifts the rows or the name above them: the tiles
+                                    sit on its bottom and grow up into it. No layout rounding: rounding each growing tile to whole
+                                    pixels would nudge the tiles after it.
                                 -->
                                 <StackPanel Orientation="Horizontal" Height="245" UseLayoutRounding="False">
-                                    <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" VerticalAlignment="Top">
+                                    <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" VerticalAlignment="Bottom">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <StackPanel Orientation="Horizontal" />
@@ -58,7 +53,7 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Button Style="{StaticResource GroupTile}" Tag="{Binding Title}"
+                                                <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
                                                         Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
                                                         Click="OnTileClick" />
                                             </DataTemplate>
@@ -66,7 +61,7 @@
                                     </ItemsControl>
 
                                     <!-- See all: the whole Group, in My games & apps once that page exists (#37). -->
-                                    <Button Style="{StaticResource GroupTile}" Tag="See all" Margin="0">
+                                    <Button Style="{StaticResource HomeTile}" Tag="See all" Margin="0">
                                         <TextBlock Text="&#xE8F1;" FontFamily="{DynamicResource XboxIconFont}" FontSize="40"
                                                    Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Button>
