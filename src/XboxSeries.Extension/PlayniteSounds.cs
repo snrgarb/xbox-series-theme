@@ -26,7 +26,7 @@ namespace XboxSeries.Extension
             [UiSound.OpenMenu] = new[] { "OpenMenu.wav" },
             [UiSound.PromptOpen] = new[] { "PromptOpen.wav" },
             [UiSound.PromptClose] = new[] { "PromptClose.wav" },
-            [UiSound.Startup] = new[] { "Startup.wav" },
+            [UiSound.Login] = new[] { "Login.wav" },
             [UiSound.PowerOff] = new[] { "PowerOff.wav" },
         };
 
