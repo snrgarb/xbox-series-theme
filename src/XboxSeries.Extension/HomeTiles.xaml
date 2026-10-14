@@ -100,14 +100,17 @@
                     <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
                 </Path.Effect>
             </Path>
-            <!-- The running game's badge, after the console's Quick Resume one: a play mark beside CONTINUE, on dark grey. -->
+            <!--
+                The running game's badge, after the console's Quick Resume one: a play mark on dark grey, with CONTINUE
+                beside it while the tile has focus.
+            -->
             <Border x:Name="Running" Background="#E62B2B2B" CornerRadius="3" Height="24"
                     HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal">
-                    <Border Background="#F0181818" Width="24" CornerRadius="3,0,0,3">
+                    <Border x:Name="PlayMark" Background="#F0181818" Width="24" CornerRadius="3">
                         <Path Data="M0,0 L9,5.5 L0,11 Z" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <TextBlock Text="CONTINUE" Margin="7,0,8,0" VerticalAlignment="Center" FontFamily="{DynamicResource XboxFontSemibold}"
+                    <TextBlock x:Name="Continue" Text="CONTINUE" Margin="7,0,8,0" Visibility="Collapsed" VerticalAlignment="Center" FontFamily="{DynamicResource XboxFontSemibold}"
                                FontWeight="Bold" FontSize="12" Foreground="White" />
                 </StackPanel>
             </Border>
@@ -123,6 +126,8 @@
             </DataTrigger>
             <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
                 <Setter TargetName="SourceIcon" Property="Opacity" Value="0" />
+                <Setter TargetName="Continue" Property="Visibility" Value="Visible" />
+                <Setter TargetName="PlayMark" Property="CornerRadius" Value="3,0,0,3" />
             </DataTrigger>
             <DataTrigger Binding="{Binding IsRunning}" Value="True">
                 <Setter TargetName="Running" Property="Visibility" Value="Visible" />
