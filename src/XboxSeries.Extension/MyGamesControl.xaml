@@ -3,11 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:XboxSeries.Extension"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:glob="clr-namespace:System.Globalization;assembly=mscorlib"
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
     <!--
-        My games & apps: the left nav and the page's header, and Play history's list. The Games grid is Playnite's own
-        main list, which the Dashboard places beside the nav while ShowsGameGrid is true, in the same 1080p units.
+        My games & apps, as on the console: one flat background, the left nav and a divider, the page's header, and Play
+        history's list. The Games grid is Playnite's own main list, which the Dashboard places beside the nav while
+        ShowsGameGrid is true, in the same 1080p units, and which this lays out as the console's grid of square tiles.
     -->
     <controls:PluginUserControl.Resources>
         <ResourceDictionary>
@@ -17,6 +19,13 @@
 
             <BooleanToVisibilityConverter x:Key="Visibility" />
 
+            <!-- The console's My games & apps colours, sampled from #7's captures, so approximate. -->
+            <SolidColorBrush x:Key="PageBrush" Color="#FF1F1F1F" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#FF303030" />
+            <SolidColorBrush x:Key="SelectedBrush" Color="#FF262626" />
+            <SolidColorBrush x:Key="RowBrush" Color="#FF292929" />
+            <SolidColorBrush x:Key="DimBrush" Color="#FF8F8F8F" />
+
             <Style x:Key="Text" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="Foreground" Value="White" />
@@ -24,27 +33,42 @@
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
-            <!-- A nav item: its name, lit while its item is showing, ringed in the accent while focused. -->
+            <Style x:Key="NavText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="NavIcon" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="Width" Value="44" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!--
+                A nav item, edge to edge across the nav: its icon, name and any count. The item showing (Tag "Selected")
+                is lit and marked by an accent bar on its right edge; the focused one fills with the accent.
+            -->
             <Style x:Key="NavItem" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                <Setter Property="Height" Value="60" />
-                <Setter Property="Margin" Value="0,0,0,8" />
+                <Setter Property="Height" Value="58" />
+                <Setter Property="Margin" Value="0,0,0,14" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid>
-                                <Border x:Name="Back" CornerRadius="6" Background="Transparent" />
-                                <TextBlock Text="{TemplateBinding Content}" Style="{StaticResource Text}"
-                                           Margin="20,0" VerticalAlignment="Center" />
-                                <Border x:Name="FocusRing" CornerRadius="7" Margin="-1" BorderThickness="4"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                            <Grid x:Name="Back" Background="Transparent">
+                                <ContentPresenter Margin="93,0,43,0" />
+                                <Border x:Name="Bar" Width="6" HorizontalAlignment="Right"
+                                        Background="{DynamicResource GlyphBrush}" Visibility="Collapsed" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Tag" Value="Selected">
-                                    <Setter TargetName="Back" Property="Background" Value="#33FFFFFF" />
+                                    <Setter TargetName="Back" Property="Background" Value="{StaticResource SelectedBrush}" />
+                                    <Setter TargetName="Bar" Property="Visibility" Value="Visible" />
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -52,18 +76,18 @@
                 </Setter>
             </Style>
 
-            <!-- A Play history row: the game's art, title and last-played date, and its platform on the right. -->
+            <!-- A Play history row: the game's square art, its title, and when it was last played and on what. -->
             <Style x:Key="HistoryRow" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                <Setter Property="Height" Value="112" />
-                <Setter Property="Margin" Value="0,0,0,10" />
+                <Setter Property="Height" Value="168" />
+                <Setter Property="Margin" Value="0,0,0,15" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid>
-                                <Border CornerRadius="6" Background="#99000000" />
+                                <Border Background="{StaticResource RowBrush}" />
                                 <ContentPresenter />
-                                <Border x:Name="FocusRing" CornerRadius="7" Margin="-1" BorderThickness="4"
+                                <Border x:Name="FocusRing" CornerRadius="4" Margin="-4" BorderThickness="4"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -78,75 +102,86 @@
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
-    <Grid Visibility="{Binding IsShown, Converter={StaticResource Visibility}}">
+    <!-- One flat background over the whole page, as on the console; Playnite's main list draws over it as Games' grid. -->
+    <Grid Background="{StaticResource PageBrush}" Visibility="{Binding IsShown, Converter={StaticResource Visibility}}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="420" />
+            <ColumnDefinition Width="441" />
+            <ColumnDefinition Width="2" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- The nav: the profile header, then one item per page section. Focusing an item shows it. -->
-        <Border Grid.Column="0" Background="#B3101010">
-            <StackPanel Margin="40,80,40,0">
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,40">
-                    <Grid Width="56" Height="56">
-                        <Ellipse Fill="{DynamicResource GlyphBrush}" />
-                        <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource XboxIconFont}" FontSize="26" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Grid>
-                    <TextBlock Text="{x:Static sys:Environment.UserName}" Style="{StaticResource Text}"
-                               VerticalAlignment="Center" Margin="16,0,0,0" />
-                </StackPanel>
-                <TextBlock Text="My games &amp; apps" Style="{StaticResource Text}" FontSize="30"
-                           FontFamily="{DynamicResource XboxFontSemibold}" Margin="0,0,0,24" />
-                <StackPanel x:Name="Nav" KeyDown="OnNavKeyDown">
-                    <Button x:Name="GamesItem" Content="Games" Style="{StaticResource NavItem}"
-                            GotKeyboardFocus="OnNavFocused" Click="OnNavClick" />
-                    <Button x:Name="PlayHistoryItem" Content="Play history" Style="{StaticResource NavItem}"
-                            GotKeyboardFocus="OnNavFocused" Click="OnNavClick" />
-                </StackPanel>
+        <!-- The nav: the profile, then one item per page section. Focusing an item shows it. -->
+        <StackPanel Grid.Column="0" Margin="0,78,0,0">
+            <StackPanel Orientation="Horizontal" Margin="75,0,0,58">
+                <Grid Width="54" Height="54">
+                    <Ellipse Fill="{DynamicResource GlyphBrush}" />
+                    <TextBlock Text="&#xE77B;" Style="{StaticResource NavIcon}" Width="Auto" HorizontalAlignment="Center" />
+                </Grid>
+                <TextBlock Text="{x:Static sys:Environment.UserName}" Style="{StaticResource Text}"
+                           Foreground="{StaticResource DimBrush}" VerticalAlignment="Center" Margin="14,0,0,0" />
             </StackPanel>
-        </Border>
+            <StackPanel x:Name="Nav" KeyDown="OnNavKeyDown">
+                <Button x:Name="GamesItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
+                    <DockPanel>
+                        <TextBlock Text="&#xE7FC;" Style="{StaticResource NavIcon}" />
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding GameCount}" Style="{StaticResource NavText}" />
+                        <TextBlock Text="Games" Style="{StaticResource NavText}" />
+                    </DockPanel>
+                </Button>
+                <Button x:Name="PlayHistoryItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
+                    <DockPanel>
+                        <TextBlock Text="&#xE81C;" Style="{StaticResource NavIcon}" />
+                        <TextBlock Text="Play history" Style="{StaticResource NavText}" />
+                    </DockPanel>
+                </Button>
+            </StackPanel>
+        </StackPanel>
 
-        <Grid Grid.Column="1" Margin="60,80,60,0">
+        <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
+
+        <Grid Grid.Column="2" Margin="77,72,88,0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="80" />
+                <RowDefinition Height="118" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="36"
-                       FontFamily="{DynamicResource XboxFontSemibold}" VerticalAlignment="Top" />
+            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" VerticalAlignment="Top" />
+            <TextBlock x:Name="Count" Text="{Binding GameCount, StringFormat='{}{0} games'}" Style="{StaticResource Text}"
+                       Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
 
             <!-- Play history. Elsewhere this space is Playnite's main list, placed by the Dashboard. -->
             <ScrollViewer x:Name="History" Grid.Row="1" Focusable="False"
                           VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled"
                           PreviewKeyDown="OnHistoryKeyDown">
-                <ItemsControl x:Name="Sections" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4,4,4,80">
+                <ItemsControl x:Name="Sections" ItemsSource="{Binding PlayHistory}" Focusable="False" Margin="4,0,4,80">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,0,0,24">
-                                <TextBlock Text="{Binding Title}" Style="{StaticResource Text}" Opacity="0.7" Margin="0,0,0,12" />
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource Text}" FontSize="30" Margin="28,0,0,18" />
                                 <ItemsControl ItemsSource="{Binding Entries}" Focusable="False">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Button Style="{StaticResource HistoryRow}"
                                                     Click="OnEntryClick" GotKeyboardFocus="OnEntryFocused" LostKeyboardFocus="OnEntryLeft">
-                                                <Grid Margin="8">
+                                                <Grid>
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="96" />
+                                                        <ColumnDefinition Width="168" />
                                                         <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
-                                                    <Grid local:RoundedClip.Radius="4" Background="#FF1A1A1A">
+                                                    <Grid Background="#FF1A1A1A">
                                                         <Image Source="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}"
                                                                Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
                                                     </Grid>
-                                                    <StackPanel Grid.Column="1" Margin="24,0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="24" />
-                                                        <TextBlock Text="{Binding LastPlayed, StringFormat='Last played {0:d MMMM yyyy}'}"
-                                                                   Style="{StaticResource Text}" FontSize="18" Opacity="0.7" Margin="0,6,0,0" />
+                                                    <StackPanel Grid.Column="1" Margin="22,0,24,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="28"
+                                                                   FontFamily="{DynamicResource XboxFontSemibold}" />
+                                                        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                                                            <TextBlock Text="{Binding LastPlayed, StringFormat=d, ConverterCulture={x:Static glob:CultureInfo.CurrentCulture}}"
+                                                                       Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}" />
+                                                            <TextBlock Text="{Binding Platform, StringFormat='{}  •  {0}'}" Style="{StaticResource Text}"
+                                                                       Foreground="{StaticResource DimBrush}" />
+                                                        </StackPanel>
                                                     </StackPanel>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Platform}" Style="{StaticResource Text}"
-                                                               FontSize="18" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,24,0" />
                                                 </Grid>
                                             </Button>
                                         </DataTemplate>
@@ -159,7 +194,7 @@
             </ScrollViewer>
 
             <TextBlock x:Name="NoHistory" Grid.Row="1" Text="Games you play show up here." Style="{StaticResource Text}"
-                       Opacity="0.7" VerticalAlignment="Top" />
+                       Foreground="{StaticResource DimBrush}" Margin="28,0,0,0" VerticalAlignment="Top" />
         </Grid>
     </Grid>
 </controls:PluginUserControl>

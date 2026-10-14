@@ -455,6 +455,7 @@ namespace XboxSeries.Core
                 .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
                 .ToList();
             Home.Groups = Groups();
+            MyGames.GameCount = GameListFilter.Installed.Apply(library.Games).Count();
             RefreshPlayHistory();
 
             // The hero stays on the last focused game while it exists, and starts on the first game in the row.

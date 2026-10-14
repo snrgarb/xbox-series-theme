@@ -10,6 +10,7 @@ namespace XboxSeries.Core
         private bool isShown;
         private MyGamesItem item;
         private IReadOnlyList<PlayHistorySection> playHistory = new PlayHistorySection[0];
+        private int gameCount;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -45,6 +46,20 @@ namespace XboxSeries.Core
 
         /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games.</summary>
         public bool ShowsGameGrid => IsShown && Item == MyGamesItem.Games;
+
+        /// <summary>How many games Games shows, for the nav and the page's header.</summary>
+        public int GameCount
+        {
+            get => gameCount;
+            internal set
+            {
+                if (gameCount != value)
+                {
+                    gameCount = value;
+                    Changed(nameof(GameCount));
+                }
+            }
+        }
 
         /// <summary>Play history: played games, newest first, in sections by when they were last played.</summary>
         public IReadOnlyList<PlayHistorySection> PlayHistory
