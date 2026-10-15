@@ -20,6 +20,7 @@ namespace XboxSeries.Extension
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
         private readonly GamingInputController controller = new GamingInputController();
+        private readonly WindowsAudio audio = new WindowsAudio();
         private readonly DiscordPipe discordPipe = new DiscordPipe();
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private bool libraryPushed;
@@ -38,7 +39,7 @@ namespace XboxSeries.Extension
             Properties = new GenericPluginProperties { HasSettings = false };
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
-            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), new WindowsAudio(), controller,
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()));
 
             // Home's elements, its top bar's status area, My games & apps and Settings, placed by the Dashboard as ContentControls named XboxSeries_<element>.
@@ -109,6 +110,7 @@ namespace XboxSeries.Extension
             PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
             PushNotifications();
             controller.Changed += () => OnUiThread(core.OnControllersChanged);
+            audio.DevicesChanged += () => OnUiThread(core.OnAudioDevicesChanged);
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
             // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with
@@ -130,6 +132,7 @@ namespace XboxSeries.Extension
             toastWindow?.Close();
             startupWindow?.Shutdown();
             discordPipe.Close();
+            audio.Dispose();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
             PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
