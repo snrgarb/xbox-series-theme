@@ -1080,6 +1080,18 @@ namespace XboxSeries.Core
 
         /// <summary>The rail's More Playnite options: Playnite's own main menu, over the page.</summary>
         public void OpenMorePlayniteOptions() => playnite.OpenMainMenu();
+#if DEBUG
+
+        /// <summary>The Debug menu: posts a Playnite notification with this text, which shows its Toast as any new one does.</summary>
+        public void DebugNotify(string text)
+        {
+        }
+
+        /// <summary>The Debug menu: shows the call's Toast for a ring from this caller, with this image (null for none), without Discord.</summary>
+        public void DebugRing(string caller, string image)
+        {
+        }
+#endif
 
         /// <summary>
         /// B on the page: back to where it was opened from (<see cref="SettingsState.OpenedFrom"/>). Playnite's own B

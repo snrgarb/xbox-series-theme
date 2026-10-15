@@ -53,6 +53,11 @@ namespace XboxSeries.Core
         Personalisation,
         Guide,
         Discord,
+#if DEBUG
+
+        /// <summary>Debug builds only: the Debug menu, below Playnite's entries and a divider of its own, for trying Toasts on the TV.</summary>
+        Debug,
+#endif
     }
 
     /// <summary>Where Settings was opened from, which B goes back to.</summary>
