@@ -104,8 +104,9 @@ namespace XboxSeries.Extension
         /// <summary>
         /// A game launched from the Dashboard has exited: the row takes focus back, on that game's tile, from wherever
         /// Playnite left it. Playnite's "game is running" panel had focus while it ran, and as it goes Playnite focuses
-        /// its main list, which Home hides, leaving nothing on screen to take the pad's keys. The Groups fly out if
-        /// they were up.
+        /// its main list, which Home hides, or the Game hub the game was played from, leaving nothing on screen to take
+        /// the pad's keys. The Groups fly out if they were up. With the Game hub still up, as under the Guide, the row
+        /// takes focus as the hub closes instead, rather than behind it.
         /// </summary>
         private void OnReturnedFromGame(Guid gameId)
         {
@@ -213,7 +214,8 @@ namespace XboxSeries.Extension
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
-                if (!IsVisible)
+                // Not behind a Game hub, as a game exiting from one leaves it up a moment: its closing focuses the row then.
+                if (!IsVisible || gameDetails?.IsVisible == true)
                 {
                     return;
                 }

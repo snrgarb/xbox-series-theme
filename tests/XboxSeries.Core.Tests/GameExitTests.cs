@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using XboxSeries.Core.Tests.Fakes;
 using Xunit;
 
@@ -78,6 +79,59 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal(FakeWindowSystem.Overlay, windows.Foreground);
             Assert.Equal(new[] { library.Id("Hades") }, returns);
+        }
+
+        [Fact]
+        public void Closing_the_Guide_a_game_was_quit_from_lands_on_Home_not_the_Game_hub_it_was_played_from()
+        {
+            Play("Hades");
+            var game = windows.OpenWindow();
+            windows.SetForeground(game);
+            OpenGuide();
+
+            // Menu, then Quit, on the running game: the Guide stays up as the game goes.
+            core.FocusItem(core.Guide.Items.Single(i => i.Kind == GuideItemKind.RunningGame));
+            core.OnControllerButton(ControllerButton.Start, ButtonState.Pressed);
+            core.OnControllerButton(ControllerButton.Start, ButtonState.Released);
+            core.OnControllerButton(ControllerButton.A, ButtonState.Pressed);
+            core.OnControllerButton(ControllerButton.A, ButtonState.Released);
+            windows.CloseWindow(game);
+            core.OnGameStopped(library.Id("Hades"));
+            Assert.True(core.Guide.IsOpen);
+            Assert.Null(playnite.Page);
+
+            core.OnControllerButton(ControllerButton.B, ButtonState.Pressed);
+            core.OnControllerButton(ControllerButton.B, ButtonState.Released);
+
+            Assert.False(core.Guide.IsOpen);
+            Assert.Equal(DashboardPage.Home, playnite.Page);
+            Assert.Equal(playnite.Window, windows.Foreground);
+        }
+
+        [Fact]
+        public void Once_Home_has_been_reached_the_Guide_hands_back_as_usual_again()
+        {
+            Play("Hades");
+            OpenGuide();
+            core.OnGameStopped(library.Id("Hades"));
+            core.OnControllerButton(ControllerButton.B, ButtonState.Pressed);
+            core.OnControllerButton(ControllerButton.B, ButtonState.Released);
+            var other = windows.OpenWindow();
+            windows.SetForeground(other);
+
+            OpenGuide();
+            core.OnControllerButton(ControllerButton.B, ButtonState.Pressed);
+            core.OnControllerButton(ControllerButton.B, ButtonState.Released);
+
+            Assert.Equal(other, windows.Foreground);
+        }
+
+        private void OpenGuide()
+        {
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed);
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.True(core.Guide.IsOpen);
         }
 
         [Fact]

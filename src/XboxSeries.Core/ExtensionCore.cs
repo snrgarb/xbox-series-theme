@@ -87,6 +87,12 @@ namespace XboxSeries.Core
         private GuideItemKind? toastAtGuidePress;
         private Guid? runningGame;
         private IntPtr recordedForeground;
+
+        /// <summary>
+        /// A game exited while the Guide was up: Home, not the window that was in front, nor the Game hub the game was
+        /// played from, comes to the front as the Guide hands back.
+        /// </summary>
+        private bool homeOwed;
         private ControllerButton? dismissButton;
         private IDisposable releaseFallback;
         private Action pendingHandBack;
@@ -336,6 +342,7 @@ namespace XboxSeries.Core
 
             runningGame = gameId;
             startingGame = null;
+            homeOwed = false;
             RefreshHome();
         }
 
@@ -386,13 +393,18 @@ namespace XboxSeries.Core
         /// A game has exited with nothing to launch after it: back to Home, as the console does, wherever it was
         /// launched from, the Recent row taking the pad again on the game just played. Playnite, coming back to the
         /// front, puts its own focus on its main list, which Home hides, so without this nothing on screen had focus
-        /// and the pad moved nothing. The Guide or Start-up, when up, keep the foreground; Home is behind them as they go.
+        /// and the pad moved nothing. The Guide or Start-up, when up, keep the foreground; Home is behind them as they
+        /// go, the Guide bringing it to the front, out of any Game hub, as it hands back.
         /// </summary>
         private void ReturnHomeFrom(Guid gameId)
         {
             CloseMyGames();
             CloseSettings();
-            if (!Guide.IsOpen && !Startup.IsShown)
+            if (Guide.IsOpen)
+            {
+                homeOwed = true;
+            }
+            else if (!Startup.IsShown)
             {
                 playnite.BringToFront(DashboardPage.Home);
             }
@@ -1851,6 +1863,7 @@ namespace XboxSeries.Core
             var handBack = pendingHandBack;
             CancelReleaseWait();
             handBack();
+            homeOwed = false;
             Guide.IsOverlayShown = false;
         }
 
@@ -1878,10 +1891,15 @@ namespace XboxSeries.Core
             return string.IsNullOrEmpty(directory) ? IntPtr.Zero : windowSystem.FindWindowUnder(directory);
         }
 
-        /// <summary>Back to the window that was in front when the Guide opened, or to Playnite if it has gone.</summary>
+        /// <summary>Back to the window that was in front when the Guide opened, or to Playnite if it has gone; to Home when a game exited under the Guide.</summary>
         private void ReturnToRecordedWindow()
         {
-            if (windowSystem.Exists(recordedForeground))
+            if (homeOwed)
+            {
+                homeOwed = false;
+                playnite.BringToFront(DashboardPage.Home);
+            }
+            else if (windowSystem.Exists(recordedForeground))
             {
                 windowSystem.SetForeground(recordedForeground);
             }

@@ -236,7 +236,8 @@ namespace XboxSeries.Extension
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
             {
-                if (!IsVisible || Rows.Items.Count == 0)
+                // Not behind a Game hub, as a game exiting from one leaves it up a moment: its closing focuses the row then.
+                if (!IsVisible || gameDetails?.IsVisible == true || Rows.Items.Count == 0)
                 {
                     return;
                 }
