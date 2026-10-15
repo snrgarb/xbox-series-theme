@@ -74,7 +74,7 @@ _Avoid_: home button, Xbox button
 
 - A **Bundle** contains one **Dashboard** and one extension, which owns the **Overlay**
 - The **Overlay** hosts the **Guide**, and nothing else
-- Tapping the **Guide button** opens the **Guide** half a second after the press, or closes it on release; holding it for a second buzzes the controller and opens Power instead, without showing the **Guide** first
+- Tapping the **Guide button** opens the **Guide** 0.3 s after the press, or closes it on release; holding it for 0.8 s opens Power instead, without showing the **Guide** first
 - Selecting a game anywhere on the **Dashboard** opens its **Game hub**
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject

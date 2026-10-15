@@ -15,7 +15,7 @@ namespace XboxSeries.Core.Tests
         public LandingTabTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeRumble());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount());
         }
 
         [Fact]
@@ -315,14 +315,14 @@ namespace XboxSeries.Core.Tests
 
         private void Release(ControllerButton button) => core.OnControllerButton(button, ButtonState.Released);
 
-        /// <summary>Pressed and let go. A Guide tap opens the Guide half a second after its press, so it waits that out.</summary>
+        /// <summary>Pressed and let go. A Guide tap opens the Guide 0.3 s after its press, so it waits that out.</summary>
         private void Tap(ControllerButton button)
         {
             Press(button);
             Release(button);
             if (button == ControllerButton.Guide)
             {
-                clock.Advance(TimeSpan.FromMilliseconds(500));
+                clock.Advance(TimeSpan.FromMilliseconds(300));
             }
         }
     }
