@@ -1390,7 +1390,7 @@ namespace XboxSeries.Core
         /// <summary>Menu on an entry. Only the running game has a menu, with Quit.</summary>
         private void ShowMenuFor(GuideItem item)
         {
-            if (!item.HasMenu)
+            if (item == null || !item.HasMenu)
             {
                 return;
             }

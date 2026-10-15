@@ -133,6 +133,17 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Menu_in_an_empty_flyout_does_nothing()
+        {
+            OpenUtility(GuideItemKind.Notifications);
+
+            Tap(ControllerButton.Start);
+
+            Assert.Null(core.Guide.Dialog);
+            Assert.Equal(GuideItemKind.Notifications, core.Guide.Flyout.Kind);
+        }
+
+        [Fact]
         public void Notifications_follows_Playnite_while_its_flyout_is_open()
         {
             OpenUtility(GuideItemKind.Notifications);
