@@ -24,6 +24,25 @@ namespace XboxSeries.Extension
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        private struct MARGINS
+        {
+            public int Left, Right, Top, Bottom;
+        }
+
+        [DllImport("dwmapi.dll")] private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS margins);
+
+        /// <summary>
+        /// Has Windows draw <paramref name="window"/>'s transparent pixels as see-through, so a WPF window can be
+        /// transparent while the graphics card draws it, rather than a layered window copied back through the
+        /// processor on every frame.
+        /// </summary>
+        public static void SeeThrough(IntPtr window)
+        {
+            var whole = new MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+            DwmExtendFrameIntoClientArea(window, ref whole);
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
         private struct MONITORINFO
         {
             public int cbSize;
