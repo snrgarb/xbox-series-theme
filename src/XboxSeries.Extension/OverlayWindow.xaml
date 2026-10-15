@@ -703,7 +703,7 @@
                 The panel and its flyout slide in and out together, off screen far enough to take the flyout, whose right
                 edge is the furthest right.
             -->
-            <Grid HorizontalAlignment="Left">
+            <Grid x:Name="Sliding" HorizontalAlignment="Left">
                 <Grid.RenderTransform>
                     <TranslateTransform x:Name="Slide" X="-700" />
                 </Grid.RenderTransform>
