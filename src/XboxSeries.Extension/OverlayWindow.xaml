@@ -150,7 +150,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <!-- The tabs: the landing tab's Xbox sphere, then Profile & system's account picture. -->
+                    <!-- The tabs: the landing tab's Xbox sphere, then Profile & system's account picture. A tab not showing is greyed, as on the console. -->
                     <Border Background="#FF1F1F1F" />
                     <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
                         <ItemsControl.ItemsPanel>
@@ -161,7 +161,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Width="84" Height="102">
-                                    <Path x:Name="Logo" Data="{StaticResource XboxLogo}" Fill="#FFD0D0D0" Width="33" Height="33" Stretch="Uniform" />
+                                    <Path x:Name="Logo" Data="{StaticResource XboxLogo}" Fill="#FF8C8C8C" Width="33" Height="33" Stretch="Uniform" />
                                     <Grid x:Name="Picture" Width="54" Height="54" Visibility="Collapsed">
                                         <Ellipse Fill="#FF4A4A4A" />
                                         <Ellipse>
