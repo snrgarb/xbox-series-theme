@@ -70,8 +70,6 @@
                             <ContentControl.Style>
                                 <Style TargetType="ContentControl">
                                     <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Notification}" />
-                                    <!-- Hidden under the Toast's own image, when it has one. -->
-                                    <Setter Property="Visibility" Value="Hidden" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Screenshot}">
                                             <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Screenshot}" />
@@ -79,14 +77,11 @@
                                         <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Call}">
                                             <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Call}" />
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding Image}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </ContentControl.Style>
                         </ContentControl>
-                        <!-- The Toast's own image, as a caller's avatar, filling the tile to its rounded corners. -->
+                        <!-- The Toast's own image, as a caller's avatar, filling the tile to its rounded corners over the kind's, which shows while it loads or if it can't. -->
                         <Grid local:RoundedClip.Radius="4">
                             <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
                         </Grid>

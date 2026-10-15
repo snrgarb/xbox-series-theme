@@ -79,7 +79,7 @@ A second panel the **Guide** opens beside and over its own when an entry is sele
 _Avoid_: submenu, popup, page
 
 **Toast**:
-A small notice shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next.
+A green banner, as the console's, shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next.
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
 **Discord tab**:

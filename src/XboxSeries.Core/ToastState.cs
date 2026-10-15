@@ -44,7 +44,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// What the Toast tells of, which picks its tile's image. A call's <see cref="Text"/> is "X is calling", and the
-        /// view draws "Press ⓧ to answer" under it. Like <see cref="Text"/>, it stays as the Toast hides.
+        /// view fades it with "Press ⓧ to view", as it does every Toast's. Like <see cref="Text"/>, it stays as the Toast hides.
         /// </summary>
         public ToastKind Kind
         {
