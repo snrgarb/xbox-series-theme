@@ -9,39 +9,41 @@
         can't drift apart. Sized at 1080p.
     -->
     <UserControl.Resources>
-        <!-- A battery filled to its level; a pad on a cable shows the pad instead, and no pad shows nothing. -->
+        <!--
+            The battery's percentage, then a battery filled to it; a pad on a cable shows the pad instead, and no pad shows
+            nothing.
+        -->
         <DataTemplate x:Key="BatteryTemplate">
-            <Grid x:Name="Battery" VerticalAlignment="Center">
-                <StackPanel x:Name="Cell" Orientation="Horizontal">
+            <StackPanel x:Name="Battery" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="Percent" Text="{Binding Battery.Percent, StringFormat={}{0}%}" FontFamily="{DynamicResource XboxFont}"
+                           FontSize="18" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <StackPanel x:Name="Cell" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
-                        <Border x:Name="Fill" Background="White" CornerRadius="1" HorizontalAlignment="Left" Width="0" />
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Battery.Percent, Mode=OneWay}" Focusable="False">
+                            <ProgressBar.Template>
+                                <ControlTemplate TargetType="ProgressBar">
+                                    <Grid>
+                                        <Border x:Name="PART_Track" />
+                                        <Border x:Name="PART_Indicator" Background="White" CornerRadius="1" HorizontalAlignment="Left" />
+                                    </Grid>
+                                </ControlTemplate>
+                            </ProgressBar.Template>
+                        </ProgressBar>
                     </Border>
                     <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
                 </StackPanel>
                 <!-- Segoe Fluent Icons / MDL2 Assets' game controller. -->
                 <TextBlock x:Name="Wired" Text="&#xE7FC;" FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
                            Foreground="White" VerticalAlignment="Center" Visibility="Collapsed" />
-            </Grid>
+            </StackPanel>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Battery}" Value="None">
+                <DataTrigger Binding="{Binding Battery.Connection}" Value="None">
                     <Setter TargetName="Battery" Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
-                <DataTrigger Binding="{Binding Battery}" Value="Wired">
+                <DataTrigger Binding="{Binding Battery.Connection}" Value="Wired">
+                    <Setter TargetName="Percent" Property="Visibility" Value="Collapsed" />
                     <Setter TargetName="Cell" Property="Visibility" Value="Collapsed" />
                     <Setter TargetName="Wired" Property="Visibility" Value="Visible" />
-                </DataTrigger>
-                <!-- The inside is 22 wide: a sliver when empty, a quarter when low, half at medium, and all of it when full. -->
-                <DataTrigger Binding="{Binding Battery}" Value="Empty">
-                    <Setter TargetName="Fill" Property="Width" Value="2" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Battery}" Value="Low">
-                    <Setter TargetName="Fill" Property="Width" Value="6" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Battery}" Value="Medium">
-                    <Setter TargetName="Fill" Property="Width" Value="11" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Battery}" Value="Full">
-                    <Setter TargetName="Fill" Property="Width" Value="22" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -55,7 +57,7 @@
                            VerticalAlignment="Center" />
             </StackPanel>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Battery}" Value="None">
+                <DataTrigger Binding="{Binding Battery.Connection}" Value="None">
                     <Setter TargetName="Battery" Property="Margin" Value="0" />
                 </DataTrigger>
             </DataTemplate.Triggers>
