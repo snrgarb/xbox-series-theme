@@ -39,6 +39,9 @@ namespace XboxSeries.Core
 
         /// <summary>How long the Guide button has to be held to open Power, as on the console.</summary>
         private static readonly TimeSpan HoldForPower = TimeSpan.FromSeconds(1);
+
+        /// <summary>A tap opens the Guide this long after its press, as the console's does, not at once.</summary>
+        private static readonly TimeSpan TapOpensGuide = TimeSpan.FromMilliseconds(500);
         private static readonly TimeSpan RepeatDelay = TimeSpan.FromMilliseconds(700);
         private static readonly TimeSpan RepeatRate = TimeSpan.FromMilliseconds(80);
 
@@ -51,6 +54,7 @@ namespace XboxSeries.Core
         private readonly ISoundPlayer sounds;
         private readonly IDrives drives;
         private readonly IUserAccount account;
+        private readonly IControllerRumble rumble;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private Guid? runningGame;
         private IntPtr recordedForeground;
@@ -59,6 +63,7 @@ namespace XboxSeries.Core
         private Action pendingHandBack;
         private IDisposable holdTimer;
         private DateTime guidePressedAt;
+        private IDisposable guideTapTimer;
 
         /// <summary>
         /// Set by a menu or prompt option that closes the Guide once answered: what hands focus on. The answer's button
@@ -84,8 +89,9 @@ namespace XboxSeries.Core
         /// <summary>Whether My games &amp; apps has put its own filter on the main list, with the user's kept to give back.</summary>
         private bool ownsMainList;
 
-        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds, IDrives drives, IUserAccount account)
+        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds, IDrives drives, IUserAccount account, IControllerRumble rumble)
         {
+            this.rumble = rumble;
             this.drives = drives;
             this.account = account;
             this.clock = clock;
@@ -351,14 +357,17 @@ namespace XboxSeries.Core
             || button == ControllerButton.DPadLeft || button == ControllerButton.DPadRight;
 
         /// <summary>
-        /// Pressed, it waits a second for a hold, which opens Power; released sooner, it is a tap, which opens the Guide
-        /// or closes it. Nothing shows while it waits, so a hold never flashes the Guide first.
+        /// Pressed, it waits a second for a hold, which buzzes the controller and opens Power; released sooner, it is a
+        /// tap, which closes the Guide at once or opens it half a second after the press. Nothing shows while it waits,
+        /// so a hold never flashes the Guide first.
         /// </summary>
         private void OnGuideButton(ButtonState state, DateTime at)
         {
             if (state == ButtonState.Pressed)
             {
                 CancelHold();
+                guideTapTimer?.Dispose();
+                guideTapTimer = null;
                 guidePressedAt = at;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
@@ -382,9 +391,23 @@ namespace XboxSeries.Core
             }
             else
             {
-                sounds.Play(UiSound.OpenMenu);
-                OpenGuide();
+                var left = TapOpensGuide - (clock.Now - guidePressedAt);
+                if (left > TimeSpan.Zero)
+                {
+                    guideTapTimer = clock.After(left, OpenGuideFromTap);
+                }
+                else
+                {
+                    OpenGuideFromTap();
+                }
             }
+        }
+
+        private void OpenGuideFromTap()
+        {
+            guideTapTimer = null;
+            sounds.Play(UiSound.OpenMenu);
+            OpenGuide();
         }
 
         private void CancelHold()
@@ -400,6 +423,7 @@ namespace XboxSeries.Core
         private void OpenPowerFromHold()
         {
             holdTimer = null;
+            rumble.Pulse();
             if (Guide.Dialog != null)
             {
                 Guide.Dialog.Decline();

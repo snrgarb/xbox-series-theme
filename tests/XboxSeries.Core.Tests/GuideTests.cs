@@ -14,7 +14,7 @@ namespace XboxSeries.Core.Tests
         public GuideTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeRumble());
         }
 
         [Fact]
@@ -42,6 +42,7 @@ namespace XboxSeries.Core.Tests
             Assert.False(core.Guide.IsOverlayShown);
 
             Release(ControllerButton.Guide);
+            clock.Advance(TimeSpan.FromMilliseconds(500));
 
             Assert.True(core.Guide.IsOpen);
             Assert.True(core.Guide.IsOverlayShown);
@@ -177,10 +178,15 @@ namespace XboxSeries.Core.Tests
 
         private void Release(ControllerButton button) => core.OnControllerButton(button, ButtonState.Released);
 
+        /// <summary>Pressed and let go. A Guide tap opens the Guide half a second after its press, so it waits that out.</summary>
         private void Tap(ControllerButton button)
         {
             Press(button);
             Release(button);
+            if (button == ControllerButton.Guide)
+            {
+                clock.Advance(TimeSpan.FromMilliseconds(500));
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ namespace XboxSeries.Core.Tests
 
         public GroupTests()
         {
-            core = new ExtensionCore(new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0)), windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount());
+            core = new ExtensionCore(new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0)), windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeRumble());
         }
 
         [Fact]

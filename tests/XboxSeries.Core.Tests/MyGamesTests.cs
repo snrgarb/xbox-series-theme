@@ -17,7 +17,7 @@ namespace XboxSeries.Core.Tests
         public MyGamesTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), drives, new FakeUserAccount());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), drives, new FakeUserAccount(), new FakeRumble());
         }
 
         [Fact]
@@ -420,10 +420,15 @@ namespace XboxSeries.Core.Tests
         /// <summary>A number to a tenth, as the user's culture writes it.</summary>
         private static string Tenths(double value) => value.ToString("0.0", CultureInfo.CurrentCulture);
 
+        /// <summary>Pressed and let go. A Guide tap opens the Guide half a second after its press, so it waits that out.</summary>
         private void Tap(ControllerButton button)
         {
             core.OnControllerButton(button, ButtonState.Pressed);
             core.OnControllerButton(button, ButtonState.Released);
+            if (button == ControllerButton.Guide)
+            {
+                clock.Advance(TimeSpan.FromMilliseconds(500));
+            }
         }
     }
 }
