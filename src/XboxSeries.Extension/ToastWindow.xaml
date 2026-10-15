@@ -57,11 +57,11 @@
     <Viewbox Stretch="Uniform">
         <Grid x:Name="Root" Height="{x:Static local:ToastWindow.StripHeight}" Width="1920">
             <!--
-                The banner: as wide as the longer of its line and the prompt, which share one place, up to 960, half the
-                1920 layout, where the line wraps; the 96 tile and 16 around it make it 128 tall.
+                The banner: as wide as the longer of its line and the prompt, which share one place, up to 640, where the
+                line ends in an ellipsis (the Guide's Notifications has it whole); the 96 tile and 16 around it make it 128 tall.
             -->
             <Border x:Name="Card" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
-                    MaxWidth="960" CornerRadius="6" Background="{DynamicResource XboxGreenBrush}" Padding="16,16,32,16" Opacity="0">
+                    MaxWidth="640" CornerRadius="6" Background="{DynamicResource XboxGreenBrush}" Padding="16,16,32,16" Opacity="0">
                 <Border.RenderTransform>
                     <TranslateTransform x:Name="Rise" Y="40" />
                 </Border.RenderTransform>
@@ -89,11 +89,10 @@
                             <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
                         </Grid>
                     </Grid>
-                    <!-- The text: the Toast's line, up to two lines, and the prompt in the same place, fading between them. -->
+                    <!-- The text: the Toast's line, on one line, and the prompt in the same place, fading between them. -->
                     <Grid VerticalAlignment="Center">
                         <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="34"
-                                   Foreground="White" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                                   LineHeight="46" LineStackingStrategy="BlockLineHeight" MaxHeight="92"
+                                   Foreground="White" TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center" />
                         <StackPanel x:Name="Prompt" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0">
                             <TextBlock Text="Press" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
