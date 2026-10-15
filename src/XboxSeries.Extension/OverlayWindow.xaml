@@ -100,6 +100,20 @@
                             </Ellipse>
                             <Ellipse x:Name="SpeakingRing" Stroke="{DynamicResource GlyphLightBrush}" StrokeThickness="3" Visibility="Hidden" />
                         </Grid>
+                        <!--
+                            A Discord server in the Servers flyout: its icon on a rounded square, as Discord shows them, over a grey
+                            one with Discord's mark for a server without an icon (or one that won't load).
+                        -->
+                        <Grid x:Name="ServerIcon" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
+                            <Border CornerRadius="16" Background="#FF4A4A4A">
+                                <Path Data="{StaticResource DiscordLogo}" Fill="#B3FFFFFF" Width="30" Height="30" Stretch="Uniform" />
+                            </Border>
+                            <Border CornerRadius="16">
+                                <Border.Background>
+                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" Stretch="UniformToFill" />
+                                </Border.Background>
+                            </Border>
+                        </Grid>
                         <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
                             <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
@@ -118,6 +132,44 @@
                                     </ControlTemplate>
                                 </ProgressBar.Template>
                             </ProgressBar>
+                            <!--
+                                Who is in a server's voice channel: their avatars on small discs in a row, each overlapping the
+                                one before and edged in the flyout's grey, a grey disc for none (or one that won't load); a
+                                row too long for the flyout is cut off at its edge. Gone until Discord has said who is there.
+                            -->
+                            <ItemsControl x:Name="Occupants" ItemsSource="{Binding Occupants}" Focusable="False" Margin="0,8,0,0"
+                                          ClipToBounds="True" IsHitTestVisible="False">
+                                <ItemsControl.Style>
+                                    <Style TargetType="ItemsControl">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <Trigger Property="HasItems" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ItemsControl.Style>
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="34" Height="34" Margin="0,0,-8,0">
+                                            <Ellipse Fill="#FF4A4A4A" Stroke="#FF1F1F1F" StrokeThickness="2" />
+                                            <Ellipse Margin="2">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush ImageSource="{Binding Converter={StaticResource Image}, ConverterParameter=64}" Stretch="UniformToFill" />
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- A voice channel nobody is in. -->
+                            <TextBlock x:Name="EmptyChannel" Text="Empty" Style="{StaticResource GuideText}" FontSize="20"
+                                       Foreground="#B3FFFFFF" Margin="0,4,0,0" Visibility="Collapsed" />
                         </StackPanel>
                         <TextBlock x:Name="LevelText" Text="{Binding Level}" Style="{StaticResource GuideText}" FontSize="24"
                                    HorizontalAlignment="Right" Margin="0,0,24,0" Visibility="Collapsed" />
@@ -324,6 +376,33 @@
                     <DataTrigger Binding="{Binding IsFocused}" Value="True">
                         <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
                         <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <!-- The Servers flyout: each server a row with its icon, as the profile card has the picture. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordServer">
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="ServerIcon" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="96" />
+                        <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <!--
+                        A server's voice channels: the speaker level with each name, and under it who is in it, or Empty;
+                        the row grows to take them.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordVoiceChannel">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE767;" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
+                        <Setter TargetName="Glyph" Property="Padding" Value="0,14,0,0" />
+                        <Setter TargetName="Entry" Property="Height" Value="NaN" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,16,16,16" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Occupants.Count}" Value="0">
+                        <Setter TargetName="EmptyChannel" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
             </DataTemplate>
@@ -631,8 +710,11 @@
                 <DockPanel local:RoundedClip.Radius="12">
                     <!-- Its heading, the utility's name. -->
                     <TextBlock DockPanel.Dock="Top" Text="{Binding Flyout.Title}" Style="{StaticResource GuideText}" FontSize="33" Margin="28,36,0,24" />
-                    <!-- Notifications with none to show. -->
-                    <TextBlock DockPanel.Dock="Top" Text="No new notifications" FontSize="24" Foreground="#B3FFFFFF" Margin="28,0,0,0">
+                    <!--
+                        Notifications with none to show; the Servers flyout, or a server's voice channels, while Discord is
+                        still being asked for them, then if it has none.
+                    -->
+                    <TextBlock DockPanel.Dock="Top" FontSize="24" Foreground="#B3FFFFFF" Margin="28,0,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -642,8 +724,31 @@
                                             <Condition Binding="{Binding Flyout.Kind}" Value="Notifications" />
                                             <Condition Binding="{Binding Flyout.Items.Count}" Value="0" />
                                         </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="No new notifications" />
                                         <Setter Property="Visibility" Value="Visible" />
                                     </MultiDataTrigger>
+                                    <!-- An empty flyout's entries may be an array, which has no Count to bind to, so these ask the list itself. -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Flyout.Kind}" Value="DiscordServers" />
+                                            <Condition Binding="{Binding HasItems, ElementName=FlyoutEntries}" Value="False" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="No servers" />
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding Flyout.Kind}" Value="DiscordServer" />
+                                            <Condition Binding="{Binding HasItems, ElementName=FlyoutEntries}" Value="False" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Text" Value="No voice channels" />
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                    <!-- Last, so it wins over the empty messages while the entries are on their way. -->
+                                    <DataTrigger Binding="{Binding Flyout.IsLoading}" Value="True">
+                                        <Setter Property="Text" Value="Loading&#x2026;" />
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
