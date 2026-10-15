@@ -8,6 +8,11 @@
     <!-- The brushes too: Default's resolve its own GlyphColor, so overriding the colours alone leaves them orange. -->
     <SolidColorBrush x:Key="GlyphBrush" Color="#FF107C10" />
     <SolidColorBrush x:Key="GlyphLightBrush" Color="#FF2CA243" />
+    <!--
+        Xbox green (brand #107C10), the Toast's banner, as the console's notifications wear it. The brand's Xbox light
+        green, #FF9BF00B, is the alternative to try on the TV against the reference photos.
+    -->
+    <SolidColorBrush x:Key="XboxGreenBrush" Color="#FF107C10" />
 
     <!-- Microsoft's UI font and icon font, as on the console. Fluent Icons ships with Windows 11, MDL2 with Windows 10. -->
     <FontFamily x:Key="XboxFont">Segoe UI</FontFamily>
