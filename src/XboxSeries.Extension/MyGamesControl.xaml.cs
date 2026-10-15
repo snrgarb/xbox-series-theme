@@ -19,9 +19,9 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// My games &amp; apps, injected as a custom element over Home: the left nav, the header and Play history. It follows
-    /// the core's <see cref="MyGamesState"/>, tells the core which nav item and which Play history game have focus, and
-    /// takes B back to Home. It holds no page logic. The Dashboard lays Home and Playnite's main list out around it
+    /// My games &amp; apps, injected as a custom element over Home: the left nav, the header, Apps and Play history. It
+    /// follows the core's <see cref="MyGamesState"/>, tells the core which nav item and which Play history game have focus,
+    /// starts the App chosen, and takes B back to Home. It holds no page logic. The Dashboard lays Home and Playnite's main list out around it
     /// from <see cref="State"/>, and opens it from the top bar with <see cref="OpenGamesCommand"/>.
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
@@ -40,6 +40,9 @@ namespace XboxSeries.Extension
             " SmoothScrollEnabled=\"{Settings Fullscreen.SmoothScrolling}\" />" +
             "</ItemsPanelTemplate>";
 
+        /// <summary>Apps to a row, as Games' grid: the Apps list's UniformGrid lays them out in as many columns.</summary>
+        private const int AppsPerRow = 5;
+
         private readonly ExtensionCore core;
         private FrameworkElement viewHost;
         private ListBox mainList;
@@ -47,6 +50,9 @@ namespace XboxSeries.Extension
 
         /// <summary>The Play history game that last had focus, to put focus back on after a rebuild or its Game hub.</summary>
         private Guid? lastFocusedGame;
+
+        /// <summary>The App that last had focus, to put focus back on after Apps change or coming back from the nav.</summary>
+        private Guid? lastFocusedApp;
 
         /// <summary>The Games grid game focus left for "See full library", to go back up to.</summary>
         private int gameAboveFooter;
@@ -138,6 +144,7 @@ namespace XboxSeries.Extension
                     if (core.MyGames.IsShown && !Nav.IsKeyboardFocusWithin)
                     {
                         lastFocusedGame = null;
+                        lastFocusedApp = null;
                         FocusContentSoon();
                     }
 
@@ -155,21 +162,32 @@ namespace XboxSeries.Extension
                     }
 
                     break;
+                case nameof(MyGamesState.Apps):
+                    // New Apps replace their tiles, and with them the focused one: put focus back on the same App.
+                    ShowItem();
+                    if (AppsList.IsKeyboardFocusWithin)
+                    {
+                        FocusContentSoon();
+                    }
+
+                    break;
             }
         }
 
         /// <summary>
-        /// The header and its count, the lit nav item, Games' way to Full library, and Play history or the note that
-        /// it's empty.
+        /// The header and its count, the lit nav item, Games' way to Full library, and Apps or Play history or the note
+        /// that they're empty.
         /// </summary>
         private void ShowItem()
         {
             var item = core.MyGames.Item;
             var games = item == MyGamesItem.Games;
+            var apps = item == MyGamesItem.Apps;
             var history = item == MyGamesItem.PlayHistory;
             var library = item == MyGamesItem.FullLibrary;
-            Header.Text = history ? "Play history" : library ? "Full library" : "Games";
+            Header.Text = apps ? "Apps" : history ? "Play history" : library ? "Full library" : "Games";
             GamesItem.Tag = games ? "Selected" : null;
+            AppsItem.Tag = apps ? "Selected" : null;
             PlayHistoryItem.Tag = history ? "Selected" : null;
             FullLibraryItem.Tag = library ? "Selected" : null;
             Count.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
@@ -178,6 +196,9 @@ namespace XboxSeries.Extension
             var empty = core.MyGames.PlayHistory.Count == 0;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
             NoHistory.Visibility = history && empty ? Visibility.Visible : Visibility.Collapsed;
+            var noApps = core.MyGames.Apps.Count == 0;
+            AppsList.Visibility = apps && !noApps ? Visibility.Visible : Visibility.Collapsed;
+            NoApps.Visibility = apps && noApps ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>The storage ring, filled round as far as the drive is used; hidden without a drive to show.</summary>
@@ -214,7 +235,10 @@ namespace XboxSeries.Extension
 
         /// <summary>The nav item of what the page shows.</summary>
         private Button NavItemOf(MyGamesItem item) =>
-            item == MyGamesItem.PlayHistory ? PlayHistoryItem : item == MyGamesItem.FullLibrary ? FullLibraryItem : GamesItem;
+            item == MyGamesItem.Apps ? AppsItem
+            : item == MyGamesItem.PlayHistory ? PlayHistoryItem
+            : item == MyGamesItem.FullLibrary ? FullLibraryItem
+            : GamesItem;
 
         /// <summary>Play history's games, top to bottom, in their sections.</summary>
         private void ShowHistory()
@@ -403,6 +427,53 @@ namespace XboxSeries.Extension
             }
         }
 
+        /// <summary>
+        /// Left from an App in the first column goes back to the nav; at the grid's other edges focus stays put. The list
+        /// itself moves between Apps.
+        /// </summary>
+        private void OnAppsKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Left
+                && ItemsControl.ContainerFromElement(AppsList, e.OriginalSource as DependencyObject) is ListBoxItem tile
+                && AppsList.ItemContainerGenerator.IndexFromContainer(tile) % AppsPerRow == 0)
+            {
+                e.Handled = true;
+                AppsItem.Focus();
+            }
+        }
+
+        private void OnAppFocused(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is App app)
+            {
+                lastFocusedApp = app.Id;
+            }
+        }
+
+        // An App is no game, so the core's own A, for the game with focus, doesn't reach it: the pad's A starts it here,
+        // as do the keyboard's Enter and the mouse.
+        private void OnAppKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter || PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            {
+                e.Handled = true;
+                StartApp(sender);
+            }
+        }
+
+        private void OnAppClick(object sender, MouseButtonEventArgs e)
+        {
+            StartApp(sender);
+        }
+
+        private void StartApp(object tile)
+        {
+            if (((FrameworkElement)tile).DataContext is App app)
+            {
+                core.StartApp(app.Id);
+            }
+        }
+
         // Menu and the pad's A on a Play history game work as on a Home tile, through the core.
         private void OnEntryFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
@@ -446,8 +517,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Focuses the item's first tile once it is laid out: Games' first game in Playnite's main list, or the Play
-        /// history game that last had focus, else its first. With none, focus stays on the nav.
+        /// Focuses the item's first tile once it is laid out: Games' first game in Playnite's main list, or the App or
+        /// Play history game that last had focus, else its first. With none, focus stays on the nav.
         /// </summary>
         private void FocusContentSoon()
         {
@@ -456,6 +527,12 @@ namespace XboxSeries.Extension
             {
                 if (!core.MyGames.IsShown || !IsVisible)
                 {
+                    return;
+                }
+
+                if (core.MyGames.Item == MyGamesItem.Apps)
+                {
+                    FocusApp();
                     return;
                 }
 
@@ -477,6 +554,21 @@ namespace XboxSeries.Extension
                 History.UpdateLayout();
                 ((UIElement)RowOf(History, entry) ?? PlayHistoryItem).Focus();
             }));
+        }
+
+        /// <summary>Focuses the App that last had focus, else the first; with none, the nav item.</summary>
+        private void FocusApp()
+        {
+            var apps = core.MyGames.Apps;
+            var app = apps.FirstOrDefault(a => a.Id == lastFocusedApp) ?? apps.FirstOrDefault();
+            if (app == null)
+            {
+                AppsItem.Focus();
+                return;
+            }
+
+            AppsList.UpdateLayout();
+            ((UIElement)AppsList.ItemContainerGenerator.ContainerFromItem(app) ?? AppsItem).Focus();
         }
 
         /// <summary>Focuses and selects the grid's game at <paramref name="index"/>; with no games, the nav item.</summary>

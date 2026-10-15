@@ -7,8 +7,8 @@
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False">
     <!--
-        My games & apps, as on the console: one flat background, the left nav and a divider, the page's header, and Play
-        history's list. The Games grid is Playnite's own main list, which the Dashboard places beside the nav while
+        My games & apps, as on the console: one flat background, the left nav and a divider, the page's header, Apps'
+        tiles and Play history's list. The Games grid is Playnite's own main list, which the Dashboard places beside the nav while
         ShowsGameGrid is true, in the same 1080p units, and which this lays out as the console's grid of square tiles.
     -->
     <controls:PluginUserControl.Resources>
@@ -127,6 +127,38 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
+            <!--
+                An App's tile, after the console's app tiles: square, filled with the accent, the tool's icon centred and its
+                name at the bottom left. Square from its width, which the grid sets to a fifth of the row. As on a Play
+                history row, the focus ring sits in the tile's own 4 px edge, so the list's scrolling never clips it.
+            -->
+            <Style x:Key="AppTile" TargetType="ListBoxItem">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" />
+                <Setter Property="Margin" Value="0,0,14,14" />
+                <EventSetter Event="GotKeyboardFocus" Handler="OnAppFocused" />
+                <EventSetter Event="KeyDown" Handler="OnAppKeyDown" />
+                <EventSetter Event="MouseLeftButtonUp" Handler="OnAppClick" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Grid>
+                                <Border Margin="4" CornerRadius="3" Background="{DynamicResource GlyphBrush}">
+                                    <ContentPresenter />
+                                </Border>
+                                <Border x:Name="FocusRing" CornerRadius="6" BorderThickness="4"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
@@ -154,6 +186,15 @@
                         <TextBlock Text="&#xE7FC;" Style="{StaticResource NavIcon}" />
                         <TextBlock DockPanel.Dock="Right" Text="{Binding GameCount}" Style="{StaticResource NavText}" />
                         <TextBlock Text="Games" Style="{StaticResource NavText}" />
+                    </DockPanel>
+                </Button>
+                <!-- Hidden when Playnite's Software tools can't be read, rather than showing an Apps that never fills. -->
+                <Button x:Name="AppsItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick"
+                        Visibility="{Binding HasApps, Converter={StaticResource Visibility}}">
+                    <DockPanel>
+                        <TextBlock Text="&#xE71D;" Style="{StaticResource NavIcon}" />
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding Apps.Count}" Style="{StaticResource NavText}" />
+                        <TextBlock Text="Apps" Style="{StaticResource NavText}" />
                     </DockPanel>
                 </Button>
                 <Button x:Name="PlayHistoryItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
@@ -272,6 +313,53 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+
+            <!--
+                Apps, five to a row like Games' grid. Not virtualized: a library has a handful of Software tools, and their
+                icons are read small.
+            -->
+            <ListBox x:Name="AppsList" Grid.Row="1" ItemsSource="{Binding Apps}" ItemContainerStyle="{StaticResource AppTile}"
+                     Background="Transparent" BorderThickness="0" Padding="0,0,0,80"
+                     ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     KeyboardNavigation.DirectionalNavigation="Contained" PreviewKeyDown="OnAppsKeyDown">
+                <ListBox.Template>
+                    <ControlTemplate TargetType="ListBox">
+                        <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </ControlTemplate>
+                </ListBox.Template>
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="5" VerticalAlignment="Top" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <!-- Decoded at twice its size, for the 4K screen's 2 pixels to a 1080p one, and no larger. -->
+                            <Image x:Name="Icon" Width="72" Height="72" Margin="0,0,0,24"
+                                   Source="{Binding Icon, Converter={StaticResource Image}, ConverterParameter=144}"
+                                   Stretch="Uniform" RenderOptions.BitmapScalingMode="Fant" />
+                            <!-- With no icon, or one that can't be read: a generic app glyph in its place. -->
+                            <TextBlock x:Name="NoIcon" Text="&#xECAA;" FontFamily="{DynamicResource XboxIconFont}" FontSize="56"
+                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="0,0,0,24" Visibility="Collapsed" />
+                            <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="18"
+                                       VerticalAlignment="Bottom" Margin="12,0,12,10" />
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Source, ElementName=Icon}" Value="{x:Null}">
+                                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="NoIcon" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock x:Name="NoApps" Grid.Row="1" Text="Software tools you add in Playnite show up here." Style="{StaticResource Text}"
+                       Foreground="{StaticResource DimBrush}" Margin="28,0,0,0" VerticalAlignment="Top" />
 
             <TextBlock x:Name="NoHistory" Grid.Row="1" Text="Games you play show up here." Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" Margin="28,0,0,0" VerticalAlignment="Top" />
