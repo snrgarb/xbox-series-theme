@@ -47,6 +47,14 @@ _Avoid_: achievements window, trophies
 The Dashboard's page for finding games and **Apps** by name. It exists only when the extension is installed.
 _Avoid_: filter (narrowing the list currently shown by name is Playnite's own filter, not Search)
 
+**Settings**:
+The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Personalisation, Guide, Discord, then **Playnite settings** and More Playnite options) beside the selected category. It exists only when the extension is installed.
+_Avoid_: Bundle settings, plugin settings, add-on settings
+
+**Playnite settings**:
+Playnite's own Fullscreen Settings window, restyled by the **Dashboard** and reached from **Settings**' rail. It can't hold the Bundle's options.
+_Avoid_: Settings (that is the Dashboard's page)
+
 **Play session**:
 One continuous run of a game, from launch to exit, as recorded by the extension. Playnite itself keeps only totals.
 _Avoid_: playthrough, visit
@@ -92,6 +100,7 @@ _Avoid_: home button, Xbox button
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
 - The **Guide** has three tabs: landing, the **Discord tab** (when connected), and Profile & system
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
+- **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from
 
 ## Flagged ambiguities
 
