@@ -98,6 +98,18 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Disconnect_with_nothing_to_disconnect_leaves_the_status_line_as_it_was()
+        {
+            transport.IsRunning = false;
+            EnterApp();
+            core.ConnectDiscord();
+
+            core.DisconnectDiscord();
+
+            Assert.Equal("Discord isn't running", Discord.StatusText);
+        }
+
+        [Fact]
         public void Connect_with_Discord_not_running_says_so()
         {
             transport.IsRunning = false;

@@ -256,9 +256,8 @@ namespace XboxSeries.Extension
             {
                 core.ConnectDiscord();
             }
-            else if (button == DisconnectButton && core.Settings.Discord.CanDisconnect)
+            else if (button == DisconnectButton)
             {
-                // Greyed with nothing to disconnect; pressed then, it would only wipe the status line.
                 core.DisconnectDiscord();
             }
         }
