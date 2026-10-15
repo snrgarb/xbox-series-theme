@@ -98,7 +98,7 @@ namespace XboxSeries.Core.Tests
             HaloExits();
 
             Assert.DoesNotContain(core.Guide.Items, i => i.Kind == GuideItemKind.RunningGame);
-            Assert.True(core.Guide.IsOpen);
+            Assert.False(core.Guide.IsOpen);
             Assert.Empty(windows.Killed);
         }
 

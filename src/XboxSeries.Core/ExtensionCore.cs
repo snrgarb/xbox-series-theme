@@ -373,7 +373,8 @@ namespace XboxSeries.Core
 
             // Any menu or prompt was about the game that has just gone.
             CloseGameDialog();
-            var next = quittingGame == gameId ? startAfterQuit : null;
+            var quit = quittingGame == gameId;
+            var next = quit ? startAfterQuit : null;
             EndQuit();
             if (next != null)
             {
@@ -386,7 +387,7 @@ namespace XboxSeries.Core
                 RefreshLandingTab();
             }
 
-            ReturnHomeFrom(gameId);
+            ReturnHomeFrom(gameId, quit);
         }
 
         /// <summary>
@@ -394,15 +395,20 @@ namespace XboxSeries.Core
         /// launched from, the Recent row taking the pad again on the game just played. Playnite, coming back to the
         /// front, puts its own focus on its main list, which Home hides, so without this nothing on screen had focus
         /// and the pad moved nothing. The Guide or Start-up, when up, keep the foreground; Home is behind them as they
-        /// go, the Guide bringing it to the front, out of any Game hub, as it hands back.
+        /// go, the Guide bringing it to the front, out of any Game hub, as it hands back. A game quit from the Guide closes
+        /// the Guide onto Home, its Quit done; one that exits on its own leaves the Guide up for whatever it was doing.
         /// </summary>
-        private void ReturnHomeFrom(Guid gameId)
+        private void ReturnHomeFrom(Guid gameId, bool quit)
         {
             CloseMyGames();
             CloseSettings();
             if (Guide.IsOpen)
             {
                 homeOwed = true;
+                if (quit)
+                {
+                    DismissAtOnce(ReturnToRecordedWindow);
+                }
             }
             else if (!Startup.IsShown)
             {

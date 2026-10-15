@@ -82,7 +82,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Closing_the_Guide_a_game_was_quit_from_lands_on_Home_not_the_Game_hub_it_was_played_from()
+        public void A_game_quit_from_the_Guide_closes_the_Guide_onto_Home_not_the_Game_hub_it_was_played_from()
         {
             Play("Hades");
             var game = windows.OpenWindow();
@@ -97,11 +97,6 @@ namespace XboxSeries.Core.Tests
             core.OnControllerButton(ControllerButton.A, ButtonState.Released);
             windows.CloseWindow(game);
             core.OnGameStopped(library.Id("Hades"));
-            Assert.True(core.Guide.IsOpen);
-            Assert.Null(playnite.Page);
-
-            core.OnControllerButton(ControllerButton.B, ButtonState.Pressed);
-            core.OnControllerButton(ControllerButton.B, ButtonState.Released);
 
             Assert.False(core.Guide.IsOpen);
             Assert.Equal(DashboardPage.Home, playnite.Page);
