@@ -65,6 +65,12 @@ namespace XboxSeries.Core
         private static readonly TimeSpan ToastDuration = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan ToastGap = TimeSpan.FromSeconds(0.5);
 
+        /// <summary>
+        /// How long the Launch screen waits for the game to start before giving up, so a launcher waiting for the user
+        /// (a sign-in, an update, an agreement) isn't hidden for good.
+        /// </summary>
+        private static readonly TimeSpan LaunchScreenTimeout = TimeSpan.FromSeconds(90);
+
         private readonly IClock clock;
         private readonly IWindowSystem windowSystem;
         private readonly IPlayniteHost playnite;
@@ -333,6 +339,7 @@ namespace XboxSeries.Core
             }
 
             startingGame = gameId;
+            ShowLaunchScreen(gameId);
             return true;
         }
 
@@ -349,12 +356,14 @@ namespace XboxSeries.Core
             runningGame = gameId;
             startingGame = null;
             homeOwed = false;
+            HideLaunchScreenFor(gameId);
             RefreshHome();
         }
 
         /// <summary>Playnite's game startup cancelled event: a launch that never got going.</summary>
         public void OnGameStartupCancelled(Guid gameId)
         {
+            HideLaunchScreenFor(gameId);
             if (startingGame == gameId)
             {
                 startingGame = null;
@@ -364,6 +373,7 @@ namespace XboxSeries.Core
         /// <summary>Playnite's game stopped event.</summary>
         public void OnGameStopped(Guid gameId)
         {
+            HideLaunchScreenFor(gameId);
             if (startingGame == gameId)
             {
                 startingGame = null;
@@ -1823,10 +1833,14 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Starts a game through Playnite, holding off other launches until Playnite reports it started or didn't.</summary>
+        /// <summary>
+        /// Starts a game through Playnite, holding off other launches until Playnite reports it started or didn't. Its
+        /// Launch screen shows now: Playnite's starting event for it finds it already starting and lets it through.
+        /// </summary>
         private void Launch(Guid gameId)
         {
             startingGame = gameId;
+            ShowLaunchScreen(gameId);
             playnite.StartGame(gameId);
         }
 
