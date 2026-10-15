@@ -352,7 +352,7 @@ namespace XboxSeries.Core
         {
             discord.Close();
             awaitingReplies.Clear();
-            occupantRequests.Clear();
+            ForgetServers();
             discordStep = DiscordStep.Closed;
             signInToken = null;
             Settings.Discord.IsConnecting = false;

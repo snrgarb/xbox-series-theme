@@ -44,7 +44,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// A call shown for a channel it wasn't showing before: the channel moves to the front, taking the name and a DM's
-        /// picture now known, else keeping those learned before, and a voice channel's server is asked for its name and icon.
+        /// picture now known, else keeping those learned before, and a voice channel's server moves to the front of the
+        /// servers and is asked for its name and icon.
         /// </summary>
         private void LearnChannel(DiscordCall joined)
         {
@@ -65,6 +66,7 @@ namespace XboxSeries.Core
             SaveShortcuts();
             if (joined.GuildId != null)
             {
+                RememberServer(joined.GuildId);
                 SendCommand("GET_GUILD", new JObject { ["guild_id"] = joined.GuildId });
             }
         }

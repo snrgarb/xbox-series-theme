@@ -23,7 +23,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_servers_arrive_one_entry_each_with_its_icon_focus_on_the_first()
+        public void The_servers_arrive_one_entry_each_with_its_icon_alphabetically_focus_on_the_first()
         {
             OpenServers();
 
@@ -31,7 +31,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.False(Guide.Flyout.IsLoading);
             Assert.Equal(GuideItemKind.DiscordServers, Guide.Flyout.Kind);
-            Assert.Equal(new[] { "The Lads", "Book club" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Equal(new[] { "The Lads", "Wine club" }, Guide.Flyout.Items.Select(i => i.Title));
             Assert.All(Guide.Flyout.Items, i => Assert.Equal(GuideItemKind.DiscordServer, i.Kind));
             Assert.Equal(new[] { LadsIcon, null }, Guide.Flyout.Items.Select(i => i.Image));
             Assert.Same(Guide.Flyout.Items[0], Guide.FocusedItem);
@@ -140,15 +140,15 @@ namespace XboxSeries.Core.Tests
             ReplyGuilds();
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.A);
-            Assert.Equal("Book club", Guide.Flyout.Title);
+            Assert.Equal("Wine club", Guide.Flyout.Title);
             var asked = Sent("GET_GUILDS").Count;
 
             Tap(ControllerButton.B);
 
             Assert.Equal(GuideItemKind.DiscordServers, Guide.Flyout.Kind);
             Assert.False(Guide.Flyout.IsLoading);
-            Assert.Equal(new[] { "The Lads", "Book club" }, Guide.Flyout.Items.Select(i => i.Title));
-            Assert.Equal("Book club", Guide.FocusedItem.Title);
+            Assert.Equal(new[] { "The Lads", "Wine club" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Equal("Wine club", Guide.FocusedItem.Title);
             Assert.Equal(asked, Sent("GET_GUILDS").Count);
         }
 
@@ -230,7 +230,7 @@ namespace XboxSeries.Core.Tests
 
             ReplyTo(lads, Channels());
 
-            Assert.Equal("Book club", Guide.Flyout.Title);
+            Assert.Equal("Wine club", Guide.Flyout.Title);
             Assert.True(Guide.Flyout.IsLoading);
             Assert.Empty(Guide.Flyout.Items);
         }
@@ -355,6 +355,223 @@ namespace XboxSeries.Core.Tests
             Assert.NotNull(Guide.Flyout);
         }
 
+        [Fact]
+        public void Reopening_Servers_shows_the_servers_fetched_at_once_and_still_asks_again()
+        {
+            OpenServers();
+            ReplyGuilds();
+            Tap(ControllerButton.B);
+
+            Tap(ControllerButton.A);
+
+            Assert.False(Guide.Flyout.IsLoading);
+            Assert.Equal(new[] { "The Lads", "Wine club" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Same(Guide.Flyout.Items[0], Guide.FocusedItem);
+            Assert.Equal(2, Sent("GET_GUILDS").Count);
+        }
+
+        [Fact]
+        public void Servers_answering_the_same_again_update_in_place()
+        {
+            OpenServers();
+            ReplyGuilds();
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.A);
+            var shown = Guide.Flyout.Items;
+
+            ReplyGuilds();
+
+            Assert.Same(shown, Guide.Flyout.Items);
+            Assert.Same(shown[0], Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void Servers_answering_changed_rebuild_the_list_focus_staying_on_the_same_server()
+        {
+            OpenServers();
+            ReplyGuilds();
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.A);
+            Tap(ControllerButton.DPadDown);
+
+            Reply("GET_GUILDS", new JObject
+            {
+                ["guilds"] = new JArray(
+                    new JObject { ["id"] = "9", ["name"] = "Lads", ["icon_url"] = LadsIcon },
+                    new JObject { ["id"] = "8", ["name"] = "Wine club", ["icon_url"] = null },
+                    new JObject { ["id"] = "7", ["name"] = "Art", ["icon_url"] = null }),
+            });
+
+            Assert.False(Guide.Flyout.IsLoading);
+            Assert.Equal(new[] { "Art", "Lads", "Wine club" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Same(Guide.Flyout.Items[2], Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void Discord_refusing_the_servers_on_a_reopen_keeps_those_shown()
+        {
+            OpenServers();
+            ReplyGuilds();
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.A);
+
+            Error("GET_GUILDS", "Nope");
+
+            Assert.Equal(new[] { "The Lads", "Wine club" }, Guide.Flyout.Items.Select(i => i.Title));
+        }
+
+        [Fact]
+        public void Reopening_a_server_shows_its_channels_and_who_is_in_them_at_once_then_asks_again()
+        {
+            OpenLads();
+            ReplyChannels();
+            ReplyTo(Sent("GET_CHANNEL")[0], VoiceChannel("500", "Late night", "9", State(Ana, "ana", avatar: "a1")));
+            ReplyTo(Sent("GET_CHANNEL")[1], VoiceChannel("501", "Raid", "9"));
+            Tap(ControllerButton.B);
+
+            Tap(ControllerButton.A);
+
+            Assert.False(Guide.Flyout.IsLoading);
+            Assert.Equal("The Lads", Guide.Flyout.Title);
+            Assert.Equal(new[] { "Late night", "Raid" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Equal(new[] { AvatarOf(Ana, "a1") }, Guide.Flyout.Items[0].Occupants);
+            Assert.Empty(Guide.Flyout.Items[1].Occupants);
+            Assert.Same(Guide.Flyout.Items[0], Guide.FocusedItem);
+            Assert.Equal(2, Sent("GET_CHANNELS").Count);
+
+            var shown = Guide.Flyout.Items;
+            ReplyChannels();
+
+            Assert.Same(shown, Guide.Flyout.Items);
+            Assert.Equal(new[] { AvatarOf(Ana, "a1") }, Guide.Flyout.Items[0].Occupants);
+            Assert.Equal(4, Sent("GET_CHANNEL").Count);
+
+            ReplyTo(Sent("GET_CHANNEL")[2], VoiceChannel("500", "Late night", "9"));
+
+            Assert.Empty(Guide.Flyout.Items[0].Occupants);
+        }
+
+        [Fact]
+        public void A_servers_channels_answering_changed_rebuild_keeping_focus_and_who_is_in_them()
+        {
+            OpenLads();
+            ReplyChannels();
+            ReplyTo(Sent("GET_CHANNEL")[0], VoiceChannel("500", "Late night", "9", State(Ana, "ana", avatar: "a1")));
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.A);
+            Tap(ControllerButton.DPadDown);
+
+            Reply("GET_CHANNELS", new JObject
+            {
+                ["channels"] = new JArray(
+                    new JObject { ["id"] = "510", ["name"] = "Town hall", ["type"] = 13 },
+                    new JObject { ["id"] = "500", ["name"] = "Late night", ["type"] = 2 },
+                    new JObject { ["id"] = "501", ["name"] = "Raid", ["type"] = 2 }),
+            });
+
+            Assert.Equal(new[] { "Town hall", "Late night", "Raid" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Same(Guide.Flyout.Items[2], Guide.FocusedItem);
+            Assert.Null(Guide.Flyout.Items[0].Occupants);
+            Assert.Equal(new[] { AvatarOf(Ana, "a1") }, Guide.Flyout.Items[1].Occupants);
+        }
+
+        [Fact]
+        public void Discord_closing_forgets_the_servers_and_their_channels_so_they_load_afresh()
+        {
+            OpenLads();
+            ReplyChannels();
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.B);
+            Tap(ControllerButton.Guide);
+
+            core.OnDiscordClosed();
+            OpenServers();
+
+            Assert.True(Guide.Flyout.IsLoading);
+            Assert.Empty(Guide.Flyout.Items);
+
+            ReplyGuilds();
+            Tap(ControllerButton.A);
+
+            Assert.True(Guide.Flyout.IsLoading);
+            Assert.Empty(Guide.Flyout.Items);
+        }
+
+        [Fact]
+        public void Servers_list_the_most_recently_joined_first_then_the_rest_alphabetically()
+        {
+            NotInCall();
+            Join(VoiceChannel("600", "Lounge", "8"));
+            Join(VoiceChannel("500", "Late night", "9"));
+            Join(VoiceChannel("601", "Lounge", "8"));
+            Leave();
+
+            OpenServersFlyout();
+            ReplyThreeGuilds();
+
+            Assert.Equal(new[] { "Wine club", "The Lads", "art", "beta", "Zeta" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Same(Guide.Flyout.Items[0], Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void Servers_keep_their_order_when_Playnite_starts_again()
+        {
+            NotInCall();
+            Join(VoiceChannel("500", "Late night", "9"));
+            Join(VoiceChannel("600", "Lounge", "8"));
+            Leave();
+
+            NewCore();
+            NotInCall();
+            OpenServersFlyout();
+            ReplyThreeGuilds();
+
+            Assert.Equal(new[] { "Wine club", "The Lads", "art", "beta", "Zeta" }, Guide.Flyout.Items.Select(i => i.Title));
+        }
+
+        [Fact]
+        public void A_server_stays_among_the_recent_after_its_channels_drop_off_the_shortcuts()
+        {
+            NotInCall();
+            Join(VoiceChannel("600", "Lounge", "8"));
+            for (var i = 0; i < 6; i++)
+            {
+                Join(VoiceChannel("70" + i, "Room " + i, "9"));
+            }
+
+            Leave();
+
+            OpenServersFlyout();
+            ReplyThreeGuilds();
+
+            Assert.DoesNotContain("Lounge", ShortcutTitles());
+            Assert.Equal(new[] { "The Lads", "Wine club", "art", "beta", "Zeta" }, Guide.Flyout.Items.Select(i => i.Title));
+        }
+
+        [Fact]
+        public void Removing_a_shortcut_leaves_the_servers_order_alone()
+        {
+            NotInCall();
+            Join(VoiceChannel("500", "Late night", "9"));
+            Join(VoiceChannel("600", "Lounge", "8"));
+            Leave();
+            OpenDiscordTab();
+            Assert.Equal("Lounge", Guide.FocusedItem.Title);
+            Tap(ControllerButton.Start);
+            Tap(ControllerButton.A);
+
+            Assert.DoesNotContain("Lounge", ShortcutTitles());
+            while (Guide.FocusedItem.Kind != GuideItemKind.DiscordServers)
+            {
+                Tap(ControllerButton.DPadDown);
+            }
+
+            Tap(ControllerButton.A);
+            ReplyThreeGuilds();
+
+            Assert.Equal(new[] { "Wine club", "The Lads", "art", "beta", "Zeta" }, Guide.Flyout.Items.Select(i => i.Title));
+        }
+
         private void OpenServers()
         {
             NotInCall();
@@ -362,6 +579,29 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(GuideItemKind.DiscordServers, Guide.FocusedItem.Kind);
             Tap(ControllerButton.A);
         }
+
+        /// <summary>A on Servers, signed in already, whatever the Discord tab shows above it.</summary>
+        private void OpenServersFlyout()
+        {
+            OpenDiscordTab();
+            while (Guide.FocusedItem.Kind != GuideItemKind.DiscordServers)
+            {
+                Tap(ControllerButton.DPadDown);
+            }
+
+            Tap(ControllerButton.A);
+        }
+
+        /// <summary>The Lads and Wine club among three servers never joined, named in mixed case, in no order of Discord's.</summary>
+        private void ReplyThreeGuilds() => Reply("GET_GUILDS", new JObject
+        {
+            ["guilds"] = new JArray(
+                new JObject { ["id"] = "5", ["name"] = "Zeta" },
+                new JObject { ["id"] = "9", ["name"] = "The Lads", ["icon_url"] = LadsIcon },
+                new JObject { ["id"] = "6", ["name"] = "beta" },
+                new JObject { ["id"] = "8", ["name"] = "Wine club" },
+                new JObject { ["id"] = "7", ["name"] = "art" }),
+        });
 
         private void OpenLads()
         {
@@ -374,7 +614,7 @@ namespace XboxSeries.Core.Tests
         {
             ["guilds"] = new JArray(
                 new JObject { ["id"] = "9", ["name"] = "The Lads", ["icon_url"] = LadsIcon },
-                new JObject { ["id"] = "8", ["name"] = "Book club", ["icon_url"] = null }),
+                new JObject { ["id"] = "8", ["name"] = "Wine club", ["icon_url"] = null }),
         });
 
         private void ReplyChannels() => Reply("GET_CHANNELS", Channels());
