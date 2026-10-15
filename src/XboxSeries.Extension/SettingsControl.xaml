@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              Focusable="False">
     <!--
         Settings, as on the console: one flat background, the left rail and a divider, and the category showing beside it
@@ -57,6 +58,41 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
+            <Style x:Key="MutedText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                <Setter Property="Foreground" Value="#B3FFFFFF" />
+            </Style>
+
+            <!--
+                A button in a category: a dark block, filled with the accent while focused, as the rail's items. One that
+                does nothing now (Tag False, as Connect without a Client ID and Secret) is greyed but keeps its place in
+                the pad's path, so focus never drops off it when it stops applying.
+            -->
+            <Style x:Key="PaneButton" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="58" />
+                <Setter Property="MinWidth" Value="180" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Back" Background="#FF333333" CornerRadius="2" Padding="30,0">
+                                <ContentPresenter x:Name="Content" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Tag">
+                                    <Trigger.Value>
+                                        <sys:Boolean>False</sys:Boolean>
+                                    </Trigger.Value>
+                                    <Setter TargetName="Content" Property="Opacity" Value="0.4" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
@@ -103,6 +139,98 @@
             </Grid.RowDefinitions>
 
             <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" VerticalAlignment="Top" />
+
+            <!--
+                Discord: the checklist for making the user's own Discord application, beside the QR code of the developer
+                portal it's made at; its Client ID and Secret, each filled by Paste from the Windows clipboard; Connect and
+                Disconnect; and the status line. Right or A on the rail's Discord comes in; Left from the first column or
+                B goes back to it.
+            -->
+            <StackPanel x:Name="DiscordPane" Grid.Row="1" DataContext="{Binding Discord}" Visibility="Collapsed"
+                        KeyDown="OnDiscordPaneKeyDown">
+                <TextBlock Text="Connect your own Discord application, so the Guide can show you on Discord."
+                           Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,30" />
+
+                <Grid Margin="0,0,0,36">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ItemsControl x:Name="DiscordSteps" Focusable="False" VerticalAlignment="Top" Margin="0,0,40,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Number}" Style="{StaticResource Text}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Text}" Style="{StaticResource Text}" TextWrapping="Wrap" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- The portal's address as a QR code, to open on a phone, with the address under it. -->
+                    <StackPanel Grid.Column="1" Width="220" VerticalAlignment="Top">
+                        <Image Source="/XboxSeries.Extension;component/DiscordPortalQr.png" Width="200" Height="200"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding PortalUrl}" Style="{StaticResource MutedText}" FontSize="16"
+                                   TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- The application's Client ID, shown, and its Secret, only whether one is saved. -->
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="420" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Client ID" Style="{StaticResource Text}" />
+                        <TextBlock Text="{Binding ClientId, TargetNullValue='Not set'}" Style="{StaticResource MutedText}" />
+                    </StackPanel>
+                    <Button x:Name="PasteClientIdButton" Grid.Column="1" Style="{StaticResource PaneButton}" Click="OnDiscordButtonClick">
+                        <TextBlock Text="Paste" Style="{StaticResource Text}" />
+                    </Button>
+                </Grid>
+                <Grid Margin="0,0,0,36">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="420" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Client Secret" Style="{StaticResource Text}" />
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                                    <Setter Property="Text" Value="Not set" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasClientSecret}" Value="True">
+                                            <Setter Property="Text" Value="Saved" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button x:Name="PasteClientSecretButton" Grid.Column="1" Style="{StaticResource PaneButton}" Click="OnDiscordButtonClick">
+                        <TextBlock Text="Paste" Style="{StaticResource Text}" />
+                    </Button>
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                    <Button x:Name="ConnectButton" Style="{StaticResource PaneButton}" Tag="{Binding CanConnect}"
+                            Margin="0,0,20,0" Click="OnDiscordButtonClick">
+                        <TextBlock Text="Connect" Style="{StaticResource Text}" />
+                    </Button>
+                    <Button x:Name="DisconnectButton" Style="{StaticResource PaneButton}" Tag="{Binding CanDisconnect}"
+                            Click="OnDiscordButtonClick">
+                        <TextBlock Text="Disconnect" Style="{StaticResource Text}" />
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text}" TextWrapping="Wrap" />
+            </StackPanel>
         </Grid>
     </Grid>
 </controls:PluginUserControl>

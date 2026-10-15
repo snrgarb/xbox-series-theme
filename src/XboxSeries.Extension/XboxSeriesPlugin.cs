@@ -19,6 +19,8 @@ namespace XboxSeries.Extension
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
         private readonly GamingInputController controller = new GamingInputController();
+        private readonly DiscordPipe discordPipe = new DiscordPipe();
+        private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private bool libraryPushed;
         private ToastWindow toastWindow;
 #if DEBUG
@@ -35,7 +37,7 @@ namespace XboxSeries.Extension
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), controller,
-                null, null, null); // wired in the next step
+                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()));
 
             // Home's elements, its top bar's status area, My games & apps and Settings, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
@@ -92,6 +94,13 @@ namespace XboxSeries.Extension
             PushNotifications();
             controller.Changed += () => OnUiThread(core.OnControllersChanged);
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
+
+            // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with
+            // the tokens saved from before, so no early frame is lost.
+            discordPipe.FrameReceived += (opcode, json) => OnUiThread(() => core.OnDiscordFrame(opcode, json));
+            discordPipe.Closed += () => OnUiThread(core.OnDiscordClosed);
+            discordOAuth.TokenResponded += (status, body) => OnUiThread(() => core.OnDiscordTokenResponse(status, body));
+            core.OnApplicationStarted();
             logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
         }
 
@@ -102,6 +111,7 @@ namespace XboxSeries.Extension
 #endif
             windows.Overlay?.Close();
             toastWindow?.Close();
+            discordPipe.Close();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
             PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
