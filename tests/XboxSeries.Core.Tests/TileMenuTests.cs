@@ -49,27 +49,26 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Focus_on_a_Group_tile_leaves_the_hero_alone()
+        public void Focus_on_a_Group_tile_puts_the_swirl_behind_Home()
         {
             core.FocusHomeTile(RecentTile("Hades"));
-            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             core.FocusHomeTile(GroupTile("Tunic"));
-            clock.Advance(TimeSpan.FromSeconds(1.5));
 
-            Assert.Equal(library.Id("Hades"), core.Home.Hero.GameId);
+            Assert.Null(core.Home.Hero);
         }
 
         [Fact]
-        public void Focus_moving_to_a_Group_tile_before_it_settles_leaves_the_hero()
+        public void Focus_moving_to_a_Group_tile_before_it_settles_keeps_the_swirl()
         {
-            var hero = core.Home.Hero?.GameId;
+            core.FocusHomeTile(RecentTile("Halo Infinite"));
+            core.LeaveHomeTile(RecentTile("Halo Infinite"));
             core.FocusHomeTile(RecentTile("Hades"));
 
             core.FocusHomeTile(GroupTile("Tunic"));
             clock.Advance(TimeSpan.FromSeconds(1.5));
 
-            Assert.Equal(hero, core.Home.Hero?.GameId);
+            Assert.Null(core.Home.Hero);
         }
 
         [Fact]
