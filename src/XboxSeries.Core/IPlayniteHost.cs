@@ -14,6 +14,9 @@ namespace XboxSeries.Core
         /// <summary>Starts a game through Playnite.</summary>
         void StartGame(Guid gameId);
 
+        /// <summary>Starts one of Playnite's Software tools: its path with its arguments, as Playnite's own Software tools menu does.</summary>
+        void StartApp(App app);
+
         /// <summary>Opens the game's Game hub (Playnite's Game details) on the Dashboard, with focus on Play.</summary>
         void OpenGameHub(Guid gameId);
 

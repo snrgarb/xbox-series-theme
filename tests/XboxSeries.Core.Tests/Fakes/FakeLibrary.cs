@@ -97,9 +97,9 @@ namespace XboxSeries.Core.Tests.Fakes
             return this;
         }
 
-        public FakeLibrary WithApp(string name, string path, string arguments = null)
+        public FakeLibrary WithApp(string name, string path, string arguments = null, string icon = null)
         {
-            apps.Add(new App(Guid.NewGuid(), name, path, arguments));
+            apps.Add(new App(Guid.NewGuid(), name, path, arguments, icon));
             return this;
         }
 

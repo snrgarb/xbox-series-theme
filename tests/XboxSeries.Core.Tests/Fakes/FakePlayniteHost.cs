@@ -37,6 +37,11 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void StartGame(Guid gameId) => StartedGames.Add(gameId);
 
+        /// <summary>Every App Playnite was asked to start, in order.</summary>
+        public List<App> StartedApps { get; } = new List<App>();
+
+        public void StartApp(App app) => StartedApps.Add(app);
+
         public void OpenGameHub(Guid gameId) => OpenedHubs.Add(gameId);
 
         /// <summary>Every game whose game menu Playnite was asked to open, in order.</summary>
