@@ -15,6 +15,11 @@
     <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" ExcludeAssets="runtime" />
   </ItemGroup>
   <ItemGroup>
+    <!-- .NET Framework assemblies for Discord: the token endpoint's HttpClient, and DPAPI for the secrets. -->
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\XboxSeries.Core\XboxSeries.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
