@@ -433,16 +433,6 @@ namespace XboxSeries.Extension
         }
     }
 
-    /// <summary>Whether a profile's text, as its real name, has any: Who's playing today? swaps the name's lines only then.</summary>
-    internal sealed class HasTextConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-            !string.IsNullOrWhiteSpace(value as string);
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-            throw new NotSupportedException();
-    }
-
     /// <summary>Whether a profile in Who's playing today?'s row is the one focused: the row's item, then the focused profile.</summary>
     internal sealed class SameProfileConverter : IMultiValueConverter
     {
