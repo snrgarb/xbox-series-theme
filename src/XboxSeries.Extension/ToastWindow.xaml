@@ -56,9 +56,12 @@
     <!-- Laid out 1080 tall at the screen's aspect, as the Overlay is, and scaled to the screen; this is its bottom part. -->
     <Viewbox Stretch="Uniform">
         <Grid x:Name="Root" Height="{x:Static local:ToastWindow.StripHeight}" Width="1920">
-            <!-- The banner: 960 wide, half the 1920 layout, as on the console; the 96 tile and 16 around it make it 128 tall. -->
+            <!--
+                The banner: as wide as the longer of its line and the prompt, which share one place, up to 960, half the
+                1920 layout, where the line wraps; the 96 tile and 16 around it make it 128 tall.
+            -->
             <Border x:Name="Card" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
-                    Width="960" CornerRadius="6" Background="{DynamicResource XboxGreenBrush}" Padding="16" Opacity="0">
+                    MaxWidth="960" CornerRadius="6" Background="{DynamicResource XboxGreenBrush}" Padding="16,16,32,16" Opacity="0">
                 <Border.RenderTransform>
                     <TranslateTransform x:Name="Rise" Y="40" />
                 </Border.RenderTransform>
