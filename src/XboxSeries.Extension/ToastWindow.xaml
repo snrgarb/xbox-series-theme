@@ -18,6 +18,8 @@
         The Toast: a strip along the bottom of the screen, above every window, that never takes focus or the mouse, so
         a running game keeps its input. It shows a new Playnite notification as the console shows its own, bottom
         centre: a dark rounded card with the notifications glyph in the accent, the text, and the Guide button to view it.
+        A DM ringing is shown as the console shows a party invite: Discord's mark on a disc in its blurple, as the Discord
+        tab's account card has it, who is calling, and the Guide button to answer.
     -->
     <Window.Resources>
         <ResourceDictionary>
@@ -25,6 +27,8 @@
                 <!-- The Xbox sphere, as SourceXbox. -->
                 <local:HomeTiles />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Discord's mark, 24 units wide (Simple Icons' discord, CC0), as the Guide's Discord tab wears it. -->
+            <Geometry x:Key="DiscordLogo">M 20.317 4.3698 a 19.7913 19.7913 0 0 0 -4.8851 -1.5152 .0741 .0741 0 0 0 -.0785 .0371 c -.211 .3753 -.4447 .8648 -.6083 1.2495 -1.8447 -.2762 -3.68 -.2762 -5.4868 0 -.1636 -.3933 -.4058 -.8742 -.6177 -1.2495 a .077 .077 0 0 0 -.0785 -.037 19.7363 19.7363 0 0 0 -4.8852 1.515 .0699 .0699 0 0 0 -.0321 .0277 C .5334 9.0458 -.319 13.5799 .0992 18.0578 a .0824 .0824 0 0 0 .0312 .0561 c 2.0528 1.5076 4.0413 2.4228 5.9929 3.0294 a .0777 .0777 0 0 0 .0842 -.0276 c .4616 -.6304 .8731 -1.2952 1.226 -1.9942 a .076 .076 0 0 0 -.0416 -.1057 c -.6528 -.2476 -1.2743 -.5495 -1.8722 -.8923 a .077 .077 0 0 1 -.0076 -.1277 c .1258 -.0943 .2517 -.1923 .3718 -.2914 a .0743 .0743 0 0 1 .0776 -.0105 c 3.9278 1.7933 8.18 1.7933 12.0614 0 a .0739 .0739 0 0 1 .0785 .0095 c .1202 .099 .246 .1981 .3728 .2924 a .077 .077 0 0 1 -.0066 .1276 12.2986 12.2986 0 0 1 -1.873 .8914 .0766 .0766 0 0 0 -.0407 .1067 c .3604 .698 .7719 1.3628 1.225 1.9932 a .076 .076 0 0 0 .0842 .0286 c 1.961 -.6067 3.9495 -1.5219 6.0023 -3.0294 a .077 .077 0 0 0 .0313 -.0552 c .5004 -5.177 -.8382 -9.6739 -3.5485 -13.6604 a .061 .061 0 0 0 -.0312 -.0286 z M 8.02 15.3312 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9555 -2.4189 2.157 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.9555 2.4189 -2.1569 2.4189 z m 7.9748 0 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9554 -2.4189 2.1569 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.946 2.4189 -2.1568 2.4189 Z</Geometry>
         </ResourceDictionary>
     </Window.Resources>
     <!-- Laid out 1080 tall at the screen's aspect, as the Overlay is, and scaled to the screen; this is its bottom part. -->
@@ -40,10 +44,46 @@
                 </Border.Effect>
                 <DockPanel>
                     <Grid DockPanel.Dock="Left" Width="56" Height="56" VerticalAlignment="Center" Margin="0,0,18,0">
-                        <Ellipse Fill="{DynamicResource GlyphLightBrush}" />
+                        <Ellipse>
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource GlyphLightBrush}" />
+                                    <Style.Triggers>
+                                        <!-- A call: Discord's blurple. -->
+                                        <DataTrigger Binding="{Binding IsCall}" Value="True">
+                                            <Setter Property="Fill" Value="#FF5865F2" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
                         <!-- Segoe Fluent Icons / MDL2 Assets' notifications glyph, as Home's top bar and the Notifications utility have. -->
                         <TextBlock Text="&#xE91C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="26" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCall}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <!-- A call: Discord's mark, as the Guide's Discord tab wears it, in place of the bell. -->
+                        <Path Data="{StaticResource DiscordLogo}" Fill="White" Width="30" Height="30" Stretch="Uniform"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCall}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
                     </Grid>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="24" Foreground="White"
@@ -53,8 +93,20 @@
                                        VerticalAlignment="Center" />
                             <Path Data="{StaticResource SourceXbox}" Fill="#B3FFFFFF" Width="19" Height="19" Stretch="Uniform"
                                   Margin="7,0" VerticalAlignment="Center" />
-                            <TextBlock Text="to view" FontFamily="{DynamicResource XboxFont}" FontSize="19" Foreground="#B3FFFFFF"
-                                       VerticalAlignment="Center" />
+                            <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="19" Foreground="#B3FFFFFF"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="to view" />
+                                        <Style.Triggers>
+                                            <!-- A call: the Guide button answers it. -->
+                                            <DataTrigger Binding="{Binding IsCall}" Value="True">
+                                                <Setter Property="Text" Value="to answer" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                     </StackPanel>
                 </DockPanel>
