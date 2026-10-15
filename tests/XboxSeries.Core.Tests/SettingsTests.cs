@@ -29,7 +29,7 @@ namespace XboxSeries.Core.Tests
             core.OpenSettings();
 
             Assert.True(core.Settings.IsShown);
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.StartUp, core.Settings.Category);
             Assert.Equal(SettingsOrigin.TopBar, core.Settings.OpenedFrom);
         }
 
@@ -50,7 +50,7 @@ namespace XboxSeries.Core.Tests
         {
             core.FocusSettingsCategory(SettingsCategory.Discord);
 
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.StartUp, core.Settings.Category);
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace XboxSeries.Core.Tests
 
             core.OpenSettings();
 
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.StartUp, core.Settings.Category);
         }
 
         [Fact]

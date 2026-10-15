@@ -44,12 +44,17 @@ namespace XboxSeries.Core
         /// <summary>The Discord category: the Connect checklist, the Client ID and Secret, and the status line.</summary>
         public DiscordSettingsState Discord { get; } = new DiscordSettingsState();
 
+        /// <summary>The Start up category: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+        public StartUpSettingsState StartUp { get; } = new StartUpSettingsState();
+
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
 
     /// <summary>The Settings rail's categories, in its order. Playnite's own entries below its divider are actions, not categories.</summary>
     public enum SettingsCategory
     {
+        /// <summary>The boot video, the profiles, and whether Who's playing today? asks: a grid of boxes, each opening its own page.</summary>
+        StartUp,
         Personalisation,
         Guide,
         Discord,

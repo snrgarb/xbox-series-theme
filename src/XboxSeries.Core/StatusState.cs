@@ -10,6 +10,7 @@ namespace XboxSeries.Core
     public sealed class StatusState : INotifyPropertyChanged
     {
         private string time = "";
+        private Profile profile;
         private ControllerBattery battery = ControllerBattery.None;
         private int notificationCount;
         private bool isInDiscordCall;
@@ -18,6 +19,13 @@ namespace XboxSeries.Core
         private bool isDiscordSpeaking;
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>The profile signed in, which Home's top bar and the Guide's profile card show; null before the first sign-in.</summary>
+        public Profile Profile
+        {
+            get => profile;
+            internal set => Set(ref profile, value, nameof(Profile));
+        }
 
         /// <summary>The time to the minute, in the user's own short format.</summary>
         public string Time

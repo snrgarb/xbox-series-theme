@@ -1062,7 +1062,7 @@ namespace XboxSeries.Core
         private void ShowSettings(SettingsOrigin from)
         {
             CloseMyGames();
-            Settings.Category = SettingsCategory.Personalisation;
+            Settings.Category = SettingsCategory.StartUp;
             Settings.OpenedFrom = from;
             Settings.IsShown = true;
         }
