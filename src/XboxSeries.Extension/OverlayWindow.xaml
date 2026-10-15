@@ -335,6 +335,20 @@
                         <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
                     </DataTrigger>
                     <!--
+                        The Discord tab while it can't show Discord, its only line: as quiet as the one about voice, with a
+                        warning rather than the headset, its text wrapping as a title does.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordUnavailable">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7BA;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="#B3FFFFFF" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
+                    </DataTrigger>
+                    <!--
                         The Discord tab in a call: the channel's or DM's name over the people in it, each a row with their
                         avatar, then Mute, Deafen and Leave under a divider.
                     -->
