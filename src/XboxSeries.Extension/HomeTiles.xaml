@@ -77,8 +77,16 @@
     <!-- A game tile's face: its cover (or title, with no cover), library source and Running badge. Content is a HomeTile. -->
     <DataTemplate x:Key="HomeTileArt">
         <Grid>
-            <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
-                   Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+            <!--
+                The cover is laid out once at a focused tile's size, 245, and scaled to the tile, so as the tile grows and
+                shrinks the graphics card scales the cover it has rather than the cover being laid out and drawn again
+                every frame. Tiles are square, so this shows the same as the cover filling the tile itself.
+            -->
+            <Viewbox Stretch="UniformToFill">
+                <Image Width="245" Height="245"
+                       Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
+                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+            </Viewbox>
             <TextBlock Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
                        TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White">
                 <TextBlock.Style>
