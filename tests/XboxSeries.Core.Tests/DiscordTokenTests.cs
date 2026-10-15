@@ -118,6 +118,40 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("refresh-2", oauth.Requests.Last().Form["refresh_token"]);
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData(0)]
+        [InlineData(3600)]
+        public void Tokens_granted_while_signed_in_without_a_day_to_run_are_refreshed_again_no_sooner_than_15_minutes_later(int? expiresIn)
+        {
+            ConnectFully();
+            clock.Advance(TimeSpan.FromDays(6));
+            Assert.Equal(2, oauth.Requests.Count);
+
+            core.OnDiscordTokenResponse(200, Tokens("access-2", "refresh-2", expiresIn));
+            clock.Advance(TimeSpan.FromMinutes(15) - TimeSpan.FromMilliseconds(1));
+            Assert.Equal(2, oauth.Requests.Count);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(3, oauth.Requests.Count);
+            Assert.Equal("refresh-2", oauth.Requests.Last().Form["refresh_token"]);
+        }
+
+        [Fact]
+        public void Signing_in_after_a_start_up_refresh_granting_no_expiry_refreshes_again_no_sooner_than_15_minutes_later()
+        {
+            SaveTokens(clock.Now.AddHours(1));
+            StartUp();
+            core.OnDiscordTokenResponse(200, Tokens("access-2", "refresh-2", null));
+            SignIn();
+
+            clock.Advance(TimeSpan.FromMinutes(15) - TimeSpan.FromMilliseconds(1));
+            Assert.Single(oauth.Requests);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(2, oauth.Requests.Count);
+        }
+
         [Fact]
         public void Expiring_the_tokens_now_while_signed_in_refreshes_them_at_once_over_the_open_connection()
         {
@@ -447,13 +481,24 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(expiresAt.ToString("o", CultureInfo.InvariantCulture), secrets.Values["Discord.ExpiresAt"]);
         }
 
-        private static string Tokens(string access, string refresh) => new JObject
+        private static string Tokens(string access, string refresh) => Tokens(access, refresh, 604800);
+
+        /// <summary>The token endpoint's grant, lasting <paramref name="expiresIn"/> seconds, or with no expires_in when null.</summary>
+        private static string Tokens(string access, string refresh, int? expiresIn)
         {
-            ["access_token"] = access,
-            ["token_type"] = "Bearer",
-            ["expires_in"] = 604800,
-            ["refresh_token"] = refresh,
-            ["scope"] = "rpc identify",
-        }.ToString();
+            var answer = new JObject
+            {
+                ["access_token"] = access,
+                ["token_type"] = "Bearer",
+                ["refresh_token"] = refresh,
+                ["scope"] = "rpc identify",
+            };
+            if (expiresIn != null)
+            {
+                answer["expires_in"] = expiresIn;
+            }
+
+            return answer.ToString();
+        }
     }
 }

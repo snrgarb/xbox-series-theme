@@ -83,7 +83,7 @@ A small notice shown at the bottom of the screen above every window without taki
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
 **Discord tab**:
-The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears once the user has connected their own Discord application and stays until they disconnect it: while Discord can't be reached it only says "Discord isn't running", and the extension keeps trying Discord, backing off, until it can sign in again by itself; once it no longer can, it says "Reconnect Discord in settings".
+The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears once the user has connected their own Discord application and stays until they disconnect it: while it can't show Discord it says only why: "Connecting to Discord" while a connect is under way, and "Discord isn't running" while Discord can't be reached and the extension keeps trying it, backing off, until it can sign in again by itself; once nothing is trying Discord, as when it no longer can sign in by itself, it says "Reconnect Discord in settings".
 _Avoid_: party, chats
 
 **Call**:

@@ -223,6 +223,143 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_pipe_that_opens_at_start_up_but_never_says_READY_is_closed_after_10_seconds_and_tried_again_with_backoff()
+        {
+            SaveTokens();
+            NewCore();
+            core.OnApplicationStarted();
+
+            clock.Advance(TimeSpan.FromSeconds(10) - TimeSpan.FromMilliseconds(1));
+            Assert.True(transport.IsOpen);
+            Assert.True(Discord.IsConnecting);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.False(transport.IsOpen);
+            Assert.False(Discord.IsConnecting);
+            Assert.Equal("Discord isn't running", Discord.StatusText);
+
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Assert.Equal(2, transport.OpenCount);
+            Assert.True(transport.IsOpen);
+        }
+
+        [Fact]
+        public void A_pipe_a_try_opens_that_never_says_READY_is_closed_after_10_seconds_and_the_backoff_goes_on()
+        {
+            StartUpWithDiscordNotRunning();
+            transport.IsRunning = true;
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Assert.True(transport.IsOpen);
+
+            clock.Advance(TimeSpan.FromSeconds(10));
+            Assert.False(transport.IsOpen);
+            clock.Advance(TimeSpan.FromSeconds(4) - TimeSpan.FromMilliseconds(1));
+            Assert.Equal(2, transport.OpenCount);
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+
+            Assert.Equal(3, transport.OpenCount);
+        }
+
+        [Fact]
+        public void READY_in_time_keeps_the_pipe_open()
+        {
+            SaveTokens();
+            NewCore();
+            core.OnApplicationStarted();
+            clock.Advance(TimeSpan.FromSeconds(5));
+            Ready();
+
+            clock.Advance(TimeSpan.FromMinutes(1));
+
+            Assert.True(transport.IsOpen);
+            Assert.Equal(1, transport.OpenCount);
+            Assert.NotNull(transport.LastCommand("AUTHENTICATE"));
+        }
+
+        [Fact]
+        public void The_wait_for_READY_is_forgotten_as_the_pipe_closes_or_Disconnect_is_pressed()
+        {
+            SaveTokens();
+            NewCore();
+            core.OnApplicationStarted();
+            clock.Advance(TimeSpan.FromSeconds(5));
+            core.OnDiscordClosed();
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Assert.Equal(2, transport.OpenCount);
+
+            // Past when the first pipe's wait would have ended, the second is still waited for.
+            clock.Advance(TimeSpan.FromSeconds(5));
+            Assert.True(transport.IsOpen);
+
+            core.DisconnectDiscord();
+            clock.Advance(TimeSpan.FromMinutes(1));
+            Assert.Equal(2, transport.OpenCount);
+            Assert.Equal("Not connected", Discord.StatusText);
+        }
+
+        [Fact]
+        public void Connect_from_Settings_waits_for_READY_however_long_it_takes()
+        {
+            core.SetDiscordClientId(ClientId);
+            core.SetDiscordClientSecret(Secret);
+            core.ConnectDiscord();
+
+            clock.Advance(TimeSpan.FromMinutes(1));
+
+            Assert.True(transport.IsOpen);
+            Assert.True(Discord.IsConnecting);
+        }
+
+        [Fact]
+        public void A_try_opening_the_pipe_with_the_Guide_on_the_Discord_tab_says_Connecting_to_Discord_until_signed_in()
+        {
+            StartUpWithDiscordNotRunning();
+            OpenDiscordTab();
+            transport.IsRunning = true;
+
+            clock.Advance(TimeSpan.FromSeconds(2));
+
+            var line = Assert.Single(Guide.Items);
+            Assert.Equal((GuideItemKind.DiscordUnavailable, "Connecting to Discord"), (line.Kind, line.Title));
+            Assert.Same(line, Guide.FocusedItem);
+            Ready();
+            Assert.Equal("Connecting to Discord", Assert.Single(Guide.Items).Title);
+            SignIn();
+            Assert.Equal(new[] { GuideItemKind.DiscordAccount, GuideItemKind.DiscordIdle, GuideItemKind.DiscordServers }, Kinds());
+        }
+
+        [Fact]
+        public void The_Discord_tab_opened_while_signing_in_with_the_saved_tokens_says_Connecting_to_Discord()
+        {
+            SaveTokens();
+            NewCore();
+            core.OnApplicationStarted();
+
+            OpenDiscordTab();
+
+            Assert.Equal("Connecting to Discord", Assert.Single(Guide.Items).Title);
+        }
+
+        [Fact]
+        public void Connect_failing_with_tokens_saved_leaves_the_Discord_tab_saying_to_reconnect_in_settings()
+        {
+            StartUpWithDiscordNotRunning();
+            OpenDiscordTab();
+            transport.IsRunning = true;
+
+            core.ConnectDiscord();
+            Ready();
+            Error("AUTHORIZE", "OAuth2 Authorization cancelled");
+            clock.Advance(TimeSpan.FromMinutes(10));
+
+            Assert.Equal(2, transport.OpenCount);
+            var line = Assert.Single(Guide.Items);
+            Assert.Equal((GuideItemKind.DiscordUnavailable, "Reconnect Discord in settings"), (line.Kind, line.Title));
+            Assert.Same(line, Guide.FocusedItem);
+            Assert.False(Discord.NeedsReconnect);
+        }
+
+        [Fact]
         public void A_close_frame_with_tokens_saved_shows_its_message_and_tries_again()
         {
             NotInCall();
@@ -286,7 +423,7 @@ namespace XboxSeries.Core.Tests
             NewCore();
             core.OnApplicationStarted();
             OpenDiscordTab();
-            Assert.Equal("Discord isn't running", Guide.Items[0].Title);
+            Assert.Equal("Connecting to Discord", Guide.Items[0].Title);
 
             Ready();
             Error("AUTHENTICATE", "Invalid access token");
