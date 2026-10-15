@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -99,7 +100,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Keeps the focused entry on screen as focus moves down a list longer than its panel, such as many
-        /// notifications in their flyout, once its entry is laid out. A new tab or flyout starts from the top.
+        /// notifications in their flyout, or down an open dropdown's devices, once its entry is laid out. A new tab or
+        /// flyout starts from the top.
         /// </summary>
         private void ScrollFocusedIntoView()
         {
@@ -107,7 +109,8 @@ namespace XboxSeries.Extension
             var focused = guide.FocusedItem;
             var inFlyout = guide.Flyout != null;
             var items = inFlyout ? guide.Flyout.Items : guide.Items;
-            if (focused == null || !items.Contains(focused))
+            var dropdown = inFlyout && focused != null ? items.FirstOrDefault(item => item.Options?.Contains(focused) == true) : null;
+            if (focused == null || (dropdown == null && !items.Contains(focused)))
             {
                 return;
             }
@@ -120,7 +123,23 @@ namespace XboxSeries.Extension
 
             var entries = inFlyout ? FlyoutEntries : Entries;
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
-                (entries.ItemContainerGenerator.ContainerFromItem(focused) as FrameworkElement)?.BringIntoView()));
+                ContainerOf(entries, focused, dropdown)?.BringIntoView()));
+        }
+
+        /// <summary>
+        /// The laid-out row of <paramref name="item"/> among <paramref name="entries"/>; a device in an open dropdown's
+        /// list is found in that dropdown's own list, falling back to the dropdown's row.
+        /// </summary>
+        private static FrameworkElement ContainerOf(ItemsControl entries, GuideItem item, GuideItem dropdown)
+        {
+            if (dropdown == null)
+            {
+                return entries.ItemContainerGenerator.ContainerFromItem(item) as FrameworkElement;
+            }
+
+            var row = entries.ItemContainerGenerator.ContainerFromItem(dropdown) as ContentPresenter;
+            var options = row?.ContentTemplate?.FindName("Options", row) as ItemsControl;
+            return options?.ItemContainerGenerator.ContainerFromItem(item) as FrameworkElement ?? row;
         }
 
         /// <summary>

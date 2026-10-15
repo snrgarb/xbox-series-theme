@@ -85,12 +85,11 @@ namespace XboxSeries.Extension
         public IReadOnlyList<AudioDevice> Devices(AudioDeviceKind kind)
         {
             var devices = new List<AudioDevice>();
-            IMMDeviceEnumerator enumerator = null;
-            IMMDeviceCollection collection = null;
-            try
+            WithEnumerator($"Couldn't list Windows' audio {Describe(kind)} devices", (enumerator, hold) =>
             {
-                enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-                Marshal.ThrowExceptionForHR(enumerator.EnumAudioEndpoints(FlowOf(kind), DeviceStateActive, out collection));
+                var hr = enumerator.EnumAudioEndpoints(FlowOf(kind), DeviceStateActive, out var collection);
+                hold(collection);
+                Marshal.ThrowExceptionForHR(hr);
                 Marshal.ThrowExceptionForHR(collection.GetCount(out var count));
                 for (uint i = 0; i < count; i++)
                 {
@@ -111,47 +110,28 @@ namespace XboxSeries.Extension
                         Release(device);
                     }
                 }
-            }
-            catch (Exception e) when (!(e is OutOfMemoryException))
-            {
-                logger.Warn(e, $"Couldn't list Windows' audio {Describe(kind)} devices");
-            }
-            finally
-            {
-                Release(collection);
-                Release(enumerator);
-            }
+            });
 
             return devices;
         }
 
         public string DefaultDeviceId(AudioDeviceKind kind)
         {
-            IMMDeviceEnumerator enumerator = null;
-            IMMDevice device = null;
-            try
+            string id = null;
+            WithEnumerator($"Couldn't read Windows' default audio {Describe(kind)} device", (enumerator, hold) =>
             {
-                enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-                var hr = enumerator.GetDefaultAudioEndpoint(FlowOf(kind), ERole.Multimedia, out device);
+                var hr = enumerator.GetDefaultAudioEndpoint(FlowOf(kind), ERole.Multimedia, out var device);
+                hold(device);
                 if (hr == ElementNotFound)
                 {
-                    return null;
+                    return;
                 }
 
                 Marshal.ThrowExceptionForHR(hr);
-                Marshal.ThrowExceptionForHR(device.GetId(out var id));
-                return id;
-            }
-            catch (Exception e) when (!(e is OutOfMemoryException))
-            {
-                logger.Warn(e, $"Couldn't read Windows' default audio {Describe(kind)} device");
-                return null;
-            }
-            finally
-            {
-                Release(device);
-                Release(enumerator);
-            }
+                Marshal.ThrowExceptionForHR(device.GetId(out var found));
+                id = found;
+            });
+            return id;
         }
 
         public void SetDefaultDevice(AudioDevice device)
@@ -249,28 +229,44 @@ namespace XboxSeries.Extension
 
         private static void With(Action<IAudioEndpointVolume> use)
         {
+            WithEnumerator("Couldn't reach Windows' master volume", (enumerator, hold) =>
+            {
+                var hr = enumerator.GetDefaultAudioEndpoint(EDataFlow.Render, ERole.Multimedia, out var device);
+                hold(device);
+                Marshal.ThrowExceptionForHR(hr);
+                var iid = typeof(IAudioEndpointVolume).GUID;
+                hr = device.Activate(ref iid, ClsCtx.All, IntPtr.Zero, out var activated);
+                hold(activated);
+                Marshal.ThrowExceptionForHR(hr);
+                use((IAudioEndpointVolume)activated);
+            });
+        }
+
+        /// <summary>
+        /// Runs <paramref name="use"/> on a new device enumerator, then releases every COM object it was handed to hold,
+        /// last first, and the enumerator. Marshal turns a failing HRESULT into whichever exception it maps to, not only
+        /// COMException; any is logged as <paramref name="failure"/> and none reaches the caller, the UI thread.
+        /// </summary>
+        private static void WithEnumerator(string failure, Action<IMMDeviceEnumerator, Action<object>> use)
+        {
             IMMDeviceEnumerator enumerator = null;
-            IMMDevice device = null;
-            IAudioEndpointVolume endpoint = null;
+            var held = new List<object>();
             try
             {
                 enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-                Marshal.ThrowExceptionForHR(enumerator.GetDefaultAudioEndpoint(EDataFlow.Render, ERole.Multimedia, out device));
-                var iid = typeof(IAudioEndpointVolume).GUID;
-                Marshal.ThrowExceptionForHR(device.Activate(ref iid, ClsCtx.All, IntPtr.Zero, out var activated));
-                endpoint = (IAudioEndpointVolume)activated;
-                use(endpoint);
+                use(enumerator, held.Add);
             }
             catch (Exception e) when (!(e is OutOfMemoryException))
             {
-                // Marshal turns a failing HRESULT into whichever exception it maps to, not only COMException; none
-                // should reach the UI thread over a volume change.
-                logger.Warn(e, "Couldn't reach Windows' master volume");
+                logger.Warn(e, failure);
             }
             finally
             {
-                Release(endpoint);
-                Release(device);
+                for (var i = held.Count - 1; i >= 0; i--)
+                {
+                    Release(held[i]);
+                }
+
                 Release(enumerator);
             }
         }
