@@ -1112,7 +1112,7 @@ namespace XboxSeries.Core
         {
             CloseMyGames();
             RefreshGamerpics();
-            Settings.Category = SettingsCategory.StartUp;
+            Settings.Category = SettingsCategory.Personalisation;
             Settings.OpenedFrom = from;
             Settings.IsShown = true;
         }

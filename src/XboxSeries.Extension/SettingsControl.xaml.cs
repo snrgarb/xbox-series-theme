@@ -35,7 +35,6 @@ namespace XboxSeries.Extension
             DataContext = core.Settings;
             categoryItems = new Dictionary<SettingsCategory, Button>
             {
-                [SettingsCategory.StartUp] = StartUpItem,
                 [SettingsCategory.Personalisation] = PersonalisationItem,
                 [SettingsCategory.Guide] = GuideItem,
                 [SettingsCategory.Discord] = DiscordItem,
@@ -43,9 +42,9 @@ namespace XboxSeries.Extension
 #if DEBUG
             ShowDebugMenu();
 #endif
-            StartUpPane.Attach(core);
-            StartUpPane.BackToRail += (s, e) => StartUpItem.Focus();
-            StartUpPane.TitleChanged += (s, e) => ShowCategory();
+            PersonalisationPane.Attach(core);
+            PersonalisationPane.BackToRail += (s, e) => PersonalisationItem.Focus();
+            PersonalisationPane.TitleChanged += (s, e) => ShowCategory();
             DiscordSteps.ItemsSource = core.Settings.Discord.Steps.Select((step, i) => new { Number = $"{i + 1}.", Text = step }).ToList();
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
             Loaded += OnLoaded;
@@ -62,7 +61,7 @@ namespace XboxSeries.Extension
         /// <summary>The rail, top to bottom, the divider aside.</summary>
         private Button[] RailItems => new[]
         {
-            StartUpItem, PersonalisationItem, GuideItem, DiscordItem, PlayniteSettingsItem, MorePlayniteOptionsItem,
+            PersonalisationItem, GuideItem, DiscordItem, PlayniteSettingsItem, MorePlayniteOptionsItem,
 #if DEBUG
             DebugItem,
 #endif
@@ -139,15 +138,15 @@ namespace XboxSeries.Extension
         {
             var category = core.Settings.Category;
 
-            // Start up's pages each have their own header; left or closed, it's back on its boxes for next time.
-            if (category != SettingsCategory.StartUp || !core.Settings.IsShown)
+            // Personalisation's pages each have their own header; left or closed, it's back on its boxes for next time.
+            if (category != SettingsCategory.Personalisation || !core.Settings.IsShown)
             {
-                StartUpPane.Reset();
+                PersonalisationPane.Reset();
             }
 
-            Header.Text = category == SettingsCategory.StartUp ? StartUpPane.Title : category.ToString();
+            Header.Text = category == SettingsCategory.Personalisation ? PersonalisationPane.Title : category.ToString();
 
-            StartUpPane.Visibility = category == SettingsCategory.StartUp ? Visibility.Visible : Visibility.Collapsed;
+            PersonalisationPane.Visibility = category == SettingsCategory.Personalisation ? Visibility.Visible : Visibility.Collapsed;
             DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
 #if DEBUG
             if (category == SettingsCategory.Debug)
@@ -188,18 +187,18 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Up and down move through the rail, over the divider, and stay put at its ends: Home is hidden behind the page.
-        /// The pad's A opens Playnite's entries. Right or A on Start up or Discord moves into its options; Left and Right go
-        /// nowhere else yet: the other categories have no options to move into.
+        /// The pad's A opens Playnite's entries. Right or A on Personalisation or Discord moves into its options; Left and
+        /// Right go nowhere else yet: the other categories have no options to move into.
         /// </summary>
         private void OnRailKeyDown(object sender, KeyEventArgs e)
         {
             var items = RailItems;
             var here = Array.IndexOf(items, e.OriginalSource as Button);
             var pad = PlayniteInput.PadButtonOf(e);
-            if (e.OriginalSource == StartUpItem && (pad == ControllerInput.A || e.Key == Key.Right))
+            if (e.OriginalSource == PersonalisationItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
                 e.Handled = true;
-                StartUpPane.FocusFirst();
+                PersonalisationPane.FocusFirst();
             }
             else if (e.OriginalSource == DiscordItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
