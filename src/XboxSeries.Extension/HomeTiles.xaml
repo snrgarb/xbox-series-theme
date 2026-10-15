@@ -94,8 +94,16 @@
                 </TextBlock.Style>
             </TextBlock>
             <!-- The game's library source, bottom left like the console's badges; the title replaces it on focus. -->
+            <!--
+                Its shadow is drawn once into a picture, at the 4K screen's 2 pixels to a 1080p one, which the tile then
+                moves as it grows and shrinks, rather than the shadow being drawn again every frame. The icon never
+                changes size, so the picture stays good.
+            -->
             <Path x:Name="SourceIcon" Width="20" Height="20" Margin="10" Stretch="Uniform"
                   HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">
+                <Path.CacheMode>
+                    <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
+                </Path.CacheMode>
                 <Path.Effect>
                     <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
                 </Path.Effect>
