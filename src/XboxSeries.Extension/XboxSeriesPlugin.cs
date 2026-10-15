@@ -36,11 +36,11 @@ namespace XboxSeries.Extension
             host = new PlayniteHost(api, GetPluginUserDataPath());
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), controller);
 
-            // Home's elements, its top bar's status area and My games & apps, placed by the Dashboard as ContentControls named XboxSeries_<element>.
+            // Home's elements, its top bar's status area, My games & apps and Settings, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Status" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status" },
             });
         }
 
@@ -60,6 +60,7 @@ namespace XboxSeries.Extension
                 case "Groups": return new GroupsControl(core, homeScreen);
                 case "TileMenu": return new TileMenuControl(core);
                 case "MyGames": return new MyGamesControl(core);
+                case "Settings": return new SettingsControl(core);
                 case "Status": return new StatusControl(core);
                 default: return null;
             }

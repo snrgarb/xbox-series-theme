@@ -1,0 +1,108 @@
+<controls:PluginUserControl x:Class="XboxSeries.Extension.SettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+             Focusable="False">
+    <!--
+        Settings, as on the console: one flat background, the left rail and a divider, and the category showing beside it
+        under its name. In My games & apps' palette and 1080p units, its rail where My games & apps' nav is.
+    -->
+    <controls:PluginUserControl.Resources>
+        <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="Visibility" />
+
+            <!-- My games & apps' colours (MyGamesControl.xaml), so approximate. -->
+            <SolidColorBrush x:Key="PageBrush" Color="#FF1F1F1F" />
+            <SolidColorBrush x:Key="DividerBrush" Color="#FF303030" />
+            <SolidColorBrush x:Key="SelectedBrush" Color="#FF262626" />
+
+            <Style x:Key="Text" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
+            <Style x:Key="RailText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!--
+                A rail item, edge to edge across the rail, as My games & apps' nav items. The category showing (Tag
+                "Selected") is lit and marked by an accent bar on its right edge; the focused item fills with the accent.
+            -->
+            <Style x:Key="RailItem" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="58" />
+                <Setter Property="Margin" Value="0,0,0,14" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="Back" Background="Transparent">
+                                <ContentPresenter Margin="75,0,43,0" VerticalAlignment="Center" />
+                                <Border x:Name="Bar" Width="6" HorizontalAlignment="Right"
+                                        Background="{DynamicResource GlyphBrush}" Visibility="Collapsed" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Tag" Value="Selected">
+                                    <Setter TargetName="Back" Property="Background" Value="{StaticResource SelectedBrush}" />
+                                    <Setter TargetName="Bar" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </controls:PluginUserControl.Resources>
+
+    <Grid Background="{StaticResource PageBrush}" Visibility="{Binding IsShown, Converter={StaticResource Visibility}}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="441" />
+            <ColumnDefinition Width="2" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!--
+            The rail: the page's name, the Bundle's categories, then under a divider Playnite's own entries, which open its
+            windows rather than show beside the rail. Focusing a category shows it.
+        -->
+        <StackPanel Grid.Column="0" Margin="0,78,0,0">
+            <TextBlock Text="Settings" Style="{StaticResource Text}" FontSize="30" Height="54" Margin="75,0,0,58" />
+            <StackPanel x:Name="Rail" KeyDown="OnRailKeyDown">
+                <Button x:Name="PersonalisationItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
+                    <TextBlock Text="Personalisation" Style="{StaticResource RailText}" />
+                </Button>
+                <Button x:Name="GuideItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
+                    <TextBlock Text="Guide" Style="{StaticResource RailText}" />
+                </Button>
+                <Button x:Name="DiscordItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
+                    <TextBlock Text="Discord" Style="{StaticResource RailText}" />
+                </Button>
+                <Border Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}" />
+                <Button x:Name="PlayniteSettingsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
+                    <TextBlock Text="Playnite settings" Style="{StaticResource RailText}" />
+                </Button>
+                <Button x:Name="MorePlayniteOptionsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
+                    <TextBlock Text="More Playnite options" Style="{StaticResource RailText}" />
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
+
+        <!-- The category showing: its name, over its options. -->
+        <Grid Grid.Column="2" Margin="77,72,170,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="118" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" VerticalAlignment="Top" />
+        </Grid>
+    </Grid>
+</controls:PluginUserControl>

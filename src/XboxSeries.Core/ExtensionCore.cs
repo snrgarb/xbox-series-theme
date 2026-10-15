@@ -137,6 +137,8 @@ namespace XboxSeries.Core
 
         public MyGamesState MyGames { get; } = new MyGamesState();
 
+        public SettingsState Settings { get; } = new SettingsState();
+
         public void OnLibraryChanged(LibrarySnapshot snapshot)
         {
             library = snapshot;
@@ -926,9 +928,10 @@ namespace XboxSeries.Core
         private HomeTile TileOf(LibraryGame game) => new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame);
 
         /// <summary>
-        /// Opens My games &amp; apps on <paramref name="item"/>, or moves it there. Full library is the main list under the
-        /// user's own filter and sort. Games and Play history take the main list over, keeping the user's filter and sort
-        /// first (as Full library last left them), to give back on Full library or when the page goes.
+        /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings if that is up, or moves it there. Full
+        /// library is the main list under the user's own filter and sort. Games and Play history take the main list over,
+        /// keeping the user's filter and sort first (as Full library last left them), to give back on Full library or when
+        /// the page goes.
         /// </summary>
         public void OpenMyGames(MyGamesItem item)
         {
@@ -959,6 +962,8 @@ namespace XboxSeries.Core
                 RefreshStorage();
             }
 
+            // The two pages are never up together: My games & apps takes Settings' place.
+            CloseSettings();
             MyGames.Item = item;
             MyGames.IsShown = true;
         }
@@ -973,6 +978,53 @@ namespace XboxSeries.Core
             {
                 CloseMyGames();
             }
+        }
+
+        /// <summary>Opens Settings from Home's top bar, with the rail's first category showing; B goes back to the top bar.</summary>
+        public void OpenSettings() => ShowSettings(SettingsOrigin.TopBar);
+
+        /// <summary>
+        /// Puts Settings up on the rail's first category, every time it opens. It takes My games &amp; apps' place, which
+        /// gives the user's own filter and sort back.
+        /// </summary>
+        private void ShowSettings(SettingsOrigin from)
+        {
+            CloseMyGames();
+            Settings.Category = SettingsCategory.Personalisation;
+            Settings.OpenedFrom = from;
+            Settings.IsShown = true;
+        }
+
+        /// <summary>The rail's focus moved to <paramref name="category"/>: the page shows it.</summary>
+        public void FocusSettingsCategory(SettingsCategory category)
+        {
+            if (Settings.IsShown)
+            {
+                Settings.Category = category;
+            }
+        }
+
+        /// <summary>The rail's Playnite settings: Playnite's own restyled Fullscreen Settings window, over the page.</summary>
+        public void OpenPlayniteSettings() => playnite.OpenPlayniteSettings();
+
+        /// <summary>The rail's More Playnite options: Playnite's own main menu, over the page.</summary>
+        public void OpenMorePlayniteOptions() => playnite.OpenMainMenu();
+
+        /// <summary>
+        /// B on the page: back to where it was opened from (<see cref="SettingsState.OpenedFrom"/>). Playnite's own B
+        /// reaches the page before the pad's reaches the core, so a menu or prompt still showing answers the B instead.
+        /// </summary>
+        public void LeaveSettings()
+        {
+            if (Settings.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            {
+                CloseSettings();
+            }
+        }
+
+        private void CloseSettings()
+        {
+            Settings.IsShown = false;
         }
 
         /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back.</summary>
@@ -1164,6 +1216,7 @@ namespace XboxSeries.Core
                     return () =>
                     {
                         CloseMyGames();
+                        CloseSettings();
                         playnite.BringToFront(DashboardPage.Home);
                     };
                 case GuideItemKind.MyGamesAndApps:
@@ -1184,8 +1237,8 @@ namespace XboxSeries.Core
                 case GuideItemKind.Settings:
                     return () =>
                     {
-                        playnite.BringToFront();
-                        playnite.OpenSettings();
+                        playnite.BringToFront(DashboardPage.Settings);
+                        ShowSettings(SettingsOrigin.Guide);
                     };
                 default:
                     return null;

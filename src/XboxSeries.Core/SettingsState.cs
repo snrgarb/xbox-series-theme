@@ -1,0 +1,64 @@
+using System.ComponentModel;
+
+namespace XboxSeries.Core
+{
+    /// <summary>What the extension's Settings page shows. Views bind to it and hold no logic of their own.</summary>
+    public sealed class SettingsState : INotifyPropertyChanged
+    {
+        private bool isShown;
+        private SettingsCategory category;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>Whether the page is up, in place of Home.</summary>
+        public bool IsShown
+        {
+            get => isShown;
+            internal set
+            {
+                if (isShown != value)
+                {
+                    isShown = value;
+                    Changed(nameof(IsShown));
+                }
+            }
+        }
+
+        /// <summary>The rail's category the page is showing beside it.</summary>
+        public SettingsCategory Category
+        {
+            get => category;
+            internal set
+            {
+                if (category != value)
+                {
+                    category = value;
+                    Changed(nameof(Category));
+                }
+            }
+        }
+
+        /// <summary>Where the page was opened from, which B goes back to.</summary>
+        public SettingsOrigin OpenedFrom { get; internal set; }
+
+        private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+    }
+
+    /// <summary>The Settings rail's categories, in its order. Playnite's own entries below its divider are actions, not categories.</summary>
+    public enum SettingsCategory
+    {
+        Personalisation,
+        Guide,
+        Discord,
+    }
+
+    /// <summary>Where Settings was opened from, which B goes back to.</summary>
+    public enum SettingsOrigin
+    {
+        /// <summary>Home's top bar's Settings button, which gets focus back.</summary>
+        TopBar,
+
+        /// <summary>The Guide's Settings entry: B goes to Home.</summary>
+        Guide,
+    }
+}

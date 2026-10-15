@@ -48,7 +48,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Home_hosts_the_extensions_hero_Recent_row_Groups_tile_menu_My_games_and_status_area_as_custom_elements()
+        public void Home_hosts_the_extensions_hero_Recent_row_Groups_tile_menu_My_games_Settings_and_status_area_as_custom_elements()
         {
             var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
             var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
@@ -57,7 +57,7 @@ namespace XboxSeries.Core.Tests
                 .Select(e => (string)e.Attribute(x + "Name"))
                 .Where(name => name != null && name.StartsWith("XboxSeries_"));
 
-            Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_MyGames", "XboxSeries_RecentRow", "XboxSeries_Status", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
+            Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_MyGames", "XboxSeries_RecentRow", "XboxSeries_Settings", "XboxSeries_Status", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
         }
 
         [Fact]
@@ -70,6 +70,24 @@ namespace XboxSeries.Core.Tests
             Assert.Contains(topBar.Descendants(), e => (string)e.Attribute(x + "Name") == "XboxSeries_Status");
             Assert.Contains(topBar.Descendants(), e => (string)e.Attribute("Tag") == "My games & apps");
             Assert.Contains(topBar.Descendants(), e => ((string)e.Attribute("Style") ?? "").Contains("XboxTopBarProfile"));
+        }
+
+        [Fact]
+        public void Top_bar_Settings_is_Playnites_main_menu_theme_only_and_the_extensions_page_with_it()
+        {
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var topBar = main.Descendants().Single(e => (string)e.Attribute(x + "Name") == "XboxTopBar");
+            var mainMenu = topBar.Descendants().Single(e => (string)e.Attribute(x + "Name") == "PART_ButtonMainMenu");
+            var settings = topBar.Descendants().Single(e => (string)e.Attribute(x + "Name") == "XboxTopBarSettings");
+
+            // Playnite drives the part's own properties, so it is hidden with the extension through its wrapper.
+            Assert.Contains("XboxThemeOnly", (string)mainMenu.Parent.Attribute("Style"));
+            Assert.Contains("ElementName=XboxSeries_Settings", (string)settings.Attribute("Command"));
+            Assert.Contains(settings.Descendants(), e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == $"{{PluginStatus Plugin={ExtensionId()}, Status=Installed}}"
+                && (string)e.Attribute("Value") == "False");
+            Assert.Equal(mainMenu.Parent.ElementsAfterSelf().First(), settings);
         }
 
         [Fact]

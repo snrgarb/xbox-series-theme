@@ -119,7 +119,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Settings_brings_Playnite_to_the_front_on_its_Fullscreen_settings_once_A_is_released()
+        public void Settings_brings_Playnite_to_the_front_on_the_Settings_page_once_A_is_released()
         {
             windows.OpenWindow();
             OpenProfileTab();
@@ -128,12 +128,56 @@ namespace XboxSeries.Core.Tests
             Press(ControllerButton.A);
 
             Assert.False(core.Guide.IsOpen);
-            Assert.Equal(0, playnite.SettingsOpened);
+            Assert.False(core.Settings.IsShown);
 
             Release(ControllerButton.A);
 
-            Assert.Equal(1, playnite.SettingsOpened);
+            Assert.True(core.Settings.IsShown);
+            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsOrigin.Guide, core.Settings.OpenedFrom);
+            Assert.Equal(DashboardPage.Settings, playnite.Page);
             Assert.Equal(playnite.Window, windows.Foreground);
+            Assert.Equal(0, playnite.PlayniteSettingsOpened);
+        }
+
+        [Fact]
+        public void Settings_from_the_Guide_takes_My_games_and_apps_place_with_the_users_own_filter_back()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            OpenProfileTab();
+            Tap(ControllerButton.DPadDown);
+
+            Tap(ControllerButton.A);
+
+            Assert.True(core.Settings.IsShown);
+            Assert.False(core.MyGames.IsShown);
+            Assert.True(playnite.ShowsUsersOwnFilter);
+        }
+
+        [Fact]
+        public void The_Guides_Home_entry_leaves_the_Settings_page()
+        {
+            core.OpenSettings();
+            Tap(ControllerButton.Guide);
+
+            Tap(ControllerButton.A);
+
+            Assert.False(core.Settings.IsShown);
+            Assert.Equal(DashboardPage.Home, playnite.Page);
+        }
+
+        [Fact]
+        public void The_Guides_My_games_and_apps_entry_takes_the_Settings_pages_place()
+        {
+            core.OpenSettings();
+            Tap(ControllerButton.Guide);
+            Tap(ControllerButton.DPadDown);
+
+            Tap(ControllerButton.A);
+
+            Assert.False(core.Settings.IsShown);
+            Assert.True(core.MyGames.IsShown);
+            Assert.Equal(DashboardPage.MyGamesAndApps, playnite.Page);
         }
 
         [Fact]
