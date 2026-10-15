@@ -48,7 +48,7 @@ The Dashboard's page for finding games and **Apps** by name. It exists only when
 _Avoid_: filter (narrowing the list currently shown by name is Playnite's own filter, not Search)
 
 **Settings**:
-The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Start up, Personalisation, Guide, Discord, then **Playnite settings** and More Playnite options) beside the selected category. It exists only when the extension is installed.
+The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Personalisation, whose Start up box holds the boot video, the profiles and Who's playing today?; Guide; Discord; then **Playnite settings** and More Playnite options) beside the selected category. It exists only when the extension is installed.
 _Avoid_: Bundle settings, plugin settings, add-on settings
 
 **Playnite settings**:

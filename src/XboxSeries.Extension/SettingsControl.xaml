@@ -111,9 +111,6 @@
         <StackPanel Grid.Column="0" Margin="0,78,0,0">
             <TextBlock Text="Settings" Style="{StaticResource Text}" FontSize="30" Height="54" Margin="75,0,0,58" />
             <StackPanel x:Name="Rail" KeyDown="OnRailKeyDown">
-                <Button x:Name="StartUpItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
-                    <TextBlock Text="Start up" Style="{StaticResource RailText}" />
-                </Button>
                 <Button x:Name="PersonalisationItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
                     <TextBlock Text="Personalisation" Style="{StaticResource RailText}" />
                 </Button>
@@ -151,10 +148,11 @@
             <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" VerticalAlignment="Top" />
 
             <!--
-                Start up: its boxes, each opening a page of its own in their place, the header following. Right or A on the
-                rail's Start up comes in; Left from the first column or B from the boxes goes back to it.
+                Personalisation: its boxes, Start up's for now, each opening a page of its own in their place, the header
+                following. Right or A on the rail's Personalisation comes in; Left from the first column or B from its
+                boxes goes back to it.
             -->
-            <local:StartUpPane x:Name="StartUpPane" Grid.Row="1" Visibility="Collapsed" />
+            <local:PersonalisationPane x:Name="PersonalisationPane" Grid.Row="1" Visibility="Collapsed" />
 
             <!--
                 Discord: the checklist for making the user's own Discord application, beside the QR code of the developer

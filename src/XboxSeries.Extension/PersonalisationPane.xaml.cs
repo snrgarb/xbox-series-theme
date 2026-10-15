@@ -16,12 +16,13 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Settings' Start up category: its boxes, and the page each opens in their place (Boot video, Profiles, a profile,
-    /// its Picture). The pad moves between a page's boxes; A opens or sets, and B steps back a page at a time, focus going
-    /// back to the box that opened it, then from the boxes to the rail. Every choice goes straight to the core, which
-    /// saves it; the pane holds which page shows and nothing else.
+    /// Settings' Personalisation category: its boxes, Start up's for now, and the page each opens in their place (Start
+    /// up's boxes, then Boot video, Profiles, a profile, its Picture). The pad moves between a page's boxes; A opens or
+    /// sets, and B steps back a page at a time, focus going back to the box that opened it, then from Personalisation's
+    /// boxes to the rail. Every choice goes straight to the core, which saves it; the pane holds which page shows and
+    /// nothing else.
     /// </summary>
-    public partial class StartUpPane : UserControl
+    public partial class PersonalisationPane : UserControl
     {
         /// <summary>Each generation's friendly name, in the Boot video page's order.</summary>
         internal static readonly IReadOnlyList<KeyValuePair<BootVideo, string>> BootVideoNames = new[]
@@ -39,19 +40,19 @@ namespace XboxSeries.Extension
 
         private readonly Stack<Opened> opened = new Stack<Opened>();
         private ExtensionCore core;
-        private Page page = Page.Boxes;
+        private Page page = Page.Personalisation;
 
         /// <summary>The profile the Profile and Picture pages are of, by Id: the core replaces a profile it changes.</summary>
         private string profileId;
 
-        public StartUpPane()
+        public PersonalisationPane()
         {
             InitializeComponent();
             Loaded += (s, e) => { if (core != null) { State.PropertyChanged += OnStateChanged; } };
             Unloaded += (s, e) => { if (core != null) { State.PropertyChanged -= OnStateChanged; } };
         }
 
-        /// <summary>B, or Left from the boxes' first column: back to the rail's Start up.</summary>
+        /// <summary>B, or Left from the first column, on Personalisation's boxes: back to the rail's Personalisation.</summary>
         public event EventHandler BackToRail;
 
         /// <summary>The page showing changed, and with it <see cref="Title"/>.</summary>
@@ -59,7 +60,8 @@ namespace XboxSeries.Extension
 
         private enum Page
         {
-            Boxes,
+            Personalisation,
+            StartUp,
             BootVideo,
             Profiles,
             Profile,
@@ -77,7 +79,8 @@ namespace XboxSeries.Extension
                     case Page.Profiles: return "Profiles";
                     case Page.Profile: return Profile?.Gamertag ?? "";
                     case Page.Pictures: return "Picture";
-                    default: return "Start up";
+                    case Page.StartUp: return "Start up";
+                    default: return "Personalisation";
                 }
             }
         }
@@ -96,27 +99,28 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Right or A on the rail's Start up: the first box.</summary>
+        /// <summary>Right or A on the rail's Personalisation: the first box.</summary>
         public void FocusFirst()
         {
             Reset();
-            BootVideoBox.Focus();
+            StartUpBox.Focus();
         }
 
-        /// <summary>The category left, or Settings closed: back to the boxes, for next time.</summary>
+        /// <summary>The category left, or Settings closed: back to Personalisation's boxes, for next time.</summary>
         public void Reset()
         {
             opened.Clear();
-            if (page != Page.Boxes)
+            if (page != Page.Personalisation)
             {
-                Show(Page.Boxes);
+                Show(Page.Personalisation);
             }
         }
 
         private void Show(Page next)
         {
             page = next;
-            BoxesPage.Visibility = next == Page.Boxes ? Visibility.Visible : Visibility.Collapsed;
+            PersonalisationPage.Visibility = next == Page.Personalisation ? Visibility.Visible : Visibility.Collapsed;
+            StartUpPage.Visibility = next == Page.StartUp ? Visibility.Visible : Visibility.Collapsed;
             BootVideoPage.Visibility = next == Page.BootVideo ? Visibility.Visible : Visibility.Collapsed;
             ProfilesPage.Visibility = next == Page.Profiles ? Visibility.Visible : Visibility.Collapsed;
             ProfilePage.Visibility = next == Page.Profile ? Visibility.Visible : Visibility.Collapsed;
@@ -194,7 +198,7 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The pad on a page: the D-pad moves between its boxes, row by row, and stays put at the edges; A presses the box
-        /// focused; B steps back a page, or from the boxes to the rail, as Left from their first column does.
+        /// focused; B steps back a page, or from Personalisation's boxes to the rail, as Left from their first column does.
         /// </summary>
         private void OnPaneKeyDown(object sender, KeyEventArgs e)
         {
@@ -213,7 +217,7 @@ namespace XboxSeries.Extension
                 e.Handled = true;
                 Press(buttons[here]);
             }
-            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0 && page == Page.Boxes))
+            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0 && page == Page.Personalisation))
             {
                 // Handled here, before the page's B takes it back to where Settings was opened from.
                 e.Handled = true;
@@ -242,7 +246,12 @@ namespace XboxSeries.Extension
 
         private void Press(Button button)
         {
-            if (button == BootVideoBox)
+            if (button == StartUpBox)
+            {
+                Open(Page.StartUp, button);
+                FocusSoon(() => BootVideoBox);
+            }
+            else if (button == BootVideoBox)
             {
                 Open(Page.BootVideo, button);
                 FocusSoon(() => AtIndex(BootVideoNames.ToList().FindIndex(name => name.Key == State.BootVideo)));
@@ -334,7 +343,7 @@ namespace XboxSeries.Extension
             Show(next);
         }
 
-        /// <summary>B: the page before, focus on the box that opened this one; from the boxes, the rail.</summary>
+        /// <summary>B: the page before, focus on the box that opened this one; from Personalisation's boxes, the rail.</summary>
         private void Back()
         {
             if (opened.Count == 0)
@@ -368,7 +377,8 @@ namespace XboxSeries.Extension
                 case Page.Profiles: shown = ProfileBoxes; break;
                 case Page.Profile: shown = ProfilePage; break;
                 case Page.Pictures: shown = PictureButtons; break;
-                default: shown = BoxesPage; break;
+                case Page.StartUp: shown = StartUpPage; break;
+                default: shown = PersonalisationPage; break;
             }
 
             return Descendants(shown).OfType<Button>().Where(button => button.IsVisible);
@@ -498,7 +508,7 @@ namespace XboxSeries.Extension
                 case "RealName":
                     return string.IsNullOrWhiteSpace(value as string) ? "Not set" : value;
                 default:
-                    var name = StartUpPane.BootVideoNames.FirstOrDefault(pair => Equals(pair.Key, value)).Value ?? "";
+                    var name = PersonalisationPane.BootVideoNames.FirstOrDefault(pair => Equals(pair.Key, value)).Value ?? "";
 
                     // The box names the console without its year, as the console's own setting would.
                     var year = name.IndexOf(" (", StringComparison.Ordinal);
