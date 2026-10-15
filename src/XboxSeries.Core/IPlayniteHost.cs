@@ -49,6 +49,11 @@ namespace XboxSeries.Core
 
         /// <summary>Carries out <paramref name="command"/> as Playnite's own Fullscreen menu does, closing Playnite cleanly first where it must.</summary>
         void Power(PowerCommand command);
+#if DEBUG
+
+        /// <summary>Debug builds only: posts a Playnite notification, which comes back as any new one does.</summary>
+        void AddNotification(string id, string text);
+#endif
     }
 
     /// <summary>What the Guide's Power can do, beyond Close.</summary>

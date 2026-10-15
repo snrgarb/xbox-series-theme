@@ -96,6 +96,13 @@ namespace XboxSeries.Extension
             // What the top bar's PART_ButtonMainMenu runs, theme-only.
             Later(FullscreenCommand("OpenMainMenuCommand"));
         }
+#if DEBUG
+
+        public void AddNotification(string id, string text)
+        {
+            api.Notifications.Add(new NotificationMessage(id, text, NotificationType.Info));
+        }
+#endif
 
         public void Power(PowerCommand command)
         {

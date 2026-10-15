@@ -484,6 +484,56 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(fetches, Sent("GET_CHANNEL").Count);
         }
 
+#if DEBUG
+        [Fact]
+        public void A_test_ring_during_a_real_one_leaves_Answer_naming_the_real_caller()
+        {
+            NotInCall();
+            KnowDm("600");
+            Ring("600");
+
+            core.DebugRing("zed", "z.png");
+            Assert.Equal("zed is calling", core.Toast.Text);
+            clock.Advance(TimeSpan.FromSeconds(30));
+            OpenGuide();
+
+            Assert.Equal(GuideTabKind.Landing, Guide.Tab);
+            Tap(ControllerButton.RightShoulder);
+            var answer = Guide.Items[0];
+            Assert.Equal(GuideItemKind.DiscordIncomingCall, answer.Kind);
+            Assert.Equal("ana is calling", answer.Detail);
+            Assert.Equal(AvatarOf(Ana, AnaAvatar), answer.Image);
+        }
+
+        [Fact]
+        public void A_Guide_tap_during_a_test_rings_Toast_opens_the_Discord_tab_without_Answer()
+        {
+            NotInCall();
+            KnowDm("600");
+
+            core.DebugRing("zed", "z.png");
+            OpenGuide();
+
+            Assert.Equal(GuideTabKind.Discord, Guide.Tab);
+            Assert.DoesNotContain(Guide.Items, i => i.Kind == GuideItemKind.DiscordIncomingCall);
+            Assert.NotNull(Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void A_real_ring_after_a_test_one_names_the_real_caller()
+        {
+            NotInCall();
+            KnowDm("600");
+            core.DebugRing("zed", "z.png");
+            clock.Advance(TimeSpan.FromSeconds(30));
+
+            Ring("600");
+
+            Assert.Equal("ana is calling", core.Toast.Text);
+            Assert.Equal(AvatarOf(Ana, AnaAvatar), core.Toast.Image);
+        }
+#endif
+
         /// <summary>A DM with Ana, joined before and so known, named "ana" and wearing her avatar; she has hung up and the user left.</summary>
         private void KnowDm(string id)
         {

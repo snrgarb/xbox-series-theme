@@ -1082,15 +1082,19 @@ namespace XboxSeries.Core
         public void OpenMorePlayniteOptions() => playnite.OpenMainMenu();
 #if DEBUG
 
-        /// <summary>The Debug menu: posts a Playnite notification with this text, which shows its Toast as any new one does.</summary>
-        public void DebugNotify(string text)
-        {
-        }
+        /// <summary>The Debug menu's notifications posted so far, each getting an id of its own.</summary>
+        private int debugNotifications;
 
-        /// <summary>The Debug menu: shows the call's Toast for a ring from this caller, with this image (null for none), without Discord.</summary>
-        public void DebugRing(string caller, string image)
-        {
-        }
+        /// <summary>The Debug menu: posts a Playnite notification with this text, which shows its Toast as any new one does.</summary>
+        public void DebugNotify(string text) =>
+            playnite.AddNotification("xbox-series-debug-" + ++debugNotifications, text);
+
+        /// <summary>
+        /// The Debug menu: shows the call's Toast for a ring from this caller, with this image (null for none), without
+        /// Discord. Nothing rings, so no Answer appears, and a real ring's caller is left as it was; a Guide tap during
+        /// it opens the Guide on the Discord tab, or the landing tab without one.
+        /// </summary>
+        public void DebugRing(string caller, string image) => ShowRingToast(caller, image);
 #endif
 
         /// <summary>
