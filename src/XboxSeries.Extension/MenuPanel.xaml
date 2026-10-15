@@ -81,6 +81,10 @@
                             <DataTrigger Binding="{Binding Icon}" Value="Manage">
                                 <Setter TargetName="Icon" Property="Text" Value="&#xE7FC;" />
                             </DataTrigger>
+                            <!-- Remove, as a Discord shortcut's Remove shortcut: the bin. -->
+                            <DataTrigger Binding="{Binding Icon}" Value="Remove">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE74D;" />
+                            </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

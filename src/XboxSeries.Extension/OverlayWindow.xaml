@@ -135,6 +135,33 @@
                                 <Line X1="3" Y1="3" X2="23" Y2="23" Stroke="#B3FFFFFF" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                             </Grid>
                         </StackPanel>
+                        <!--
+                            A Discord shortcut's tile, one of three across a row: the DM's avatar on a disc or the server's
+                            icon on a rounded square, over the name and, for a voice channel, its server's name below in
+                            grey. Under the picture, showing while there is none or it won't load, a grey shape with
+                            Discord's mark for a DM or the speaker for a voice channel.
+                        -->
+                        <StackPanel x:Name="Tile" VerticalAlignment="Center" Margin="10,0" Visibility="Collapsed">
+                            <Grid Width="72" Height="72">
+                                <Border x:Name="TileFallback" CornerRadius="16" Background="#FF4A4A4A">
+                                    <Grid>
+                                        <TextBlock x:Name="TileSpeaker" Text="&#xE767;" Style="{StaticResource GuideIcon}" FontSize="28"
+                                                   Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
+                                        <Path x:Name="TileMark" Data="{StaticResource DiscordLogo}" Fill="#B3FFFFFF" Width="34" Height="34"
+                                              Stretch="Uniform" Visibility="Collapsed" />
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="TileArt" CornerRadius="16">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=144}" Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="20" Margin="0,10,0,0"
+                                       TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                            <TextBlock x:Name="TileDetail" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="17"
+                                       Foreground="#B3FFFFFF" TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
                         <!-- The tiles' ring, 1 px past the entry as theirs is past their art. -->
                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
@@ -310,6 +337,40 @@
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordLeave">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE778;" />
                         <Setter TargetName="Glyph" Property="Foreground" Value="#FFED4245" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                    </DataTrigger>
+                    <!--
+                        The Discord tab's shortcuts: tiles, three to a row, 160 square with 18 between them and below each
+                        row, as the utilities' squares. The first one's divider runs on across the whole row from the left
+                        tile, where it stands, to where every other divider ends.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordShortcut">
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Tile" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="160" />
+                        <Setter TargetName="Entry" Property="Margin" Value="9,0,9,18" />
+                        <Setter TargetName="Divider" Property="Margin" Value="30,14,-328,26" />
+                    </DataTrigger>
+                    <!-- A DM's shortcut: no server, so a disc, as an avatar, and Discord's mark under it rather than the speaker. -->
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Kind}" Value="DiscordShortcut" />
+                            <Condition Binding="{Binding Detail}" Value="{x:Null}" />
+                        </MultiDataTrigger.Conditions>
+                        <Setter TargetName="TileFallback" Property="CornerRadius" Value="36" />
+                        <Setter TargetName="TileArt" Property="CornerRadius" Value="36" />
+                        <Setter TargetName="TileSpeaker" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="TileMark" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="TileDetail" Property="Visibility" Value="Collapsed" />
+                    </MultiDataTrigger>
+                    <!-- Servers, last on the tab under a divider: a row as Settings', opening the flyout of the user's servers. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordServers">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE716;" />
                         <Setter TargetName="Entry" Property="Height" Value="75" />
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
@@ -563,9 +624,30 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <!-- The tab's entries. -->
+                        <!--
+                            The tab's entries. They wrap, so that the Discord tab's shortcuts, a third of the panel wide, sit
+                            three to a row as the core moves between them, while every other entry is the panel's full
+                            width and so a row of its own. The tiles of a row stand on its bottom, so the first one's
+                            divider, above it, leaves them level.
+                        -->
                         <ScrollViewer x:Name="EntriesScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
                         <ItemsControl x:Name="Entries" ItemsSource="{Binding Items}" ItemTemplate="{StaticResource GuideEntry}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Width" Value="536" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="DiscordShortcut">
+                                            <Setter Property="Width" Value="178" />
+                                            <Setter Property="VerticalAlignment" Value="Bottom" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
                             <ItemsControl.Style>
                                 <Style TargetType="ItemsControl">
                                     <Style.Triggers>
