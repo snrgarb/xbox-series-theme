@@ -47,6 +47,30 @@
     -->
     <Viewbox Stretch="Uniform">
         <Grid x:Name="Root" Height="1080" Width="1920">
+            <!--
+                A shade across the top, dark at the very top and clear by y 260, behind the panel and the status area, so the
+                clock and battery read over whatever is in front: a game, or any Dashboard page. It comes and goes with the dim.
+                Only with the panel, as the status area: Power on its own has none.
+            -->
+            <Rectangle Height="260" VerticalAlignment="Top" HorizontalAlignment="Stretch" IsHitTestVisible="False"
+                       Opacity="{Binding Opacity, ElementName=Dim}">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#CC000000" Offset="0" />
+                        <GradientStop Color="#8C000000" Offset="0.5" />
+                        <GradientStop Color="#00000000" Offset="1" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.Style>
+                    <Style TargetType="Rectangle">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ShowsPanel}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Rectangle.Style>
+            </Rectangle>
             <!-- The hints beside the panel, as on the console. Only with the panel: Power on its own has none. -->
             <ItemsControl ItemsSource="{Binding Hints}" Focusable="False" Margin="675,168,0,0"
                           HorizontalAlignment="Left" VerticalAlignment="Top"
