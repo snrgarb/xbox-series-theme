@@ -19,7 +19,7 @@ namespace XboxSeries.Core.Tests
         public SoundTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), new FakeUserAccount());
+            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), new FakeUserAccount(), new FakeRumble());
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: HaloDirectory)
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11))
@@ -259,10 +259,15 @@ namespace XboxSeries.Core.Tests
 
         private void Release(ControllerButton button) => core.OnControllerButton(button, ButtonState.Released);
 
+        /// <summary>Pressed and let go. A Guide tap opens the Guide half a second after its press, so it waits that out.</summary>
         private void Tap(ControllerButton button)
         {
             Press(button);
             Release(button);
+            if (button == ControllerButton.Guide)
+            {
+                clock.Advance(TimeSpan.FromMilliseconds(500));
+            }
         }
     }
 }

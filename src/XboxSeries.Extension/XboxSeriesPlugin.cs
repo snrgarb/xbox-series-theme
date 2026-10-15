@@ -32,7 +32,7 @@ namespace XboxSeries.Extension
             Properties = new GenericPluginProperties { HasSettings = false };
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
-            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount());
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new XInputRumble());
 
             // Home's elements and My games & apps, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
