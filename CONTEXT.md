@@ -90,6 +90,18 @@ _Avoid_: party, chats
 The Discord voice channel, DM or group DM the user is in, as Discord reports it: its name and the people in it. Mute, Deafen and Leave are asked of Discord and shown done only once Discord says so.
 _Avoid_: party, voice chat, session (a **Play session** is a game's)
 
+**Known channel**:
+A DM, group DM or server voice channel the user has been in a **Call** in, on this PC or another device, remembered most recently joined first in the extension's encrypted store. Known DMs are kept until removed; a server's voice channel only while among the six most recent.
+_Avoid_: favourite, recent, contact
+
+**Shortcut**:
+A tile on the **Discord tab** for one of the six most recently joined **Known channels**, in rows of three: A rejoins it in one press, and Remove shortcut, from its menu, forgets it.
+_Avoid_: pin, favourite, quick join
+
+**Servers**:
+The **Discord tab**'s last entry, a **Flyout** of the user's Discord servers; a server opens onto its voice channels, each with the avatars of the people in it or Empty, and A on one joins it.
+_Avoid_: guilds (Discord's API name), browse
+
 **Guide button**:
 The Xbox logo button in the centre of an Xbox controller.
 _Avoid_: home button, Xbox button
@@ -103,6 +115,7 @@ _Avoid_: home button, Xbox button
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
 - The **Guide** has three tabs: landing, the **Discord tab** (when connected), and Profile & system
+- Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 - **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from
 

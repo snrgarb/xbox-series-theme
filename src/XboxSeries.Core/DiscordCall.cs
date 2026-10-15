@@ -19,15 +19,19 @@ namespace XboxSeries.Core
         /// <summary>A DM's name from the people last seen in it, kept while nobody else is there, as when ringing.</summary>
         private string peopleName;
 
-        private DiscordCall(string id, string name, string selfId)
+        private DiscordCall(string id, string guildId, string name, string selfId)
         {
             Id = id;
+            GuildId = guildId;
             this.name = name;
             this.selfId = selfId;
         }
 
         /// <summary>The channel's id.</summary>
         public string Id { get; }
+
+        /// <summary>The server a voice channel is on; null for a DM or group DM.</summary>
+        public string GuildId { get; }
 
         /// <summary>
         /// The call made from a channel object, as GET_CHANNEL and GET_SELECTED_VOICE_CHANNEL answer, for the user
@@ -41,7 +45,10 @@ namespace XboxSeries.Core
                 return null;
             }
 
-            var call = new DiscordCall(id, (string)channel["name"], selfId);
+            // Discord's channel types: 1 a DM, 3 a group DM, 2 a server's voice channel.
+            var type = (int?)channel["type"];
+            var guildId = type == 1 || type == 3 ? null : (string)channel["guild_id"];
+            var call = new DiscordCall(id, guildId, (string)channel["name"], selfId);
             foreach (var state in (channel["voice_states"] as JArray ?? new JArray()).OfType<JObject>())
             {
                 call.Upsert(state);
@@ -55,6 +62,12 @@ namespace XboxSeries.Core
         /// from those last seen there, else "Call".
         /// </summary>
         public string Title => !string.IsNullOrEmpty(name) ? name : peopleName ?? "Call";
+
+        /// <summary>Whether <see cref="Title"/> is a real name, not "Call" for a DM nobody else has been seen in.</summary>
+        public bool HasName => !string.IsNullOrEmpty(name) || peopleName != null;
+
+        /// <summary>The avatar of the first person in the call other than the user, which pictures a DM; null while there is none.</summary>
+        public string OtherAvatar => people.FirstOrDefault(p => p.UserId != selfId)?.Avatar;
 
         /// <summary>The user first, then the others in Discord's order.</summary>
         public IEnumerable<DiscordParticipant> UserFirst => people.OrderBy(p => p.UserId != selfId);

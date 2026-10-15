@@ -132,6 +132,7 @@ namespace XboxSeries.Core
             this.sounds = sounds;
             TickStatus();
             LoadDiscordApp();
+            LoadShortcuts();
         }
 
         public StatusState Status { get; } = new StatusState();
@@ -703,11 +704,17 @@ namespace XboxSeries.Core
             Guide.FocusedItem = items.FirstOrDefault();
         }
 
-        /// <summary>B in a flyout: closes it, focus back on the entry that opened it.</summary>
+        /// <summary>B in a flyout: closes it, focus back on the entry that opened it; in a Discord server's, back to the Servers flyout.</summary>
         private void CloseFlyout()
         {
             var kind = Guide.Flyout.Kind;
             StopRepeat();
+            if (kind == GuideItemKind.DiscordServer)
+            {
+                BackToServers();
+                return;
+            }
+
             Guide.Flyout = null;
             Guide.FocusedItem = Guide.Utilities.Concat(Guide.Items).First(i => i.Kind == kind);
         }
@@ -1189,7 +1196,7 @@ namespace XboxSeries.Core
             }
 
             sounds.Play(UiSound.Enter);
-            if (SelectDiscordAction(item.Kind))
+            if (SelectDiscordAction(item))
             {
                 return;
             }
@@ -1339,6 +1346,10 @@ namespace XboxSeries.Core
                 sounds.Play(UiSound.Navigate);
                 Guide.FocusedItem = Guide.Utilities[0];
             }
+            else if (Guide.Flyout == null && MoveAmongShortcuts(direction))
+            {
+                // Among the Discord tab's shortcut tiles, or onto them.
+            }
             else if (vertical)
             {
                 Guide.FocusedItem = Step(entries, Guide.FocusedItem, by);
@@ -1463,11 +1474,17 @@ namespace XboxSeries.Core
             Guide.IsOpen = false;
         }
 
-        /// <summary>Menu on an entry. Only the running game has a menu, with Quit.</summary>
+        /// <summary>Menu on an entry: the running game's menu, with Quit, or a Discord shortcut's, with Remove shortcut.</summary>
         private void ShowMenuFor(GuideItem item)
         {
             if (item == null || !item.HasMenu)
             {
+                return;
+            }
+
+            if (item.Kind == GuideItemKind.DiscordShortcut)
+            {
+                ShowShortcutMenu(item);
                 return;
             }
 
