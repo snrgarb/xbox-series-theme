@@ -33,6 +33,9 @@ namespace XboxSeries.Extension
         // The open's slide and dim, waiting for the Overlay's first frame to be drawn.
         private EventHandler pendingOpen;
 
+        // Counts slides, so only the latest one's finish stops the panel being drawn as a picture.
+        private int slideRun;
+
         public OverlayWindow(ExtensionCore core)
         {
             Status = core.Status;
@@ -198,6 +201,7 @@ namespace XboxSeries.Extension
             logger.Info("Guide slide-out stalled; finishing it without the animation");
             Slide.BeginAnimation(TranslateTransform.XProperty, null);
             Slide.X = offscreenX;
+            StopSlidingAsPicture();
             Dim.BeginAnimation(Brush.OpacityProperty, null);
             Dim.Opacity = 0;
             HideWhenDone();
@@ -256,14 +260,44 @@ namespace XboxSeries.Extension
 
             // To-only animations, so reopening mid slide-out continues from where the panel is.
             var slide = new DoubleAnimation(slideTo, duration) { EasingFunction = new CubicEase { EasingMode = easing } };
-            if (completed != null)
+            var run = ++slideRun;
+            slide.Completed += (_, __) =>
             {
-                slide.Completed += (_, __) => completed();
-            }
+                // A newer slide, started before this one finished, keeps the picture until it finishes.
+                if (run == slideRun)
+                {
+                    StopSlidingAsPicture();
+                }
 
+                completed?.Invoke();
+            };
+
+            SlideAsPicture();
             Slide.BeginAnimation(TranslateTransform.XProperty, slide);
             Dim.BeginAnimation(Brush.OpacityProperty, new DoubleAnimation(dimTo, duration));
         }
+
+        /// <summary>
+        /// While it slides, the panel is drawn once into a picture at the screen's own resolution, so sharp, and the
+        /// graphics card moves that picture rather than redrawing the panel, its covers' shadows and all, every frame.
+        /// Still, it is drawn as itself again.
+        /// </summary>
+        private void SlideAsPicture()
+        {
+            var source = PresentationSource.FromVisual(this);
+            if (source == null || Root.ActualHeight <= 0)
+            {
+                return;
+            }
+
+            var pixelsPerUnit = ActualHeight / Root.ActualHeight * source.CompositionTarget.TransformToDevice.M22;
+            if (!(Sliding.CacheMode is BitmapCache cache) || cache.RenderAtScale != pixelsPerUnit)
+            {
+                Sliding.CacheMode = new BitmapCache(pixelsPerUnit) { SnapsToDevicePixels = true };
+            }
+        }
+
+        private void StopSlidingAsPicture() => Sliding.CacheMode = null;
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
