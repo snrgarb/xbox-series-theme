@@ -206,26 +206,6 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Debug builds' Expire token now, in Settings: the saved tokens count as expiring now, so the refresh before
-        /// expiry, and the fallbacks behind it, can be tried without waiting six days. Signed in with nothing under way,
-        /// the refresh starts at once, however lately the last one was; otherwise the next sign-in refreshes first. Does
-        /// nothing without saved tokens.
-        /// </summary>
-        public void ExpireDiscordTokens()
-        {
-            if (secrets.Read(AccessTokenSecret) == null)
-            {
-                return;
-            }
-
-            secrets.Write(ExpiresAtSecret, clock.Now.ToString("o", CultureInfo.InvariantCulture));
-            if (discordStep == DiscordStep.Connected && renewal == DiscordStep.Connected)
-            {
-                RefreshTokens();
-            }
-        }
-
-        /// <summary>
         /// Signed in, or the tokens renewed: sets the refresh due a day before the saved tokens expire, or, when they are
         /// nearer than that, <see cref="MinRefreshInterval"/> from now.
         /// </summary>

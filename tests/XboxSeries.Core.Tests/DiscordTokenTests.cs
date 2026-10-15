@@ -153,43 +153,6 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Expiring_the_tokens_now_while_signed_in_refreshes_them_at_once_over_the_open_connection()
-        {
-            ConnectFully();
-            var authenticates = Sent("AUTHENTICATE").Count;
-
-            core.ExpireDiscordTokens();
-            clock.Advance(TimeSpan.Zero);
-
-            Assert.Equal(new Dictionary<string, string> { ["grant_type"] = "refresh_token", ["refresh_token"] = "refresh-1" }, oauth.Requests.Last().Form);
-            core.OnDiscordTokenResponse(200, Tokens("access-2", "refresh-2"));
-
-            AssertSaved("access-2", "refresh-2", clock.Now.AddSeconds(604800));
-            Assert.Equal(authenticates, Sent("AUTHENTICATE").Count);
-            Assert.True(Discord.IsConnected);
-        }
-
-        [Fact]
-        public void Expiring_the_tokens_now_while_Discord_is_away_refreshes_them_at_the_next_sign_in()
-        {
-            SaveTokens(clock.Now.AddDays(7));
-            core.ExpireDiscordTokens();
-            StartUp();
-
-            Assert.Equal("refresh_token", Assert.Single(oauth.Requests).Form["grant_type"]);
-            Assert.Null(transport.LastCommand("AUTHENTICATE"));
-        }
-
-        [Fact]
-        public void Expiring_the_tokens_now_without_any_saved_does_nothing()
-        {
-            core.ExpireDiscordTokens();
-
-            Assert.False(secrets.Values.ContainsKey("Discord.ExpiresAt"));
-            Assert.Empty(oauth.Requests);
-        }
-
-        [Fact]
         public void Disconnect_stops_the_refresh_and_a_refresh_answer_after_it_is_ignored()
         {
             ConnectFully();
