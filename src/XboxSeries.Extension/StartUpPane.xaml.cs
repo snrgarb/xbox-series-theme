@@ -1,0 +1,510 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+using Playnite.SDK;
+using Playnite.SDK.Events;
+using XboxSeries.Core;
+
+namespace XboxSeries.Extension
+{
+    /// <summary>
+    /// Settings' Start up category: its boxes, and the page each opens in their place (Boot video, Profiles, a profile,
+    /// its Picture). The pad moves between a page's boxes; A opens or sets, and B steps back a page at a time, focus going
+    /// back to the box that opened it, then from the boxes to the rail. Every choice goes straight to the core, which
+    /// saves it; the pane holds which page shows and nothing else.
+    /// </summary>
+    public partial class StartUpPane : UserControl
+    {
+        /// <summary>Each generation's friendly name, in the Boot video page's order.</summary>
+        internal static readonly IReadOnlyList<KeyValuePair<BootVideo, string>> BootVideoNames = new[]
+        {
+            new KeyValuePair<BootVideo, string>(BootVideo.Off, "Off"),
+            new KeyValuePair<BootVideo, string>(BootVideo.Xbox, "Xbox (2001)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.Xbox360, "Xbox 360 (2005)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.Xbox360Slim, "Xbox 360 Slim (2010)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.Xbox360SpecialEdition, "Xbox 360 Special Edition (2012)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.XboxOne, "Xbox One (2013)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.XboxOneX, "Xbox One X (2017)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.XboxSeriesS, "Xbox Series S (2020)"),
+            new KeyValuePair<BootVideo, string>(BootVideo.XboxSeriesX, "Xbox Series X (2020)"),
+        };
+
+        private readonly Stack<Opened> opened = new Stack<Opened>();
+        private ExtensionCore core;
+        private Page page = Page.Boxes;
+
+        /// <summary>The profile the Profile and Picture pages are of, by Id: the core replaces a profile it changes.</summary>
+        private string profileId;
+
+        public StartUpPane()
+        {
+            InitializeComponent();
+            Loaded += (s, e) => { if (core != null) { State.PropertyChanged += OnStateChanged; } };
+            Unloaded += (s, e) => { if (core != null) { State.PropertyChanged -= OnStateChanged; } };
+        }
+
+        /// <summary>B, or Left from the boxes' first column: back to the rail's Start up.</summary>
+        public event EventHandler BackToRail;
+
+        /// <summary>The page showing changed, and with it <see cref="Title"/>.</summary>
+        public event EventHandler TitleChanged;
+
+        private enum Page
+        {
+            Boxes,
+            BootVideo,
+            Profiles,
+            Profile,
+            Pictures,
+        }
+
+        /// <summary>The header over the page showing: the category's, the page's, or the profile's gamertag.</summary>
+        public string Title
+        {
+            get
+            {
+                switch (page)
+                {
+                    case Page.BootVideo: return "Boot video";
+                    case Page.Profiles: return "Profiles";
+                    case Page.Profile: return Profile?.Gamertag ?? "";
+                    case Page.Pictures: return "Picture";
+                    default: return "Start up";
+                }
+            }
+        }
+
+        private StartUpSettingsState State => core.Settings.StartUp;
+
+        private Profile Profile => State.Profiles.FirstOrDefault(p => p.Id == profileId);
+
+        internal void Attach(ExtensionCore extensionCore)
+        {
+            core = extensionCore;
+            DataContext = State;
+            if (IsLoaded)
+            {
+                State.PropertyChanged += OnStateChanged;
+            }
+        }
+
+        /// <summary>Right or A on the rail's Start up: the first box.</summary>
+        public void FocusFirst()
+        {
+            Reset();
+            BootVideoBox.Focus();
+        }
+
+        /// <summary>The category left, or Settings closed: back to the boxes, for next time.</summary>
+        public void Reset()
+        {
+            opened.Clear();
+            if (page != Page.Boxes)
+            {
+                Show(Page.Boxes);
+            }
+        }
+
+        private void Show(Page next)
+        {
+            page = next;
+            BoxesPage.Visibility = next == Page.Boxes ? Visibility.Visible : Visibility.Collapsed;
+            BootVideoPage.Visibility = next == Page.BootVideo ? Visibility.Visible : Visibility.Collapsed;
+            ProfilesPage.Visibility = next == Page.Profiles ? Visibility.Visible : Visibility.Collapsed;
+            ProfilePage.Visibility = next == Page.Profile ? Visibility.Visible : Visibility.Collapsed;
+            PicturesPage.Visibility = next == Page.Pictures ? Visibility.Visible : Visibility.Collapsed;
+            Fill(next);
+            TitleChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>A page's choices, from the core's state now.</summary>
+        private void Fill(Page which)
+        {
+            switch (which)
+            {
+                case Page.BootVideo:
+                    BootVideoRows.ItemsSource = BootVideoNames
+                        .Select(name => new BootVideoRow(name.Key, name.Value, name.Key == State.BootVideo)).ToList();
+                    break;
+                case Page.Profiles:
+                    ProfileBoxes.ItemsSource = State.Profiles.Cast<object>().Concat(new[] { new AddProfileItem() }).ToList();
+                    break;
+                case Page.Profile:
+                    var profile = Profile;
+                    ProfilePage.DataContext = profile;
+                    PictureDetail.Text = State.Gamerpics.Count > 1 ? $"Choose from {State.Gamerpics.Count}" : "Add images to the Gamerpics folder";
+                    RemoveBox.Visibility = State.Profiles.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+                    break;
+                case Page.Pictures:
+                    var worn = Profile?.Picture;
+                    PictureButtons.ItemsSource = State.Gamerpics.Select(path => new PictureItem(path, path == worn)).ToList();
+                    PicturesHint.Visibility = State.Gamerpics.Count > 1 ? Visibility.Collapsed : Visibility.Visible;
+                    break;
+            }
+        }
+
+        /// <summary>The core changed what a page shows: it is filled again, focus kept on the same choice where it can be.</summary>
+        private void OnStateChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var refill = (page == Page.BootVideo && e.PropertyName == nameof(StartUpSettingsState.BootVideo))
+                || ((page == Page.Profiles || page == Page.Profile || page == Page.Pictures) && e.PropertyName == nameof(StartUpSettingsState.Profiles))
+                || ((page == Page.Profile || page == Page.Pictures) && e.PropertyName == nameof(StartUpSettingsState.Gamerpics));
+            if (!refill)
+            {
+                return;
+            }
+
+            var focused = Buttons().ToList();
+            var here = focused.IndexOf(Keyboard.FocusedElement as Button);
+            var focusedId = page == Page.Profiles && (Keyboard.FocusedElement as FrameworkElement)?.DataContext is Profile p ? p.Id : null;
+
+            // The profile these pages are of was removed elsewhere: back to Profiles.
+            if ((page == Page.Profile || page == Page.Pictures) && Profile == null)
+            {
+                opened.Clear();
+                Show(Page.Profiles);
+                FocusSoon(() => Buttons().FirstOrDefault());
+                return;
+            }
+
+            Fill(page);
+            TitleChanged?.Invoke(this, EventArgs.Empty);
+            if (here >= 0)
+            {
+                FocusSoon(() => ProfileButton(focusedId) ?? AtIndex(here));
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnPaneKeyDown.
+        private void OnBoxClick(object sender, RoutedEventArgs e) => Press((Button)sender);
+
+        private void OnRowClick(object sender, RoutedEventArgs e) => Press((Button)sender);
+
+        private void OnProfileBoxClick(object sender, RoutedEventArgs e) => Press((Button)sender);
+
+        private void OnPictureClick(object sender, RoutedEventArgs e) => Press((Button)sender);
+
+        /// <summary>
+        /// The pad on a page: the D-pad moves between its boxes, row by row, and stays put at the edges; A presses the box
+        /// focused; B steps back a page, or from the boxes to the rail, as Left from their first column does.
+        /// </summary>
+        private void OnPaneKeyDown(object sender, KeyEventArgs e)
+        {
+            var buttons = Buttons().ToList();
+            var here = buttons.IndexOf(e.OriginalSource as Button);
+            if (here < 0)
+            {
+                return;
+            }
+
+            var columns = Columns();
+            var column = here % columns;
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (pad == ControllerInput.A)
+            {
+                e.Handled = true;
+                Press(buttons[here]);
+            }
+            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0 && page == Page.Boxes))
+            {
+                // Handled here, before the page's B takes it back to where Settings was opened from.
+                e.Handled = true;
+                Back();
+            }
+            else if (e.Key == Key.Left || e.Key == Key.Right)
+            {
+                e.Handled = true;
+                var next = here + (e.Key == Key.Left ? -1 : 1);
+                if (next >= 0 && next < buttons.Count && next / columns == here / columns)
+                {
+                    FocusBox(buttons[next]);
+                }
+            }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+                var next = here + (e.Key == Key.Up ? -columns : columns);
+                if (next >= 0)
+                {
+                    // Down onto a shorter last row lands on its last box.
+                    FocusBox(buttons[Math.Min(next, buttons.Count - 1)]);
+                }
+            }
+        }
+
+        private void Press(Button button)
+        {
+            if (button == BootVideoBox)
+            {
+                Open(Page.BootVideo, button);
+                FocusSoon(() => AtIndex(BootVideoNames.ToList().FindIndex(name => name.Key == State.BootVideo)));
+            }
+            else if (button == ProfilesBox)
+            {
+                Open(Page.Profiles, button);
+                FocusSoon(() => AtIndex(0));
+            }
+            else if (button == AskBox)
+            {
+                core.SetAskWhosPlaying(!State.AskWhosPlaying);
+            }
+            else if (button.DataContext is BootVideoRow row)
+            {
+                core.SetBootVideo(row.Video);
+            }
+            else if (button.DataContext is AddProfileItem)
+            {
+                var gamertag = Type("Gamertag of the new profile", "Add profile", "");
+                var added = gamertag == null ? null : core.AddProfile(gamertag);
+                FocusSoon(() => ProfileButton(added?.Id) ?? button);
+            }
+            else if (button == GamertagBox && Profile is Profile gamertagOf)
+            {
+                var gamertag = Type("Gamertag", "Gamertag", gamertagOf.Gamertag);
+                if (gamertag != null)
+                {
+                    core.SetProfileGamertag(gamertagOf.Id, gamertag);
+                }
+
+                FocusSoon(() => GamertagBox);
+            }
+            else if (button == RealNameBox && Profile is Profile realNameOf)
+            {
+                var realName = Type("Real name", "Real name", realNameOf.RealName);
+                if (realName != null)
+                {
+                    core.SetProfileRealName(realNameOf.Id, realName);
+                }
+
+                FocusSoon(() => RealNameBox);
+            }
+            else if (button == PictureBox && Profile is Profile pictureOf)
+            {
+                // Nothing to choose from opens nothing: the box says to add images to the Gamerpics folder.
+                if (State.Gamerpics.Count > 0)
+                {
+                    Open(Page.Pictures, button);
+                    FocusSoon(() => AtIndex(Math.Max(0, State.Gamerpics.ToList().IndexOf(pictureOf.Picture))));
+                }
+            }
+            else if (button == RemoveBox && Profile is Profile removing && State.Profiles.Count > 1)
+            {
+                var sure = API.Instance.Dialogs.ShowMessage($"Remove {removing.Gamertag}?", "Remove profile", MessageBoxButton.YesNo);
+                if (sure == MessageBoxResult.Yes)
+                {
+                    var index = State.Profiles.ToList().FindIndex(p => p.Id == removing.Id);
+                    core.RemoveProfile(removing.Id);
+                    opened.Pop();
+                    Show(Page.Profiles);
+                    FocusSoon(() => AtIndex(Math.Min(index, State.Profiles.Count - 1)));
+                }
+                else
+                {
+                    FocusSoon(() => RemoveBox);
+                }
+            }
+            else if (button.DataContext is PictureItem picture && Profile is Profile wearer)
+            {
+                // Back first, so the profile changing refills the Profile page, not this one.
+                Back();
+                core.SetProfilePicture(wearer.Id, picture.Path);
+            }
+            else if (page == Page.Profiles && button.DataContext is Profile profile)
+            {
+                profileId = profile.Id;
+                Open(Page.Profile, profile.Id);
+                FocusSoon(() => GamertagBox);
+            }
+        }
+
+        /// <summary>Opens a page in place of this one, remembering the box that opened it for B.</summary>
+        private void Open(Page next, object opener)
+        {
+            opened.Push(new Opened(page, opener));
+            Show(next);
+        }
+
+        /// <summary>B: the page before, focus on the box that opened this one; from the boxes, the rail.</summary>
+        private void Back()
+        {
+            if (opened.Count == 0)
+            {
+                BackToRail?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
+            var back = opened.Pop();
+            Show(back.Page);
+            FocusSoon(() => back.Opener as Button ?? ProfileButton(back.Opener as string) ?? AtIndex(0));
+        }
+
+        /// <summary>
+        /// Playnite's own text entry, with its on-screen keyboard in Fullscreen, prefilled; null when cancelled. The
+        /// extension's console keyboard (#39) takes its place once Search has it.
+        /// </summary>
+        private static string Type(string message, string caption, string text)
+        {
+            var typed = API.Instance.Dialogs.SelectString(message, caption, text);
+            return typed.Result ? typed.SelectedString : null;
+        }
+
+        /// <summary>The page showing's boxes, in reading order; a hidden one, as Remove profile with one profile, aside.</summary>
+        private IEnumerable<Button> Buttons()
+        {
+            FrameworkElement shown;
+            switch (page)
+            {
+                case Page.BootVideo: shown = BootVideoRows; break;
+                case Page.Profiles: shown = ProfileBoxes; break;
+                case Page.Profile: shown = ProfilePage; break;
+                case Page.Pictures: shown = PictureButtons; break;
+                default: shown = BoxesPage; break;
+            }
+
+            return Descendants(shown).OfType<Button>().Where(button => button.IsVisible);
+        }
+
+        /// <summary>How many boxes a row of the page showing holds.</summary>
+        private int Columns()
+        {
+            switch (page)
+            {
+                case Page.BootVideo: return 1;
+                case Page.Pictures: return 4;
+                default: return 2;
+            }
+        }
+
+        private Button AtIndex(int index)
+        {
+            var buttons = Buttons().ToList();
+            return buttons.Count == 0 ? null : buttons[Math.Max(0, Math.Min(buttons.Count - 1, index))];
+        }
+
+        /// <summary>A profile's box on the Profiles page.</summary>
+        private Button ProfileButton(string id) =>
+            id == null || page != Page.Profiles ? null : Buttons().FirstOrDefault(button => button.DataContext is Profile p && p.Id == id);
+
+        private static void FocusBox(Button button)
+        {
+            if (button != null && button.Focus())
+            {
+                button.BringIntoView();
+            }
+        }
+
+        /// <summary>Focuses a box once the page is laid out, its choices made: a page just shown has none until then.</summary>
+        private void FocusSoon(Func<Button> which)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (IsVisible)
+                {
+                    UpdateLayout();
+                    FocusBox(which());
+                }
+            }));
+        }
+
+        private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+        {
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                yield return child;
+                foreach (var descendant in Descendants(child))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+
+        /// <summary>A page left for another, and what opened it: a box, or a profile by Id, its box being remade.</summary>
+        private sealed class Opened
+        {
+            public Opened(Page page, object opener)
+            {
+                Page = page;
+                Opener = opener;
+            }
+
+            public Page Page { get; }
+
+            public object Opener { get; }
+        }
+    }
+
+    /// <summary>A generation on the Boot video page, ticked while it's the one set.</summary>
+    internal sealed class BootVideoRow
+    {
+        public BootVideoRow(BootVideo video, string name, bool isCurrent)
+        {
+            Video = video;
+            Name = name;
+            IsCurrent = isCurrent;
+        }
+
+        public BootVideo Video { get; }
+
+        public string Name { get; }
+
+        public bool IsCurrent { get; }
+    }
+
+    /// <summary>The Profiles page's last box, Add profile.</summary>
+    internal sealed class AddProfileItem
+    {
+    }
+
+    /// <summary>A gamerpic on the Picture page, ticked while the profile wears it.</summary>
+    internal sealed class PictureItem
+    {
+        public PictureItem(string path, bool isCurrent)
+        {
+            Path = path;
+            IsCurrent = isCurrent;
+        }
+
+        public string Path { get; }
+
+        public bool IsCurrent { get; }
+    }
+
+    /// <summary>
+    /// The second line of Start up's boxes: the boot video's name, "2 profiles", "Ask on start and wake: On", or a real
+    /// name's "Not set", by the converter parameter.
+    /// </summary>
+    internal sealed class StartUpTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            switch (parameter as string)
+            {
+                case "Profiles":
+                    var count = value is int n ? n : 0;
+                    return count == 1 ? "1 profile" : $"{count} profiles";
+                case "Ask":
+                    return "Ask on start and wake: " + (value is bool ask && ask ? "On" : "Off");
+                case "RealName":
+                    return string.IsNullOrWhiteSpace(value as string) ? "Not set" : value;
+                default:
+                    var name = StartUpPane.BootVideoNames.FirstOrDefault(pair => Equals(pair.Key, value)).Value ?? "";
+
+                    // The box names the console without its year, as the console's own setting would.
+                    var year = name.IndexOf(" (", StringComparison.Ordinal);
+                    return year < 0 ? name : name.Substring(0, year);
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+}
