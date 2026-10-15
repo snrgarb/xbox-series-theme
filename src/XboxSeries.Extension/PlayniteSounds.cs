@@ -28,6 +28,7 @@ namespace XboxSeries.Extension
             [UiSound.PromptClose] = new[] { "PromptClose.wav" },
             [UiSound.Login] = new[] { "Login.wav" },
             [UiSound.PowerOff] = new[] { "PowerOff.wav" },
+            [UiSound.Notification] = new[] { "Notification.wav" },
         };
 
         private readonly Engine engine;

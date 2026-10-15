@@ -253,7 +253,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// "<paramref name="caller"/> is calling", with <paramref name="image"/> on its tile, for up to
-        /// <see cref="RingToastDuration"/>, even over the Guide. It cuts in before a notification's Toast, which waits
+        /// <see cref="RingToastDuration"/>, even over the Guide, with the notification sound. It cuts in before a notification's Toast, which waits
         /// to show again after it with those behind it.
         /// </summary>
         private void ShowRingToast(string caller, string image)
@@ -281,6 +281,7 @@ namespace XboxSeries.Core
             Toast.Kind = ToastKind.Call;
             Toast.Image = image;
             Toast.IsShown = true;
+            sounds.Play(UiSound.Notification);
             ringToastTimer = clock.After(RingToastDuration, HideRingToast);
         }
 

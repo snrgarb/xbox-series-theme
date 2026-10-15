@@ -240,6 +240,83 @@ namespace XboxSeries.Core.Tests
             Assert.Empty(sounds.Played);
         }
 
+        [Fact]
+        public void A_new_notifications_Toast_plays_the_notification_sound_and_its_going_is_silent()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+
+            clock.Advance(TimeSpan.FromSeconds(5));
+            Assert.False(core.Toast.IsShown);
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+        }
+
+        [Fact]
+        public void Notifications_there_from_the_start_are_silent()
+        {
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            Assert.Empty(sounds.Played);
+        }
+
+        [Fact]
+        public void Each_Toast_in_a_queue_plays_the_notification_sound_as_it_shows()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated"), new Notification("b", "Update available") });
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+
+            clock.Advance(TimeSpan.FromSeconds(5.5));
+            Assert.Equal("Update available", core.Toast.Text);
+            Assert.Equal(new[] { UiSound.Notification, UiSound.Notification }, sounds.Played);
+        }
+
+        [Fact]
+        public void A_notification_arriving_while_the_Guide_lists_Notifications_is_silent()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            OpenGuideOn("Notifications");
+            Tap(ControllerButton.A);
+            Assert.Equal(GuideItemKind.Notifications, core.Guide.Flyout?.Kind);
+            sounds.Played.Clear();
+
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            Assert.Empty(sounds.Played);
+        }
+
+#if DEBUG
+        [Fact]
+        public void A_calls_Toast_plays_the_notification_sound()
+        {
+            core.DebugRing("ana", null);
+
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+        }
+
+        [Fact]
+        public void A_call_cutting_in_and_the_notification_showing_again_after_it_play_once_per_Toast_shown()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+            clock.Advance(TimeSpan.FromSeconds(2));
+
+            core.DebugRing("ana", null);
+            Assert.Equal(new[] { UiSound.Notification, UiSound.Notification }, sounds.Played);
+
+            clock.Advance(TimeSpan.FromSeconds(30));
+            Assert.False(core.Toast.IsShown);
+            Assert.Equal(2, sounds.Played.Count);
+
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+            Assert.Equal("Library updated", core.Toast.Text);
+            Assert.Equal(new[] { UiSound.Notification, UiSound.Notification, UiSound.Notification }, sounds.Played);
+        }
+#endif
+
         private void HaloRuns()
         {
             core.OnGameStarted(library.Id("Halo Infinite"));

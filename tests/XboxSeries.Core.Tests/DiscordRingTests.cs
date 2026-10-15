@@ -44,6 +44,18 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_ring_plays_the_notification_sound_as_its_Toast_shows()
+        {
+            NotInCall();
+            KnowDm("600");
+            sounds.Played.Clear();
+
+            Ring("600");
+
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+        }
+
+        [Fact]
         public void The_call_Toast_carries_the_callers_avatar_for_its_tile()
         {
             NotInCall();
