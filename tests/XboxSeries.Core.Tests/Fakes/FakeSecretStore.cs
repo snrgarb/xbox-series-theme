@@ -10,7 +10,14 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public string Read(string name) => Values.TryGetValue(name, out var value) ? value : null;
 
-        public void Write(string name, string value) => Values[name] = value;
+        /// <summary>How many times anything has been written.</summary>
+        public int Writes { get; private set; }
+
+        public void Write(string name, string value)
+        {
+            Writes++;
+            Values[name] = value;
+        }
 
         public void Delete(string name) => Values.Remove(name);
     }

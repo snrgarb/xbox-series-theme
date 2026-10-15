@@ -16,6 +16,9 @@ namespace XboxSeries.Core
         /// <summary>The nonce of the GET_GUILDS or GET_CHANNELS the loading flyout waits for; a reply under any other is stale.</summary>
         private string flyoutRequest;
 
+        /// <summary>The server whose flyout is open or loading, which B goes back to among the servers.</summary>
+        private string openServerId;
+
         /// <summary>The GET_CHANNELs sent to learn who is in a server's voice channels, by nonce.</summary>
         private readonly HashSet<string> occupantRequests = new HashSet<string>();
 
@@ -37,6 +40,7 @@ namespace XboxSeries.Core
         /// <summary>A on a server: asks Discord for its channels, in a flyout under its name that shows they're coming.</summary>
         private void OpenServer(GuideItem server)
         {
+            openServerId = server.GuildId;
             flyoutRequest = SendCommand("GET_CHANNELS", new JObject { ["guild_id"] = server.GuildId });
             Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServer, server.Title, new GuideItem[0], isLoading: true);
             Guide.FocusedItem = null;
@@ -45,9 +49,8 @@ namespace XboxSeries.Core
         /// <summary>B in a server's flyout: back to the servers, focus on the one it was.</summary>
         private void BackToServers()
         {
-            var title = Guide.Flyout.Title;
             flyoutRequest = null;
-            ShowServers(serverItems.FirstOrDefault(s => s.Title == title));
+            ShowServers(serverItems.FirstOrDefault(s => s.GuildId == openServerId));
         }
 
         /// <summary>A on a voice channel: asks Discord to join it, and the flyout closes onto Servers.</summary>
@@ -84,7 +87,10 @@ namespace XboxSeries.Core
             ShowServers(null);
         }
 
-        /// <summary>GET_CHANNELS answered: an entry for each voice channel, in Discord's order, focus on the first; then who is in each is asked.</summary>
+        /// <summary>
+        /// GET_CHANNELS answered: an entry for each voice or stage channel, in Discord's order, focus on the first; then who
+        /// is in each is asked.
+        /// </summary>
         private void OnChannels(string nonce, JObject data)
         {
             if (!IsAwaitedBy(GuideItemKind.DiscordServer, nonce))
@@ -94,7 +100,7 @@ namespace XboxSeries.Core
 
             flyoutRequest = null;
             var channels = (data?["channels"] as JArray ?? new JArray()).OfType<JObject>()
-                .Where(c => (int?)c["type"] == 2)
+                .Where(c => (int?)c["type"] == 2 || (int?)c["type"] == 13)
                 .Select(c => new GuideItem(GuideItemKind.DiscordVoiceChannel, (string)c["name"]) { ChannelId = (string)c["id"] })
                 .ToList();
             Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServer, Guide.Flyout.Title, channels);
