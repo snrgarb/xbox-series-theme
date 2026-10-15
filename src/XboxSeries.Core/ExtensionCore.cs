@@ -1190,7 +1190,7 @@ namespace XboxSeries.Core
         private void Select(GuideItem item, Action<Action> dismiss)
         {
             if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
-                || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle
+                || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle || item.Kind == GuideItemKind.DiscordUnavailable
                 || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant)
             {
                 return;
