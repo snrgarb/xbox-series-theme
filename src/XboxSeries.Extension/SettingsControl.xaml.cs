@@ -39,6 +39,9 @@ namespace XboxSeries.Extension
                 [SettingsCategory.Guide] = GuideItem,
                 [SettingsCategory.Discord] = DiscordItem,
             };
+#if DEBUG
+            ShowDebugMenu();
+#endif
             DiscordSteps.ItemsSource = core.Settings.Discord.Steps.Select((step, i) => new { Number = $"{i + 1}.", Text = step }).ToList();
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
             Loaded += OnLoaded;
@@ -53,7 +56,13 @@ namespace XboxSeries.Extension
         public ICommand OpenSettingsCommand { get; }
 
         /// <summary>The rail, top to bottom, the divider aside.</summary>
-        private Button[] RailItems => new[] { PersonalisationItem, GuideItem, DiscordItem, PlayniteSettingsItem, MorePlayniteOptionsItem };
+        private Button[] RailItems => new[]
+        {
+            PersonalisationItem, GuideItem, DiscordItem, PlayniteSettingsItem, MorePlayniteOptionsItem,
+#if DEBUG
+            DebugItem,
+#endif
+        };
 
         /// <summary>Discord's buttons, as the pad moves between them: a row each, Connect and Disconnect side by side.</summary>
         private Button[][] DiscordRows => new[]
@@ -127,6 +136,14 @@ namespace XboxSeries.Extension
             var category = core.Settings.Category;
             Header.Text = category.ToString();
             DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
+#if DEBUG
+            if (category == SettingsCategory.Debug)
+            {
+                Header.Text = "Debug menu";
+            }
+
+            DebugPane.Visibility = category == SettingsCategory.Debug ? Visibility.Visible : Visibility.Collapsed;
+#endif
             foreach (var item in categoryItems)
             {
                 item.Value.Tag = item.Key == category ? "Selected" : null;
@@ -171,6 +188,13 @@ namespace XboxSeries.Extension
                 e.Handled = true;
                 PasteClientIdButton.Focus();
             }
+#if DEBUG
+            else if (e.OriginalSource == DebugItem && (pad == ControllerInput.A || e.Key == Key.Right))
+            {
+                e.Handled = true;
+                DebugButtons[0].Focus();
+            }
+#endif
             else if (pad == ControllerInput.A)
             {
                 e.Handled = true;
@@ -261,6 +285,109 @@ namespace XboxSeries.Extension
                 core.DisconnectDiscord();
             }
         }
+
+#if DEBUG
+        /// <summary>The Debug menu's buttons, top to bottom, each with the Toast it puts up.</summary>
+        private Button[] DebugButtons => new[]
+        {
+            DebugNotificationButton, DebugScreenshotButton, DebugLongButton, DebugThreeButton,
+            DebugCallButton, DebugCallAvatarButton, DebugCallAvatarFailsButton,
+        };
+
+        /// <summary>
+        /// Debug builds only: the second divider and the Debug menu under Playnite's entries, a category like the others,
+        /// and its pane's buttons. In a Release build all of it stays collapsed in the XAML and nothing reaches it.
+        /// </summary>
+        private void ShowDebugMenu()
+        {
+            DebugDivider.Visibility = Visibility.Visible;
+            DebugItem.Visibility = Visibility.Visible;
+            DebugItem.GotKeyboardFocus += OnCategoryFocused;
+            categoryItems[SettingsCategory.Debug] = DebugItem;
+            DebugPane.KeyDown += OnDebugPaneKeyDown;
+            foreach (var button in DebugButtons)
+            {
+                button.Click += OnDebugButtonClick;
+            }
+        }
+
+        /// <summary>
+        /// The pad in the Debug menu: up and down between its buttons, Left or B back to the rail's Debug menu, and A
+        /// presses the button focused.
+        /// </summary>
+        private void OnDebugPaneKeyDown(object sender, KeyEventArgs e)
+        {
+            var buttons = DebugButtons;
+            var here = Array.IndexOf(buttons, e.OriginalSource as Button);
+            if (here < 0)
+            {
+                return;
+            }
+
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (pad == ControllerInput.A)
+            {
+                e.Handled = true;
+                PressDebugButton(e.OriginalSource);
+            }
+            else if (pad == ControllerInput.B || e.Key == Key.Left)
+            {
+                // Handled here, before the page's B takes it back to where Settings was opened from.
+                e.Handled = true;
+                DebugItem.Focus();
+            }
+            else if (e.Key == Key.Right)
+            {
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+                buttons[Math.Max(0, Math.Min(buttons.Length - 1, here + (e.Key == Key.Up ? -1 : 1)))].Focus();
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnDebugPaneKeyDown.
+        private void OnDebugButtonClick(object sender, RoutedEventArgs e)
+        {
+            PressDebugButton(sender);
+        }
+
+        private void PressDebugButton(object button)
+        {
+            if (button == DebugNotificationButton)
+            {
+                core.DebugNotify("Library updated");
+            }
+            else if (button == DebugScreenshotButton)
+            {
+                core.DebugNotify("Screenshot failed 0x82323018");
+            }
+            else if (button == DebugLongButton)
+            {
+                core.DebugNotify("Library updated: 14 games added, 3 games given new covers and descriptions, and 2 games "
+                    + "removed because their install folders could no longer be found on this PC or any of its drives");
+            }
+            else if (button == DebugThreeButton)
+            {
+                core.DebugNotify("Library updated");
+                core.DebugNotify("Screenshot failed 0x82323018");
+                core.DebugNotify("Achievement unlocked");
+            }
+            else if (button == DebugCallButton)
+            {
+                core.DebugRing("Jakob", null);
+            }
+            else if (button == DebugCallAvatarButton)
+            {
+                core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/0.png");
+            }
+            else if (button == DebugCallAvatarFailsButton)
+            {
+                core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/does-not-exist.png");
+            }
+        }
+#endif
 
         /// <summary>The Windows clipboard's text, empty for none, or null when another program holds it open.</summary>
         private static string ClipboardText()
