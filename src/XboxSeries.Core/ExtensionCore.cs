@@ -76,7 +76,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// What the Toast showing as the Guide button went down told of, which the tap opens the Guide at: Notifications,
-        /// or the Discord tab's Answer for a call; null for no Toast.
+        /// the Discord tab's Answer for a call, or Profile &amp; system for the greeting; null for no Toast.
         /// </summary>
         private GuideItemKind? toastAtGuidePress;
         private Guid? runningGame;
@@ -140,6 +140,7 @@ namespace XboxSeries.Core
             LoadDiscordApp();
             LoadShortcuts();
             LoadRecentServers();
+            LoadStartUp();
         }
 
         public StatusState Status { get; } = new StatusState();
@@ -197,11 +198,14 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>The next notification's Toast, with the notification sound, unless the call's is showing, which they wait behind.</summary>
+        /// <summary>
+        /// The next notification's Toast, with the notification sound, unless the call's or the greeting is showing, which
+        /// they wait behind, or Start-up covers the screen, which they wait for.
+        /// </summary>
         private void ShowNextToast()
         {
             toastTimer = null;
-            if (waitingToasts.Count == 0 || ringToastTimer != null)
+            if (waitingToasts.Count == 0 || ringToastTimer != null || greetingTimer != null || Startup.IsShown)
             {
                 return;
             }
@@ -227,9 +231,39 @@ namespace XboxSeries.Core
             toastTimer = null;
             ringToastTimer?.Dispose();
             ringToastTimer = null;
+            waitingRingToast = null;
+            greetingTimer?.Dispose();
+            greetingTimer = null;
             shownNotification = null;
             waitingToasts.Clear();
             Toast.IsShown = false;
+        }
+
+        /// <summary>
+        /// A notification's Toast showing, or the gap after one, is cut short: the notification goes back to the front of
+        /// those waiting, to show again in its turn.
+        /// </summary>
+        private void PutBackShownNotification()
+        {
+            if (toastTimer == null)
+            {
+                return;
+            }
+
+            toastTimer.Dispose();
+            toastTimer = null;
+            if (Toast.IsShown && Toast.Kind != ToastKind.Call && shownNotification != null)
+            {
+                var waiting = waitingToasts.ToList();
+                waitingToasts.Clear();
+                waitingToasts.Enqueue(shownNotification);
+                foreach (var notification in waiting)
+                {
+                    waitingToasts.Enqueue(notification);
+                }
+            }
+
+            shownNotification = null;
         }
 
         /// <summary>The status area's clock and battery, read afresh and again on the next minute.</summary>
@@ -413,6 +447,13 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnControllerButton(ControllerButton button, ButtonState state, DateTime at)
         {
+            // Start-up has the pad to itself, the Guide button too; a button held from before it lets go as usual.
+            if (Startup.IsShown && (state == ButtonState.Pressed || button == ControllerButton.Guide))
+            {
+                OnStartupButton(button, state);
+                return;
+            }
+
             if (button == ControllerButton.Guide)
             {
                 OnGuideButton(state, at);
@@ -510,6 +551,7 @@ namespace XboxSeries.Core
                 guidePressedAt = at;
                 toastAtGuidePress = !Toast.IsShown ? (GuideItemKind?)null
                     : Toast.Kind == ToastKind.Call ? GuideItemKind.DiscordIncomingCall
+                    : Toast.Kind == ToastKind.Greeting ? GuideItemKind.Profile
                     : GuideItemKind.Notifications;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
@@ -564,7 +606,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// A tap opens the Guide at the subject of the Toast showing, as the console does: Notifications for a
-        /// notification's, the Discord tab, focus on Answer, for a call's.
+        /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting.
         /// </summary>
         private void OpenGuideFromTap()
         {
@@ -578,6 +620,10 @@ namespace XboxSeries.Core
             else if (toastAtGuidePress == GuideItemKind.DiscordIncomingCall && Settings.Discord.HasDiscordTab)
             {
                 ShowTab(GuideTabKind.Discord);
+            }
+            else if (toastAtGuidePress == GuideItemKind.Profile)
+            {
+                ShowTab(GuideTabKind.ProfileAndSystem);
             }
         }
 
@@ -736,7 +782,7 @@ namespace XboxSeries.Core
                 ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }
                 : new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem };
             Guide.Tabs = kinds
-                .Select(k => new GuideTab(k, k == Guide.Tab, k == GuideTabKind.ProfileAndSystem ? account.Picture : null))
+                .Select(k => new GuideTab(k, k == Guide.Tab, k == GuideTabKind.ProfileAndSystem ? ProfilePicture : null))
                 .ToList();
         }
 
@@ -768,12 +814,15 @@ namespace XboxSeries.Core
             Guide.FocusedItem = Guide.Utilities.Concat(Guide.Items).First(i => i.Kind == kind);
         }
 
-        /// <summary>Profile &amp; system: the profile card with the Windows user, then Settings and Power, each under a divider.</summary>
+        /// <summary>
+        /// Profile &amp; system: the profile card with the profile signed in, or the Windows user before the first
+        /// sign-in, then Settings and Power, each under a divider.
+        /// </summary>
         private void ShowProfileTab()
         {
             Guide.Items = new[]
             {
-                new GuideItem(GuideItemKind.Profile, account.Name, image: account.Picture),
+                new GuideItem(GuideItemKind.Profile, Status.Profile?.Gamertag ?? account.Name, image: ProfilePicture),
                 new GuideItem(GuideItemKind.Settings, "Settings", hasDividerAbove: true),
                 new GuideItem(GuideItemKind.Power, "Power", hasDividerAbove: true),
             };
@@ -1062,6 +1111,7 @@ namespace XboxSeries.Core
         private void ShowSettings(SettingsOrigin from)
         {
             CloseMyGames();
+            RefreshGamerpics();
             Settings.Category = SettingsCategory.StartUp;
             Settings.OpenedFrom = from;
             Settings.IsShown = true;
