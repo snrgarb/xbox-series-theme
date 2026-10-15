@@ -218,7 +218,7 @@
                     </Button>
                 </Grid>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                <StackPanel x:Name="DiscordButtons" Orientation="Horizontal" Margin="0,0,0,24">
                     <Button x:Name="ConnectButton" Style="{StaticResource PaneButton}" Tag="{Binding CanConnect}"
                             Margin="0,0,20,0" Click="OnDiscordButtonClick">
                         <TextBlock Text="Connect" Style="{StaticResource Text}" />

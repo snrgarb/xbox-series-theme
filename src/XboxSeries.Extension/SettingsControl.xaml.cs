@@ -27,6 +27,11 @@ namespace XboxSeries.Extension
 
         /// <summary>The rail item of each category.</summary>
         private readonly Dictionary<SettingsCategory, Button> categoryItems;
+#if DEBUG
+
+        /// <summary>Debug builds' Expire token now, after Disconnect: the saved tokens count as expiring, to try the refresh.</summary>
+        private readonly Button expireTokenButton;
+#endif
 
         internal SettingsControl(ExtensionCore core)
         {
@@ -41,6 +46,17 @@ namespace XboxSeries.Extension
             };
             DiscordSteps.ItemsSource = core.Settings.Discord.Steps.Select((step, i) => new { Number = $"{i + 1}.", Text = step }).ToList();
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
+#if DEBUG
+            expireTokenButton = new Button
+            {
+                Style = (Style)FindResource("PaneButton"),
+                Margin = new Thickness(20, 0, 0, 0),
+                Content = new TextBlock { Text = "Expire token now", Style = (Style)FindResource("Text") },
+            };
+            expireTokenButton.SetBinding(TagProperty, nameof(DiscordSettingsState.CanDisconnect));
+            expireTokenButton.Click += OnDiscordButtonClick;
+            DiscordButtons.Children.Add(expireTokenButton);
+#endif
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             ShowCategory();
@@ -60,7 +76,11 @@ namespace XboxSeries.Extension
         {
             new[] { PasteClientIdButton },
             new[] { PasteClientSecretButton },
+#if DEBUG
+            new[] { ConnectButton, DisconnectButton, expireTokenButton },
+#else
             new[] { ConnectButton, DisconnectButton },
+#endif
         };
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -260,6 +280,12 @@ namespace XboxSeries.Extension
             {
                 core.DisconnectDiscord();
             }
+#if DEBUG
+            else if (button == expireTokenButton)
+            {
+                core.ExpireDiscordTokens();
+            }
+#endif
         }
 
         /// <summary>The Windows clipboard's text, empty for none, or null when another program holds it open.</summary>
