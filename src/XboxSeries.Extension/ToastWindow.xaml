@@ -21,10 +21,12 @@
         own: a wide, solid Xbox green banner low at the bottom centre, a square tile of lighter green on its left with
         the image for the Toast's kind (the bell, a camera, Discord's mark, or the caller's avatar; see ToastImages.xaml),
         and large white text beside it that fades back and forth between the Toast's own line and "Press (Guide) to view".
-        It comes in as the console's does: the banner grows from its centre as it fades in, its text at its left where
-        the tile will be; a moment later the tile slides out from behind the banner's left edge as it fades in, pushing
-        the text right into its place. It goes by growing a little as it fades out. The banner is laid out at its final
-        size throughout; only render transforms move (see ToastWindow.xaml.cs).
+        It comes in as the console's does: the banner grows from its centre as it fades in over 0.3 s. For a kind whose
+        tile slides (ToastSlide.<Kind> in ToastImages.xaml), its text starts at its left where the tile will be, and
+        0.7 s after the grow the tile slides out from behind the banner's left edge as it fades in, pushing the text right
+        into its place; as it goes, the tile first slides back behind that edge. Any other kind has its tile and text in
+        their place from the start. It goes by growing a little as it fades out. The banner is laid out at its final size
+        throughout; only render transforms move (see ToastWindow.xaml.cs).
     -->
     <Window.Resources>
         <ResourceDictionary>
@@ -75,8 +77,9 @@
                 <Grid local:RoundedClip.Radius="6">
                     <DockPanel Margin="16,16,32,16">
                         <!--
-                            The tile: a lighter tint of the green, holding the kind's image, or the Toast's own over it. It starts
-                            a tile and its gap (120) to the left, behind the banner's edge, and unseen, and slides in (TileShift).
+                            The tile: a lighter tint of the green, holding the kind's image, or the Toast's own over it. Its values
+                            here are the slide's start, a tile and its gap (120) to the left, behind the banner's edge, and unseen,
+                            whence a kind that slides slides in (TileShift); any other kind's tile is put in its place at once.
                         -->
                         <Grid x:Name="Tile" DockPanel.Dock="Left" Width="96" Height="96" VerticalAlignment="Center" Margin="0,0,24,0"
                               Opacity="0">
@@ -105,8 +108,9 @@
                             </Grid>
                         </Grid>
                         <!--
-                            The text: the Toast's line, on one line, and the prompt in the same place, fading between them. It
-                            starts where the tile will be, 120 to the left, and moves right into its place as the tile slides in.
+                            The text: the Toast's line, on one line, and the prompt in the same place, fading between them. For a
+                            kind that slides it starts where the tile will be, 120 to the left, and moves right into its place as
+                            the tile slides in, and back as it slides out; for any other kind it is in its place at once.
                         -->
                         <Grid VerticalAlignment="Center">
                             <Grid.RenderTransform>
