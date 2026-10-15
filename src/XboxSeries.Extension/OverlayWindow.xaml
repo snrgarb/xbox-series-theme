@@ -48,16 +48,18 @@
     <Viewbox Stretch="Uniform">
         <Grid x:Name="Root" Height="1080" Width="1920">
             <!--
-                A shade across the top, dark at the very top and clear by y 260, behind the panel and the status area, so the
-                clock and battery read over whatever is in front: a game, or any Dashboard page. It comes and goes with the dim.
-                Only with the panel, as the status area: Power on its own has none.
+                A shade across the top, near-opaque black at the very top and fading out by y 420, behind the panel and the
+                status area, as over the console's landing tab (G2-tab-1-landing), so the clock and battery read over whatever
+                is in front: a game, or any Dashboard page. It comes and goes with the dim. Only with the panel, as the status
+                area: Power on its own has none.
             -->
-            <Rectangle Height="260" VerticalAlignment="Top" HorizontalAlignment="Stretch" IsHitTestVisible="False"
+            <Rectangle Height="420" VerticalAlignment="Top" HorizontalAlignment="Stretch" IsHitTestVisible="False"
                        Opacity="{Binding Opacity, ElementName=Dim}">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Color="#CC000000" Offset="0" />
-                        <GradientStop Color="#8C000000" Offset="0.5" />
+                        <GradientStop Color="#FA000000" Offset="0" />
+                        <GradientStop Color="#EB000000" Offset="0.3" />
+                        <GradientStop Color="#A6000000" Offset="0.6" />
                         <GradientStop Color="#00000000" Offset="1" />
                     </LinearGradientBrush>
                 </Rectangle.Fill>
