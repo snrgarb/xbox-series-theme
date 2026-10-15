@@ -45,6 +45,24 @@ namespace XboxSeries.Extension
             SizeChanged += (_, __) => FitToScreen();
         }
 
+        /// <summary>
+        /// Shows the Overlay once where it starts, off every screen, without taking focus, and hides it again, so that
+        /// its window and the Guide's panel are made and laid out before the Guide first opens rather than as it opens.
+        /// </summary>
+        public void Prewarm()
+        {
+            if (IsVisible || new WindowInteropHelper(this).Handle != IntPtr.Zero)
+            {
+                return;
+            }
+
+            ShowActivated = false;
+            Show();
+            UpdateLayout();
+            Hide();
+            ShowActivated = true;
+        }
+
         /// <summary>The status area at the top right, and the Notifications utility's count.</summary>
         public StatusState Status { get; }
 

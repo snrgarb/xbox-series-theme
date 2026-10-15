@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 using System.Reflection;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using Playnite.SDK;
 using Playnite.SDK.Events;
@@ -81,7 +82,11 @@ namespace XboxSeries.Extension
         {
             // Created here, on the UI thread, which owns the Overlay and runs the core. The Toast's may be already, for
             // the Start-up sequence's greeting.
-            windows.Overlay = new OverlayWindow(core);
+            var overlay = new OverlayWindow(core);
+            windows.Overlay = overlay;
+
+            // Made and laid out once the UI thread is idle, so the Guide's first open is as quick as the rest.
+            PlayniteApi.MainView.UIDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(overlay.Prewarm));
             toastWindow = toastWindow ?? new ToastWindow(core.Toast);
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
