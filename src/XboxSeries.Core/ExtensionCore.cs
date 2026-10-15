@@ -9,7 +9,7 @@ namespace XboxSeries.Core
     /// The extension's single facade. Controller button events, library snapshots and port events go in;
     /// view state comes out, and commands go out through the ports.
     /// </summary>
-    public sealed class ExtensionCore
+    public sealed partial class ExtensionCore
     {
         /// <summary>How many games the landing tab lists, the running one included, as on the console.</summary>
         private const int RecentGameCount = 4;
@@ -114,8 +114,14 @@ namespace XboxSeries.Core
             IDrives drives,
             IUserAccount account,
             IAudio audio,
-            IController controller)
+            IController controller,
+            IDiscordTransport discord,
+            IDiscordOAuth discordOAuth,
+            ISecretStore secrets)
         {
+            this.discord = discord;
+            this.discordOAuth = discordOAuth;
+            this.secrets = secrets;
             this.drives = drives;
             this.account = account;
             this.audio = audio;
@@ -125,6 +131,7 @@ namespace XboxSeries.Core
             this.playnite = playnite;
             this.sounds = sounds;
             TickStatus();
+            LoadDiscordApp();
         }
 
         public StatusState Status { get; } = new StatusState();
@@ -652,22 +659,35 @@ namespace XboxSeries.Core
         /// <summary>Shows a tab, focus on its first entry.</summary>
         private void ShowTab(GuideTabKind tab)
         {
-            Guide.Tabs = new[]
-            {
-                new GuideTab(GuideTabKind.Landing, tab == GuideTabKind.Landing),
-                new GuideTab(GuideTabKind.ProfileAndSystem, tab == GuideTabKind.ProfileAndSystem, account.Picture),
-            };
             Guide.Tab = tab;
+            RefreshTabs();
             Guide.Flyout = null;
             if (tab == GuideTabKind.Landing)
             {
                 ShowLandingTab();
+                return;
+            }
+
+            Guide.Utilities = new GuideItem[0];
+            if (tab == GuideTabKind.Discord)
+            {
+                ShowDiscordTab();
             }
             else
             {
-                Guide.Utilities = new GuideItem[0];
                 ShowProfileTab();
             }
+        }
+
+        /// <summary>The icons along the Guide's top, the Discord tab's among them only while Discord is connected.</summary>
+        private void RefreshTabs()
+        {
+            var kinds = Settings.Discord.IsConnected
+                ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }
+                : new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem };
+            Guide.Tabs = kinds
+                .Select(k => new GuideTab(k, k == Guide.Tab, k == GuideTabKind.ProfileAndSystem ? account.Picture : null))
+                .ToList();
         }
 
         /// <summary>
@@ -1165,7 +1185,8 @@ namespace XboxSeries.Core
         /// </summary>
         private void Select(GuideItem item, Action<Action> dismiss)
         {
-            if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume)
+            if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
+                || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle)
             {
                 return;
             }

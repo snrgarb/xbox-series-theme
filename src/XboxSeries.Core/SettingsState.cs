@@ -41,6 +41,9 @@ namespace XboxSeries.Core
         /// <summary>Where the page was opened from, which B goes back to.</summary>
         public SettingsOrigin OpenedFrom { get; internal set; }
 
+        /// <summary>The Discord category: the Connect checklist, the Client ID and Secret, and the status line.</summary>
+        public DiscordSettingsState Discord { get; } = new DiscordSettingsState();
+
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
 
