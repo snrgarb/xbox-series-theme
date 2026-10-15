@@ -61,6 +61,46 @@
         </Setter>
     </Style>
 
+    <!--
+        The top bar's profile: the user's picture and name. With the extension, a button that opens the Guide on Profile &
+        system, ringed like the round icons when focused; theme-only, never focused.
+    -->
+    <Style x:Key="XboxTopBarProfile" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="56" Height="56">
+                            <Ellipse Fill="{DynamicResource GlyphBrush}" />
+                            <TextBlock Text="&#xE77B;" Style="{StaticResource XboxIcon}" />
+                            <Ellipse x:Name="Ring" Margin="-4" StrokeThickness="3"
+                                     Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                        </Grid>
+                        <TextBlock Text="{x:Static sys:Environment.UserName}" Style="{StaticResource XboxText}"
+                                   VerticalAlignment="Center" Margin="16,0,0,0" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <DataTrigger Binding="{PluginStatus Plugin=XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b, Status=Installed}" Value="True">
+                <Setter Property="Focusable" Value="True" />
+                <Setter Property="IsHitTestVisible" Value="True" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Theme-only layout: collapsed when the extension is installed, which injects its own elements in its place. -->
     <Style x:Key="XboxThemeOnly" TargetType="FrameworkElement">
         <Style.Triggers>
@@ -183,12 +223,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Grid Width="56" Height="56">
-                                        <Ellipse Fill="{DynamicResource GlyphBrush}" />
-                                        <TextBlock Text="&#xE77B;" Style="{StaticResource XboxIcon}" />
-                                    </Grid>
-                                    <TextBlock Text="{x:Static sys:Environment.UserName}" Style="{StaticResource XboxText}"
-                                               VerticalAlignment="Center" Margin="16,0,0,0" />
+                                    <!-- With the extension, the Guide on Profile & system. -->
+                                    <ButtonEx Style="{StaticResource XboxTopBarProfile}"
+                                              Command="{Binding Content.OpenProfileCommand, ElementName=XboxSeries_Status}" />
 
                                     <!-- Install notice: theme-only users, never clickable. -->
                                     <Border Margin="28,0,0,0" Padding="14,6" CornerRadius="4" VerticalAlignment="Center"
@@ -252,37 +289,45 @@
                                         <TextBlock Text="&#xE896;" Style="{StaticResource XboxIcon}" Foreground="{DynamicResource GlyphLightBrush}" />
                                     </ButtonEx>
 
-                                    <ContentControl x:Name="PART_ElemBatteryStatus" Focusable="False" FontSize="28"
-                                                    VerticalAlignment="Center" Margin="10,0,6,0">
-                                        <ContentControl.Style>
-                                            <Style TargetType="ContentControl">
-                                                <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Critical">
-                                                        <Setter Property="Content" Value="{DynamicResource BatteryStatusCritical}" />
-                                                        <Setter Property="Foreground" Value="Red" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Low">
-                                                        <Setter Property="Content" Value="{DynamicResource BatteryStatusLow}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Medium">
-                                                        <Setter Property="Content" Value="{DynamicResource BatteryStatusMedium}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="High">
-                                                        <Setter Property="Content" Value="{DynamicResource BatteryStatusHigh}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding PowerStatus.IsCharging}" Value="True">
-                                                        <Setter Property="Content" Value="{DynamicResource BatteryStatusCharging}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </ContentControl.Style>
-                                    </ContentControl>
-                                    <TextBlock x:Name="PART_TextBatteryPercentage" Style="{StaticResource XboxText}"
-                                               VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <!--
+                                        The status area. Theme-only, Playnite's own: the PC's battery and the clock. With the
+                                        extension, its own, as on the console and in the Guide: the controller's battery and the clock.
+                                    -->
+                                    <ContentControl x:Name="XboxSeries_Status" Focusable="False" IsTabStop="False"
+                                                    VerticalAlignment="Center" Margin="10,0,10,0" />
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Style="{StaticResource XboxThemeOnly}">
+                                        <ContentControl x:Name="PART_ElemBatteryStatus" Focusable="False" FontSize="28"
+                                                        VerticalAlignment="Center" Margin="10,0,6,0">
+                                            <ContentControl.Style>
+                                                <Style TargetType="ContentControl">
+                                                    <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Critical">
+                                                            <Setter Property="Content" Value="{DynamicResource BatteryStatusCritical}" />
+                                                            <Setter Property="Foreground" Value="Red" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Low">
+                                                            <Setter Property="Content" Value="{DynamicResource BatteryStatusLow}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Medium">
+                                                            <Setter Property="Content" Value="{DynamicResource BatteryStatusMedium}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="High">
+                                                            <Setter Property="Content" Value="{DynamicResource BatteryStatusHigh}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PowerStatus.IsCharging}" Value="True">
+                                                            <Setter Property="Content" Value="{DynamicResource BatteryStatusCharging}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ContentControl.Style>
+                                        </ContentControl>
+                                        <TextBlock x:Name="PART_TextBatteryPercentage" Style="{StaticResource XboxText}"
+                                                   VerticalAlignment="Center" Margin="0,0,16,0" />
 
-                                    <TextBlock x:Name="PART_TextClock" Style="{StaticResource XboxText}" FontFamily="{DynamicResource XboxFontSemibold}"
-                                               VerticalAlignment="Center" Margin="10,0,10,0" />
+                                        <TextBlock x:Name="PART_TextClock" Style="{StaticResource XboxText}" FontFamily="{DynamicResource XboxFontSemibold}"
+                                                   VerticalAlignment="Center" Margin="10,0,10,0" />
+                                    </StackPanel>
 
                                     <ButtonEx x:Name="PART_ButtonNotifications" Tag="Notifications" Style="{StaticResource XboxTopBarButton}">
                                         <Grid>

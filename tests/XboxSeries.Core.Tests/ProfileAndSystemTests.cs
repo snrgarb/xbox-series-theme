@@ -20,7 +20,7 @@ namespace XboxSeries.Core.Tests
         public ProfileAndSystemTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), account);
+            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), account, new FakeAudio(), new FakeController());
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: HaloDirectory, coverImage: @"C:\covers\halo.jpg");
             core.OnLibraryChanged(library.Snapshot());
@@ -461,6 +461,29 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.RightShoulder);
 
             Assert.Equal(new[] { (ControllerButton.Guide, "Hold for power options") }, Hints());
+        }
+
+        [Fact]
+        public void The_profile_on_Homes_top_bar_opens_the_Guide_on_Profile_and_system_and_B_goes_back_to_Playnite()
+        {
+            playnite.BringToFront();
+
+            core.OpenProfile();
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.True(core.Guide.ShowsPanel);
+            Assert.Equal(GuideTabKind.ProfileAndSystem, SelectedTab());
+            Assert.Equal(GuideItemKind.Profile, core.Guide.FocusedItem.Kind);
+            Assert.Equal(new[] { UiSound.OpenMenu }, sounds.Played);
+            Assert.Equal(FakeWindowSystem.Overlay, windows.Foreground);
+
+            // The A that chose the profile reaches the core too, after the Guide opened; on the profile card it does nothing.
+            Tap(ControllerButton.A);
+            Assert.True(core.Guide.IsOpen);
+
+            Tap(ControllerButton.B);
+
+            Assert.Equal(playnite.Window, windows.Foreground);
         }
 
         private void OpenProfileTab()

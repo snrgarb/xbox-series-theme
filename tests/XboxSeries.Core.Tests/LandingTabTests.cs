@@ -15,7 +15,7 @@ namespace XboxSeries.Core.Tests
         public LandingTabTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController());
         }
 
         [Fact]
@@ -128,9 +128,14 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("My games & apps", Focused());
 
             Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
             Assert.Equal("Halo Infinite", Focused());
 
+            // Below the last entry is the utilities row, the tab's bottom end.
+            Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
+            Assert.Equal("Notifications", Focused());
+
+            Tap(ControllerButton.DPadUp);
             Tap(ControllerButton.DPadUp);
             Assert.Equal("My games & apps", Focused());
         }

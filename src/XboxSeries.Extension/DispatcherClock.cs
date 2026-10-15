@@ -1,17 +1,22 @@
 using System;
+using System.Windows;
 using System.Windows.Threading;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>Adapter: the real clock, with timers that fire on the UI thread that created it.</summary>
+    /// <summary>
+    /// Adapter: the real clock, with timers that fire on Playnite's UI thread, which runs the core, whichever thread
+    /// sets them: the core sets its first, the status area's clock, as it is built.
+    /// </summary>
     internal sealed class DispatcherClock : IClock
     {
         public DateTime Now => DateTime.Now;
 
         public IDisposable After(TimeSpan delay, Action callback)
         {
-            var timer = new DispatcherTimer { Interval = delay };
+            var dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
+            var timer = new DispatcherTimer(DispatcherPriority.Normal, dispatcher) { Interval = delay };
             timer.Tick += (_, __) =>
             {
                 timer.Stop();

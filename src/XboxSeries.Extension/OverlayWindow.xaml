@@ -157,16 +157,85 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <StackPanel Grid.Row="1" Margin="0,30,0,0">
-                        <!-- Profile & system's heading. The landing tab has none. -->
-                        <TextBlock Text="Profile &amp; system" FontSize="33" Margin="28,-4,0,12">
+                    <DockPanel Grid.Row="1" Margin="0,30,0,0">
+                        <!--
+                            The landing tab's row of utilities along the bottom, as on the console: Notifications, with how
+                            many there are, and Audio. Empty, and so gone, on the other tabs and on a utility.
+                        -->
+                        <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Utilities}" Focusable="False" Margin="8,12,8,16">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Height="85" Margin="8,0" Background="Transparent"
+                                          MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
+                                        <Border x:Name="Fill" CornerRadius="4" Background="#33000000" />
+                                        <!-- Segoe Fluent Icons / MDL2 Assets glyphs: the bell Home's top bar uses, and the speaker. -->
+                                        <TextBlock x:Name="Glyph" Text="&#xE767;" Style="{StaticResource GuideIcon}" FontSize="30" HorizontalAlignment="Center" />
+                                        <Border x:Name="Badge" MinWidth="26" Height="26" CornerRadius="13" Padding="7,0"
+                                                Background="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                                            <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
+                                                       Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
+                                        </Border>
+                                        <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="6"
+                                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Notifications">
+                                            <Setter TargetName="Glyph" Property="Text" Value="&#xE91C;" />
+                                            <Setter TargetName="Badge" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}" Value="0">
+                                            <Setter TargetName="Badge" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                            <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
+                                            <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- The heading: Profile & system's, or the utility's. The landing tab has none. -->
+                        <TextBlock DockPanel.Dock="Top" FontSize="33" Margin="28,-4,0,12">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Tab}" Value="ProfileAndSystem">
+                                            <Setter Property="Text" Value="Profile &amp; system" />
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding Utility}" Value="Notifications">
+                                            <Setter Property="Text" Value="Notifications" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Utility}" Value="Audio">
+                                            <Setter Property="Text" Value="Audio" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <!-- Notifications with none to show. -->
+                        <TextBlock DockPanel.Dock="Top" Text="No new notifications" FontSize="24" Foreground="#B3FFFFFF" Margin="28,12,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Utility}" Value="Notifications" />
+                                                <Condition Binding="{Binding Items.Count}" Value="0" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
@@ -174,15 +243,24 @@
                         <!--
                             The tab's entries. Home and My games & apps are an icon and a title; games show their cover; the
                             profile card shows the account picture; Settings and Power are a smaller icon and title, each
-                            under a divider. The focused entry is filled a little lighter and wears the tiles' green ring.
+                            under a divider. A utility's entries: notifications as their text; Audio's volume slider and
+                            mute switch. The focused entry is filled a little lighter and wears the tiles' green ring, and is
+                            scrolled into view when a long list of notifications runs past the panel.
                         -->
-                        <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                        <ScrollViewer x:Name="EntriesScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
+                        <ItemsControl x:Name="Entries" ItemsSource="{Binding Items}" Focusable="False">
                             <ItemsControl.Style>
                                 <Style TargetType="ItemsControl">
                                     <Style.Triggers>
                                         <!-- The landing tab's Home sits a little lower, where the other tab has its heading. -->
                                         <DataTrigger Binding="{Binding Tab}" Value="Landing">
                                             <Setter Property="Margin" Value="0,18,0,0" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Utility}" Value="Notifications">
+                                            <Setter Property="Margin" Value="0" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Utility}" Value="Audio">
+                                            <Setter Property="Margin" Value="0" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -220,7 +298,27 @@
                                                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
                                                 <TextBlock x:Name="Running" Text="Running" Style="{StaticResource GuideText}" FontSize="22"
                                                            Foreground="#B3FFFFFF" Visibility="Collapsed" />
+                                                <!-- Audio's volume slider: a track filled to the level, in the accent. -->
+                                                <ProgressBar x:Name="Slider" Minimum="0" Maximum="100" Value="{Binding Level, Mode=OneWay}"
+                                                             Height="6" Margin="0,12,56,0" Visibility="Collapsed" Focusable="False">
+                                                    <ProgressBar.Template>
+                                                        <ControlTemplate TargetType="ProgressBar">
+                                                            <Grid>
+                                                                <Border x:Name="PART_Track" Background="#40FFFFFF" CornerRadius="3" />
+                                                                <Border x:Name="PART_Indicator" Background="{DynamicResource GlyphLightBrush}"
+                                                                        CornerRadius="3" HorizontalAlignment="Left" />
+                                                            </Grid>
+                                                        </ControlTemplate>
+                                                    </ProgressBar.Template>
+                                                </ProgressBar>
                                             </StackPanel>
+                                            <TextBlock x:Name="LevelText" Text="{Binding Level}" Style="{StaticResource GuideText}" FontSize="24"
+                                                       HorizontalAlignment="Right" Margin="0,0,24,0" Visibility="Collapsed" />
+                                            <!-- Audio's mute switch: a pill, filled in the accent with its knob to the right when on. -->
+                                            <Grid x:Name="Switch" Width="48" Height="24" HorizontalAlignment="Right" Margin="0,0,24,0" Visibility="Collapsed">
+                                                <Border x:Name="SwitchTrack" CornerRadius="12" BorderBrush="White" BorderThickness="2" />
+                                                <Ellipse x:Name="SwitchKnob" Width="12" Height="12" Fill="White" HorizontalAlignment="Left" Margin="6,0" />
+                                            </Grid>
                                             <!-- The tiles' ring, 1 px past the entry as theirs is past their art. -->
                                             <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="6"
                                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
@@ -285,6 +383,38 @@
                                             <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
                                             <Setter TargetName="Title" Property="FontSize" Value="24" />
                                         </DataTrigger>
+                                        <!-- A notification: its text, wrapping, with no icon. -->
+                                        <DataTrigger Binding="{Binding Kind}" Value="Notification">
+                                            <Setter TargetName="Entry" Property="Height" Value="NaN" />
+                                            <Setter TargetName="Entry" Property="MinHeight" Value="75" />
+                                            <Setter TargetName="Text" Property="Margin" Value="24,14,24,14" />
+                                            <Setter TargetName="Title" Property="FontSize" Value="22" />
+                                            <Setter TargetName="Title" Property="MaxHeight" Value="120" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Volume">
+                                            <Setter TargetName="Glyph" Property="Text" Value="&#xE767;" />
+                                            <Setter TargetName="Entry" Property="Height" Value="96" />
+                                            <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                                            <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                                            <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                                            <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                            <Setter TargetName="Slider" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="LevelText" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Mute">
+                                            <Setter TargetName="Glyph" Property="Text" Value="&#xE74F;" />
+                                            <Setter TargetName="Entry" Property="Height" Value="75" />
+                                            <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                                            <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                                            <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                                            <Setter TargetName="Title" Property="FontSize" Value="24" />
+                                            <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsOn}" Value="True">
+                                            <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource GlyphLightBrush}" />
+                                            <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
+                                            <Setter TargetName="SwitchKnob" Property="HorizontalAlignment" Value="Right" />
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding IsFocused}" Value="True">
                                             <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
                                             <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
@@ -293,38 +423,23 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </StackPanel>
-
-                    <!--
-                        The landing tab's row of buttons along the bottom (on the console notifications, Game Pass, Store,
-                        search and audio). Empty for now, holding their place so the panel reads as the console's.
-                    -->
-                    <UniformGrid Grid.Row="1" Rows="1" Columns="5" Height="85" Margin="8,0,8,16" VerticalAlignment="Bottom">
-                        <UniformGrid.Style>
-                            <Style TargetType="UniformGrid">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Tab}" Value="Landing">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </UniformGrid.Style>
-                        <UniformGrid.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="Margin" Value="8,0" />
-                                <Setter Property="CornerRadius" Value="4" />
-                                <Setter Property="Background" Value="#33000000" />
-                            </Style>
-                        </UniformGrid.Resources>
-                        <Border />
-                        <Border />
-                        <Border />
-                        <Border />
-                        <Border />
-                    </UniformGrid>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Grid>
             </Border>
+            <!-- The status area, top right, as on the console. Only with the panel: Power on its own has none. -->
+            <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,60,78,0" Opacity="{Binding Opacity, ElementName=Dim}">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ShowsPanel}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <local:StatusArea DataContext="{Binding Status, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}" />
+            </Grid>
             <!-- Darkens everything behind a menu or prompt, the Guide included. -->
             <Border Background="#B3000000">
                 <Border.Style>
