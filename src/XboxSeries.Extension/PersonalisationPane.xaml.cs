@@ -17,7 +17,8 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// Settings' Personalisation category: its boxes, Start up's for now, and the page each opens in their place (Start
-    /// up's boxes, then Boot video, Profiles, a profile, its Picture). The pad moves between a page's boxes; A opens or
+    /// up's boxes, then Boot video, Who's playing today?, Profiles, a profile, its Picture). Every box shows its name
+    /// alone; what it's set to shows on the page it opens. The pad moves between a page's boxes; A opens or
     /// sets, and B steps back a page at a time, focus going back to the box that opened it, then from Personalisation's
     /// boxes to the rail. Every choice goes straight to the core, which saves it; the pane holds which page shows and
     /// nothing else.
@@ -63,6 +64,7 @@ namespace XboxSeries.Extension
             Personalisation,
             StartUp,
             BootVideo,
+            WhosPlaying,
             Profiles,
             Profile,
             Pictures,
@@ -76,6 +78,7 @@ namespace XboxSeries.Extension
                 switch (page)
                 {
                     case Page.BootVideo: return "Boot video";
+                    case Page.WhosPlaying: return "Who's playing today?";
                     case Page.Profiles: return "Profiles";
                     case Page.Profile: return Profile?.Gamertag ?? "";
                     case Page.Pictures: return "Picture";
@@ -122,6 +125,7 @@ namespace XboxSeries.Extension
             PersonalisationPage.Visibility = next == Page.Personalisation ? Visibility.Visible : Visibility.Collapsed;
             StartUpPage.Visibility = next == Page.StartUp ? Visibility.Visible : Visibility.Collapsed;
             BootVideoPage.Visibility = next == Page.BootVideo ? Visibility.Visible : Visibility.Collapsed;
+            WhosPlayingPage.Visibility = next == Page.WhosPlaying ? Visibility.Visible : Visibility.Collapsed;
             ProfilesPage.Visibility = next == Page.Profiles ? Visibility.Visible : Visibility.Collapsed;
             ProfilePage.Visibility = next == Page.Profile ? Visibility.Visible : Visibility.Collapsed;
             PicturesPage.Visibility = next == Page.Pictures ? Visibility.Visible : Visibility.Collapsed;
@@ -136,7 +140,14 @@ namespace XboxSeries.Extension
             {
                 case Page.BootVideo:
                     BootVideoRows.ItemsSource = BootVideoNames
-                        .Select(name => new BootVideoRow(name.Key, name.Value, name.Key == State.BootVideo)).ToList();
+                        .Select(name => new ChoiceRow(name.Key, name.Value, name.Key == State.BootVideo)).ToList();
+                    break;
+                case Page.WhosPlaying:
+                    WhosPlayingRows.ItemsSource = new[]
+                    {
+                        new ChoiceRow(true, "Ask every time", State.AskWhosPlaying),
+                        new ChoiceRow(false, "Sign in the last profile", !State.AskWhosPlaying),
+                    };
                     break;
                 case Page.Profiles:
                     ProfileBoxes.ItemsSource = State.Profiles.Cast<object>().Concat(new[] { new AddProfileItem() }).ToList();
@@ -144,7 +155,6 @@ namespace XboxSeries.Extension
                 case Page.Profile:
                     var profile = Profile;
                     ProfilePage.DataContext = profile;
-                    PictureDetail.Text = State.Gamerpics.Count > 1 ? $"Choose from {State.Gamerpics.Count}" : "Add images to the Gamerpics folder";
                     RemoveBox.Visibility = State.Profiles.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
                     break;
                 case Page.Pictures:
@@ -159,6 +169,7 @@ namespace XboxSeries.Extension
         private void OnStateChanged(object sender, PropertyChangedEventArgs e)
         {
             var refill = (page == Page.BootVideo && e.PropertyName == nameof(StartUpSettingsState.BootVideo))
+                || (page == Page.WhosPlaying && e.PropertyName == nameof(StartUpSettingsState.AskWhosPlaying))
                 || ((page == Page.Profiles || page == Page.Profile || page == Page.Pictures) && e.PropertyName == nameof(StartUpSettingsState.Profiles))
                 || ((page == Page.Profile || page == Page.Pictures) && e.PropertyName == nameof(StartUpSettingsState.Gamerpics));
             if (!refill)
@@ -263,11 +274,16 @@ namespace XboxSeries.Extension
             }
             else if (button == AskBox)
             {
-                core.SetAskWhosPlaying(!State.AskWhosPlaying);
+                Open(Page.WhosPlaying, button);
+                FocusSoon(() => AtIndex(State.AskWhosPlaying ? 0 : 1));
             }
-            else if (button.DataContext is BootVideoRow row)
+            else if (button.DataContext is ChoiceRow row && row.Value is BootVideo video)
             {
-                core.SetBootVideo(row.Video);
+                core.SetBootVideo(video);
+            }
+            else if (button.DataContext is ChoiceRow askRow && askRow.Value is bool ask)
+            {
+                core.SetAskWhosPlaying(ask);
             }
             else if (button.DataContext is AddProfileItem)
             {
@@ -297,11 +313,16 @@ namespace XboxSeries.Extension
             }
             else if (button == PictureBox && Profile is Profile pictureOf)
             {
-                // Nothing to choose from opens nothing: the box says to add images to the Gamerpics folder.
                 if (State.Gamerpics.Count > 0)
                 {
                     Open(Page.Pictures, button);
                     FocusSoon(() => AtIndex(Math.Max(0, State.Gamerpics.ToList().IndexOf(pictureOf.Picture))));
+                }
+                else
+                {
+                    // Nothing to choose from opens nothing, saying where pictures come from.
+                    API.Instance.Dialogs.ShowMessage("Add images to the Gamerpics folder to choose from.", "Picture");
+                    FocusSoon(() => PictureBox);
                 }
             }
             else if (button == RemoveBox && Profile is Profile removing && State.Profiles.Count > 1)
@@ -374,6 +395,7 @@ namespace XboxSeries.Extension
             switch (page)
             {
                 case Page.BootVideo: shown = BootVideoRows; break;
+                case Page.WhosPlaying: shown = WhosPlayingRows; break;
                 case Page.Profiles: shown = ProfileBoxes; break;
                 case Page.Profile: shown = ProfilePage; break;
                 case Page.Pictures: shown = PictureButtons; break;
@@ -389,7 +411,9 @@ namespace XboxSeries.Extension
         {
             switch (page)
             {
-                case Page.BootVideo: return 1;
+                case Page.BootVideo:
+                case Page.WhosPlaying:
+                    return 1;
                 case Page.Pictures: return 4;
                 default: return 2;
             }
@@ -454,17 +478,18 @@ namespace XboxSeries.Extension
         }
     }
 
-    /// <summary>A generation on the Boot video page, ticked while it's the one set.</summary>
-    internal sealed class BootVideoRow
+    /// <summary>A choice in a page's list, as a generation on Boot video's, ticked while it's the one set.</summary>
+    internal sealed class ChoiceRow
     {
-        public BootVideoRow(BootVideo video, string name, bool isCurrent)
+        public ChoiceRow(object value, string name, bool isCurrent)
         {
-            Video = video;
+            Value = value;
             Name = name;
             IsCurrent = isCurrent;
         }
 
-        public BootVideo Video { get; }
+        /// <summary>What choosing it sets: a <see cref="BootVideo"/>, or whether Who's playing today? asks.</summary>
+        public object Value { get; }
 
         public string Name { get; }
 
@@ -488,35 +513,5 @@ namespace XboxSeries.Extension
         public string Path { get; }
 
         public bool IsCurrent { get; }
-    }
-
-    /// <summary>
-    /// The second line of Start up's boxes: the boot video's name, "2 profiles", "Ask on start and wake: On", or a real
-    /// name's "Not set", by the converter parameter.
-    /// </summary>
-    internal sealed class StartUpTextConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            switch (parameter as string)
-            {
-                case "Profiles":
-                    var count = value is int n ? n : 0;
-                    return count == 1 ? "1 profile" : $"{count} profiles";
-                case "Ask":
-                    return "Ask on start and wake: " + (value is bool ask && ask ? "On" : "Off");
-                case "RealName":
-                    return string.IsNullOrWhiteSpace(value as string) ? "Not set" : value;
-                default:
-                    var name = PersonalisationPane.BootVideoNames.FirstOrDefault(pair => Equals(pair.Key, value)).Value ?? "";
-
-                    // The box names the console without its year, as the console's own setting would.
-                    var year = name.IndexOf(" (", StringComparison.Ordinal);
-                    return year < 0 ? name : name.Substring(0, year);
-            }
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-            throw new NotSupportedException();
     }
 }
