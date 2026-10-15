@@ -33,13 +33,14 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Has Windows draw <paramref name="window"/>'s transparent pixels as see-through, so a WPF window can be
-        /// transparent while the graphics card draws it, rather than a layered window copied back through the
-        /// processor on every frame.
+        /// transparent while the graphics card draws it, rather than through AllowsTransparency, whose layered window
+        /// is copied back through the processor on every frame.
         /// </summary>
-        public static void SeeThrough(IntPtr window)
+        public static void SeeThrough(System.Windows.Interop.HwndSource window)
         {
+            window.CompositionTarget.BackgroundColor = System.Windows.Media.Colors.Transparent;
             var whole = new MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
-            DwmExtendFrameIntoClientArea(window, ref whole);
+            DwmExtendFrameIntoClientArea(window.Handle, ref whole);
         }
 
         [StructLayout(LayoutKind.Sequential)]
