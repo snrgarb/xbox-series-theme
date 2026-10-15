@@ -681,10 +681,13 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>The icons along the Guide's top, the Discord tab's among them only while Discord is connected.</summary>
+        /// <summary>
+        /// The icons along the Guide's top, the Discord tab's among them from the first Connect until Disconnect, signed
+        /// in or not (<see cref="DiscordSettingsState.HasDiscordTab"/>).
+        /// </summary>
         private void RefreshTabs()
         {
-            var kinds = Settings.Discord.IsConnected
+            var kinds = Settings.Discord.HasDiscordTab
                 ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }
                 : new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem };
             Guide.Tabs = kinds

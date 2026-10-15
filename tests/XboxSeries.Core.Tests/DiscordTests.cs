@@ -392,7 +392,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Start_up_with_Discord_not_running_says_so_and_keeps_the_tokens()
+        public void Start_up_with_Discord_not_running_says_so_and_keeps_the_tokens_and_the_Discord_tab()
         {
             SaveTokens();
             transport.IsRunning = false;
@@ -404,11 +404,11 @@ namespace XboxSeries.Core.Tests
             Assert.False(Discord.IsConnected);
             Assert.Equal("saved-access", secrets.Values["Discord.AccessToken"]);
             Assert.True(Discord.CanDisconnect);
-            Assert.DoesNotContain(GuideTabKind.Discord, OpenGuideTabs());
+            Assert.Contains(GuideTabKind.Discord, OpenGuideTabs());
         }
 
         [Fact]
-        public void Start_up_with_a_token_Discord_refuses_refreshes_it_and_keeps_the_tokens()
+        public void Start_up_with_a_token_Discord_refuses_refreshes_it_and_keeps_the_tokens_and_the_Discord_tab()
         {
             SaveTokens();
             core = NewCore();
@@ -419,7 +419,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal("refresh_token", Assert.Single(oauth.Requests).Form["grant_type"]);
             Assert.Equal("saved-access", secrets.Values["Discord.AccessToken"]);
-            Assert.DoesNotContain(GuideTabKind.Discord, OpenGuideTabs());
+            Assert.Contains(GuideTabKind.Discord, OpenGuideTabs());
         }
 
         [Fact]
@@ -547,7 +547,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Discord_closing_with_the_Guide_on_Profile_and_system_drops_the_tab_and_stays_put()
+        public void Discord_closing_with_the_Guide_on_Profile_and_system_keeps_the_tab_and_stays_put()
         {
             ConnectFully();
             OpenGuideTabs();
@@ -556,9 +556,9 @@ namespace XboxSeries.Core.Tests
 
             core.OnDiscordClosed();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.ProfileAndSystem, core.Guide.Tab);
-            Assert.Equal("Discord closed the connection", Discord.StatusText);
+            Assert.Equal("Discord isn't running", Discord.StatusText);
         }
 
         private ExtensionCore NewCore() =>

@@ -277,7 +277,7 @@ namespace XboxSeries.Core.Tests
             Error("AUTHORIZE", "OAuth2 Authorization cancelled");
 
             AssertNeedsReconnect();
-            Assert.DoesNotContain(Guide.Tabs, t => t.Kind == GuideTabKind.Discord);
+            Assert.Contains(Guide.Tabs, t => t.Kind == GuideTabKind.Discord);
         }
 
         [Fact]

@@ -334,14 +334,16 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Discord_going_away_with_a_server_open_falls_back_to_the_landing_tab()
+        public void Discord_going_away_with_a_server_open_closes_it_and_the_Discord_tab_says_Discord_isnt_running()
         {
             OpenLads();
 
             core.OnDiscordClosed();
 
             Assert.Null(Guide.Flyout);
-            Assert.Equal(GuideTabKind.Landing, Guide.Tab);
+            Assert.Equal(GuideTabKind.Discord, Guide.Tab);
+            Assert.Equal((GuideItemKind.DiscordUnavailable, "Discord isn't running"), (Guide.Items.Single().Kind, Guide.Items.Single().Title));
+            Assert.Same(Guide.Items[0], Guide.FocusedItem);
         }
 
         [Fact]

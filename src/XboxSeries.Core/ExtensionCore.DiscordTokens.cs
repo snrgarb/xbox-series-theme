@@ -220,13 +220,14 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Neither the saved tokens nor authorizing again would do: the connection closes and Settings asks the user to
-        /// reconnect. The tokens stay saved until Connect replaces them or Disconnect forgets them.
+        /// Neither the saved tokens nor authorizing again would do: the connection closes, Discord isn't tried again by
+        /// itself, and Settings and the Discord tab ask the user to reconnect. The tokens stay saved until Connect
+        /// replaces them or Disconnect forgets them.
         /// </summary>
         private void NeedReconnect()
         {
-            CloseDiscord(ReconnectInSettings);
             Settings.Discord.NeedsReconnect = true;
+            CloseDiscord(ReconnectInSettings);
         }
 
         /// <summary>Forgets the renewal under way and the refresh due, as the connection closes.</summary>

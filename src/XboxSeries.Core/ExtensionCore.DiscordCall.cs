@@ -242,13 +242,22 @@ namespace XboxSeries.Core
         /// <summary>
         /// The Discord tab: in a call, its heading, the people in it, the user first, then Mute, Deafen and Leave under a
         /// divider; out of one, who is signed in and that they're not in a voice channel. Then, either way, the shortcuts
-        /// and Servers, each under a divider.
+        /// and Servers, each under a divider. Not signed in, only a line saying why: Discord isn't running, while it is
+        /// waited for, or the user has to reconnect in Settings.
         /// </summary>
-        private IReadOnlyList<GuideItem> DiscordTabItems() =>
-            CallItems()
+        private IReadOnlyList<GuideItem> DiscordTabItems()
+        {
+            if (!Settings.Discord.IsConnected)
+            {
+                var why = Settings.Discord.NeedsReconnect ? ReconnectInSettings : DiscordNotRunning;
+                return new[] { new GuideItem(GuideItemKind.DiscordUnavailable, why) };
+            }
+
+            return CallItems()
                 .Concat(ShortcutItems())
                 .Concat(new[] { new GuideItem(GuideItemKind.DiscordServers, "Servers", hasDividerAbove: true) })
                 .ToList();
+        }
 
         private IEnumerable<GuideItem> CallItems()
         {
@@ -279,12 +288,13 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The Discord tab's first focus, the first entry A does something on: Mute in a call; out of one, the first
-        /// shortcut, else Servers.
+        /// shortcut, else Servers. Not signed in, the line saying why, its only entry, on which A does nothing.
         /// </summary>
         private static GuideItem DiscordTabFocus(IReadOnlyList<GuideItem> items) =>
             items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordMute)
             ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordShortcut)
-            ?? items.First(i => i.Kind == GuideItemKind.DiscordServers);
+            ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordServers)
+            ?? items[0];
 
         /// <summary>The Audio flyout: Windows' volume and mute, then, in a call, the user's Discord mute and deafen.</summary>
         private IReadOnlyList<GuideItem> AudioItems()
