@@ -11,8 +11,8 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// Home's top bar's status area, injected as a custom element: the controller's battery and the clock, in place of
-    /// Playnite's PC battery and clock. The Dashboard's profile opens the Guide on Profile &amp; system with
-    /// <see cref="OpenProfileCommand"/>. A <see cref="PluginUserControl"/>, because Playnite binds any other custom
+    /// Playnite's PC battery and clock. The Dashboard's profile shows the profile signed in, <see cref="State"/>'s
+    /// Profile, and opens the Guide on Profile &amp; system with <see cref="OpenProfileCommand"/>. A <see cref="PluginUserControl"/>, because Playnite binds any other custom
     /// element's DataContext to the selected game.
     /// </summary>
     public sealed class StatusControl : PluginUserControl
@@ -23,11 +23,15 @@ namespace XboxSeries.Extension
         {
             Focusable = false;
             IsHitTestVisible = false;
+            State = core.Status;
             Content = new StatusArea { DataContext = core.Status };
             OpenProfileCommand = new RelayCommand(core.OpenProfile);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
+
+        /// <summary>What the status area shows, and the profile signed in, which the top bar's profile shows.</summary>
+        public StatusState State { get; }
 
         /// <summary>The top bar's profile: the Guide, on Profile &amp; system.</summary>
         public ICommand OpenProfileCommand { get; }
