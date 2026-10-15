@@ -19,7 +19,10 @@ namespace XboxSeries.Core
         private const string RefreshTokenSecret = "Discord.RefreshToken";
         private const string ExpiresAtSecret = "Discord.ExpiresAt";
 
-        /// <summary>The redirect the user adds under OAuth2. Nothing listens there: RPC's AUTHORIZE hands the code back itself.</summary>
+        /// <summary>
+        /// The redirect the user adds under OAuth2, which the token exchange has to name. AUTHORIZE leaves it out, as
+        /// Discord refuses one there and takes the app's own. Nothing listens there: RPC's AUTHORIZE hands the code back itself.
+        /// </summary>
         private const string RedirectUri = "http://127.0.0.1";
 
         private const string NotConnected = "Not connected";
@@ -245,7 +248,6 @@ namespace XboxSeries.Core
             {
                 ["client_id"] = Settings.Discord.ClientId,
                 ["scopes"] = new JArray(Scopes),
-                ["redirect_uri"] = RedirectUri,
             });
         }
 
