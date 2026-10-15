@@ -48,13 +48,19 @@ namespace XboxSeries.Core
         /// <summary>How long a game has to close by itself before the force-quit prompt.</summary>
         private static readonly TimeSpan QuitTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>How far one press of left or right turns the volume, as Windows' own volume keys do.</summary>
+        private const int VolumeStep = 2;
+
         private readonly IClock clock;
         private readonly IWindowSystem windowSystem;
         private readonly IPlayniteHost playnite;
         private readonly ISoundPlayer sounds;
         private readonly IDrives drives;
         private readonly IUserAccount account;
+        private readonly IAudio audio;
+        private readonly IController controller;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
+        private IReadOnlyList<Notification> notifications = new Notification[0];
         private Guid? runningGame;
         private IntPtr recordedForeground;
         private ControllerButton? dismissButton;
@@ -88,15 +94,28 @@ namespace XboxSeries.Core
         /// <summary>Whether My games &amp; apps has put its own filter on the main list, with the user's kept to give back.</summary>
         private bool ownsMainList;
 
-        public ExtensionCore(IClock clock, IWindowSystem windowSystem, IPlayniteHost playnite, ISoundPlayer sounds, IDrives drives, IUserAccount account)
+        public ExtensionCore(
+            IClock clock,
+            IWindowSystem windowSystem,
+            IPlayniteHost playnite,
+            ISoundPlayer sounds,
+            IDrives drives,
+            IUserAccount account,
+            IAudio audio,
+            IController controller)
         {
             this.drives = drives;
             this.account = account;
+            this.audio = audio;
+            this.controller = controller;
             this.clock = clock;
             this.windowSystem = windowSystem;
             this.playnite = playnite;
             this.sounds = sounds;
+            TickStatus();
         }
+
+        public StatusState Status { get; } = new StatusState();
 
         public GuideState Guide { get; } = new GuideState();
 
@@ -115,6 +134,34 @@ namespace XboxSeries.Core
             {
                 RefreshStorage();
             }
+        }
+
+        /// <summary>Playnite's own notifications changed: the status area counts them, and the Notifications utility lists them.</summary>
+        public void OnNotificationsChanged(IReadOnlyList<Notification> current)
+        {
+            notifications = current;
+            Status.NotificationCount = current.Count;
+            if (Guide.IsOpen && Guide.Utility == GuideItemKind.Notifications)
+            {
+                var index = Guide.Items.ToList().IndexOf(Guide.FocusedItem);
+                ShowNotifications();
+                Guide.FocusedItem = Guide.Items.Count == 0 ? null : Guide.Items[Clamp(index, Guide.Items.Count)];
+            }
+        }
+
+        /// <summary>The status area's clock and battery, read afresh and again on the next minute.</summary>
+        private void TickStatus()
+        {
+            RefreshStatus();
+            var now = clock.Now;
+            var nextMinute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, now.Kind).AddMinutes(1);
+            clock.After(nextMinute - now, TickStatus);
+        }
+
+        private void RefreshStatus()
+        {
+            Status.Time = clock.Now.ToString("t", CultureInfo.CurrentCulture);
+            Status.Battery = controller.Battery;
         }
 
         /// <summary>Playnite's main list changed its games. On Full library, that's the user switching tabs, so its count follows.</summary>
@@ -196,7 +243,7 @@ namespace XboxSeries.Core
             {
                 LaunchAfterQuit(next.Value);
             }
-            else if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
+            else if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing && Guide.Utility == null)
             {
                 RefreshLandingTab();
             }
@@ -310,6 +357,10 @@ namespace XboxSeries.Core
                 dialog.Decline();
                 AfterAnswer(handBack => Dismiss(button, handBack));
             }
+            else if (button == ControllerButton.B && Guide.IsOpen && Guide.Utility != null)
+            {
+                LeaveUtility();
+            }
             else if (button == ControllerButton.B && Guide.IsOpen)
             {
                 Dismiss(button, ReturnToRecordedWindow);
@@ -399,6 +450,19 @@ namespace XboxSeries.Core
                     OpenGuideFromTap();
                 }
             }
+        }
+
+        /// <summary>The profile on Home's top bar: the Guide, on Profile &amp; system.</summary>
+        public void OpenProfile()
+        {
+            if (Guide.IsOpen)
+            {
+                return;
+            }
+
+            sounds.Play(UiSound.OpenMenu);
+            OpenGuide();
+            ShowTab(GuideTabKind.ProfileAndSystem);
         }
 
         private void OpenGuideFromTap()
@@ -523,14 +587,52 @@ namespace XboxSeries.Core
                 new GuideTab(GuideTabKind.ProfileAndSystem, tab == GuideTabKind.ProfileAndSystem, account.Picture),
             };
             Guide.Tab = tab;
+            Guide.Utility = null;
             if (tab == GuideTabKind.Landing)
             {
                 ShowLandingTab();
             }
             else
             {
+                Guide.Utilities = new GuideItem[0];
                 ShowProfileTab();
             }
+        }
+
+        /// <summary>A utility in the panel in place of the landing tab, focus on its first entry.</summary>
+        private void ShowUtility(GuideItemKind utility)
+        {
+            Guide.Utility = utility;
+            Guide.Utilities = new GuideItem[0];
+            if (utility == GuideItemKind.Notifications)
+            {
+                ShowNotifications();
+            }
+            else
+            {
+                Guide.Items = new[]
+                {
+                    new GuideItem(GuideItemKind.Volume, "Volume") { Level = audio.Volume },
+                    new GuideItem(GuideItemKind.Mute, "Mute") { IsOn = audio.IsMuted },
+                };
+            }
+
+            Guide.FocusedItem = Guide.Items.FirstOrDefault();
+        }
+
+        /// <summary>The Notifications utility's entries: Playnite's notifications, newest first.</summary>
+        private void ShowNotifications()
+        {
+            Guide.Items = notifications.Reverse().Select(n => new GuideItem(GuideItemKind.Notification, n.Text)).ToList();
+        }
+
+        /// <summary>B on a utility: back to the landing tab, focus on the utility.</summary>
+        private void LeaveUtility()
+        {
+            var utility = Guide.Utility;
+            StopRepeat();
+            ShowTab(GuideTabKind.Landing);
+            Guide.FocusedItem = Guide.Utilities.First(u => u.Kind == utility);
         }
 
         /// <summary>Profile &amp; system: the profile card with the Windows user, then Settings and Power, each under a divider.</summary>
@@ -935,6 +1037,7 @@ namespace XboxSeries.Core
                 recordedForeground = windowSystem.ForegroundWindow;
             }
 
+            RefreshStatus();
             ShowTab(GuideTabKind.Landing);
             Guide.IsOverlayShown = true;
             Guide.ShowsPanel = showsPanel;
@@ -950,7 +1053,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void Select(GuideItem item, Action<Action> dismiss)
         {
-            if (item.Kind == GuideItemKind.Profile)
+            if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume)
             {
                 return;
             }
@@ -959,6 +1062,20 @@ namespace XboxSeries.Core
             if (item.Kind == GuideItemKind.Power)
             {
                 ShowPower();
+                return;
+            }
+
+            if (item.Kind == GuideItemKind.Notifications || item.Kind == GuideItemKind.Audio)
+            {
+                StopRepeat();
+                ShowUtility(item.Kind);
+                return;
+            }
+
+            if (item.Kind == GuideItemKind.Mute)
+            {
+                audio.SetMuted(!audio.IsMuted);
+                item.IsOn = audio.IsMuted;
                 return;
             }
 
@@ -1060,10 +1177,56 @@ namespace XboxSeries.Core
                 return;
             }
 
-            if (Guide.IsOpen && (direction == ControllerButton.DPadUp || direction == ControllerButton.DPadDown))
+            if (!Guide.IsOpen || Guide.FocusedItem == null)
             {
-                Guide.FocusedItem = Step(Guide.Items, Guide.FocusedItem, direction == ControllerButton.DPadUp ? -1 : 1);
+                return;
             }
+
+            var vertical = direction == ControllerButton.DPadUp || direction == ControllerButton.DPadDown;
+            var by = direction == ControllerButton.DPadUp || direction == ControllerButton.DPadLeft ? -1 : 1;
+            if (Guide.Utilities.Contains(Guide.FocusedItem))
+            {
+                // The utilities row: left and right along it, up back to the tab's last entry.
+                if (!vertical)
+                {
+                    Guide.FocusedItem = Step(Guide.Utilities, Guide.FocusedItem, by);
+                }
+                else if (by < 0)
+                {
+                    sounds.Play(UiSound.Navigate);
+                    Guide.FocusedItem = Guide.Items.Last();
+                }
+            }
+            else if (vertical && by > 0 && Guide.FocusedItem == Guide.Items.Last() && Guide.Utilities.Count > 0)
+            {
+                sounds.Play(UiSound.Navigate);
+                Guide.FocusedItem = Guide.Utilities[0];
+            }
+            else if (vertical)
+            {
+                Guide.FocusedItem = Step(Guide.Items, Guide.FocusedItem, by);
+            }
+            else if (Guide.FocusedItem.Kind == GuideItemKind.Volume)
+            {
+                TurnVolume(by);
+            }
+        }
+
+        /// <summary>
+        /// Left or right on the volume slider: Windows' master volume a step down or up, held at 0 and 100. The slider
+        /// shows what Windows then reports, so a change it refuses doesn't move it.
+        /// </summary>
+        private void TurnVolume(int by)
+        {
+            var before = audio.Volume;
+            audio.SetVolume(Math.Max(0, Math.Min(100, before + by * VolumeStep)));
+            var after = audio.Volume;
+            if (after != before)
+            {
+                sounds.Play(UiSound.Navigate);
+            }
+
+            Guide.FocusedItem.Level = after;
         }
 
         /// <summary>The entry <paramref name="by"/> places from <paramref name="focused"/>, held at either end; navigate sounds if it moved.</summary>
@@ -1096,16 +1259,18 @@ namespace XboxSeries.Core
         /// <summary>The mouse pointing at an entry.</summary>
         public void FocusItem(GuideItem item)
         {
-            if (Guide.IsOpen && Guide.Dialog == null && Guide.Items.Contains(item))
+            if (Guide.IsOpen && Guide.Dialog == null && IsShowing(item))
             {
                 Guide.FocusedItem = item;
             }
         }
 
+        private bool IsShowing(GuideItem item) => Guide.Items.Contains(item) || Guide.Utilities.Contains(item);
+
         /// <summary>A click on an entry. No pad button is held, so focus goes on at once.</summary>
         public void ChooseItem(GuideItem item)
         {
-            if (!Guide.IsOpen || Guide.Dialog != null || !Guide.Items.Contains(item))
+            if (!Guide.IsOpen || Guide.Dialog != null || !IsShowing(item))
             {
                 return;
             }
@@ -1288,9 +1453,10 @@ namespace XboxSeries.Core
         /// <summary>A game went with the Guide open: rebuild the entries, keeping focus at the same place in the list.</summary>
         private void RefreshLandingTab()
         {
-            var index = Guide.Items.ToList().IndexOf(Guide.FocusedItem);
+            var focused = Guide.FocusedItem;
+            var index = Guide.Items.ToList().IndexOf(focused);
             ShowLandingTab();
-            Guide.FocusedItem = Guide.Items[Clamp(index, Guide.Items.Count)];
+            Guide.FocusedItem = Guide.Utilities.FirstOrDefault(u => u.Kind == focused.Kind) ?? Guide.Items[Clamp(index, Guide.Items.Count)];
         }
 
         /// <summary>The landing tab, where the Guide always opens, focus on Home.</summary>
@@ -1306,6 +1472,11 @@ namespace XboxSeries.Core
                 .Concat(games.Select((g, index) => new GuideItem(
                     g == running ? GuideItemKind.RunningGame : GuideItemKind.RecentGame, g.Name, g.Id, hasDividerAbove: index == 0, image: g.CoverImage, source: g.Source)))
                 .ToList();
+            Guide.Utilities = new[]
+            {
+                new GuideItem(GuideItemKind.Notifications, "Notifications"),
+                new GuideItem(GuideItemKind.Audio, "Audio"),
+            };
             Guide.FocusedItem = home;
         }
 

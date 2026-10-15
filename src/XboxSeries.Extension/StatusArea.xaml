@@ -1,0 +1,56 @@
+<UserControl x:Class="XboxSeries.Extension.StatusArea"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False" IsHitTestVisible="False">
+    <!--
+        The status area (a StatusState): the controller's battery, then the clock, as on the console's top right. Shared
+        by Home's top bar and the Guide, so the two can't drift apart. Sized at 1080p.
+    -->
+    <ContentControl Content="{Binding}" Focusable="False">
+        <ContentControl.ContentTemplate>
+            <DataTemplate>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- A battery of three bars, as the console's; a pad on a cable shows the pad instead, and no pad shows nothing. -->
+                    <Grid x:Name="Battery" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <StackPanel x:Name="Cell" Orientation="Horizontal">
+                            <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
+                                <UniformGrid Rows="1" Columns="3">
+                                    <Border x:Name="Bar1" Background="White" Margin="0,0,1,0" Visibility="Hidden" />
+                                    <Border x:Name="Bar2" Background="White" Margin="1,0" Visibility="Hidden" />
+                                    <Border x:Name="Bar3" Background="White" Margin="1,0,0,0" Visibility="Hidden" />
+                                </UniformGrid>
+                            </Border>
+                            <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <!-- Segoe Fluent Icons / MDL2 Assets' game controller. -->
+                        <TextBlock x:Name="Wired" Text="&#xE7FC;" FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
+                                   Foreground="White" VerticalAlignment="Center" Visibility="Collapsed" />
+                    </Grid>
+                    <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Battery}" Value="None">
+                        <Setter TargetName="Battery" Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Battery}" Value="Wired">
+                        <Setter TargetName="Cell" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Wired" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Battery}" Value="Low">
+                        <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Battery}" Value="Medium">
+                        <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Battery}" Value="Full">
+                        <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Bar3" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+        </ContentControl.ContentTemplate>
+    </ContentControl>
+</UserControl>

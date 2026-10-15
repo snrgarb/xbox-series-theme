@@ -13,6 +13,8 @@ namespace XboxSeries.Core
         private GuideTabKind tab;
         private IReadOnlyList<GuideTab> tabs = new GuideTab[0];
         private IReadOnlyList<GuideItem> items = new GuideItem[0];
+        private IReadOnlyList<GuideItem> utilities = new GuideItem[0];
+        private GuideItemKind? utility;
         private GuideItem focusedItem;
         private Dialog dialog;
 
@@ -81,7 +83,27 @@ namespace XboxSeries.Core
             internal set => Set(ref items, value, nameof(Items));
         }
 
-        /// <summary>The entry with focus. Each item's <see cref="GuideItem.IsFocused"/> follows it.</summary>
+        /// <summary>
+        /// The landing tab's row of utilities along the bottom of the panel, left to right: Notifications and Audio. Focus
+        /// reaches them down from the tab's last entry. Empty on the other tabs and on a utility.
+        /// </summary>
+        public IReadOnlyList<GuideItem> Utilities
+        {
+            get => utilities;
+            internal set => Set(ref utilities, value, nameof(Utilities));
+        }
+
+        /// <summary>
+        /// The utility showing in the panel in place of the tab, as <see cref="GuideItemKind.Notifications"/> or
+        /// <see cref="GuideItemKind.Audio"/>, its entries in <see cref="Items"/>; null while the tab shows. B goes back to the tab.
+        /// </summary>
+        public GuideItemKind? Utility
+        {
+            get => utility;
+            internal set => Set(ref utility, value, nameof(Utility));
+        }
+
+        /// <summary>The entry with focus, among <see cref="Items"/> or <see cref="Utilities"/>; null on an empty utility. Each item's <see cref="GuideItem.IsFocused"/> follows it.</summary>
         public GuideItem FocusedItem
         {
             get => focusedItem;
@@ -178,12 +200,29 @@ namespace XboxSeries.Core
         Profile,
         Settings,
         Power,
+
+        /// <summary>The landing tab's Notifications utility, which lists Playnite's notifications.</summary>
+        Notifications,
+
+        /// <summary>The landing tab's Audio utility, with Windows' master volume and mute.</summary>
+        Audio,
+
+        /// <summary>One of Playnite's notifications, in the Notifications utility.</summary>
+        Notification,
+
+        /// <summary>The Audio utility's volume slider: left and right turn it down and up.</summary>
+        Volume,
+
+        /// <summary>The Audio utility's mute switch: A turns it on and off.</summary>
+        Mute,
     }
 
     /// <summary>One entry on a Guide tab.</summary>
     public sealed class GuideItem : INotifyPropertyChanged
     {
         private bool isFocused;
+        private int level;
+        private bool isOn;
 
         internal GuideItem(GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null)
         {
@@ -211,6 +250,38 @@ namespace XboxSeries.Core
 
         /// <summary>The game's library source, such as Steam, badged on its cover as on the Home tiles; null for none.</summary>
         public string Source { get; }
+
+        /// <summary>The volume slider's level, 0 to 100.</summary>
+        public int Level
+        {
+            get => level;
+            internal set
+            {
+                if (level == value)
+                {
+                    return;
+                }
+
+                level = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Level)));
+            }
+        }
+
+        /// <summary>Whether the mute switch is on.</summary>
+        public bool IsOn
+        {
+            get => isOn;
+            internal set
+            {
+                if (isOn == value)
+                {
+                    return;
+                }
+
+                isOn = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsOn)));
+            }
+        }
 
         /// <summary>Whether Menu opens a menu on this entry. Only the running game has one, with Quit.</summary>
         public bool HasMenu => Kind == GuideItemKind.RunningGame;

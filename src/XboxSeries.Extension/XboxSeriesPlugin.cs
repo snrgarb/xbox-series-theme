@@ -32,13 +32,13 @@ namespace XboxSeries.Extension
             Properties = new GenericPluginProperties { HasSettings = false };
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
-            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount());
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), new XInputController());
 
-            // Home's elements and My games & apps, placed by the Dashboard as ContentControls named XboxSeries_<element>.
+            // Home's elements, its top bar's status area and My games & apps, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Status" },
             });
         }
 
@@ -58,6 +58,7 @@ namespace XboxSeries.Extension
                 case "Groups": return new GroupsControl(core, homeScreen);
                 case "TileMenu": return new TileMenuControl(core);
                 case "MyGames": return new MyGamesControl(core);
+                case "Status": return new StatusControl(core);
                 default: return null;
             }
         }
@@ -83,6 +84,8 @@ namespace XboxSeries.Extension
             PlayniteApi.Database.Games.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
             PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
             PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
+            PushNotifications();
+            PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
             logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
         }
 
@@ -152,6 +155,11 @@ namespace XboxSeries.Extension
         private void OnUiThread(Action action)
         {
             PlayniteApi.MainView.UIDispatcher.BeginInvoke(action);
+        }
+
+        private void PushNotifications()
+        {
+            core.OnNotificationsChanged(PlayniteApi.Notifications.Messages.Select(m => new Notification(m.Id, m.Text)).ToList());
         }
 
         private void PushLibrary()

@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -30,6 +31,7 @@ namespace XboxSeries.Extension
 
         public OverlayWindow(ExtensionCore core)
         {
+            Status = core.Status;
             InitializeComponent();
             offscreenX = Slide.X;
             this.core = core;
@@ -41,6 +43,9 @@ namespace XboxSeries.Extension
             closeDeadline.Tick += (_, __) => FinishStalledSlideOut();
             SizeChanged += (_, __) => FitToScreen();
         }
+
+        /// <summary>The status area at the top right, and the Notifications utility's count.</summary>
+        public StatusState Status { get; }
 
         /// <summary>The Guide is laid out 1080 tall, as wide as the screen's aspect makes that, and scaled to fit.</summary>
         private void FitToScreen()
@@ -54,7 +59,11 @@ namespace XboxSeries.Extension
         private void OnGuideChanged(object sender, PropertyChangedEventArgs e)
         {
             var guide = core.Guide;
-            if (e.PropertyName == nameof(GuideState.IsOverlayShown))
+            if (e.PropertyName == nameof(GuideState.FocusedItem))
+            {
+                ScrollFocusedIntoView();
+            }
+            else if (e.PropertyName == nameof(GuideState.IsOverlayShown))
             {
                 if (guide.IsOverlayShown)
                 {
@@ -86,6 +95,28 @@ namespace XboxSeries.Extension
                     closeDeadline.Start();
                 }
             }
+        }
+
+        /// <summary>
+        /// Keeps the focused entry on screen as focus moves down a list of notifications longer than the panel, once its
+        /// entry is laid out. A new tab or utility starts from the top.
+        /// </summary>
+        private void ScrollFocusedIntoView()
+        {
+            var focused = core.Guide.FocusedItem;
+            if (focused == null || !core.Guide.Items.Contains(focused))
+            {
+                return;
+            }
+
+            if (focused == core.Guide.Items[0])
+            {
+                EntriesScroller.ScrollToTop();
+                return;
+            }
+
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+                (Entries.ItemContainerGenerator.ContainerFromItem(focused) as FrameworkElement)?.BringIntoView()));
         }
 
         /// <summary>

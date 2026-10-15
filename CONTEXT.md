@@ -58,6 +58,14 @@ _Avoid_: overlay (the overlay is the window hosting the Guide, not the Guide its
 **Overlay**:
 The topmost, full-screen, transparent window the extension draws the Guide into, above every other window.
 
+**Status area**:
+The controller's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears.
+_Avoid_: status bar, tray
+
+**Utility**:
+One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own) and Audio (Windows master volume and mute). Selecting one shows it in the panel in place of the tab; B goes back.
+_Avoid_: widget, quick setting
+
 **Toast**:
 A small notice shown above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is an incoming Discord call.
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
@@ -79,6 +87,7 @@ _Avoid_: home button, Xbox button
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
 - The **Guide** has three tabs: landing, the **Discord tab** (when connected), and Profile & system
+- Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 
 ## Flagged ambiguities
 
