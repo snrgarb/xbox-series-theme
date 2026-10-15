@@ -65,7 +65,9 @@
 
     <!--
         The top bar's profile: the user's picture and name. With the extension, a button that opens the Guide on Profile &
-        system, ringed like the round icons when focused; theme-only, never focused.
+        system, ringed like the round icons when focused, showing the profile signed in (its Tag, the extension's
+        State.Profile) by its picture and gamertag; theme-only, or before anyone has signed in, the person glyph and the
+        Windows user's name, and never focused theme-only. A picture that won't load leaves the glyph showing.
     -->
     <Style x:Key="XboxTopBarProfile" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
@@ -81,11 +83,17 @@
                         <Grid Width="56" Height="56">
                             <Ellipse Fill="{DynamicResource GlyphBrush}" />
                             <TextBlock Text="&#xE77B;" Style="{StaticResource XboxIcon}" />
+                            <Image Source="{Binding Tag.Picture, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Null}}"
+                                   Width="56" Height="56" Stretch="UniformToFill">
+                                <Image.Clip>
+                                    <EllipseGeometry Center="28,28" RadiusX="28" RadiusY="28" />
+                                </Image.Clip>
+                            </Image>
                             <Ellipse x:Name="Ring" Margin="-4" StrokeThickness="3"
                                      Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                         </Grid>
-                        <TextBlock Text="{x:Static sys:Environment.UserName}" Style="{StaticResource XboxText}"
-                                   VerticalAlignment="Center" Margin="16,0,0,0" />
+                        <TextBlock Text="{Binding Tag.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
+                                   Style="{StaticResource XboxText}" VerticalAlignment="Center" Margin="16,0,0,0" />
                     </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsFocused" Value="True">
@@ -236,9 +244,10 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <!-- With the extension, the Guide on Profile & system. -->
+                                    <!-- With the extension, the profile signed in, and the Guide on Profile & system. -->
                                     <ButtonEx Style="{StaticResource XboxTopBarProfile}"
-                                              Command="{Binding Content.OpenProfileCommand, ElementName=XboxSeries_Status}" />
+                                              Command="{Binding Content.OpenProfileCommand, ElementName=XboxSeries_Status}"
+                                              Tag="{Binding Content.State.Profile, ElementName=XboxSeries_Status}" />
 
                                     <!-- Install notice: theme-only users, never clickable. -->
                                     <Border Margin="28,0,0,0" Padding="14,6" CornerRadius="4" VerticalAlignment="Center"

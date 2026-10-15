@@ -52,7 +52,7 @@ namespace XboxSeries.Extension
 
         private readonly ToastState toast;
 
-        /// <summary>The text's fade between the Toast's line and "Press (Guide) to view", running while it shows.</summary>
+        /// <summary>The text's fade between the Toast's line and "Press (Guide) to view", running while it shows, but for a greeting.</summary>
         private readonly Storyboard textCycle;
 
         /// <summary>Counts the goings, so only the latest one's steps go on to the next, and its end hides the window.</summary>
@@ -83,7 +83,7 @@ namespace XboxSeries.Extension
             {
                 // Another Toast cutting in, as a call over a notification: on its line first too, its tile placed or sliding
                 // in again as its kind has it. The core sets the text and then the kind, so this runs for each, the kind's last.
-                textCycle.Begin(this, true);
+                CycleText();
                 ComeIn();
                 return;
             }
@@ -98,13 +98,29 @@ namespace XboxSeries.Extension
                 ShowOverForeground();
 
                 // On the Toast's line first, each time it shows, and from the start of the grow, even mid-going.
-                textCycle.Begin(this, true);
+                CycleText();
                 GrowIn();
                 ComeIn();
             }
             else
             {
                 Go();
+            }
+        }
+
+        /// <summary>
+        /// The text's fade between the Toast's line and the prompt, from the line; a greeting has nothing to view, so it
+        /// keeps to its line, stopped there.
+        /// </summary>
+        private void CycleText()
+        {
+            if (toast.Kind == ToastKind.Greeting)
+            {
+                textCycle.Stop(this);
+            }
+            else
+            {
+                textCycle.Begin(this, true);
             }
         }
 
