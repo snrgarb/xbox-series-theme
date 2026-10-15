@@ -99,7 +99,7 @@ A tile on the **Discord tab** for one of the six most recently joined **Known ch
 _Avoid_: pin, favourite, quick join
 
 **Servers**:
-The **Discord tab**'s last entry, a **Flyout** of the user's Discord servers; a server opens onto its voice channels, each with the avatars of the people in it or Empty, and A on one joins it.
+The **Discord tab**'s last entry, a **Flyout** of the user's Discord servers, those the user has joined a **Call** in first, most recently joined first (every one remembered, however far its **Known channels** have fallen), then the rest by name; a server opens onto its voice channels, each with the avatars of the people in it or Empty, and A on one joins it.
 _Avoid_: guilds (Discord's API name), browse
 
 **Guide button**:

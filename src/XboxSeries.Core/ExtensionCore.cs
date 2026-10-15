@@ -133,6 +133,7 @@ namespace XboxSeries.Core
             TickStatus();
             LoadDiscordApp();
             LoadShortcuts();
+            LoadRecentServers();
         }
 
         public StatusState Status { get; } = new StatusState();

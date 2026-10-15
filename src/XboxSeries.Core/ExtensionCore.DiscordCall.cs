@@ -359,7 +359,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Where focus goes as <paramref name="shown"/> is replaced by <paramref name="wanted"/>: the same kind of entry,
-        /// for the same person or channel, else the entry now at the same place.
+        /// for the same person, channel or server, else the entry now at the same place.
         /// </summary>
         private GuideItem FocusAfterRebuild(IReadOnlyList<GuideItem> shown, IReadOnlyList<GuideItem> wanted)
         {
@@ -374,7 +374,8 @@ namespace XboxSeries.Core
                 return wanted[0];
             }
 
-            return wanted.FirstOrDefault(i => i.Kind == focused.Kind && i.UserId == focused.UserId && i.ChannelId == focused.ChannelId)
+            return wanted.FirstOrDefault(i => i.Kind == focused.Kind && i.UserId == focused.UserId && i.ChannelId == focused.ChannelId
+                    && i.GuildId == focused.GuildId)
                 ?? wanted[Clamp(shown.ToList().IndexOf(focused), wanted.Count)];
         }
     }
