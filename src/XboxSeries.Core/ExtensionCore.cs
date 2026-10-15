@@ -863,9 +863,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A game tile on Home got focus: Menu now opens its tile menu. The hero shows a Recent-row tile's game art once
-        /// focus has stayed on it for a moment, coming into the row as along it. Any other tile, as a Group's, has the
-        /// swirl behind Home.
+        /// A game tile on Home got focus: Menu now opens its tile menu. The hero shows a Recent-row tile's game art at once
+        /// coming into the row onto the swirl, and along the row once focus has stayed on a tile for a moment, the last
+        /// art up meanwhile. Any other tile, as a Group's, has the swirl behind Home.
         /// </summary>
         public void FocusHomeTile(HomeTile tile)
         {
@@ -877,7 +877,14 @@ namespace XboxSeries.Core
                 return;
             }
 
+            // Coming into the row onto the swirl, the art shows at once rather than the swirl staying behind a tile.
             var gameId = tile.GameId;
+            if (heroGame == null)
+            {
+                ShowHeroOf(gameId);
+                return;
+            }
+
             heroTimer = clock.After(HeroSettle, () =>
             {
                 heroTimer = null;

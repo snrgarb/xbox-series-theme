@@ -126,7 +126,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Focus_coming_into_the_Recent_row_shows_its_games_background_art_once_settled_as_along_it()
+        public void Focus_coming_into_the_Recent_row_shows_its_games_background_art_at_once_rather_than_the_swirl()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
@@ -134,16 +134,13 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             core.FocusHomeTile(Tile("Hades"));
-            clock.Advance(TimeSpan.FromSeconds(1.4));
-            Assert.Null(core.Home.Hero);
 
-            clock.Advance(TimeSpan.FromSeconds(0.1));
             Assert.Equal(@"C:\art\hades-bg.jpg", core.Home.Hero.Image);
             Assert.False(core.Home.Hero.IsCover);
         }
 
         [Fact]
-        public void Focus_back_into_the_Recent_row_from_the_top_bar_waits_to_settle_before_showing_its_games_art()
+        public void Focus_back_into_the_Recent_row_from_the_top_bar_shows_its_games_art_at_once()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
@@ -157,10 +154,7 @@ namespace XboxSeries.Core.Tests
             Assert.Null(core.Home.Hero);
 
             core.FocusHomeTile(Tile("Halo Infinite"));
-            clock.Advance(TimeSpan.FromSeconds(1.4));
-            Assert.Null(core.Home.Hero);
 
-            clock.Advance(TimeSpan.FromSeconds(0.1));
             Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
         }
 
