@@ -4,5 +4,6 @@ artifacts/
 *.user
 .vs/
 *.mov
+*.heic
 .claude/worktrees/
 xbox_series_sounds/
