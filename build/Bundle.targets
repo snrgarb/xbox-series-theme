@@ -26,6 +26,7 @@
       <ExtensionSound Include="$(MSBuildProjectDirectory)\Sounds\*.wav" />
     </ItemGroup>
     <Error Condition="Exists('$(TargetDir)Playnite.SDK.dll')" Text="Playnite.SDK.dll must not ship in the .pext; Playnite provides it." />
+    <Error Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" Text="Newtonsoft.Json.dll must not ship in the .pext; Playnite provides it." />
 
     <PropertyGroup>
       <ThemeManifest>$([System.IO.File]::ReadAllText('$(DashboardDir)theme.yaml').Replace('{{ThemeId}}', '$(ThemeId)').Replace('{{Version}}', '$(Version)'))</ThemeManifest>

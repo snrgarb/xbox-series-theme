@@ -30,5 +30,11 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FullPath)').Contains('Microsoft.NET.Build.Extensions'))" />
     </ItemGroup>
   </Target>
+  <!-- The core's Newtonsoft.Json is the 10.0.3 that Playnite loads itself, so it isn't copied out either. -->
+  <Target Name="KeepNewtonsoftOutOfThePackage" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'Newtonsoft.Json'" />
+    </ItemGroup>
+  </Target>
   <Import Project="$(RepoRoot)build\Bundle.targets" />
 </Project>

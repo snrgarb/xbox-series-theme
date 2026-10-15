@@ -3,4 +3,8 @@
   <PropertyGroup>
     <RootNamespace>XboxSeries.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- For Discord's RPC JSON. Playnite loads Newtonsoft.Json 10.0.3 itself, so the extension never ships it. -->
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+  </ItemGroup>
 </Project>
