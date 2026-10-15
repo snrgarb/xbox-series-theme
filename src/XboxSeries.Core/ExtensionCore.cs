@@ -184,6 +184,8 @@ namespace XboxSeries.Core
             library = snapshot;
             RefreshHome();
             RefreshFullLibraryCount();
+            MyGames.HasApps = snapshot.Apps != null;
+            MyGames.Apps = snapshot.Apps ?? new App[0];
 
             // The ring only shows on the page; Windows is asked for a drive's space no more often than that needs.
             if (MyGames.IsShown)
@@ -1161,11 +1163,19 @@ namespace XboxSeries.Core
         /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings if that is up, or moves it there. Full
         /// library is the main list under the user's own filter and sort. Games and Play history take the main list over,
         /// keeping the user's filter and sort first (as Full library last left them), to give back on Full library or when
-        /// the page goes.
+        /// the page goes. Apps shows its own tiles and leaves the main list as it is, hidden behind them; with no Apps to
+        /// show (Software tools couldn't be read), it opens nothing.
         /// </summary>
         public void OpenMyGames(MyGamesItem item)
         {
-            if (item == MyGamesItem.FullLibrary)
+            if (item == MyGamesItem.Apps)
+            {
+                if (!MyGames.HasApps)
+                {
+                    return;
+                }
+            }
+            else if (item == MyGamesItem.FullLibrary)
             {
                 GiveBackMainList();
             }
@@ -1198,9 +1208,23 @@ namespace XboxSeries.Core
             MyGames.IsShown = true;
         }
 
-        /// <summary>A on an App's tile: starts the tool with its arguments. Stub for #38: the core fills it in.</summary>
+        /// <summary>
+        /// A on an App's tile: starts the tool with its arguments. An App is not a game, so it starts whatever game is
+        /// running, quitting or launching, without "Quit X and start Y?" or the Launch screen. A menu or the Guide still
+        /// showing over the page answers the A instead.
+        /// </summary>
         public void StartApp(Guid appId)
         {
+            if (!MyGames.IsShown || MyGames.Item != MyGamesItem.Apps || ActiveDialog != null || Guide.IsOverlayShown)
+            {
+                return;
+            }
+
+            var app = MyGames.Apps.FirstOrDefault(a => a.Id == appId);
+            if (app != null)
+            {
+                playnite.StartApp(app);
+            }
         }
 
         /// <summary>

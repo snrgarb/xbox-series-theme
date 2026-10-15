@@ -52,8 +52,8 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games.</summary>
-        public bool ShowsGameGrid => IsShown && Item != MyGamesItem.PlayHistory;
+        /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games. Play history and Apps show their own.</summary>
+        public bool ShowsGameGrid => IsShown && (Item == MyGamesItem.Games || Item == MyGamesItem.FullLibrary);
 
         /// <summary>
         /// Whether the page shows Full library: the main list under the user's own filter, with their filter presets as
@@ -104,7 +104,7 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Apps: Playnite's Software tools, as tiles in Playnite's order. Stub for #38: the core fills it in.</summary>
+        /// <summary>Apps: Playnite's Software tools, as tiles in Playnite's order; empty when they couldn't be read.</summary>
         public IReadOnlyList<App> Apps
         {
             get => apps;
@@ -115,7 +115,7 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Whether the nav shows Apps: false when Software tools couldn't be read on this Playnite build. Stub for #38.</summary>
+        /// <summary>Whether the nav shows Apps: false when Software tools couldn't be read on this Playnite build.</summary>
         public bool HasApps
         {
             get => hasApps;
