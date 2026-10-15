@@ -51,7 +51,7 @@ namespace XboxSeries.Core.Tests
 
             OpenDiscordTab();
 
-            Assert.Equal(new[] { GuideItemKind.DiscordAccount, GuideItemKind.DiscordIdle }, Kinds());
+            Assert.Equal(new[] { GuideItemKind.DiscordAccount, GuideItemKind.DiscordIdle, GuideItemKind.DiscordServers }, Kinds());
             Assert.False(Status.IsInDiscordCall);
             Assert.False(Status.IsDiscordMuted);
             Assert.Equal(DiscordBadge.None, Status.DiscordBadge);
@@ -75,9 +75,11 @@ namespace XboxSeries.Core.Tests
                     (GuideItemKind.DiscordMute, "Mute"),
                     (GuideItemKind.DiscordDeafen, "Deafen"),
                     (GuideItemKind.DiscordLeave, "Leave"),
+                    (GuideItemKind.DiscordShortcut, "Late night"),
+                    (GuideItemKind.DiscordServers, "Servers"),
                 },
                 core.Guide.Items.Select(i => (i.Kind, i.Title)));
-            Assert.Equal(new[] { false, false, false, false, true, false, false }, core.Guide.Items.Select(i => i.HasDividerAbove));
+            Assert.Equal(new[] { false, false, false, false, true, false, false, true, true }, core.Guide.Items.Select(i => i.HasDividerAbove));
             Assert.True(Status.IsInDiscordCall);
         }
 
@@ -377,8 +379,10 @@ namespace XboxSeries.Core.Tests
 
             Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null });
 
-            Assert.Equal(new[] { GuideItemKind.DiscordAccount, GuideItemKind.DiscordIdle }, Kinds());
-            Assert.Equal(GuideItemKind.DiscordAccount, core.Guide.FocusedItem.Kind);
+            Assert.Equal(
+                new[] { GuideItemKind.DiscordAccount, GuideItemKind.DiscordIdle, GuideItemKind.DiscordShortcut, GuideItemKind.DiscordServers },
+                Kinds());
+            Assert.Equal(GuideItemKind.DiscordShortcut, core.Guide.FocusedItem.Kind);
             Assert.Equal(GuideTabKind.Discord, core.Guide.Tab);
         }
 

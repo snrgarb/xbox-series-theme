@@ -226,7 +226,7 @@ namespace XboxSeries.Core
                 }
                 else
                 {
-                    OnDiscordRefused(sent);
+                    OnDiscordRefused(sent, nonce);
                 }
 
                 return;
@@ -249,7 +249,7 @@ namespace XboxSeries.Core
             }
             else if (discordStep == DiscordStep.Connected)
             {
-                OnDiscordReply(sent, data);
+                OnDiscordReply(sent, nonce, data);
             }
         }
 
@@ -352,6 +352,7 @@ namespace XboxSeries.Core
         {
             discord.Close();
             awaitingReplies.Clear();
+            occupantRequests.Clear();
             discordStep = DiscordStep.Closed;
             signInToken = null;
             Settings.Discord.IsConnecting = false;
@@ -364,8 +365,8 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Sends a command, under a nonce of its own that Discord's reply carries back.</summary>
-        private void SendCommand(string cmd, JObject args, string evt = null)
+        /// <summary>Sends a command, under a nonce of its own that Discord's reply carries back, and returns the nonce.</summary>
+        private string SendCommand(string cmd, JObject args, string evt = null)
         {
             var nonce = (++lastNonce).ToString(CultureInfo.InvariantCulture);
             awaitingReplies[nonce] = cmd;
@@ -376,6 +377,7 @@ namespace XboxSeries.Core
             }
 
             discord.Send(DiscordOpcode.Frame, frame.ToString(Formatting.None));
+            return nonce;
         }
 
         private static JObject Parse(string json)

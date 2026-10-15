@@ -42,8 +42,8 @@ namespace XboxSeries.Core
             SendCommand("GET_VOICE_SETTINGS", new JObject());
         }
 
-        /// <summary>Discord's answer to a command sent once signed in.</summary>
-        private void OnDiscordReply(string sent, JObject data)
+        /// <summary>Discord's answer to a command sent once signed in, under <paramref name="nonce"/>.</summary>
+        private void OnDiscordReply(string sent, string nonce, JObject data)
         {
             switch (sent)
             {
@@ -58,12 +58,25 @@ namespace XboxSeries.Core
                     ShowCall(DiscordCall.FromChannel(data, discordUserId));
                     break;
                 case "GET_CHANNEL":
-                    // Fetched for a channel the user has since left, it's stale.
-                    if (selectedChannelId != null && (string)data?["id"] == selectedChannelId)
+                    // Fetched for a channel the user has since left, it's stale. Fetched for a server's flyout, it's the
+                    // call only if the user has just moved there and the call hasn't arrived yet: one already shown
+                    // keeps who is speaking.
+                    var forFlyout = occupantRequests.Remove(nonce);
+                    if (selectedChannelId != null && (string)data?["id"] == selectedChannelId && (!forFlyout || call?.Id != selectedChannelId))
                     {
                         ShowCall(DiscordCall.FromChannel(data, discordUserId));
                     }
 
+                    ShowOccupants(data);
+                    break;
+                case "GET_GUILD":
+                    OnGuild(data);
+                    break;
+                case "GET_GUILDS":
+                    OnGuilds(nonce, data);
+                    break;
+                case "GET_CHANNELS":
+                    OnChannels(nonce, data);
                     break;
                 case "GET_VOICE_SETTINGS":
                     OnVoiceSettings(data);
@@ -73,13 +86,18 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Discord refused a command sent once signed in. Refused the channel the user moved to, the call shown is no
-        /// longer theirs, so it goes; the user is in a call Discord won't show.
+        /// longer theirs, so it goes; the user is in a call Discord won't show. Refused who is in a server's voice
+        /// channel, it stays unknown; refused the servers or a server's channels, the flyout shows none.
         /// </summary>
-        private void OnDiscordRefused(string sent)
+        private void OnDiscordRefused(string sent, string nonce)
         {
-            if (sent == "GET_CHANNEL" && call != null && call.Id != selectedChannelId)
+            if (sent == "GET_CHANNEL" && !occupantRequests.Remove(nonce) && call != null && call.Id != selectedChannelId)
             {
                 ShowCall(null);
+            }
+            else if (sent == "GET_GUILDS" || sent == "GET_CHANNELS")
+            {
+                OnFlyoutRefused(nonce);
             }
         }
 
@@ -148,6 +166,7 @@ namespace XboxSeries.Core
             if (next != null && call?.Id != next.Id)
             {
                 FollowCallEvents("SUBSCRIBE", next.Id);
+                LearnChannel(next);
             }
 
             call = next;
@@ -174,11 +193,13 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The call changed: the status area follows it, and the Discord tab and the Audio flyout if showing, in place
-        /// when only states changed, rebuilt keeping focus when entries came or went.
+        /// The call or the shortcuts changed: the call's shortcut takes its name, the status area follows the call, and
+        /// the Discord tab and the Audio flyout if showing, in place when only states changed, rebuilt keeping focus when
+        /// entries came or went. Behind a Servers flyout the tab is rebuilt, focus staying in the flyout.
         /// </summary>
         private void OnCallChanged()
         {
+            RememberCall();
             Status.IsInDiscordCall = call != null;
             Status.IsDiscordMuted = call != null && discordSelfMute;
             Status.IsDiscordDeafened = call != null && discordSelfDeaf;
@@ -198,11 +219,17 @@ namespace XboxSeries.Core
                     Guide.FocusedItem = focus;
                 }
             }
-            else if (Guide.Tab == GuideTabKind.Discord && Guide.Flyout == null)
+            else if (Guide.Tab == GuideTabKind.Discord)
             {
                 var items = DiscordTabItems();
                 if (UpdateInPlace(Guide.Items, items))
                 {
+                    return;
+                }
+
+                if (Guide.Flyout != null)
+                {
+                    Guide.Items = items;
                     return;
                 }
 
@@ -216,9 +243,16 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The Discord tab: in a call, its heading, the people in it, the user first, then Mute, Deafen and Leave under a
-        /// divider; out of one, who is signed in and that they're not in a voice channel.
+        /// divider; out of one, who is signed in and that they're not in a voice channel. Then, either way, the shortcuts
+        /// and Servers, each under a divider.
         /// </summary>
-        private IReadOnlyList<GuideItem> DiscordTabItems()
+        private IReadOnlyList<GuideItem> DiscordTabItems() =>
+            CallItems()
+                .Concat(ShortcutItems())
+                .Concat(new[] { new GuideItem(GuideItemKind.DiscordServers, "Servers", hasDividerAbove: true) })
+                .ToList();
+
+        private IEnumerable<GuideItem> CallItems()
         {
             if (call == null)
             {
@@ -242,13 +276,17 @@ namespace XboxSeries.Core
                     new GuideItem(GuideItemKind.DiscordMute, "Mute", hasDividerAbove: true) { IsOn = discordSelfMute },
                     new GuideItem(GuideItemKind.DiscordDeafen, "Deafen") { IsOn = discordSelfDeaf },
                     new GuideItem(GuideItemKind.DiscordLeave, "Leave"),
-                })
-                .ToList();
+                });
         }
 
-        /// <summary>The Discord tab's first focus: Mute in a call, the first entry A does something on; the account card out of one.</summary>
+        /// <summary>
+        /// The Discord tab's first focus, the first entry A does something on: Mute in a call; out of one, the first
+        /// shortcut, else Servers.
+        /// </summary>
         private static GuideItem DiscordTabFocus(IReadOnlyList<GuideItem> items) =>
-            items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordMute) ?? items[0];
+            items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordMute)
+            ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordShortcut)
+            ?? items.First(i => i.Kind == GuideItemKind.DiscordServers);
 
         /// <summary>The Audio flyout: Windows' volume and mute, then, in a call, the user's Discord mute and deafen.</summary>
         private IReadOnlyList<GuideItem> AudioItems()
@@ -268,12 +306,26 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A on Discord's Mute, Deafen or Leave: asks Discord, whose events then show it done. False for any other entry.
+        /// A on Discord's Mute, Deafen or Leave, a shortcut or a server's voice channel: asks Discord, whose events then
+        /// show it done. On Servers or a server, opens its flyout. False for any other entry.
         /// </summary>
-        private bool SelectDiscordAction(GuideItemKind kind)
+        private bool SelectDiscordAction(GuideItem item)
         {
-            switch (kind)
+            switch (item.Kind)
             {
+                case GuideItemKind.DiscordShortcut:
+                    JoinChannel(item.ChannelId);
+                    return true;
+                case GuideItemKind.DiscordServers:
+                    StopRepeat();
+                    OpenServers();
+                    return true;
+                case GuideItemKind.DiscordServer:
+                    OpenServer(item);
+                    return true;
+                case GuideItemKind.DiscordVoiceChannel:
+                    SelectVoiceChannel(item);
+                    return true;
                 case GuideItemKind.DiscordMute:
                     SendCommand("SET_VOICE_SETTINGS", new JObject { ["mute"] = !discordSelfMute });
                     return true;
@@ -309,7 +361,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Where focus goes as <paramref name="shown"/> is replaced by <paramref name="wanted"/>: the same kind of entry,
-        /// for the same person, else the entry now at the same place.
+        /// for the same person or channel, else the entry now at the same place.
         /// </summary>
         private GuideItem FocusAfterRebuild(IReadOnlyList<GuideItem> shown, IReadOnlyList<GuideItem> wanted)
         {
@@ -324,7 +376,7 @@ namespace XboxSeries.Core
                 return wanted[0];
             }
 
-            return wanted.FirstOrDefault(i => i.Kind == focused.Kind && i.UserId == focused.UserId)
+            return wanted.FirstOrDefault(i => i.Kind == focused.Kind && i.UserId == focused.UserId && i.ChannelId == focused.ChannelId)
                 ?? wanted[Clamp(shown.ToList().IndexOf(focused), wanted.Count)];
         }
     }

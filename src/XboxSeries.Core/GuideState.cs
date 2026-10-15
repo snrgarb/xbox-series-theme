@@ -7,6 +7,9 @@ namespace XboxSeries.Core
     /// <summary>What the Guide shows. Views bind to it and hold no logic of their own.</summary>
     public sealed class GuideState : INotifyPropertyChanged
     {
+        /// <summary>How many tiles a row of the Discord tab's shortcuts holds.</summary>
+        public const int DiscordShortcutColumns = 3;
+
         private bool isOpen;
         private bool isOverlayShown;
         private bool showsPanel = true;
@@ -157,14 +160,18 @@ namespace XboxSeries.Core
     /// </summary>
     public sealed class GuideFlyout
     {
-        internal GuideFlyout(GuideItemKind kind, string title, IReadOnlyList<GuideItem> items)
+        internal GuideFlyout(GuideItemKind kind, string title, IReadOnlyList<GuideItem> items, bool isLoading = false)
         {
             Kind = kind;
             Title = title;
             Items = items;
+            IsLoading = isLoading;
         }
 
-        /// <summary>The kind of entry that opened it, such as <see cref="GuideItemKind.Notifications"/>.</summary>
+        /// <summary>
+        /// The kind of entry that opened it, such as <see cref="GuideItemKind.Notifications"/>; a Discord server's
+        /// voice channels open from a <see cref="GuideItemKind.DiscordServer"/>, inside the Servers flyout.
+        /// </summary>
         public GuideItemKind Kind { get; }
 
         /// <summary>The heading along its top.</summary>
@@ -172,6 +179,9 @@ namespace XboxSeries.Core
 
         /// <summary>Its entries, top to bottom.</summary>
         public IReadOnlyList<GuideItem> Items { get; }
+
+        /// <summary>Whether its entries are still being asked of Discord: it has none yet, and shows that they're coming.</summary>
+        public bool IsLoading { get; }
     }
 
     /// <summary>A Guide tab, in the order they sit along its top.</summary>
@@ -265,6 +275,25 @@ namespace XboxSeries.Core
 
         /// <summary>The Discord tab's Leave: A asks Discord to leave the call.</summary>
         DiscordLeave,
+
+        /// <summary>
+        /// A tile on the Discord tab for a DM or voice channel the user has joined before, by name, with the DM's
+        /// avatar or the server's icon, and the server's name as its <see cref="GuideItem.Detail"/>. A asks Discord to join
+        /// it; Menu offers Remove shortcut. The tiles sit in rows of <see cref="GuideState.DiscordShortcutColumns"/>.
+        /// </summary>
+        DiscordShortcut,
+
+        /// <summary>The Discord tab's Servers, last: A opens a flyout of the user's servers.</summary>
+        DiscordServers,
+
+        /// <summary>One of the user's servers, by name with its icon, in the Servers flyout: A opens its voice channels.</summary>
+        DiscordServer,
+
+        /// <summary>
+        /// One of a server's voice channels, by name, in its flyout, with the avatars of the people in it as its
+        /// <see cref="GuideItem.Occupants"/>: A asks Discord to join it.
+        /// </summary>
+        DiscordVoiceChannel,
     }
 
     /// <summary>One entry on a Guide tab.</summary>
@@ -276,9 +305,13 @@ namespace XboxSeries.Core
         private bool isSpeaking;
         private bool isMuted;
         private bool isDeafened;
+        private IReadOnlyList<string> occupants;
 
-        internal GuideItem(GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null)
+        internal GuideItem(
+            GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null,
+            string detail = null)
         {
+            Detail = detail;
             Source = source;
             Kind = kind;
             Title = title;
@@ -298,11 +331,36 @@ namespace XboxSeries.Core
         /// <summary>True for an entry a divider separates from those above it, such as the first game under Home and My games &amp; apps.</summary>
         public bool HasDividerAbove { get; }
 
-        /// <summary>A full path to the picture shown beside the title: a game's cover, the account picture; null for none.</summary>
+        /// <summary>
+        /// A full path or URL to the picture shown beside the title: a game's cover, the account picture, a Discord
+        /// avatar or server icon; null for none.
+        /// </summary>
         public string Image { get; }
 
         /// <summary>The game's library source, such as Steam, badged on its cover as on the Home tiles; null for none.</summary>
         public string Source { get; }
+
+        /// <summary>A second line under the title: the server's name on a voice channel's shortcut; null for none.</summary>
+        public string Detail { get; }
+
+        /// <summary>
+        /// The avatar URLs of the people in a server's voice channel: null until Discord has said who is there, empty
+        /// when nobody is, which shows as Empty.
+        /// </summary>
+        public IReadOnlyList<string> Occupants
+        {
+            get => occupants;
+            internal set
+            {
+                if (occupants == value)
+                {
+                    return;
+                }
+
+                occupants = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Occupants)));
+            }
+        }
 
         /// <summary>The volume slider's level, 0 to 100.</summary>
         public int Level
@@ -351,13 +409,20 @@ namespace XboxSeries.Core
         /// <summary>The Discord user a participant stands for; null for other entries.</summary>
         internal string UserId { get; set; }
 
+        /// <summary>The Discord channel a shortcut or voice channel stands for; null for other entries.</summary>
+        internal string ChannelId { get; set; }
+
+        /// <summary>The Discord server a server entry stands for; null for other entries.</summary>
+        internal string GuildId { get; set; }
+
         /// <summary>
         /// Whether <paramref name="other"/>, built afresh, is this same entry, so that this one can take its state
         /// in place rather than be replaced.
         /// </summary>
         internal bool IsSameEntry(GuideItem other) =>
             Kind == other.Kind && Title == other.Title && GameId == other.GameId && HasDividerAbove == other.HasDividerAbove
-            && Image == other.Image && Source == other.Source && UserId == other.UserId;
+            && Image == other.Image && Source == other.Source && Detail == other.Detail && UserId == other.UserId
+            && ChannelId == other.ChannelId && GuildId == other.GuildId;
 
         /// <summary>Takes the changeable state of <paramref name="other"/>, the same entry built afresh.</summary>
         internal void TakeStateFrom(GuideItem other)
@@ -380,8 +445,8 @@ namespace XboxSeries.Core
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        /// <summary>Whether Menu opens a menu on this entry. Only the running game has one, with Quit.</summary>
-        public bool HasMenu => Kind == GuideItemKind.RunningGame;
+        /// <summary>Whether Menu opens a menu on this entry: the running game's, with Quit, and a Discord shortcut's, with Remove shortcut.</summary>
+        public bool HasMenu => Kind == GuideItemKind.RunningGame || Kind == GuideItemKind.DiscordShortcut;
 
         public bool IsFocused
         {

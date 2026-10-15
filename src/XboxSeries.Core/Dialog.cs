@@ -185,5 +185,8 @@ namespace XboxSeries.Core
         Restart,
         Sleep,
         Exit,
+
+        /// <summary>Taking something away, as a Discord shortcut's Remove shortcut.</summary>
+        Remove,
     }
 }

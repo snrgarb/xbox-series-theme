@@ -486,24 +486,31 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.RightShoulder);
 
             Assert.Equal(
-                new[] { (GuideItemKind.DiscordAccount, "Gabe"), (GuideItemKind.DiscordIdle, "You're not in a voice channel") },
+                new[]
+                {
+                    (GuideItemKind.DiscordAccount, "Gabe"),
+                    (GuideItemKind.DiscordIdle, "You're not in a voice channel"),
+                    (GuideItemKind.DiscordServers, "Servers"),
+                },
                 core.Guide.Items.Select(i => (i.Kind, i.Title)));
             Assert.Empty(core.Guide.Utilities);
-            Assert.Equal(GuideItemKind.DiscordAccount, core.Guide.FocusedItem.Kind);
+            Assert.Equal(GuideItemKind.DiscordServers, core.Guide.FocusedItem.Kind);
         }
 
         [Fact]
-        public void A_on_the_Discord_tabs_entries_does_nothing()
+        public void A_on_the_account_card_and_the_idle_line_does_nothing()
         {
             ConnectFully();
             OpenGuideTabs();
             Tap(ControllerButton.RightShoulder);
             sounds.Played.Clear();
 
+            Tap(ControllerButton.DPadUp);
             Tap(ControllerButton.A);
-            Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadUp);
             Tap(ControllerButton.A);
 
+            Assert.Equal(GuideItemKind.DiscordAccount, core.Guide.FocusedItem.Kind);
             Assert.True(core.Guide.IsOpen);
             Assert.Equal(GuideTabKind.Discord, core.Guide.Tab);
             Assert.DoesNotContain(UiSound.Enter, sounds.Played);
