@@ -258,6 +258,12 @@ namespace XboxSeries.Core
         /// <summary>The Discord tab's line saying the user isn't in a voice channel.</summary>
         DiscordIdle,
 
+        /// <summary>
+        /// The Discord tab's only line while it can't show Discord: "Discord isn't running" while the Bundle waits for
+        /// it, "Reconnect Discord in settings" once it can no longer sign in by itself. A does nothing on it.
+        /// </summary>
+        DiscordUnavailable,
+
         /// <summary>The Discord tab's heading in a call: the channel's name, or a DM's, by the other people in it.</summary>
         DiscordChannel,
 
