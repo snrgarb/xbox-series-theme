@@ -101,6 +101,45 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_notifications_Toast_tells_of_a_notification_with_its_kinds_own_image()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+            Assert.Null(core.Toast.Image);
+        }
+
+        [Theory]
+        [InlineData("screenshot-saved", "Saved to Pictures")]
+        [InlineData("a", "Screenshot failed")]
+        [InlineData("a", "Couldn't take a SCREENSHOT")]
+        public void A_notification_about_a_screenshot_shows_a_Screenshot_Toast(string id, string text)
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+
+            core.OnNotificationsChanged(new[] { new Notification(id, text) });
+
+            Assert.Equal(ToastKind.Screenshot, core.Toast.Kind);
+            Assert.Null(core.Toast.Image);
+        }
+
+        [Fact]
+        public void Pressing_the_Guide_button_during_a_Screenshot_Toast_opens_the_Guide_on_Notifications()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnNotificationsChanged(new[] { new Notification("a", "Screenshot failed") });
+
+            TapGuide();
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.Equal(GuideItemKind.Notifications, core.Guide.Flyout?.Kind);
+            Assert.Equal("Screenshot failed", core.Guide.FocusedItem.Title);
+            Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
         public void The_Guide_opened_without_a_Toast_opens_on_the_landing_tab()
         {
             core.OnNotificationsChanged(new Notification[0]);

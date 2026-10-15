@@ -23,7 +23,6 @@ namespace XboxSeries.Core
     {
         private string text = "";
         private bool isShown;
-        private bool isCall;
         private ToastKind kind;
         private string image;
 
@@ -44,24 +43,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Whether the Toast tells of a call ringing, drawn with Discord's glyph, rather than a notification: its
-        /// <see cref="Text"/> is "X is calling", and the view draws "Press ⓧ to answer" under it. Like
-        /// <see cref="Text"/>, it stays as the Toast hides.
+        /// What the Toast tells of, which picks its tile's image. A call's <see cref="Text"/> is "X is calling", and the
+        /// view draws "Press ⓧ to answer" under it. Like <see cref="Text"/>, it stays as the Toast hides.
         /// </summary>
-        public bool IsCall
-        {
-            get => isCall;
-            internal set
-            {
-                if (isCall != value)
-                {
-                    isCall = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCall)));
-                }
-            }
-        }
-
-        /// <summary>What the Toast tells of, which picks its tile's image. Like <see cref="Text"/>, it stays as the Toast hides.</summary>
         public ToastKind Kind
         {
             get => kind;

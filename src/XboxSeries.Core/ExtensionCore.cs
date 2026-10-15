@@ -208,7 +208,8 @@ namespace XboxSeries.Core
 
             shownNotification = waitingToasts.Dequeue();
             Toast.Text = shownNotification.Text;
-            Toast.IsCall = false;
+            Toast.Kind = shownNotification.Kind;
+            Toast.Image = null;
             Toast.IsShown = true;
             toastTimer = clock.After(ToastDuration, () =>
             {
@@ -507,7 +508,7 @@ namespace XboxSeries.Core
                 guideTapTimer = null;
                 guidePressedAt = at;
                 toastAtGuidePress = !Toast.IsShown ? (GuideItemKind?)null
-                    : Toast.IsCall ? GuideItemKind.DiscordIncomingCall
+                    : Toast.Kind == ToastKind.Call ? GuideItemKind.DiscordIncomingCall
                     : GuideItemKind.Notifications;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
