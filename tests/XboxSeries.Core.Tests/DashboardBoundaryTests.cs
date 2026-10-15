@@ -61,6 +61,18 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Home_names_the_top_bar_the_extension_moves_Left_and_Right_within()
+        {
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var topBar = main.Descendants().Single(e => (string)e.Attribute(x + "Name") == "XboxTopBar");
+
+            Assert.Contains(topBar.Descendants(), e => (string)e.Attribute(x + "Name") == "XboxSeries_Status");
+            Assert.Contains(topBar.Descendants(), e => (string)e.Attribute("Tag") == "My games & apps");
+            Assert.Contains(topBar.Descendants(), e => ((string)e.Attribute("Style") ?? "").Contains("XboxTopBarProfile"));
+        }
+
+        [Fact]
         public void Game_hub_keeps_the_parts_Playnite_drives()
         {
             var hub = XDocument.Load(Path.Combine(DashboardDir, "Views", "GameDetails.xaml"));

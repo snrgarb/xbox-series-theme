@@ -214,7 +214,8 @@
                             </Grid>
 
                             <!-- Top bar: profile on the left, pages in the middle, status on the right. -->
-                            <Grid Grid.Row="0" Margin="105,84,105,0" Height="60" VerticalAlignment="Top"
+                            <!-- With the extension, Left and Right move between its buttons only, as the console's. -->
+                            <Grid x:Name="XboxTopBar" Grid.Row="0" Margin="105,84,105,0" Height="60" VerticalAlignment="Top"
                                   Style="{StaticResource XboxHomeOnly}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
