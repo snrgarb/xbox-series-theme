@@ -45,7 +45,7 @@ namespace XboxSeries.Core
         /// <summary>
         /// A call shown for a channel it wasn't showing before: the channel moves to the front, taking the name and a DM's
         /// picture now known, else keeping those learned before, and a voice channel's server moves to the front of the
-        /// servers and is asked for its name and icon.
+        /// servers and is asked for its name and icon, and a DM is followed for rings.
         /// </summary>
         private void LearnChannel(DiscordCall joined)
         {
@@ -68,6 +68,10 @@ namespace XboxSeries.Core
             {
                 RememberServer(joined.GuildId);
                 SendCommand("GET_GUILD", new JObject { ["guild_id"] = joined.GuildId });
+            }
+            else
+            {
+                FollowForRings(joined.Id);
             }
         }
 
@@ -115,11 +119,15 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Remove shortcut: the channel is forgotten, gone from the saved list too, and the Discord tab rebuilt keeping focus in place.</summary>
+        /// <summary>
+        /// Remove shortcut: the channel is forgotten, gone from the saved list too, a DM no longer ringing, and the
+        /// Discord tab rebuilt keeping focus in place.
+        /// </summary>
         private void ForgetChannel(string channelId)
         {
             knownChannels.RemoveAll(c => c.Id == channelId);
             SaveShortcuts();
+            UnfollowForRings(channelId);
             OnCallChanged();
         }
 

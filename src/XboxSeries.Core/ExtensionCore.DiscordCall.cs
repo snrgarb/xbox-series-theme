@@ -58,6 +58,13 @@ namespace XboxSeries.Core
                     ShowCall(DiscordCall.FromChannel(data, discordUserId));
                     break;
                 case "GET_CHANNEL":
+                    // Fetched to learn who is in a known DM, it may ring.
+                    if (ringRequests.Remove(nonce))
+                    {
+                        OnRingChannel(data);
+                        break;
+                    }
+
                     // Fetched for a server's flyout, it only shows who is in the channel: the call comes from its own.
                     // Fetched for a channel the user has since left, it's stale.
                     if (!occupantRequests.Remove(nonce) && selectedChannelId != null && (string)data?["id"] == selectedChannelId)
@@ -85,10 +92,15 @@ namespace XboxSeries.Core
         /// <summary>
         /// Discord refused a command sent once signed in. Refused the channel the user moved to, the call shown is no
         /// longer theirs, so it goes; the user is in a call Discord won't show. Refused who is in a server's voice
-        /// channel, it stays unknown; refused the servers or a server's channels, the flyout shows none.
+        /// channel or a known DM, it stays unknown; refused the servers or a server's channels, the flyout shows none.
         /// </summary>
         private void OnDiscordRefused(string sent, string nonce)
         {
+            if (sent == "GET_CHANNEL" && ringRequests.Remove(nonce))
+            {
+                return;
+            }
+
             if (sent == "GET_CHANNEL" && !occupantRequests.Remove(nonce) && call != null && call.Id != selectedChannelId)
             {
                 ShowCall(null);
@@ -107,6 +119,11 @@ namespace XboxSeries.Core
                 case "VOICE_CHANNEL_SELECT":
                     channelSelectSeen = true;
                     selectedChannelId = (string)data?["channel_id"];
+                    if (selectedChannelId != null && selectedChannelId == ringingChannelId)
+                    {
+                        EndRing();
+                    }
+
                     if (selectedChannelId == null)
                     {
                         ShowCall(null);
@@ -122,13 +139,22 @@ namespace XboxSeries.Core
                     OnVoiceSettings(data);
                     break;
                 case "VOICE_STATE_CREATE":
+                    if (!LooksForRing(data))
+                    {
+                        call?.Upsert(data);
+                        OnCallChanged();
+                    }
+
+                    break;
                 case "VOICE_STATE_UPDATE":
                     call?.Upsert(data);
                     OnCallChanged();
                     break;
                 case "VOICE_STATE_DELETE":
+                    var wasInCall = call?.Has((string)data?["user"]?["id"]) == true;
                     call?.Remove(data);
                     OnCallChanged();
+                    OnLeftElsewhere(data, wasInCall);
                     break;
                 case "SPEAKING_START":
                 case "SPEAKING_STOP":
@@ -152,36 +178,47 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Shows <paramref name="next"/>, or no call for null: the old channel's events are no longer followed and the
-        /// new one's are.
+        /// new one's are, a known DM's comings and goings staying followed for rings. The same channel fetched afresh
+        /// keeps who was speaking.
         /// </summary>
         private void ShowCall(DiscordCall next)
         {
             if (call != null && call.Id != next?.Id)
             {
+                RememberDmLeft(call);
                 FollowCallEvents("UNSUBSCRIBE", call.Id);
             }
 
             if (next != null && call?.Id != next.Id)
             {
-                FollowCallEvents("SUBSCRIBE", next.Id);
                 LearnChannel(next);
+                FollowCallEvents("SUBSCRIBE", next.Id);
+            }
+            else if (next != null && call != null)
+            {
+                next.KeepSpeakingFrom(call);
             }
 
             call = next;
             OnCallChanged();
         }
 
+        /// <summary>
+        /// SUBSCRIBEs or UNSUBSCRIBEs the call's events for <paramref name="channelId"/>; a known DM's comings and goings
+        /// are left alone, followed for rings already.
+        /// </summary>
         private void FollowCallEvents(string cmd, string channelId)
         {
-            foreach (var callEvent in CallEvents)
+            foreach (var callEvent in CallEvents.Where(e => !ringFollowed.Contains(channelId) || !RingEvents.Contains(e)))
             {
                 SendCommand(cmd, new JObject { ["channel_id"] = channelId }, callEvent);
             }
         }
 
-        /// <summary>Discord has gone: no call, and its voice settings forgotten until it says them again.</summary>
+        /// <summary>Discord has gone: no call, nothing ringing, and its voice settings forgotten until it says them again.</summary>
         private void ForgetCall()
         {
+            ForgetRings();
             selectedChannelId = null;
             channelSelectSeen = false;
             call = null;
@@ -231,16 +268,19 @@ namespace XboxSeries.Core
                     return;
                 }
 
-                // Into a call or out of one, focus starts afresh; otherwise it stays on the same entry or person.
+                // Into a call or out of one, or Answer gone from under focus, focus starts afresh; otherwise it stays on
+                // the same entry or person.
                 var wasInCall = Guide.Items.Any(i => i.Kind == GuideItemKind.DiscordChannel);
-                var focus = wasInCall == (call != null) ? FocusAfterRebuild(Guide.Items, items) : DiscordTabFocus(items);
+                var answerGone = Guide.FocusedItem?.Kind == GuideItemKind.DiscordIncomingCall
+                    && items.All(i => i.Kind != GuideItemKind.DiscordIncomingCall);
+                var focus = wasInCall == (call != null) && !answerGone ? FocusAfterRebuild(Guide.Items, items) : DiscordTabFocus(items);
                 Guide.Items = items;
                 Guide.FocusedItem = focus;
             }
         }
 
         /// <summary>
-        /// The Discord tab: in a call, its heading, the people in it, the user first, then Mute, Deafen and Leave under a
+        /// The Discord tab: Answer first while a known DM rings; in a call, its heading, the people in it, the user first, then Mute, Deafen and Leave under a
         /// divider; out of one, who is signed in and that they're not in a voice channel. Then, either way, the shortcuts
         /// and Servers, each under a divider. Not signed in, only a line saying why: Connecting to Discord, while a connect
         /// is under way; Discord isn't running, while it is waited for; otherwise, nothing trying Discord again, the user
@@ -257,7 +297,8 @@ namespace XboxSeries.Core
                 return new[] { new GuideItem(GuideItemKind.DiscordUnavailable, why) };
             }
 
-            return CallItems()
+            return RingItems()
+                .Concat(CallItems())
                 .Concat(ShortcutItems())
                 .Concat(new[] { new GuideItem(GuideItemKind.DiscordServers, "Servers", hasDividerAbove: true) })
                 .ToList();
@@ -291,11 +332,13 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Discord tab's first focus, the first entry A does something on: Mute in a call; out of one, the first
-        /// shortcut, else Servers. Not signed in, the line saying why, its only entry, on which A does nothing.
+        /// The Discord tab's first focus, the first entry A does something on: Answer while a known DM rings; else Mute
+        /// in a call; out of one, the first shortcut, else Servers. Not signed in, the line saying why, its only entry,
+        /// on which A does nothing.
         /// </summary>
         private static GuideItem DiscordTabFocus(IReadOnlyList<GuideItem> items) =>
-            items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordMute)
+            items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordIncomingCall)
+            ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordMute)
             ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordShortcut)
             ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordServers)
             ?? items[0];
@@ -318,13 +361,16 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A on Discord's Mute, Deafen or Leave, a shortcut or a server's voice channel: asks Discord, whose events then
-        /// show it done. On Servers or a server, opens its flyout. False for any other entry.
+        /// A on Discord's Answer, Mute, Deafen or Leave, a shortcut or a server's voice channel: asks Discord, whose events
+        /// then show it done. On Servers or a server, opens its flyout. False for any other entry.
         /// </summary>
         private bool SelectDiscordAction(GuideItem item)
         {
             switch (item.Kind)
             {
+                case GuideItemKind.DiscordIncomingCall:
+                    Answer(item.ChannelId);
+                    return true;
                 case GuideItemKind.DiscordShortcut:
                     JoinChannel(item.ChannelId);
                     return true;
