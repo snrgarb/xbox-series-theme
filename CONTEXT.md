@@ -59,7 +59,7 @@ _Avoid_: overlay (the overlay is the window hosting the Guide, not the Guide its
 The topmost, full-screen, transparent window the extension draws the Guide into, above every other window.
 
 **Status area**:
-The controller's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears.
+Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears.
 _Avoid_: status bar, tray
 
 **Utility**:
@@ -67,7 +67,7 @@ One of the buttons along the bottom of the **Guide**'s landing tab: Notification
 _Avoid_: widget, quick setting
 
 **Toast**:
-A small notice shown above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is an incoming Discord call.
+A small notice shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next.
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
 **Discord tab**:

@@ -19,6 +19,7 @@ namespace XboxSeries.Extension
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
         private bool libraryPushed;
+        private ToastWindow toastWindow;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
 #endif
@@ -67,6 +68,7 @@ namespace XboxSeries.Extension
         {
             // Created here, on the UI thread, which owns the Overlay and runs the core.
             windows.Overlay = new OverlayWindow(core);
+            toastWindow = new ToastWindow(core.Toast);
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
@@ -95,6 +97,7 @@ namespace XboxSeries.Extension
             debugGuideHotkey?.Dispose();
 #endif
             windows.Overlay?.Close();
+            toastWindow?.Close();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
             PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);

@@ -1,0 +1,64 @@
+<Window x:Class="XboxSeries.Extension.ToastWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:XboxSeries.Extension"
+        Title="Xbox Series Toast"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Focusable="False"
+        IsHitTestVisible="False"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        Left="-32000" Top="-32000" Width="10" Height="10">
+    <!--
+        The Toast: a strip along the bottom of the screen, above every window, that never takes focus or the mouse, so
+        a running game keeps its input. It shows a new Playnite notification as the console shows its own, bottom
+        centre: a dark rounded card with the notifications glyph in the accent, the text, and the Guide button to view it.
+    -->
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- The Xbox sphere, as SourceXbox. -->
+                <local:HomeTiles />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <!-- Laid out 1080 tall at the screen's aspect, as the Overlay is, and scaled to the screen; this is its bottom part. -->
+    <Viewbox Stretch="Uniform">
+        <Grid x:Name="Root" Height="{x:Static local:ToastWindow.StripHeight}" Width="1920">
+            <Border x:Name="Card" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
+                    MinWidth="420" MaxWidth="720" CornerRadius="8" Background="#F2262626" Padding="18,16,28,16" Opacity="0">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="Rise" Y="40" />
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.6" Color="Black" />
+                </Border.Effect>
+                <DockPanel>
+                    <Grid DockPanel.Dock="Left" Width="56" Height="56" VerticalAlignment="Center" Margin="0,0,18,0">
+                        <Ellipse Fill="{DynamicResource GlyphLightBrush}" />
+                        <!-- Segoe Fluent Icons / MDL2 Assets' notifications glyph, as Home's top bar and the Notifications utility have. -->
+                        <TextBlock Text="&#xE91C;" FontFamily="{DynamicResource XboxIconFont}" FontSize="26" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="24" Foreground="White"
+                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="64" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="Press" FontFamily="{DynamicResource XboxFont}" FontSize="19" Foreground="#B3FFFFFF"
+                                       VerticalAlignment="Center" />
+                            <Path Data="{StaticResource SourceXbox}" Fill="#B3FFFFFF" Width="19" Height="19" Stretch="Uniform"
+                                  Margin="7,0" VerticalAlignment="Center" />
+                            <TextBlock Text="to view" FontFamily="{DynamicResource XboxFont}" FontSize="19" Foreground="#B3FFFFFF"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Viewbox>
+</Window>

@@ -4,55 +4,44 @@ using XboxSeries.Core;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>Adapter: the controller's battery, from XInput, as the console reports it for the pad in use.</summary>
+    /// <summary>Adapter: the controller's battery, from XInput, for pad 1.</summary>
     internal sealed class XInputController : IController
     {
         private const byte DeviceTypeGamepad = 0;
-        private const byte TypeDisconnected = 0;
         private const byte TypeWired = 1;
         private const byte TypeAlkaline = 2;
         private const byte TypeNiMh = 3;
 
-        /// <summary>
-        /// The first of XInput's four pads that is connected and reports its battery. Playnite doesn't say which pad
-        /// pressed a button, so a second pad's battery shows only while the first is off.
-        /// </summary>
+        /// <summary>Pad 1's battery: XInput's first pad, as the console shows its own pad's.</summary>
         public ControllerBattery Battery
         {
             get
             {
-                for (uint pad = 0; pad < 4; pad++)
+                XINPUT_BATTERY_INFORMATION info;
+                try
                 {
-                    XINPUT_BATTERY_INFORMATION info;
-                    try
+                    if (XInputGetBatteryInformation(0, DeviceTypeGamepad, out info) != 0)
                     {
-                        if (XInputGetBatteryInformation(pad, DeviceTypeGamepad, out info) != 0)
-                        {
-                            continue;
-                        }
-                    }
-                    catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
-                    {
-                        // XInput 1.4 ships with Windows 8 and later; without it there is no battery to show.
                         return ControllerBattery.None;
                     }
-
-                    switch (info.BatteryType)
-                    {
-                        case TypeDisconnected:
-                            continue;
-                        case TypeWired:
-                            return ControllerBattery.Wired;
-                        case TypeAlkaline:
-                        case TypeNiMh:
-                            return LevelOf(info.BatteryLevel);
-                        default:
-                            // Connected, but its battery is unknown, as some pads over Bluetooth report: try the next.
-                            continue;
-                    }
+                }
+                catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
+                {
+                    // XInput 1.4 ships with Windows 8 and later; without it there is no battery to show.
+                    return ControllerBattery.None;
                 }
 
-                return ControllerBattery.None;
+                switch (info.BatteryType)
+                {
+                    case TypeWired:
+                        return ControllerBattery.Wired;
+                    case TypeAlkaline:
+                    case TypeNiMh:
+                        return LevelOf(info.BatteryLevel);
+                    default:
+                        // Not connected, or connected with a battery it doesn't report, as some pads over Bluetooth.
+                        return ControllerBattery.None;
+                }
             }
         }
 

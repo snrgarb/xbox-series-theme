@@ -4,11 +4,12 @@ using System.Text;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay over a monitor, and the debug hotkey and closing a game.</summary>
+    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay and the Toast over a monitor, and the debug hotkey and closing a game.</summary>
     internal static class NativeMethods
     {
         public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         public const uint SWP_SHOWWINDOW = 0x0040;
+        public const uint SWP_NOACTIVATE = 0x0010;
         public const int SW_RESTORE = 9;
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_NOREPEAT = 0x4000;
@@ -42,6 +43,7 @@ namespace XboxSeries.Extension
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);
         [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int index);
+        [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int index, int value);
         [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
         [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
@@ -103,6 +105,19 @@ namespace XboxSeries.Extension
                 return true;
             }, IntPtr.Zero);
             return found;
+        }
+
+        /// <summary>
+        /// Makes <paramref name="window"/> one that clicks pass through, that never activates, and that Alt+Tab leaves
+        /// out: the Toast, which must leave a running game its input.
+        /// </summary>
+        public static void MakeClickThrough(IntPtr window)
+        {
+            const int GWL_EXSTYLE = -20;
+            const int WS_EX_TRANSPARENT = 0x20;
+            const int WS_EX_TOOLWINDOW = 0x80;
+            const int WS_EX_NOACTIVATE = 0x08000000;
+            SetWindowLong(window, GWL_EXSTYLE, GetWindowLong(window, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
         }
 
         /// <summary>The id of the process that owns <paramref name="window"/>.</summary>

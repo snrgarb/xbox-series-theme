@@ -3,7 +3,7 @@ namespace XboxSeries.Core
     /// <summary>Port for the controller, for the battery the status area shows.</summary>
     public interface IController
     {
-        /// <summary>The battery of the first controller connected.</summary>
+        /// <summary>The battery of pad 1.</summary>
         ControllerBattery Battery { get; }
     }
 

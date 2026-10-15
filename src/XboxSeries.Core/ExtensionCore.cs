@@ -51,6 +51,10 @@ namespace XboxSeries.Core
         /// <summary>How far one press of left or right turns the volume, as Windows' own volume keys do.</summary>
         private const int VolumeStep = 2;
 
+        /// <summary>How long a Toast shows, and the pause before the next one waiting.</summary>
+        private static readonly TimeSpan ToastDuration = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan ToastGap = TimeSpan.FromSeconds(0.5);
+
         private readonly IClock clock;
         private readonly IWindowSystem windowSystem;
         private readonly IPlayniteHost playnite;
@@ -61,6 +65,14 @@ namespace XboxSeries.Core
         private readonly IController controller;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private IReadOnlyList<Notification> notifications = new Notification[0];
+
+        /// <summary>The ids of the notifications last seen, so only new ones get a Toast; null until the first are seen.</summary>
+        private HashSet<string> seenNotifications;
+        private readonly Queue<Notification> waitingToasts = new Queue<Notification>();
+        private IDisposable toastTimer;
+
+        /// <summary>Whether a Toast was showing as the Guide button went down: the tap opens the Guide on Notifications.</summary>
+        private bool toastAtGuidePress;
         private Guid? runningGame;
         private IntPtr recordedForeground;
         private ControllerButton? dismissButton;
@@ -119,6 +131,8 @@ namespace XboxSeries.Core
 
         public GuideState Guide { get; } = new GuideState();
 
+        public ToastState Toast { get; } = new ToastState();
+
         public HomeState Home { get; } = new HomeState();
 
         public MyGamesState MyGames { get; } = new MyGamesState();
@@ -136,9 +150,14 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Playnite's own notifications changed: the status area counts them, and the Notifications utility lists them.</summary>
+        /// <summary>
+        /// Playnite's own notifications changed: the status area counts them, and the Notifications utility lists them.
+        /// Each new one gets a Toast, unless the Guide is already listing them; those there from the start don't.
+        /// </summary>
         public void OnNotificationsChanged(IReadOnlyList<Notification> current)
         {
+            var fresh = seenNotifications == null ? new Notification[0] : current.Where(n => !seenNotifications.Contains(n.Id)).ToArray();
+            seenNotifications = new HashSet<string>(current.Select(n => n.Id));
             notifications = current;
             Status.NotificationCount = current.Count;
             if (Guide.IsOpen && Guide.Utility == GuideItemKind.Notifications)
@@ -146,7 +165,44 @@ namespace XboxSeries.Core
                 var index = Guide.Items.ToList().IndexOf(Guide.FocusedItem);
                 ShowNotifications();
                 Guide.FocusedItem = Guide.Items.Count == 0 ? null : Guide.Items[Clamp(index, Guide.Items.Count)];
+                return;
             }
+
+            foreach (var notification in fresh)
+            {
+                waitingToasts.Enqueue(notification);
+            }
+
+            if (toastTimer == null)
+            {
+                ShowNextToast();
+            }
+        }
+
+        private void ShowNextToast()
+        {
+            toastTimer = null;
+            if (waitingToasts.Count == 0)
+            {
+                return;
+            }
+
+            Toast.Text = waitingToasts.Dequeue().Text;
+            Toast.IsShown = true;
+            toastTimer = clock.After(ToastDuration, () =>
+            {
+                Toast.IsShown = false;
+                toastTimer = waitingToasts.Count == 0 ? null : clock.After(ToastGap, ShowNextToast);
+            });
+        }
+
+        /// <summary>The Guide opened: what the Toasts were telling of is in it now.</summary>
+        private void DropToasts()
+        {
+            toastTimer?.Dispose();
+            toastTimer = null;
+            waitingToasts.Clear();
+            Toast.IsShown = false;
         }
 
         /// <summary>The status area's clock and battery, read afresh and again on the next minute.</summary>
@@ -418,6 +474,7 @@ namespace XboxSeries.Core
                 guideTapTimer?.Dispose();
                 guideTapTimer = null;
                 guidePressedAt = at;
+                toastAtGuidePress = Toast.IsShown;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
                 return;
@@ -465,11 +522,16 @@ namespace XboxSeries.Core
             ShowTab(GuideTabKind.ProfileAndSystem);
         }
 
+        /// <summary>A tap opens the Guide, on Notifications when a Toast was showing, as the console opens at a Toast's subject.</summary>
         private void OpenGuideFromTap()
         {
             guideTapTimer = null;
             sounds.Play(UiSound.OpenMenu);
             OpenGuide();
+            if (toastAtGuidePress)
+            {
+                ShowUtility(GuideItemKind.Notifications);
+            }
         }
 
         private void CancelHold()
@@ -1038,6 +1100,7 @@ namespace XboxSeries.Core
             }
 
             RefreshStatus();
+            DropToasts();
             ShowTab(GuideTabKind.Landing);
             Guide.IsOverlayShown = true;
             Guide.ShowsPanel = showsPanel;
