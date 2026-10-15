@@ -71,8 +71,14 @@ namespace XboxSeries.Core
         private readonly Queue<Notification> waitingToasts = new Queue<Notification>();
         private IDisposable toastTimer;
 
-        /// <summary>Whether a Toast was showing as the Guide button went down: the tap opens the Guide on Notifications.</summary>
-        private bool toastAtGuidePress;
+        /// <summary>The notification whose Toast is showing, which the call's Toast puts back in line; null for none.</summary>
+        private Notification shownNotification;
+
+        /// <summary>
+        /// What the Toast showing as the Guide button went down told of, which the tap opens the Guide at: Notifications,
+        /// or the Discord tab's Answer for a call; null for no Toast.
+        /// </summary>
+        private GuideItemKind? toastAtGuidePress;
         private Guid? runningGame;
         private IntPtr recordedForeground;
         private ControllerButton? dismissButton;
@@ -191,28 +197,35 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>The next notification's Toast, unless the call's is showing, which they wait behind.</summary>
         private void ShowNextToast()
         {
             toastTimer = null;
-            if (waitingToasts.Count == 0)
+            if (waitingToasts.Count == 0 || ringToastTimer != null)
             {
                 return;
             }
 
-            Toast.Text = waitingToasts.Dequeue().Text;
+            shownNotification = waitingToasts.Dequeue();
+            Toast.Text = shownNotification.Text;
+            Toast.IsCall = false;
             Toast.IsShown = true;
             toastTimer = clock.After(ToastDuration, () =>
             {
+                shownNotification = null;
                 Toast.IsShown = false;
                 toastTimer = waitingToasts.Count == 0 ? null : clock.After(ToastGap, ShowNextToast);
             });
         }
 
-        /// <summary>The Guide opened: what the Toasts were telling of is in it now.</summary>
+        /// <summary>The Guide opened: what the Toasts were telling of is in it now, a call ringing on the Discord tab.</summary>
         private void DropToasts()
         {
             toastTimer?.Dispose();
             toastTimer = null;
+            ringToastTimer?.Dispose();
+            ringToastTimer = null;
+            shownNotification = null;
             waitingToasts.Clear();
             Toast.IsShown = false;
         }
@@ -492,7 +505,9 @@ namespace XboxSeries.Core
                 guideTapTimer?.Dispose();
                 guideTapTimer = null;
                 guidePressedAt = at;
-                toastAtGuidePress = Toast.IsShown;
+                toastAtGuidePress = !Toast.IsShown ? (GuideItemKind?)null
+                    : Toast.IsCall ? GuideItemKind.DiscordIncomingCall
+                    : GuideItemKind.Notifications;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
                 return;
@@ -540,15 +555,22 @@ namespace XboxSeries.Core
             ShowTab(GuideTabKind.ProfileAndSystem);
         }
 
-        /// <summary>A tap opens the Guide, on Notifications when a Toast was showing, as the console opens at a Toast's subject.</summary>
+        /// <summary>
+        /// A tap opens the Guide at the subject of the Toast showing, as the console does: Notifications for a
+        /// notification's, the Discord tab, focus on Answer, for a call's.
+        /// </summary>
         private void OpenGuideFromTap()
         {
             guideTapTimer = null;
             sounds.Play(UiSound.OpenMenu);
             OpenGuide();
-            if (toastAtGuidePress)
+            if (toastAtGuidePress == GuideItemKind.Notifications)
             {
                 OpenFlyout(GuideItemKind.Notifications);
+            }
+            else if (toastAtGuidePress == GuideItemKind.DiscordIncomingCall && Settings.Discord.HasDiscordTab)
+            {
+                ShowTab(GuideTabKind.Discord);
             }
         }
 
