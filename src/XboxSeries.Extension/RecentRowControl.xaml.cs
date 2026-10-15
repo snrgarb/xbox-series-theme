@@ -63,6 +63,7 @@ namespace XboxSeries.Extension
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged += OnHomeChanged;
+            core.Home.ReturnedFromGame += OnReturnedFromGame;
             homeScreen.Changed += OnScreenChanged;
             HomeRows.Fly(this, !homeScreen.ShowsGroups, -HomeRows.FlyDistance, animate: false);
             growth.Start();
@@ -81,6 +82,7 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.Home.PropertyChanged -= OnHomeChanged;
+            core.Home.ReturnedFromGame -= OnReturnedFromGame;
             homeScreen.Changed -= OnScreenChanged;
             growth.Stop();
             if (gameDetails != null)
@@ -97,6 +99,21 @@ namespace XboxSeries.Extension
             {
                 FocusTileSoon();
             }
+        }
+
+        /// <summary>
+        /// A game launched from the Dashboard has exited: the row takes focus back, on that game's tile, from wherever
+        /// Playnite left it. Playnite's "game is running" panel had focus while it ran, and as it goes Playnite focuses
+        /// its main list, which Home hides, leaving nothing on screen to take the pad's keys. The Groups fly out if
+        /// they were up.
+        /// </summary>
+        private void OnReturnedFromGame(Guid gameId)
+        {
+            lastFocusedGame = gameId;
+            hasFocus = true;
+            homeScreen.LastFocusedRow = this;
+            homeScreen.Show(groups: false);
+            FocusTileSoon();
         }
 
         private void OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)

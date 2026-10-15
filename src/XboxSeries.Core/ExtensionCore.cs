@@ -371,11 +371,33 @@ namespace XboxSeries.Core
             if (next != null)
             {
                 LaunchAfterQuit(next.Value);
+                return;
             }
-            else if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
+
+            if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
             {
                 RefreshLandingTab();
             }
+
+            ReturnHomeFrom(gameId);
+        }
+
+        /// <summary>
+        /// A game has exited with nothing to launch after it: back to Home, as the console does, wherever it was
+        /// launched from, the Recent row taking the pad again on the game just played. Playnite, coming back to the
+        /// front, puts its own focus on its main list, which Home hides, so without this nothing on screen had focus
+        /// and the pad moved nothing. The Guide or Start-up, when up, keep the foreground; Home is behind them as they go.
+        /// </summary>
+        private void ReturnHomeFrom(Guid gameId)
+        {
+            CloseMyGames();
+            CloseSettings();
+            if (!Guide.IsOpen && !Startup.IsShown)
+            {
+                playnite.BringToFront(DashboardPage.Home);
+            }
+
+            Home.ReturnFromGame(gameId);
         }
 
         /// <summary>Takes away a menu or prompt about a game. Power is about the PC, so it stays.</summary>
