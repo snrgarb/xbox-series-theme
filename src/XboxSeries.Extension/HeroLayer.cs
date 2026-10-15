@@ -43,7 +43,7 @@ namespace XboxSeries.Extension
             var isCover = art.IsCover;
             image.Source = DecodedImageConverter.Load(art.Image, isCover ? 480 : 1920);
 
-            // A cover is small and portrait: blurred, it reads as colour behind Home rather than as a stretched picture.
+            // A cover is small and portrait: blurred, it reads as colour behind what is over it rather than as a stretched picture.
             // It overhangs the layer so the blur's soft edges fall outside it.
             image.Effect = isCover ? new BlurEffect { Radius = 60, RenderingBias = RenderingBias.Performance } : null;
             image.Margin = isCover ? new Thickness(-120) : new Thickness(0);

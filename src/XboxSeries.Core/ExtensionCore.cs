@@ -327,8 +327,16 @@ namespace XboxSeries.Core
         /// </summary>
         public bool OnGameStarting(Guid gameId)
         {
-            if (gameId == startingGame || gameId == runningGame)
+            if (gameId == runningGame)
             {
+                return true;
+            }
+
+            if (gameId == startingGame)
+            {
+                // The Dashboard's own launch, now begun by Playnite: only now, so a launch Playnite never begins, as one
+                // routed to its install dialog, isn't hidden behind the Launch screen.
+                ShowLaunchScreen(gameId);
                 return true;
             }
 
@@ -1835,12 +1843,11 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Starts a game through Playnite, holding off other launches until Playnite reports it started or didn't. Its
-        /// Launch screen shows now: Playnite's starting event for it finds it already starting and lets it through.
+        /// Launch screen shows as Playnite's starting event for it, finding it already starting, lets it through.
         /// </summary>
         private void Launch(Guid gameId)
         {
             startingGame = gameId;
-            ShowLaunchScreen(gameId);
             playnite.StartGame(gameId);
         }
 

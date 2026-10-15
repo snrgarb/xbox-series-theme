@@ -36,6 +36,7 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>The Launch screen goes, whatever it was up for: the game reported, or the timeout.</summary>
         private void HideLaunchScreen()
         {
             launchScreenGame = null;

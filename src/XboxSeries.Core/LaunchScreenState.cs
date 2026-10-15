@@ -30,6 +30,7 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Whether the Launch screen is up: from the launch until the game started, or the launch ended or gave up.</summary>
         public bool IsShown
         {
             get => isShown;
