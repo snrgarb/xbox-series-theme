@@ -20,7 +20,8 @@
         a running game keeps its input. It shows a new Playnite notification, or a DM ringing, as the console shows its
         own: a wide, solid Xbox green banner low at the bottom centre, a square tile of lighter green on its left with
         the image for the Toast's kind (the bell, a camera, Discord's mark, or the caller's avatar; see ToastImages.xaml),
-        and large white text beside it that fades back and forth between the Toast's own line and "Press (Guide) to view".
+        and large white text beside it that fades back and forth between the Toast's own line and "Press (Guide) to view",
+        but for the start-up's "Hi X!" greeting, which only greets.
         It comes in as the console's does: the banner grows from its centre as it fades in over 0.3 s. For a kind whose
         tile slides (ToastSlide.<Kind> in ToastImages.xaml), its text starts at its left where the tile will be, and
         0.7 s after the grow the tile slides out from behind the banner's left edge as it fades in, pushing the text right
@@ -98,12 +99,27 @@
                                             <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Call}">
                                                 <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Call}" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Greeting}">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Greeting}" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </ContentControl.Style>
                             </ContentControl>
-                            <!-- The Toast's own image, as a caller's avatar, filling the tile to its rounded corners over the kind's, which shows while it loads or if it can't. -->
+                            <!--
+                                The Toast's own image, as a caller's avatar, filling the tile to its rounded corners over the kind's,
+                                which shows while it loads or if it can't; but for the greeting, whose kind's image is round and its own.
+                            -->
                             <Grid local:RoundedClip.Radius="4">
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Greeting}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
                                 <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
                             </Grid>
                         </Grid>

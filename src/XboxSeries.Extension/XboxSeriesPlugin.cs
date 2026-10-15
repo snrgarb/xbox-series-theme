@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 using System.Reflection;
+using Microsoft.Win32;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Plugins;
@@ -23,6 +24,7 @@ namespace XboxSeries.Extension
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private bool libraryPushed;
         private ToastWindow toastWindow;
+        private StartupWindow startupWindow;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
 #endif
@@ -49,6 +51,11 @@ namespace XboxSeries.Extension
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
+            // The first of Home's elements is the earliest the extension hears from Playnite on its UI thread with its
+            // window made, seconds before OnApplicationStarted: the Start-up sequence covers the screen from here, so
+            // Home is never seen before it.
+            BeginStartup();
+
             // Playnite builds Home before it raises OnApplicationStarted, and can take seconds between the two. The
             // database is already loaded by then, so Home's elements start from it rather than showing empty until then.
             if (!libraryPushed && PlayniteApi.Database.IsOpen)
@@ -71,20 +78,29 @@ namespace XboxSeries.Extension
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
-            // Created here, on the UI thread, which owns the Overlay and runs the core.
+            // Created here, on the UI thread, which owns the Overlay and runs the core. The Toast's may be already, for
+            // the Start-up sequence's greeting.
             windows.Overlay = new OverlayWindow(core);
-            toastWindow = new ToastWindow(core.Toast);
+            toastWindow = toastWindow ?? new ToastWindow(core.Toast);
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
             if (PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen)
             {
                 host.RestoreLeftUserFilter();
+
+                // Begun with Home's first element, unless the theme has none of them.
+                BeginStartup();
+                SystemEvents.PowerModeChanged += OnPowerModeChanged;
+            }
+            else
+            {
+                // In Fullscreen the Start-up sequence plays it as a profile signs in.
+                sounds.Play(UiSound.Login);
             }
 
             PushLibrary();
             GameHubFocusSounds.Register(sounds);
-            sounds.Play(UiSound.Login);
 
             // Database events can arrive on background threads; the core only runs on the UI thread.
             PlayniteApi.Database.Games.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
@@ -109,8 +125,10 @@ namespace XboxSeries.Extension
 #if DEBUG
             debugGuideHotkey?.Dispose();
 #endif
+            SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             windows.Overlay?.Close();
             toastWindow?.Close();
+            startupWindow?.Shutdown();
             discordPipe.Close();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
@@ -167,6 +185,32 @@ namespace XboxSeries.Extension
             }
 
             OnUiThread(() => core.OnControllerButton(button.Value, state, at));
+        }
+
+        /// <summary>
+        /// The Start-up sequence, once, in Fullscreen only: its window, and the Toast's for its greeting, made before the
+        /// core begins it, so they show its first phase.
+        /// </summary>
+        private void BeginStartup()
+        {
+            if (startupWindow != null || PlayniteApi.ApplicationInfo.Mode != ApplicationMode.Fullscreen)
+            {
+                return;
+            }
+
+            startupWindow = new StartupWindow(core);
+            toastWindow = toastWindow ?? new ToastWindow(core.Toast);
+            core.OnStartup();
+            startupWindow.Follow();
+        }
+
+        /// <summary>Windows woke from sleep: Who's playing today? again. Raised on a thread of its own.</summary>
+        private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+        {
+            if (e.Mode == PowerModes.Resume)
+            {
+                OnUiThread(core.OnResumedFromSleep);
+            }
         }
 
         private void OnUiThread(Action action)
