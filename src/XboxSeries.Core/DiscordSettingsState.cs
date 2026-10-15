@@ -15,6 +15,7 @@ namespace XboxSeries.Core
         private string statusText = "Not connected";
         private bool isConnected;
         private bool isConnecting;
+        private bool needsReconnect;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -63,6 +64,16 @@ namespace XboxSeries.Core
         {
             get => isConnecting;
             internal set => Set(ref isConnecting, value, nameof(IsConnecting));
+        }
+
+        /// <summary>
+        /// Whether Discord stopped taking the saved tokens and wouldn't authorize again either, so the user has to Connect
+        /// from Settings once more. Connect signing in, or Disconnect, clears it.
+        /// </summary>
+        public bool NeedsReconnect
+        {
+            get => needsReconnect;
+            internal set => Set(ref needsReconnect, value, nameof(NeedsReconnect));
         }
 
         /// <summary>Whether Connect does anything: with a Client ID and Secret, and not connected or connecting already.</summary>
