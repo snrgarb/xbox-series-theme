@@ -164,13 +164,14 @@ namespace XboxSeries.Core
     /// <summary>One of Playnite's Software tools, shown under My games &amp; apps. Not a game.</summary>
     public sealed class App
     {
-        public App(Guid id, string name, string path, string arguments, string icon = null)
+        public App(Guid id, string name, string path, string arguments, string icon = null, string workingDirectory = null)
         {
             Id = id;
             Name = name;
             Path = path;
             Arguments = arguments;
             Icon = icon;
+            WorkingDirectory = workingDirectory;
         }
 
         public Guid Id { get; }
@@ -180,5 +181,8 @@ namespace XboxSeries.Core
 
         /// <summary>The full path of the tool's icon; null when it has none.</summary>
         public string Icon { get; }
+
+        /// <summary>The directory the tool starts in; null for the one its path is in.</summary>
+        public string WorkingDirectory { get; }
     }
 }
