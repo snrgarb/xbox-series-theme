@@ -15,6 +15,12 @@ namespace XboxSeries.Core
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        /// <summary>
+        /// A game launched from the Dashboard has exited and the user is back on Home: the Recent row takes focus again,
+        /// on the tile of the game that exited. Playnite's own focus goes to its main list, hidden on Home, as a game stops.
+        /// </summary>
+        public event Action<Guid> ReturnedFromGame;
+
         /// <summary>The Recent row's game tiles, left to right. The Play history tile follows them.</summary>
         public IReadOnlyList<HomeTile> RecentRow
         {
@@ -54,6 +60,8 @@ namespace XboxSeries.Core
             get => menu;
             internal set => Set(ref menu, value, nameof(TileMenu));
         }
+
+        internal void ReturnFromGame(Guid gameId) => ReturnedFromGame?.Invoke(gameId);
 
         private void Set<T>(ref T field, T value, string name)
         {

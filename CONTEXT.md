@@ -128,6 +128,7 @@ _Avoid_: home button, Xbox button
 - The **Overlay** hosts the **Guide**, and nothing else
 - Tapping the **Guide button** opens the **Guide** 0.3 s after the press, or closes it on release; holding it for 0.7 s opens Power instead, without showing the **Guide** first
 - Selecting a game anywhere on the **Dashboard** opens its **Game hub**
+- A game exiting, however it was quit, returns to **Home** from wherever it was launched, the Recent row focused on that game
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
 - The **Guide** has three tabs: landing, the **Discord tab** (once connected, until disconnected), and Profile & system
