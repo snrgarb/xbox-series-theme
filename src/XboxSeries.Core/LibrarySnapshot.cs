@@ -179,10 +179,19 @@ namespace XboxSeries.Core
         public string Path { get; }
         public string Arguments { get; }
 
-        /// <summary>The full path of the tool's icon; null when it has none.</summary>
+        /// <summary>The full path of the App's icon; null when it has none.</summary>
         public string Icon { get; }
 
-        /// <summary>The directory the tool starts in; null for the one its path is in.</summary>
+        /// <summary>The directory the App starts in; null for the one its path is in.</summary>
         public string WorkingDirectory { get; }
+
+        /// <summary>Whether two Apps would show and start the same: same id, name, path, arguments, icon and working directory.</summary>
+        internal static bool Same(App a, App b) =>
+            a.Id == b.Id
+            && a.Name == b.Name
+            && a.Path == b.Path
+            && a.Arguments == b.Arguments
+            && a.Icon == b.Icon
+            && a.WorkingDirectory == b.WorkingDirectory;
     }
 }

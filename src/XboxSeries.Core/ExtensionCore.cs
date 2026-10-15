@@ -184,8 +184,7 @@ namespace XboxSeries.Core
             library = snapshot;
             RefreshHome();
             RefreshFullLibraryCount();
-            MyGames.HasApps = snapshot.Apps != null;
-            MyGames.Apps = snapshot.Apps ?? new App[0];
+            RefreshApps(snapshot.Apps);
 
             // The ring only shows on the page; Windows is asked for a drive's space no more often than that needs.
             if (MyGames.IsShown)
@@ -1209,7 +1208,27 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A on an App's tile: starts the tool with its arguments. An App is not a game, so it starts whatever game is
+        /// The page's Apps, from a library push; null when Software tools couldn't be read. They are only replaced when
+        /// they changed, since new Apps rebuild every tile and read every icon again. Left on Apps that went, the page
+        /// moves to Games rather than sit on a nav item it hides.
+        /// </summary>
+        private void RefreshApps(IReadOnlyList<App> apps)
+        {
+            MyGames.HasApps = apps != null;
+            var current = apps ?? new App[0];
+            if (current.Count != MyGames.Apps.Count || current.Zip(MyGames.Apps, App.Same).Contains(false))
+            {
+                MyGames.Apps = current;
+            }
+
+            if (!MyGames.HasApps && MyGames.IsShown && MyGames.Item == MyGamesItem.Apps)
+            {
+                OpenMyGames(MyGamesItem.Games);
+            }
+        }
+
+        /// <summary>
+        /// A on an App's tile: starts the App with its arguments. An App is not a game, so it starts whatever game is
         /// running, quitting or launching, without "Quit X and start Y?" or the Launch screen. A menu or the Guide still
         /// showing over the page answers the A instead.
         /// </summary>

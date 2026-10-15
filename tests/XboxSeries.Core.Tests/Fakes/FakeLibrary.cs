@@ -103,6 +103,13 @@ namespace XboxSeries.Core.Tests.Fakes
             return this;
         }
 
+        /// <summary>Apps with known ids, to stand for the same Apps in a later snapshot.</summary>
+        public FakeLibrary WithApps(params App[] known)
+        {
+            apps.AddRange(known);
+            return this;
+        }
+
         /// <summary>Simulates a Playnite build where reading Software tools fails.</summary>
         public FakeLibrary WithoutApps()
         {

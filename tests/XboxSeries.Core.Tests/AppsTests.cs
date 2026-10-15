@@ -189,6 +189,52 @@ namespace XboxSeries.Core.Tests
             Assert.False(core.MyGames.IsShown);
         }
 
+        [Fact]
+        public void When_Software_tools_stop_being_readable_on_Apps_the_page_moves_to_Games()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite")
+                .WithGame("Not Installed", installed: false)
+                .WithApp("Steam", @"C:\Steam\steam.exe");
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Apps);
+
+            core.OnLibraryChanged(library.WithoutApps().Snapshot());
+
+            Assert.True(core.MyGames.IsShown);
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+            Assert.True(core.MyGames.ShowsGameGrid);
+            Assert.Equal(new[] { "Halo Infinite" }, MainList(library));
+        }
+
+        [Fact]
+        public void A_library_change_that_leaves_the_Apps_as_they_were_keeps_them()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite")
+                .WithApp("Steam", @"C:\Steam\steam.exe", "-bigpicture", @"C:\Icons\steam.png");
+            core.OnLibraryChanged(library.Snapshot());
+            var apps = core.MyGames.Apps;
+            var changes = 0;
+            core.MyGames.PropertyChanged += (s, e) => changes += e.PropertyName == nameof(MyGamesState.Apps) ? 1 : 0;
+
+            core.OnLibraryChanged(library.WithGame("Forza Horizon 5").Snapshot());
+
+            Assert.Same(apps, core.MyGames.Apps);
+            Assert.Equal(0, changes);
+        }
+
+        [Fact]
+        public void A_renamed_App_replaces_the_Apps()
+        {
+            var steam = new App(Guid.NewGuid(), "Steam", @"C:\Steam\steam.exe", null);
+            core.OnLibraryChanged(new FakeLibrary().WithApps(steam).Snapshot());
+
+            core.OnLibraryChanged(new FakeLibrary().WithApps(new App(steam.Id, "Steam Big Picture", steam.Path, null)).Snapshot());
+
+            Assert.Equal("Steam Big Picture", Assert.Single(core.MyGames.Apps).Name);
+        }
+
         /// <summary>The games Playnite's main list shows under the filter the core last applied.</summary>
         private string[] MainList(FakeLibrary library) =>
             playnite.MainListFilter.Apply(library.Snapshot().Games).Select(g => g.Name).ToArray();
