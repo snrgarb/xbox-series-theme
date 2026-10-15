@@ -77,7 +77,6 @@ namespace XboxSeries.Extension
 
                 try
                 {
-                    LogFrame("Sent", opcode, json);
                     var payload = Encoding.UTF8.GetBytes(json ?? "");
                     var frame = new byte[8 + payload.Length];
                     BitConverter.GetBytes((int)opcode).CopyTo(frame, 0);
@@ -111,15 +110,6 @@ namespace XboxSeries.Extension
             closing?.End();
         }
 
-        /// <summary>
-        /// Debug builds log every frame, so what Discord really sends can be read in Playnite's extensions.log; tokens and
-        /// authorization codes are masked.
-        /// </summary>
-        [System.Diagnostics.Conditional("DEBUG")]
-        private static void LogFrame(string direction, DiscordOpcode opcode, string json) =>
-            logger.Info($"Discord RPC {direction} {opcode}: "
-                + System.Text.RegularExpressions.Regex.Replace(json ?? "", @"""(access_token|refresh_token|code)""\s*:\s*""[^""]*""", @"""$1"":""***"""));
-
         /// <summary>Reads frames until the pipe closes. Frames can arrive split across reads or several to a read.</summary>
         private void Read(Connection connection)
         {
@@ -147,9 +137,7 @@ namespace XboxSeries.Extension
                         break;
                     }
 
-                    var received = Encoding.UTF8.GetString(payload);
-                    LogFrame("Received", opcode, received);
-                    FrameReceived?.Invoke(opcode, received);
+                    FrameReceived?.Invoke(opcode, Encoding.UTF8.GetString(payload));
                 }
             }
             catch (Exception e) when (e is IOException || e is ObjectDisposedException || e is InvalidOperationException)
