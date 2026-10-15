@@ -39,6 +39,7 @@ namespace XboxSeries.Extension
                 [SettingsCategory.Guide] = GuideItem,
                 [SettingsCategory.Discord] = DiscordItem,
             };
+            DiscordSteps.ItemsSource = core.Settings.Discord.Steps.Select((step, i) => new { Number = $"{i + 1}.", Text = step }).ToList();
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -53,6 +54,14 @@ namespace XboxSeries.Extension
 
         /// <summary>The rail, top to bottom, the divider aside.</summary>
         private Button[] RailItems => new[] { PersonalisationItem, GuideItem, DiscordItem, PlayniteSettingsItem, MorePlayniteOptionsItem };
+
+        /// <summary>Discord's buttons, as the pad moves between them: a row each, Connect and Disconnect side by side.</summary>
+        private Button[][] DiscordRows => new[]
+        {
+            new[] { PasteClientIdButton },
+            new[] { PasteClientSecretButton },
+            new[] { ConnectButton, DisconnectButton },
+        };
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -117,6 +126,7 @@ namespace XboxSeries.Extension
         {
             var category = core.Settings.Category;
             Header.Text = category.ToString();
+            DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
             foreach (var item in categoryItems)
             {
                 item.Value.Tag = item.Key == category ? "Selected" : null;
@@ -148,13 +158,20 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Up and down move through the rail, over the divider, and stay put at its ends: Home is hidden behind the page.
-        /// The pad's A opens Playnite's entries. Left and right go nowhere yet: the categories have no options to move into.
+        /// The pad's A opens Playnite's entries. Right or A on Discord moves into its options; Left and Right go nowhere
+        /// else yet: the other categories have no options to move into.
         /// </summary>
         private void OnRailKeyDown(object sender, KeyEventArgs e)
         {
             var items = RailItems;
             var here = Array.IndexOf(items, e.OriginalSource as Button);
-            if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (e.OriginalSource == DiscordItem && (pad == ControllerInput.A || e.Key == Key.Right))
+            {
+                e.Handled = true;
+                PasteClientIdButton.Focus();
+            }
+            else if (pad == ControllerInput.A)
             {
                 e.Handled = true;
                 OpenPlayniteEntry(e.OriginalSource);
@@ -167,6 +184,95 @@ namespace XboxSeries.Extension
             else if (e.Key == Key.Left || e.Key == Key.Right)
             {
                 e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// The pad in Discord's options: up and down between its rows, left and right along Connect and Disconnect, Left
+        /// from the first column or B back to the rail's Discord, and A presses the button focused.
+        /// </summary>
+        private void OnDiscordPaneKeyDown(object sender, KeyEventArgs e)
+        {
+            var rows = DiscordRows;
+            var row = Array.FindIndex(rows, r => r.Contains(e.OriginalSource));
+            if (row < 0)
+            {
+                return;
+            }
+
+            var column = Array.IndexOf(rows[row], e.OriginalSource);
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (pad == ControllerInput.A)
+            {
+                e.Handled = true;
+                PressDiscordButton(e.OriginalSource);
+            }
+            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0))
+            {
+                // Handled here, before the page's B takes it back to where Settings was opened from.
+                e.Handled = true;
+                DiscordItem.Focus();
+            }
+            else if (e.Key == Key.Left || e.Key == Key.Right)
+            {
+                e.Handled = true;
+                rows[row][Math.Max(0, Math.Min(rows[row].Length - 1, column + (e.Key == Key.Left ? -1 : 1)))].Focus();
+            }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+                var next = rows[Math.Max(0, Math.Min(rows.Length - 1, row + (e.Key == Key.Up ? -1 : 1)))];
+                next[Math.Min(column, next.Length - 1)].Focus();
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnDiscordPaneKeyDown.
+        private void OnDiscordButtonClick(object sender, RoutedEventArgs e)
+        {
+            PressDiscordButton(sender);
+        }
+
+        private void PressDiscordButton(object button)
+        {
+            if (button == PasteClientIdButton || button == PasteClientSecretButton)
+            {
+                // A clipboard another program holds open pastes nothing, leaving the field; an empty one forgets it.
+                var text = ClipboardText();
+                if (text == null)
+                {
+                    return;
+                }
+
+                if (button == PasteClientIdButton)
+                {
+                    core.SetDiscordClientId(text);
+                }
+                else
+                {
+                    core.SetDiscordClientSecret(text);
+                }
+            }
+            else if (button == ConnectButton)
+            {
+                core.ConnectDiscord();
+            }
+            else if (button == DisconnectButton && core.Settings.Discord.CanDisconnect)
+            {
+                // Greyed with nothing to disconnect; pressed then, it would only wipe the status line.
+                core.DisconnectDiscord();
+            }
+        }
+
+        /// <summary>The Windows clipboard's text, empty for none, or null when another program holds it open.</summary>
+        private static string ClipboardText()
+        {
+            try
+            {
+                return Clipboard.GetText();
+            }
+            catch (System.Runtime.InteropServices.ExternalException)
+            {
+                return null;
             }
         }
 

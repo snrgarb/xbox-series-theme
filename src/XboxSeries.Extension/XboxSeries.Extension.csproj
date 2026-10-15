@@ -24,6 +24,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="extension.yaml" />
+    <!-- The QR code of Discord's developer portal, on Settings' Discord, pre-rendered: its address never changes. -->
+    <Resource Include="DiscordPortalQr.png" />
     <AssemblyMetadata Include="PluginGuid" Value="$(PluginGuid)" />
   </ItemGroup>
   <!--
