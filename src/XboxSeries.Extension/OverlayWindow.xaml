@@ -139,6 +139,19 @@
                             <!-- Who is calling, under Answer. -->
                             <TextBlock x:Name="Calling" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22"
                                        Foreground="#B3FFFFFF" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
+                            <!--
+                                Audio's Output and Input dropdowns, as the console's Settings ones: a box under the title naming
+                                the device set, a long name cut short, with a chevron at its end, pointing up while the list is open.
+                            -->
+                            <Border x:Name="DropBox" Height="48" Margin="0,10,0,0" CornerRadius="4" BorderThickness="2"
+                                    BorderBrush="#80FFFFFF" Background="#14FFFFFF" Visibility="Collapsed">
+                                <Grid>
+                                    <TextBlock Text="{Binding Selection}" Style="{StaticResource GuideText}" FontSize="22" Margin="14,0,46,0"
+                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="Chevron" Text="&#xE70D;" Style="{StaticResource GuideIcon}" FontSize="16"
+                                               HorizontalAlignment="Right" Margin="0,0,16,0" />
+                                </Grid>
+                            </Border>
                             <!-- Audio's volume slider: a track filled to the level, in the accent. -->
                             <ProgressBar x:Name="Slider" Minimum="0" Maximum="100" Value="{Binding Level, Mode=OneWay}"
                                          Height="6" Margin="0,12,56,0" Visibility="Collapsed" Focusable="False">
@@ -238,6 +251,27 @@
                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                     </Grid>
+                    <!--
+                        An Output or Input dropdown's open list, in place under its box and as wide, pushing the entries
+                        below it down: a box a little lighter than the flyout, each device a row of this template (so it
+                        has the entries' focus and is pointed at and picked as they are), the one set ticked. Gone
+                        while the list is closed.
+                    -->
+                    <Border x:Name="OptionList" Margin="78,-8,33,12" Padding="0,6" CornerRadius="4" Background="#FF2E2E2E"
+                            BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <ItemsControl x:Name="Options" ItemsSource="{Binding Options}" ItemTemplate="{DynamicResource GuideEntry}"
+                                      Focusable="False" />
+                    </Border>
                 </StackPanel>
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding Source}" Value="Steam">
@@ -335,6 +369,58 @@
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                         <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
                     </DataTrigger>
+                    <!--
+                        Audio's Output and Input dropdowns (#55): the speaker or the microphone beside the title, the box
+                        naming the device under it. Open, the box is ringed in the accent and the chevron points up, and
+                        the row stays lit while focus is down in its list; the list itself is OptionList, under the row.
+                        Each device in the list is a shorter row, its name cut short when long, the one set ticked where
+                        the other rows have their icon.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="AudioOutput">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7F5;" />
+                        <Setter TargetName="Entry" Property="Height" Value="128" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
+                        <Setter TargetName="Glyph" Property="Padding" Value="0,22,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,24,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                        <Setter TargetName="DropBox" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Kind}" Value="AudioInput">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE720;" />
+                        <Setter TargetName="Entry" Property="Height" Value="128" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
+                        <Setter TargetName="Glyph" Property="Padding" Value="0,22,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,24,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                        <Setter TargetName="DropBox" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                        <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
+                        <Setter TargetName="DropBox" Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
+                        <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Kind}" Value="AudioDevice">
+                        <Setter TargetName="Entry" Property="Height" Value="60" />
+                        <Setter TargetName="Entry" Property="Margin" Value="6,0,6,2" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="20" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="14,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="52,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Kind}" Value="AudioDevice" />
+                            <Condition Binding="{Binding IsOn}" Value="True" />
+                        </MultiDataTrigger.Conditions>
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE73E;" />
+                    </MultiDataTrigger>
                     <!-- The Discord tab: who is signed in, as the profile card, then a quieter line about voice. -->
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordAccount">
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
