@@ -48,6 +48,16 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_pad_connecting_or_going_shows_in_the_battery_at_once()
+        {
+            controller.Battery = ControllerBattery.None;
+
+            core.OnControllersChanged();
+
+            Assert.Equal(ControllerBattery.None, core.Status.Battery);
+        }
+
+        [Fact]
         public void Opening_the_Guide_reads_the_battery_and_clock_afresh()
         {
             controller.Battery = ControllerBattery.Empty;

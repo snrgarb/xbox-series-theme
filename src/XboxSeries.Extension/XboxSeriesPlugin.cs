@@ -18,6 +18,7 @@ namespace XboxSeries.Extension
         private readonly HomeScreen homeScreen = new HomeScreen();
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
+        private readonly GamingInputController controller = new GamingInputController();
         private bool libraryPushed;
         private ToastWindow toastWindow;
 #if DEBUG
@@ -33,7 +34,7 @@ namespace XboxSeries.Extension
             Properties = new GenericPluginProperties { HasSettings = false };
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
-            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), new XInputController());
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), controller);
 
             // Home's elements, its top bar's status area and My games & apps, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
@@ -87,6 +88,7 @@ namespace XboxSeries.Extension
             PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
             PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
             PushNotifications();
+            controller.Changed += () => OnUiThread(core.OnControllersChanged);
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
             logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
         }

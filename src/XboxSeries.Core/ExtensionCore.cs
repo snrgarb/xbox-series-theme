@@ -214,6 +214,12 @@ namespace XboxSeries.Core
             clock.After(nextMinute - now, TickStatus);
         }
 
+        /// <summary>A pad connected or went: the battery shows it now, not on the next minute.</summary>
+        public void OnControllersChanged()
+        {
+            Status.Battery = controller.Battery;
+        }
+
         private void RefreshStatus()
         {
             Status.Time = clock.Now.ToString("t", CultureInfo.CurrentCulture);
