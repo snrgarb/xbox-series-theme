@@ -6,13 +6,12 @@
              Focusable="False" KeyDown="OnPaneKeyDown">
     <!--
         Settings' Personalisation category, as the console's General and Account: a grid of dark boxes two wide, each a
-        line icon and its name, opening a page of its own in their place, Start up's boxes doing the same. Its DataContext is the core's StartUpSettingsState; the
-        page showing and its header follow the code-behind. In Settings' palette and 1080p units (SettingsControl.xaml).
+        line icon and its name alone, opening a page of its own in their place, Start up's boxes doing the same. Its DataContext
+        is the core's StartUpSettingsState; the page showing and its header follow the code-behind. In Settings' palette and 1080p units (SettingsControl.xaml).
     -->
     <UserControl.Resources>
         <ResourceDictionary>
             <local:DecodedImageConverter x:Key="Image" />
-            <local:StartUpTextConverter x:Key="StartUpText" />
             <BooleanToVisibilityConverter x:Key="Visibility" />
 
             <Style x:Key="Text" TargetType="TextBlock">
@@ -36,8 +35,8 @@
             </Style>
 
             <!--
-                A box, as the console's: a dark rectangle, its line icon (Tag) at the left and its name, with a second line
-                saying what it's set to, beside it; filled with the accent while focused, as Settings' rail.
+                A box, as the console's: a dark rectangle, its line icon (Tag) at the left and its name beside it, the name
+                alone, never a second line saying what it's set to; filled with the accent while focused, as Settings' rail.
             -->
             <Style x:Key="Box" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -88,6 +87,18 @@
                 </Setter>
             </Style>
 
+            <!-- A ChoiceRow in a Row: its tick while it's the one set, then its name. -->
+            <DataTemplate x:Key="ChoiceRow">
+                <Button Style="{StaticResource Row}" Click="OnRowClick">
+                    <Grid>
+                        <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="24" Width="30"
+                                   HorizontalAlignment="Left" Margin="30,0,0,0"
+                                   Visibility="{Binding IsCurrent, Converter={StaticResource Visibility}}" />
+                        <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" VerticalAlignment="Center" Margin="84,0,24,0" />
+                    </Grid>
+                </Button>
+            </DataTemplate>
+
             <!--
                 A profile's picture on a disc: the person glyph on the accent under it, showing for none or one that won't
                 load, as Who's playing today? has it. The content is the picture's path.
@@ -135,38 +146,23 @@
     </UserControl.Resources>
 
     <Grid Margin="0,20,0,0">
-        <!-- The category: Start up for now, saying what it holds. -->
+        <!-- The category: Start up for now. -->
         <UniformGrid x:Name="PersonalisationPage" Columns="2" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Button x:Name="StartUpBox" Style="{StaticResource Box}" Tag="&#xE7E8;" Click="OnBoxClick">
-                <StackPanel>
-                    <TextBlock Text="Start up" Style="{StaticResource Text}" />
-                    <TextBlock Text="Boot video, profiles, Who's playing today?" Style="{StaticResource MutedText}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
+                <TextBlock Text="Start up" Style="{StaticResource Text}" />
             </Button>
         </UniformGrid>
 
-        <!-- Start up: Boot video, Profiles and Who's playing today?, each saying what it's set to. -->
+        <!-- Start up: Boot video, Profiles and Who's playing today?, each opening its page. -->
         <UniformGrid x:Name="StartUpPage" Columns="2" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed">
             <Button x:Name="BootVideoBox" Style="{StaticResource Box}" Tag="&#xE714;" Click="OnBoxClick">
-                <StackPanel>
-                    <TextBlock Text="Boot video" Style="{StaticResource Text}" />
-                    <TextBlock Text="{Binding BootVideo, Converter={StaticResource StartUpText}}" Style="{StaticResource MutedText}" />
-                </StackPanel>
+                <TextBlock Text="Boot video" Style="{StaticResource Text}" />
             </Button>
             <Button x:Name="ProfilesBox" Style="{StaticResource Box}" Tag="&#xE716;" Click="OnBoxClick">
-                <StackPanel>
-                    <TextBlock Text="Profiles" Style="{StaticResource Text}" />
-                    <TextBlock Text="{Binding Profiles.Count, Converter={StaticResource StartUpText}, ConverterParameter=Profiles}"
-                               Style="{StaticResource MutedText}" />
-                </StackPanel>
+                <TextBlock Text="Profiles" Style="{StaticResource Text}" />
             </Button>
             <Button x:Name="AskBox" Style="{StaticResource Box}" Tag="&#xE748;" Click="OnBoxClick">
-                <StackPanel>
-                    <TextBlock Text="Who's playing today?" Style="{StaticResource Text}" />
-                    <TextBlock Text="{Binding AskWhosPlaying, Converter={StaticResource StartUpText}, ConverterParameter=Ask}"
-                               Style="{StaticResource MutedText}" />
-                </StackPanel>
+                <TextBlock Text="Who's playing today?" Style="{StaticResource Text}" />
             </Button>
         </UniformGrid>
 
@@ -174,23 +170,17 @@
         <StackPanel x:Name="BootVideoPage" Visibility="Collapsed">
             <TextBlock Text="Plays as Playnite starts in Fullscreen. Any button skips it."
                        Style="{StaticResource MutedText}" Margin="0,0,0,26" />
-            <ItemsControl x:Name="BootVideoRows" Focusable="False">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource Row}" Click="OnRowClick">
-                            <Grid>
-                                <TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="24" Width="30"
-                                           HorizontalAlignment="Left" Margin="30,0,0,0"
-                                           Visibility="{Binding IsCurrent, Converter={StaticResource Visibility}}" />
-                                <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" VerticalAlignment="Center" Margin="84,0,24,0" />
-                            </Grid>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <ItemsControl x:Name="BootVideoRows" Focusable="False" ItemTemplate="{StaticResource ChoiceRow}" />
         </StackPanel>
 
-        <!-- Profiles: each in a box, its picture, gamertag and real name, then Add profile last. -->
+        <!-- Who's playing today?: whether it asks on every start and on waking from sleep, the one set ticked. -->
+        <StackPanel x:Name="WhosPlayingPage" Visibility="Collapsed">
+            <TextBlock Text="Choose who's playing as Playnite starts in Fullscreen and wakes from sleep."
+                       Style="{StaticResource MutedText}" Margin="0,0,0,26" />
+            <ItemsControl x:Name="WhosPlayingRows" Focusable="False" ItemTemplate="{StaticResource ChoiceRow}" />
+        </StackPanel>
+
+        <!-- Profiles: each in a box, its picture and gamertag, then Add profile last. -->
         <ScrollViewer x:Name="ProfilesPage" Visibility="Collapsed" Focusable="False"
                       VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
             <ItemsControl x:Name="ProfileBoxes" Focusable="False" HorizontalAlignment="Left">
@@ -204,10 +194,8 @@
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter Content="{Binding Picture}" ContentTemplate="{StaticResource Picture}"
                                                   Width="80" Height="80" />
-                                <StackPanel Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Gamertag}" Style="{StaticResource Text}" />
-                                    <TextBlock Text="{Binding RealName}" Style="{StaticResource MutedText}" />
-                                </StackPanel>
+                                <TextBlock Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center"
+                                           Text="{Binding Gamertag}" Style="{StaticResource Text}" />
                             </Grid>
                         </Button>
                     </DataTemplate>
@@ -231,23 +219,13 @@
                               HorizontalAlignment="Left" Margin="0,0,0,30" />
             <UniformGrid Columns="2" HorizontalAlignment="Left">
                 <Button x:Name="GamertagBox" Style="{StaticResource Box}" Tag="&#xE8EC;" Click="OnBoxClick">
-                    <StackPanel>
-                        <TextBlock Text="Gamertag" Style="{StaticResource Text}" />
-                        <TextBlock Text="{Binding Gamertag}" Style="{StaticResource MutedText}" />
-                    </StackPanel>
+                    <TextBlock Text="Gamertag" Style="{StaticResource Text}" />
                 </Button>
                 <Button x:Name="RealNameBox" Style="{StaticResource Box}" Tag="&#xE8AC;" Click="OnBoxClick">
-                    <StackPanel>
-                        <TextBlock Text="Real name" Style="{StaticResource Text}" />
-                        <TextBlock Text="{Binding RealName, Converter={StaticResource StartUpText}, ConverterParameter=RealName}"
-                                   Style="{StaticResource MutedText}" />
-                    </StackPanel>
+                    <TextBlock Text="Real name" Style="{StaticResource Text}" />
                 </Button>
                 <Button x:Name="PictureBox" Style="{StaticResource Box}" Tag="&#xE8B9;" Click="OnBoxClick">
-                    <StackPanel>
-                        <TextBlock Text="Picture" Style="{StaticResource Text}" />
-                        <TextBlock x:Name="PictureDetail" Style="{StaticResource MutedText}" />
-                    </StackPanel>
+                    <TextBlock Text="Picture" Style="{StaticResource Text}" />
                 </Button>
                 <Button x:Name="RemoveBox" Style="{StaticResource Box}" Tag="&#xE74D;" Click="OnBoxClick">
                     <TextBlock Text="Remove profile" Style="{StaticResource Text}" />
