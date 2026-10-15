@@ -28,7 +28,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Recent_games_are_listed_under_a_divider_newest_first_as_many_as_fit()
+        public void Recent_games_are_listed_under_a_divider_newest_first_four_at_most()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
@@ -64,6 +64,37 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(GuideItemKind.RunningGame, running.Kind);
             Assert.True(running.HasDividerAbove);
             Assert.False(core.Guide.Items[3].HasDividerAbove);
+        }
+
+        [Fact]
+        public void The_running_game_counts_toward_the_four_games_shown()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10))
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11))
+                .WithGame("Tunic", lastActivity: new DateTime(2026, 10, 9))
+                .WithGame("Celeste", lastActivity: new DateTime(2026, 10, 8))
+                .WithGame("Forza Horizon 5", lastActivity: new DateTime(2026, 10, 7));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Forza Horizon 5"));
+
+            Tap(ControllerButton.Guide);
+
+            Assert.Equal(new[] { "Home", "My games & apps", "Forza Horizon 5", "Hades", "Halo Infinite", "Tunic" }, Titles());
+        }
+
+        [Fact]
+        public void Each_game_carries_its_library_source_for_the_badge_on_its_cover()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10), source: "Xbox")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), source: "Steam");
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            Tap(ControllerButton.Guide);
+
+            Assert.Equal(new[] { null, null, "Xbox", "Steam" }, core.Guide.Items.Select(i => i.Source));
         }
 
         [Fact]

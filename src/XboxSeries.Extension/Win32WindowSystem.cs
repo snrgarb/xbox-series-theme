@@ -43,6 +43,24 @@ namespace XboxSeries.Extension
 
             Overlay.Activate();
             Overlay.Focus();
+
+            // Diagnostic: if the game still reacts to the pad while Playnite is in front, the game reads the pad in the background.
+            logger.Info($"Guide opened; the foreground belongs to {ProcessNameOf(NativeMethods.GetForegroundWindow())}");
+        }
+
+        private static string ProcessNameOf(IntPtr window)
+        {
+            try
+            {
+                using (var process = Process.GetProcessById(NativeMethods.ProcessIdOf(window)))
+                {
+                    return process.ProcessName;
+                }
+            }
+            catch (Exception e) when (e is ArgumentException || e is InvalidOperationException)
+            {
+                return $"window {window}";
+            }
         }
 
         public void SetForeground(IntPtr window)

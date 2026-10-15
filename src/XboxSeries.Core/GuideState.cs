@@ -185,8 +185,9 @@ namespace XboxSeries.Core
     {
         private bool isFocused;
 
-        internal GuideItem(GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null)
+        internal GuideItem(GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null)
         {
+            Source = source;
             Kind = kind;
             Title = title;
             GameId = gameId;
@@ -207,6 +208,9 @@ namespace XboxSeries.Core
 
         /// <summary>A full path to the picture shown beside the title: a game's cover, the account picture; null for none.</summary>
         public string Image { get; }
+
+        /// <summary>The game's library source, such as Steam, badged on its cover as on the Home tiles; null for none.</summary>
+        public string Source { get; }
 
         /// <summary>Whether Menu opens a menu on this entry. Only the running game has one, with Quit.</summary>
         public bool HasMenu => Kind == GuideItemKind.RunningGame;
