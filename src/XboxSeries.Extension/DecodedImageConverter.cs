@@ -34,6 +34,11 @@ namespace XboxSeries.Extension
                 image.UriSource = new Uri(path, UriKind.Absolute);
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.DecodePixelWidth = decodeWidth;
+
+                // A URL, such as a Discord avatar, downloads in the background and shows once it arrives; one that
+                // fails stays empty, so whatever is drawn under it shows instead. It can't be frozen until then.
+                image.DownloadFailed += (s, e) => logger.Warn(e.ErrorException, $"Can't download image {path}");
+                image.DecodeFailed += (s, e) => logger.Warn(e.ErrorException, $"Can't decode image {path}");
                 image.EndInit();
                 if (image.CanFreeze)
                 {
