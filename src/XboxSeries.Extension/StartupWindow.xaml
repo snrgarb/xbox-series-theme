@@ -108,8 +108,8 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type core:Profile}">
-                                    <StackPanel Width="400" Background="Transparent" MouseLeftButtonUp="OnProfileClick">
-                                        <Grid Width="400" Height="400">
+                                    <StackPanel Width="420" Background="Transparent" MouseLeftButtonUp="OnProfileClick">
+                                        <Grid Width="420" Height="420">
                                             <Grid x:Name="Circle" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                   RenderTransformOrigin="0.5,0.5">
                                                 <Grid.RenderTransform>
