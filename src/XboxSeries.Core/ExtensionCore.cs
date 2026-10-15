@@ -165,6 +165,8 @@ namespace XboxSeries.Core
 
         public ToastState Toast { get; } = new ToastState();
 
+        public LaunchScreenState LaunchScreen { get; } = new LaunchScreenState();
+
         public HomeState Home { get; } = new HomeState();
 
         public MyGamesState MyGames { get; } = new MyGamesState();
