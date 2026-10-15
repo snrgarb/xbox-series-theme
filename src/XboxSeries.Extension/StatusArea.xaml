@@ -1,56 +1,90 @@
 <UserControl x:Class="XboxSeries.Extension.StatusArea"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False" IsHitTestVisible="False">
     <!--
-        The status area (a StatusState): the controller's battery, then the clock, as on the console's top right. Shared
-        by Home's top bar and the Guide, so the two can't drift apart. Sized at 1080p.
+        The status area (a StatusState): the controller's battery and the clock, as on the console's top right. Shared
+        by Home's top bar, which has them in a row, and the Guide, which has the battery above a large clock, so the two
+        can't drift apart. Sized at 1080p.
     -->
-    <ContentControl Content="{Binding}" Focusable="False">
-        <ContentControl.ContentTemplate>
-            <DataTemplate>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- A battery of three bars, as the console's; a pad on a cable shows the pad instead, and no pad shows nothing. -->
-                    <Grid x:Name="Battery" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <StackPanel x:Name="Cell" Orientation="Horizontal">
-                            <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
-                                <UniformGrid Rows="1" Columns="3">
-                                    <Border x:Name="Bar1" Background="White" Margin="0,0,1,0" Visibility="Hidden" />
-                                    <Border x:Name="Bar2" Background="White" Margin="1,0" Visibility="Hidden" />
-                                    <Border x:Name="Bar3" Background="White" Margin="1,0,0,0" Visibility="Hidden" />
-                                </UniformGrid>
-                            </Border>
-                            <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <!-- Segoe Fluent Icons / MDL2 Assets' game controller. -->
-                        <TextBlock x:Name="Wired" Text="&#xE7FC;" FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
-                                   Foreground="White" VerticalAlignment="Center" Visibility="Collapsed" />
-                    </Grid>
-                    <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White"
-                               VerticalAlignment="Center" />
+    <UserControl.Resources>
+        <!-- A battery of three bars, as the console's; a pad on a cable shows the pad instead, and no pad shows nothing. -->
+        <DataTemplate x:Key="BatteryTemplate">
+            <Grid x:Name="Battery" VerticalAlignment="Center">
+                <StackPanel x:Name="Cell" Orientation="Horizontal">
+                    <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
+                        <UniformGrid Rows="1" Columns="3">
+                            <Border x:Name="Bar1" Background="White" Margin="0,0,1,0" Visibility="Hidden" />
+                            <Border x:Name="Bar2" Background="White" Margin="1,0" Visibility="Hidden" />
+                            <Border x:Name="Bar3" Background="White" Margin="1,0,0,0" Visibility="Hidden" />
+                        </UniformGrid>
+                    </Border>
+                    <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
                 </StackPanel>
-                <DataTemplate.Triggers>
-                    <DataTrigger Binding="{Binding Battery}" Value="None">
-                        <Setter TargetName="Battery" Property="Visibility" Value="Collapsed" />
+                <!-- Segoe Fluent Icons / MDL2 Assets' game controller. -->
+                <TextBlock x:Name="Wired" Text="&#xE7FC;" FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
+                           Foreground="White" VerticalAlignment="Center" Visibility="Collapsed" />
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Battery}" Value="None">
+                    <Setter TargetName="Battery" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Battery}" Value="Wired">
+                    <Setter TargetName="Cell" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="Wired" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Battery}" Value="Low">
+                    <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Battery}" Value="Medium">
+                    <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Battery}" Value="Full">
+                    <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Bar3" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Home's top bar: the battery, then the clock, in a row. -->
+        <DataTemplate x:Key="RowTemplate">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <ContentControl x:Name="Battery" Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}"
+                                Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Battery}" Value="None">
+                    <Setter TargetName="Battery" Property="Margin" Value="0" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- The Guide: the battery on a line of its own, over the clock large and bold, both to the right, as on the console. -->
+        <DataTemplate x:Key="StackedTemplate">
+            <StackPanel HorizontalAlignment="Right">
+                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}" Focusable="False"
+                                Height="28" HorizontalAlignment="Right" Margin="0,0,4,0" />
+                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="56" FontWeight="Bold"
+                           Foreground="White" HorizontalAlignment="Right" Margin="0,-2,0,0" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ContentControl Content="{Binding}" Focusable="False">
+        <ContentControl.Style>
+            <Style TargetType="ContentControl">
+                <Setter Property="ContentTemplate" Value="{StaticResource RowTemplate}" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Stacked, RelativeSource={RelativeSource AncestorType=local:StatusArea}}" Value="True">
+                        <Setter Property="ContentTemplate" Value="{StaticResource StackedTemplate}" />
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding Battery}" Value="Wired">
-                        <Setter TargetName="Cell" Property="Visibility" Value="Collapsed" />
-                        <Setter TargetName="Wired" Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding Battery}" Value="Low">
-                        <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding Battery}" Value="Medium">
-                        <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
-                        <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding Battery}" Value="Full">
-                        <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
-                        <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
-                        <Setter TargetName="Bar3" Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </DataTemplate.Triggers>
-            </DataTemplate>
-        </ContentControl.ContentTemplate>
+                </Style.Triggers>
+            </Style>
+        </ContentControl.Style>
     </ContentControl>
 </UserControl>

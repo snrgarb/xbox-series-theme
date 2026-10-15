@@ -159,25 +159,27 @@
 
                     <DockPanel Grid.Row="1" Margin="0,30,0,0">
                         <!--
-                            The landing tab's row of utilities along the bottom, as on the console: Notifications, with how
-                            many there are, and Audio. Empty, and so gone, on the other tabs and on a utility.
+                            The landing tab's row of utilities along the bottom, as on the console: small squares from the
+                            left, Notifications, with how many there are, and Audio. Empty, and so gone, on the other tabs
+                            and on a utility.
                         -->
-                        <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Utilities}" Focusable="False" Margin="8,12,8,16">
+                        <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Utilities}" Focusable="False" Margin="9,12,9,16"
+                                      HorizontalAlignment="Left">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Rows="1" />
+                                    <StackPanel Orientation="Horizontal" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Height="85" Margin="8,0" Background="Transparent"
+                                    <Grid Width="78" Height="78" Margin="0,0,12,0" Background="Transparent"
                                           MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
                                         <Border x:Name="Fill" CornerRadius="4" Background="#33000000" />
                                         <!-- Segoe Fluent Icons / MDL2 Assets glyphs: the bell Home's top bar uses, and the speaker. -->
                                         <TextBlock x:Name="Glyph" Text="&#xE767;" Style="{StaticResource GuideIcon}" FontSize="30" HorizontalAlignment="Center" />
-                                        <Border x:Name="Badge" MinWidth="26" Height="26" CornerRadius="13" Padding="7,0"
+                                        <Border x:Name="Badge" MinWidth="24" Height="24" CornerRadius="12" Padding="6,0"
                                                 Background="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+                                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0">
                                             <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
                                                        Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
                                         </Border>
@@ -427,8 +429,8 @@
                     </DockPanel>
                 </Grid>
             </Border>
-            <!-- The status area, top right, as on the console. Only with the panel: Power on its own has none. -->
-            <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,60,78,0" Opacity="{Binding Opacity, ElementName=Dim}">
+            <!-- The status area, top right, the clock large under the battery, as on the console. Only with the panel: Power on its own has none. -->
+            <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,62,108,0" Opacity="{Binding Opacity, ElementName=Dim}">
                 <Grid.Style>
                     <Style TargetType="Grid">
                         <Style.Triggers>
@@ -438,7 +440,7 @@
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
-                <local:StatusArea DataContext="{Binding Status, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}" />
+                <local:StatusArea Stacked="True" DataContext="{Binding Status, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}" />
             </Grid>
             <!-- Darkens everything behind a menu or prompt, the Guide included. -->
             <Border Background="#B3000000">
