@@ -259,8 +259,9 @@ namespace XboxSeries.Core
         DiscordIdle,
 
         /// <summary>
-        /// The Discord tab's only line while it can't show Discord: "Discord isn't running" while the Bundle waits for
-        /// it, "Reconnect Discord in settings" once it can no longer sign in by itself. A does nothing on it.
+        /// The Discord tab's only line while it can't show Discord: "Connecting to Discord" while a connect is under way,
+        /// "Discord isn't running" while the extension waits to try it again, and "Reconnect Discord in settings" once
+        /// nothing is trying it. A does nothing on it.
         /// </summary>
         DiscordUnavailable,
 

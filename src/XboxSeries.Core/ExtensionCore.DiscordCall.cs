@@ -242,14 +242,18 @@ namespace XboxSeries.Core
         /// <summary>
         /// The Discord tab: in a call, its heading, the people in it, the user first, then Mute, Deafen and Leave under a
         /// divider; out of one, who is signed in and that they're not in a voice channel. Then, either way, the shortcuts
-        /// and Servers, each under a divider. Not signed in, only a line saying why: Discord isn't running, while it is
-        /// waited for, or the user has to reconnect in Settings.
+        /// and Servers, each under a divider. Not signed in, only a line saying why: Connecting to Discord, while a connect
+        /// is under way; Discord isn't running, while it is waited for; otherwise, nothing trying Discord again, the user
+        /// has to reconnect in Settings.
         /// </summary>
         private IReadOnlyList<GuideItem> DiscordTabItems()
         {
             if (!Settings.Discord.IsConnected)
             {
-                var why = Settings.Discord.NeedsReconnect ? ReconnectInSettings : DiscordNotRunning;
+                var why = Settings.Discord.NeedsReconnect ? ReconnectInSettings
+                    : Settings.Discord.IsConnecting ? ConnectingToDiscord
+                    : probeTimer != null ? DiscordNotRunning
+                    : ReconnectInSettings;
                 return new[] { new GuideItem(GuideItemKind.DiscordUnavailable, why) };
             }
 

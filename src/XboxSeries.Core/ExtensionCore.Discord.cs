@@ -30,6 +30,9 @@ namespace XboxSeries.Core
         private const string Connecting = "Connecting...";
         private const string DiscordNotRunning = "Discord isn't running";
 
+        /// <summary>The Discord tab's line while a connect is under way; Settings' status line says <see cref="Connecting"/>.</summary>
+        private const string ConnectingToDiscord = "Connecting to Discord";
+
         private static readonly string[] Scopes = { "rpc", "identify", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read" };
 
         /// <summary>The voice events the Discord tab follows, one SUBSCRIBE each.</summary>
@@ -157,17 +160,17 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Opens the pipe and says hello; once Discord is READY, signs in with the saved <paramref name="token"/>, refreshed
-        /// first when near expiring, or AUTHORIZEs first when null. Discord not running, it is tried again later while
-        /// tokens are saved.
+        /// first when near expiring, or AUTHORIZEs first when null. Discord not running, or, signing in with the saved
+        /// token, not READY in time, it is tried again later while tokens are saved.
         /// </summary>
         private void StartDiscord(string token)
         {
             ForgetRenewal();
             ForgetProbe();
+            ForgetReadyWait();
             if (!discord.Open())
             {
-                CloseDiscord(DiscordNotRunning);
-                ProbeLater();
+                CloseDiscord(DiscordNotRunning, tryAgain: true);
                 return;
             }
 
@@ -176,7 +179,12 @@ namespace XboxSeries.Core
             discordStep = DiscordStep.Handshake;
             Settings.Discord.IsConnecting = true;
             Settings.Discord.StatusText = Connecting;
+            OnDiscordTabChanged();
             discord.Send(DiscordOpcode.Handshake, new JObject { ["v"] = 1, ["client_id"] = Settings.Discord.ClientId }.ToString(Formatting.None));
+            if (token != null)
+            {
+                AwaitReady();
+            }
         }
 
         /// <summary>One frame from Discord's pipe, raw: its opcode and JSON.</summary>
@@ -197,8 +205,7 @@ namespace XboxSeries.Core
             if (opcode == DiscordOpcode.Close)
             {
                 var message = (string)frame?["message"];
-                CloseDiscord(string.IsNullOrEmpty(message) ? "Discord closed the connection" : "Discord closed the connection: " + message);
-                ProbeLater();
+                CloseDiscord(string.IsNullOrEmpty(message) ? "Discord closed the connection" : "Discord closed the connection: " + message, tryAgain: true);
                 return;
             }
 
@@ -275,9 +282,10 @@ namespace XboxSeries.Core
 
         private void OnDiscordReady()
         {
+            ForgetReadyWait();
             if (signInToken != null)
             {
-                SignInWithSavedToken();
+                OnReadyWithSavedToken();
             }
             else
             {
@@ -367,21 +375,22 @@ namespace XboxSeries.Core
         {
             if (discordStep != DiscordStep.Closed)
             {
-                CloseDiscord(ReconnectsByItself ? DiscordNotRunning : "Discord closed the connection");
-                ProbeLater();
+                CloseDiscord(ReconnectsByItself ? DiscordNotRunning : "Discord closed the connection", tryAgain: true);
             }
         }
 
         /// <summary>
         /// Ends the connection, or the connect under way, with <paramref name="status"/> on the status line, and stops
-        /// trying Discord again; the Discord tab, if showing, says why it can't show Discord.
+        /// trying Discord again, unless <paramref name="tryAgain"/>, Discord being out of reach, when it is tried again
+        /// later while tokens are saved; the Discord tab, if showing, says why it can't show Discord.
         /// </summary>
-        private void CloseDiscord(string status)
+        private void CloseDiscord(string status, bool tryAgain = false)
         {
             discord.Close();
             awaitingReplies.Clear();
             ForgetServers();
             ForgetProbe();
+            ForgetReadyWait();
             discordStep = DiscordStep.Closed;
             signInToken = null;
             ForgetRenewal();
@@ -389,6 +398,11 @@ namespace XboxSeries.Core
             Settings.Discord.StatusText = status;
             Settings.Discord.IsConnected = false;
             ForgetCall();
+            if (tryAgain)
+            {
+                ProbeLater();
+            }
+
             OnDiscordTabChanged();
         }
 
@@ -420,9 +434,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Discord signed in, went, or was disconnected with the Guide open: the Discord tab's icon comes or goes. Open on
-        /// the Discord tab, the Guide shows it afresh, any flyout closed, unless it shows the same already; as the tab
-        /// goes, the Guide falls back to the landing tab.
+        /// Discord connecting, signed in, gone, or disconnected with the Guide open: the Discord tab's icon comes or goes.
+        /// Open on the Discord tab, the Guide shows it afresh, any flyout closed, unless it shows the same already; as the
+        /// tab goes, the Guide falls back to the landing tab.
         /// </summary>
         private void OnDiscordTabChanged()
         {

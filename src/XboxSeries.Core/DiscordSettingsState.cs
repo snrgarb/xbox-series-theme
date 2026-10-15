@@ -59,7 +59,7 @@ namespace XboxSeries.Core
             internal set => Set(ref isConnected, value, nameof(IsConnected));
         }
 
-        /// <summary>Whether a connect is under way: the handshake, the Authorize prompt, the token exchange or signing in.</summary>
+        /// <summary>Whether a connect is under way: the handshake, a refresh, the Authorize prompt, the token exchange or signing in.</summary>
         public bool IsConnecting
         {
             get => isConnecting;
@@ -84,7 +84,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Whether the Guide has a Discord tab: signed in, or with tokens saved, from the first Connect until Disconnect.
-        /// Not signed in, it says why: Discord isn't running, or the user has to reconnect.
+        /// Not signed in, it says why: connecting, Discord isn't running, or the user has to reconnect.
         /// </summary>
         internal bool HasDiscordTab => isConnected || hasTokens;
 

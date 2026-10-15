@@ -15,6 +15,12 @@ namespace XboxSeries.Core
         /// <summary>How long before the tokens expire they are refreshed. Discord's last a week.</summary>
         private static readonly TimeSpan RefreshMargin = TimeSpan.FromDays(1);
 
+        /// <summary>
+        /// The soonest the tokens are refreshed again after signing in or renewing them. Tokens granted with less than a day
+        /// to run, or of no known expiry, would otherwise be refreshed at once, again and again.
+        /// </summary>
+        private static readonly TimeSpan MinRefreshInterval = TimeSpan.FromMinutes(15);
+
         private const string ReconnectInSettings = "Reconnect Discord in settings";
 
         /// <summary>
@@ -49,23 +55,20 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Signs in with the tokens saved from before, without asking the user again: false, doing nothing, without them or
-        /// a Client ID. Discord READY, they are refreshed first when a day or less from expiring.
+        /// Signs in with the tokens saved from before, without asking the user again; does nothing without them or a
+        /// Client ID. Discord READY, they are refreshed first when a day or less from expiring.
         /// </summary>
-        private bool SignInWithSavedTokens()
+        private void SignInWithSavedTokens()
         {
             var token = secrets.Read(AccessTokenSecret);
-            if (token == null || Settings.Discord.ClientId == null)
+            if (token != null && Settings.Discord.ClientId != null)
             {
-                return false;
+                StartDiscord(token);
             }
-
-            StartDiscord(token);
-            return true;
         }
 
-        /// <summary>Discord READY for the saved token: refreshed first when it is a day or less from expiring, or of no known expiry.</summary>
-        private void SignInWithSavedToken()
+        /// <summary>Discord READY for the saved token: signed in with it, refreshed first when it is a day or less from expiring, or of no known expiry.</summary>
+        private void OnReadyWithSavedToken()
         {
             if (ExpiresAt() is DateTime expiresAt && expiresAt - clock.Now > RefreshMargin)
             {
@@ -204,8 +207,9 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Debug builds' Expire token now, in Settings: the saved tokens count as expiring now, so the refresh before
-        /// expiry, and the fallbacks behind it, can be tried without waiting six days. Signed in, the refresh starts at
-        /// once; otherwise the next sign-in refreshes first. Does nothing without saved tokens.
+        /// expiry, and the fallbacks behind it, can be tried without waiting six days. Signed in with nothing under way,
+        /// the refresh starts at once, however lately the last one was; otherwise the next sign-in refreshes first. Does
+        /// nothing without saved tokens.
         /// </summary>
         public void ExpireDiscordTokens()
         {
@@ -217,18 +221,21 @@ namespace XboxSeries.Core
             secrets.Write(ExpiresAtSecret, clock.Now.ToString("o", CultureInfo.InvariantCulture));
             if (discordStep == DiscordStep.Connected && renewal == DiscordStep.Connected)
             {
-                ScheduleRefresh();
+                RefreshTokens();
             }
         }
 
-        /// <summary>Sets the refresh due a day before the saved tokens expire, at once when they are nearer than that.</summary>
+        /// <summary>
+        /// Signed in, or the tokens renewed: sets the refresh due a day before the saved tokens expire, or, when they are
+        /// nearer than that, <see cref="MinRefreshInterval"/> from now.
+        /// </summary>
         private void ScheduleRefresh()
         {
             refreshTimer?.Dispose();
             refreshTried = false;
             reauthorizing = false;
             var due = (ExpiresAt() ?? clock.Now) - RefreshMargin - clock.Now;
-            refreshTimer = clock.After(due > TimeSpan.Zero ? due : TimeSpan.Zero, () =>
+            refreshTimer = clock.After(due > MinRefreshInterval ? due : MinRefreshInterval, () =>
             {
                 refreshTimer = null;
                 if (discordStep == DiscordStep.Connected && renewal == DiscordStep.Connected)
