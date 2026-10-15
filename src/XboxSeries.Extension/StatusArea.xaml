@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False" IsHitTestVisible="False">
     <!--
-        The status area (a StatusState): the controller's battery and the clock, as on the console's top right. Shared
+        The status area (a StatusState): Discord while in a call, the controller's battery and the clock, as on the
+        console's top right. Shared
         by Home's top bar, which has them in a row, and the Guide, which has the battery above a large clock, so the two
         can't drift apart. Sized at 1080p.
     -->
@@ -48,9 +49,49 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- Home's top bar: the battery, then the clock, in a row. -->
+        <!-- Discord's mark (Simple Icons, CC0), as the Guide's Discord tab wears it. -->
+        <Geometry x:Key="DiscordLogo">M 20.317 4.3698 a 19.7913 19.7913 0 0 0 -4.8851 -1.5152 .0741 .0741 0 0 0 -.0785 .0371 c -.211 .3753 -.4447 .8648 -.6083 1.2495 -1.8447 -.2762 -3.68 -.2762 -5.4868 0 -.1636 -.3933 -.4058 -.8742 -.6177 -1.2495 a .077 .077 0 0 0 -.0785 -.037 19.7363 19.7363 0 0 0 -4.8852 1.515 .0699 .0699 0 0 0 -.0321 .0277 C .5334 9.0458 -.319 13.5799 .0992 18.0578 a .0824 .0824 0 0 0 .0312 .0561 c 2.0528 1.5076 4.0413 2.4228 5.9929 3.0294 a .0777 .0777 0 0 0 .0842 -.0276 c .4616 -.6304 .8731 -1.2952 1.226 -1.9942 a .076 .076 0 0 0 -.0416 -.1057 c -.6528 -.2476 -1.2743 -.5495 -1.8722 -.8923 a .077 .077 0 0 1 -.0076 -.1277 c .1258 -.0943 .2517 -.1923 .3718 -.2914 a .0743 .0743 0 0 1 .0776 -.0105 c 3.9278 1.7933 8.18 1.7933 12.0614 0 a .0739 .0739 0 0 1 .0785 .0095 c .1202 .099 .246 .1981 .3728 .2924 a .077 .077 0 0 1 -.0066 .1276 12.2986 12.2986 0 0 1 -1.873 .8914 .0766 .0766 0 0 0 -.0407 .1067 c .3604 .698 .7719 1.3628 1.225 1.9932 a .076 .076 0 0 0 .0842 .0286 c 1.961 -.6067 3.9495 -1.5219 6.0023 -3.0294 a .077 .077 0 0 0 .0313 -.0552 c .5004 -5.177 -.8382 -9.6739 -3.5485 -13.6604 a .061 .061 0 0 0 -.0312 -.0286 z M 8.02 15.3312 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9555 -2.4189 2.157 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.9555 2.4189 -2.1569 2.4189 z m 7.9748 0 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9554 -2.4189 2.1569 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.946 2.4189 -2.1568 2.4189 Z</Geometry>
+
+        <!--
+            Discord, only while in a call, to the battery's left as the console shows a party: its mark, dimmed, lit green
+            while the user speaks, and badged at its bottom right with a struck mic when muted or struck headphones when
+            deafened. Out of a call it's collapsed and takes no room.
+        -->
+        <DataTemplate x:Key="DiscordTemplate">
+            <Grid x:Name="Discord" Width="30" Height="24" VerticalAlignment="Center" Visibility="Collapsed">
+                <Path x:Name="Mark" Data="{StaticResource DiscordLogo}" Fill="#B3FFFFFF" Width="24" Height="18" Stretch="Uniform"
+                      HorizontalAlignment="Left" VerticalAlignment="Center" />
+                <Grid x:Name="Badge" Width="14" Height="14" HorizontalAlignment="Right" VerticalAlignment="Bottom" Visibility="Collapsed">
+                    <Ellipse Fill="#FF1A1A1A" Stroke="White" StrokeThickness="1" />
+                    <!-- Segoe Fluent Icons / MDL2 Assets' microphone or headphones, struck through. -->
+                    <TextBlock x:Name="BadgeGlyph" Text="&#xE720;" FontFamily="{DynamicResource XboxIconFont}" FontSize="8"
+                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Line X1="3.5" Y1="3.5" X2="10.5" Y2="10.5" Stroke="White" StrokeThickness="1.25" StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round" />
+                </Grid>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsInDiscordCall}" Value="True">
+                    <Setter TargetName="Discord" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsDiscordSpeaking}" Value="True">
+                    <Setter TargetName="Mark" Property="Fill" Value="{DynamicResource GlyphLightBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DiscordBadge}" Value="Muted">
+                    <Setter TargetName="Badge" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DiscordBadge}" Value="Deafened">
+                    <Setter TargetName="Badge" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="BadgeGlyph" Property="Text" Value="&#xE7F6;" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Home's top bar: Discord in a call, the battery, then the clock, in a row. -->
         <DataTemplate x:Key="RowTemplate">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <ContentControl x:Name="Discord" Content="{Binding}" ContentTemplate="{StaticResource DiscordTemplate}"
+                                Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
                 <ContentControl x:Name="Battery" Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}"
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White"
@@ -60,17 +101,32 @@
                 <DataTrigger Binding="{Binding Battery.Connection}" Value="None">
                     <Setter TargetName="Battery" Property="Margin" Value="0" />
                 </DataTrigger>
+                <DataTrigger Binding="{Binding IsInDiscordCall}" Value="False">
+                    <Setter TargetName="Discord" Property="Margin" Value="0" />
+                </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- The Guide: the battery on a line of its own, over the clock large and bold, both to the right, as on the console. -->
+        <!--
+            The Guide: Discord in a call and the battery on a line of their own, over the clock large and bold, all to the
+            right, as on the console.
+        -->
         <DataTemplate x:Key="StackedTemplate">
             <StackPanel HorizontalAlignment="Right">
-                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}" Focusable="False"
-                                Height="28" HorizontalAlignment="Right" Margin="0,0,4,0" />
+                <StackPanel Orientation="Horizontal" Height="28" HorizontalAlignment="Right" Margin="0,0,4,0">
+                    <ContentControl x:Name="Discord" Content="{Binding}" ContentTemplate="{StaticResource DiscordTemplate}"
+                                    Focusable="False" Margin="0,0,12,0" VerticalAlignment="Center" />
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}" Focusable="False"
+                                    VerticalAlignment="Center" />
+                </StackPanel>
                 <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="56" FontWeight="Bold"
                            Foreground="White" HorizontalAlignment="Right" Margin="0,-2,0,0" />
             </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsInDiscordCall}" Value="False">
+                    <Setter TargetName="Discord" Property="Margin" Value="0" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </UserControl.Resources>
 
