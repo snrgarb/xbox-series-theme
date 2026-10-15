@@ -41,6 +41,10 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan HeroLeave = TimeSpan.FromMilliseconds(100);
 
+        // How long after a game quit from the Guide exits the Guide closes: Playnite is still bringing its window back
+        // as it says the game stopped, and closing the Guide then left Playnite without the pad until Alt+Tab.
+        private static readonly TimeSpan CloseAfterQuit = TimeSpan.FromMilliseconds(500);
+
         private static readonly TimeSpan ReleaseFallback = TimeSpan.FromSeconds(1);
 
         /// <summary>How long the Guide button has to be held to open Power, as on the console.</summary>
@@ -407,7 +411,14 @@ namespace XboxSeries.Core
                 homeOwed = true;
                 if (quit)
                 {
-                    DismissAtOnce(ReturnToRecordedWindow);
+                    clock.After(CloseAfterQuit, () =>
+                    {
+                        // Unless the Guide has already handed back meanwhile, which settles the debt.
+                        if (Guide.IsOpen && homeOwed)
+                        {
+                            DismissAtOnce(ReturnToRecordedWindow);
+                        }
+                    });
                 }
             }
             else if (!Startup.IsShown)
