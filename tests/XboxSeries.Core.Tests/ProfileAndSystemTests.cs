@@ -12,7 +12,6 @@ namespace XboxSeries.Core.Tests
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0));
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
         private readonly FakeSoundPlayer sounds = new FakeSoundPlayer();
-        private readonly FakeRumble rumble = new FakeRumble();
         private readonly FakeUserAccount account = new FakeUserAccount { Name = "Gabe", Picture = @"C:\pics\gabe.png" };
         private readonly FakePlayniteHost playnite;
         private readonly ExtensionCore core;
@@ -21,7 +20,7 @@ namespace XboxSeries.Core.Tests
         public ProfileAndSystemTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), account, rumble);
+            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), account);
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: HaloDirectory, coverImage: @"C:\covers\halo.jpg");
             core.OnLibraryChanged(library.Snapshot());
@@ -259,12 +258,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_tap_opens_the_Guide_half_a_second_after_the_press()
+        public void A_tap_opens_the_Guide_300_ms_after_the_press()
         {
             Press(ControllerButton.Guide);
             clock.Advance(TimeSpan.FromMilliseconds(100));
             Release(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(399));
+            clock.Advance(TimeSpan.FromMilliseconds(199));
 
             Assert.False(core.Guide.IsOverlayShown);
             Assert.Empty(sounds.Played);
@@ -274,14 +273,13 @@ namespace XboxSeries.Core.Tests
             Assert.True(core.Guide.IsOpen);
             Assert.True(core.Guide.ShowsPanel);
             Assert.Equal(new[] { UiSound.OpenMenu }, sounds.Played);
-            Assert.Equal(0, rumble.Pulses);
         }
 
         [Fact]
-        public void A_press_let_go_after_half_a_second_but_before_the_hold_opens_the_Guide_on_release()
+        public void A_press_let_go_after_300_ms_but_before_the_hold_opens_the_Guide_on_release()
         {
             Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(700));
+            clock.Advance(TimeSpan.FromMilliseconds(500));
 
             Assert.False(core.Guide.IsOverlayShown);
 
@@ -303,28 +301,10 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_controller_buzzes_as_a_held_Guide_button_opens_Power()
-        {
-            Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(999));
-
-            Assert.Equal(0, rumble.Pulses);
-
-            clock.Advance(TimeSpan.FromMilliseconds(1));
-
-            Assert.Equal(1, rumble.Pulses);
-
-            Release(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromSeconds(2));
-
-            Assert.Equal(1, rumble.Pulses);
-        }
-
-        [Fact]
         public void A_short_press_of_the_Guide_button_still_opens_and_closes_the_Guide_without_Power()
         {
             Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(999));
+            clock.Advance(TimeSpan.FromMilliseconds(799));
             Release(ControllerButton.Guide);
             clock.Advance(TimeSpan.FromSeconds(2));
 
@@ -337,12 +317,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Holding_the_Guide_button_for_a_second_opens_Power_on_its_own_over_the_dim()
+        public void Holding_the_Guide_button_for_800_ms_opens_Power_on_its_own_over_the_dim()
         {
             var game = windows.OpenWindow();
 
             Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(999));
+            clock.Advance(TimeSpan.FromMilliseconds(799));
 
             // Not the Guide first: until the hold is known, nothing opens.
             Assert.False(core.Guide.IsOverlayShown);
@@ -516,14 +496,14 @@ namespace XboxSeries.Core.Tests
 
         private void Release(ControllerButton button) => core.OnControllerButton(button, ButtonState.Released);
 
-        /// <summary>Pressed and let go. A Guide tap opens the Guide half a second after its press, so it waits that out.</summary>
+        /// <summary>Pressed and let go. A Guide tap opens the Guide 0.3 s after its press, so it waits that out.</summary>
         private void Tap(ControllerButton button, bool settle = true)
         {
             Press(button);
             Release(button);
             if (button == ControllerButton.Guide && settle)
             {
-                clock.Advance(TimeSpan.FromMilliseconds(500));
+                clock.Advance(TimeSpan.FromMilliseconds(300));
             }
         }
     }
