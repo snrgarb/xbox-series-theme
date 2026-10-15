@@ -8,7 +8,7 @@ They live on **Settings**, an extension-drawn Dashboard page like **My games & a
 - **Entry points**: the Home top bar's Settings button and the Guide's Settings entry open Settings (the Guide's brings Playnite to the front first, as Home and My games & apps do). The tile menu's Customise Home and Customise games & apps open it on Personalisation.
 - **B** returns to where Settings was opened from: the tile whose Menu opened it, or the top bar's Settings button.
 - **Changes apply and save instantly**, as on the console; there is no Save. Discord's Connect is an action, not a setting.
-- **Text entry** (Discord's Client ID and Secret) uses the extension's console keyboard from Search (#39), plus a Paste action that fills the field from the Windows clipboard. A QR code links to Discord's developer portal.
+- **Text entry** (Discord's Client ID and Secret) uses the extension's console keyboard from Search (#39), plus a Paste action that fills the field from the Windows clipboard. A QR code links to Discord's developer portal. A **Profile**'s gamertag and real name use Playnite's own keyboard window (`SelectString`) until the console keyboard lands; they're short, so its awkward layout and lack of paste are tolerable there.
 - The Dashboard reads the options it needs (hero, tile shape, accent) through `{PluginSettings}`. The Client Secret and tokens stay under DPAPI, as already decided.
 - **Without the extension** there is no Settings page: the top bar's Settings button opens Playnite's main menu, as before.
 

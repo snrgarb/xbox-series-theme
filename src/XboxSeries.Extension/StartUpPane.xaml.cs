@@ -300,11 +300,13 @@ namespace XboxSeries.Extension
                 var sure = API.Instance.Dialogs.ShowMessage($"Remove {removing.Gamertag}?", "Remove profile", MessageBoxButton.YesNo);
                 if (sure == MessageBoxResult.Yes)
                 {
+                    // Back to Profiles first, so the profiles changing refills it, not the page of the one gone; focus
+                    // on the profile now in its place, or Add profile after the last.
                     var index = State.Profiles.ToList().FindIndex(p => p.Id == removing.Id);
-                    core.RemoveProfile(removing.Id);
                     opened.Pop();
                     Show(Page.Profiles);
-                    FocusSoon(() => AtIndex(Math.Min(index, State.Profiles.Count - 1)));
+                    core.RemoveProfile(removing.Id);
+                    FocusSoon(() => AtIndex(index));
                 }
                 else
                 {
