@@ -66,7 +66,15 @@ namespace XboxSeries.Extension
             DataContext = toast;
             toast.PropertyChanged += OnToastChanged;
             SizeChanged += (_, __) => FitToScreen();
-            SourceInitialized += (_, __) => NativeMethods.MakeClickThrough(new WindowInteropHelper(this).Handle);
+            SourceInitialized += (_, __) =>
+            {
+                // See-through as the Overlay is, drawn by the graphics card. Clicks pass only through a layered window,
+                // so it is made one at full alpha, which Windows draws as is rather than copying back every frame.
+                var handle = new WindowInteropHelper(this).Handle;
+                NativeMethods.MakeClickThrough(handle);
+                NativeMethods.SetAlpha(handle, 255);
+                NativeMethods.SeeThrough(HwndSource.FromHwnd(handle));
+            };
         }
 
         private void FitToScreen()

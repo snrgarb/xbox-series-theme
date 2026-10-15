@@ -5,7 +5,7 @@
         xmlns:core="clr-namespace:XboxSeries.Core;assembly=XboxSeries.Core"
         Title="Xbox Series Toast"
         WindowStyle="None"
-        AllowsTransparency="True"
+        AllowsTransparency="False"
         Background="Transparent"
         ResizeMode="NoResize"
         ShowInTaskbar="False"

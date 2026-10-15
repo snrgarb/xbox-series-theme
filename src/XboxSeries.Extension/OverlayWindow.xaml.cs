@@ -76,9 +76,7 @@ namespace XboxSeries.Extension
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            var source = (HwndSource)PresentationSource.FromVisual(this);
-            source.CompositionTarget.BackgroundColor = Colors.Transparent;
-            NativeMethods.SeeThrough(source.Handle);
+            NativeMethods.SeeThrough((HwndSource)PresentationSource.FromVisual(this));
         }
 
         /// <summary>The status area at the top right, and the Notifications utility's count.</summary>
