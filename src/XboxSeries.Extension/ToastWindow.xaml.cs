@@ -46,6 +46,13 @@ namespace XboxSeries.Extension
 
         private void OnToastChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(ToastState.Text) && toast.IsShown)
+            {
+                // Another Toast cutting in, as a call over a notification: on its line first too.
+                textCycle.Begin(this, true);
+                return;
+            }
+
             if (e.PropertyName != nameof(ToastState.IsShown))
             {
                 return;
