@@ -38,8 +38,9 @@
             </Style>
         </ResourceDictionary>
     </Window.Resources>
+    <!-- The dim behind the Guide, as dark as the console's: it leaves the screen behind at under half its brightness. -->
     <Window.Background>
-        <SolidColorBrush x:Name="Dim" Color="#66000000" Opacity="0" />
+        <SolidColorBrush x:Name="Dim" Color="#8F000000" Opacity="0" />
     </Window.Background>
     <!--
         Laid out at 1080 tall and the screen's aspect, as Playnite lays out the theme, then scaled to the screen, so the
