@@ -408,7 +408,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Start_up_with_a_token_Discord_refuses_says_why_and_keeps_the_tokens()
+        public void Start_up_with_a_token_Discord_refuses_refreshes_it_and_keeps_the_tokens()
         {
             SaveTokens();
             core = NewCore();
@@ -417,7 +417,7 @@ namespace XboxSeries.Core.Tests
 
             Error("AUTHENTICATE", "Invalid access token");
 
-            AssertFailed("Couldn't connect to Discord: Invalid access token");
+            Assert.Equal("refresh_token", Assert.Single(oauth.Requests).Form["grant_type"]);
             Assert.Equal("saved-access", secrets.Values["Discord.AccessToken"]);
             Assert.DoesNotContain(GuideTabKind.Discord, OpenGuideTabs());
         }
