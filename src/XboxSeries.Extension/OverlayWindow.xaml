@@ -45,6 +45,8 @@
                 mute and deafen, also in the Audio flyout. In a flyout: notifications as cards with their text; Audio's
                 volume slider and mute switch. The
                 focused entry is filled a little lighter and wears the tiles' green ring.
+                Each part that shows a picture gets it only from the trigger on the kind that shows it, so an entry
+                decodes its image once, for the one part showing, rather than once for every part it has.
             -->
             <DataTemplate x:Key="GuideEntry">
                 <StackPanel>
@@ -69,7 +71,7 @@
                             <Border Background="{DynamicResource GlyphLightBrush}">
                                 <TextBlock Text="&#xE7FC;" Style="{StaticResource GuideIcon}" FontSize="36" HorizontalAlignment="Center" />
                             </Border>
-                            <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=180}" Stretch="UniformToFill" />
+                            <Image x:Name="CoverArt" Stretch="UniformToFill" />
                             <!-- The game's library source, bottom left, where the console badges its covers. -->
                             <Path x:Name="SourceIcon" Width="18" Height="18" Margin="6" Stretch="Uniform"
                                   HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">
@@ -82,7 +84,7 @@
                             <Ellipse Fill="#FF4A4A4A" />
                             <Ellipse>
                                 <Ellipse.Fill>
-                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" Stretch="UniformToFill" />
+                                    <ImageBrush ImageSource="{Binding Tag, ElementName=Avatar}" Stretch="UniformToFill" />
                                 </Ellipse.Fill>
                             </Ellipse>
                         </Grid>
@@ -95,7 +97,7 @@
                             <TextBlock Text="&#xE77B;" Style="{StaticResource GuideIcon}" FontSize="22" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
                             <Ellipse Width="48" Height="48">
                                 <Ellipse.Fill>
-                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
+                                    <ImageBrush ImageSource="{Binding Tag, ElementName=Participant}" Stretch="UniformToFill" />
                                 </Ellipse.Fill>
                             </Ellipse>
                             <Ellipse x:Name="SpeakingRing" Stroke="{DynamicResource GlyphLightBrush}" StrokeThickness="3" Visibility="Hidden" />
@@ -109,7 +111,7 @@
                             <TextBlock Text="&#xE77B;" Style="{StaticResource GuideIcon}" FontSize="26" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
                             <Ellipse>
                                 <Ellipse.Fill>
-                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" Stretch="UniformToFill" />
+                                    <ImageBrush ImageSource="{Binding Tag, ElementName=Caller}" Stretch="UniformToFill" />
                                 </Ellipse.Fill>
                             </Ellipse>
                             <Grid Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-4,-4">
@@ -127,7 +129,7 @@
                             </Border>
                             <Border CornerRadius="16">
                                 <Border.Background>
-                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" Stretch="UniformToFill" />
+                                    <ImageBrush ImageSource="{Binding Tag, ElementName=ServerIcon}" Stretch="UniformToFill" />
                                 </Border.Background>
                             </Border>
                         </Grid>
@@ -238,7 +240,7 @@
                                 </Border>
                                 <Border x:Name="TileArt" CornerRadius="16">
                                     <Border.Background>
-                                        <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=144}" Stretch="UniformToFill" />
+                                        <ImageBrush ImageSource="{Binding Tag, ElementName=TileArt}" Stretch="UniformToFill" />
                                     </Border.Background>
                                 </Border>
                             </Grid>
@@ -296,6 +298,7 @@
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE8F1;" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="RunningGame">
+                        <Setter TargetName="CoverArt" Property="Source" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=180}" />
                         <Setter TargetName="Running" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Cover" Property="Visibility" Value="Visible" />
@@ -304,6 +307,7 @@
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="RecentGame">
+                        <Setter TargetName="CoverArt" Property="Source" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=180}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Cover" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
@@ -311,6 +315,7 @@
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="Profile">
+                        <Setter TargetName="Avatar" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Avatar" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="138" />
@@ -472,6 +477,7 @@
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordParticipant">
+                        <Setter TargetName="Participant" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Participant" Property="Visibility" Value="Visible" />
                         <Setter TargetName="CallMarks" Property="Visibility" Value="Visible" />
@@ -524,6 +530,7 @@
                         tile, where it stands, to where every other divider ends.
                     -->
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordShortcut">
+                        <Setter TargetName="TileArt" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=144}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Tile" Property="Visibility" Value="Visible" />
@@ -566,6 +573,7 @@
                     </DataTrigger>
                     <!-- The Servers flyout: each server a row with its icon, as the profile card has the picture. -->
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordServer">
+                        <Setter TargetName="ServerIcon" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="ServerIcon" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
@@ -596,6 +604,7 @@
                         green over who is calling, a row as tall as the account card's so it stands out above the rest.
                     -->
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordIncomingCall">
+                        <Setter TargetName="Caller" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Caller" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Calling" Property="Visibility" Value="Visible" />
