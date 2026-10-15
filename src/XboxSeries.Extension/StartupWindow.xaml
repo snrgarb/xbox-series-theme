@@ -30,8 +30,6 @@
             </ResourceDictionary.MergedDictionaries>
             <local:SameProfileConverter x:Key="IsFocused" />
 
-            <local:HasTextConverter x:Key="HasText" />
-
             <!--
                 Signing you in's light, once round the ring each 1.2 s: begun while Who's playing today? or Signing you in
                 shows and stopped once the window hides, so it never keeps WPF rendering behind Playnite.
@@ -120,23 +118,8 @@
                                                          Stroke="{DynamicResource GlyphLightBrush}" Opacity="0" />
                                             </Grid>
                                         </Grid>
-                                        <!--
-                                            The name, in two lines: the gamertag, and under it the real name, shown only while
-                                            focused. Focused with a real name, the two swap places on a loop as the console's do,
-                                            crossfading as the Toast's line and its prompt do: each line keeps its place's size
-                                            and colour, and only its text changes. Each place holds both, one seen at a time.
-                                        -->
-                                        <Grid Margin="10,6,10,0">
-                                            <TextBlock x:Name="UpperGamertag" Text="{Binding Gamertag}" Style="{StaticResource StartupText}" FontSize="30" />
-                                            <TextBlock x:Name="UpperRealName" Text="{Binding RealName}" Style="{StaticResource StartupText}" FontSize="30"
-                                                       Opacity="0" />
-                                        </Grid>
-                                        <Grid x:Name="Lower" Margin="10,6,10,0" Opacity="0">
-                                            <TextBlock x:Name="LowerRealName" Text="{Binding RealName}" Style="{StaticResource StartupText}"
-                                                       FontSize="24" Foreground="#D9FFFFFF" />
-                                            <TextBlock x:Name="LowerGamertag" Text="{Binding Gamertag}" Style="{StaticResource StartupText}"
-                                                       FontSize="24" Foreground="#D9FFFFFF" Opacity="0" />
-                                        </Grid>
+                                        <!-- The gamertag alone, as Who's playing today? shows it on the console. -->
+                                        <TextBlock Margin="10,6,10,0" Text="{Binding Gamertag}" Style="{StaticResource StartupText}" FontSize="30" />
                                     </StackPanel>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Value="True">
@@ -152,7 +135,6 @@
                                                         <DoubleAnimation Storyboard.TargetName="Grow" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
                                                         <DoubleAnimation Storyboard.TargetName="Grow" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
                                                         <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15" />
-                                                        <DoubleAnimation Storyboard.TargetName="Lower" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </DataTrigger.EnterActions>
@@ -162,67 +144,10 @@
                                                         <DoubleAnimation Storyboard.TargetName="Grow" Storyboard.TargetProperty="ScaleX" To="0.79" Duration="0:0:0.15" />
                                                         <DoubleAnimation Storyboard.TargetName="Grow" Storyboard.TargetProperty="ScaleY" To="0.79" Duration="0:0:0.15" />
                                                         <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15" />
-                                                        <DoubleAnimation Storyboard.TargetName="Lower" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </DataTrigger.ExitActions>
                                         </DataTrigger>
-
-                                        <!--
-                                            The name's swap, while focused with a real name, timed as the Toast's text cycle
-                                            (ToastWindow.xaml): each way round for 2.2 s, a 0.3 s crossfade to the other, again;
-                                            back as it was once focus moves on. Without a real name the gamertag stays put.
-                                        -->
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Value="True">
-                                                    <Condition.Binding>
-                                                        <MultiBinding Converter="{StaticResource IsFocused}">
-                                                            <Binding />
-                                                            <Binding Path="DataContext.FocusedProfile" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
-                                                        </MultiBinding>
-                                                    </Condition.Binding>
-                                                </Condition>
-                                                <Condition Binding="{Binding RealName, Converter={StaticResource HasText}}" Value="True" />
-                                            </MultiDataTrigger.Conditions>
-                                            <MultiDataTrigger.EnterActions>
-                                                <BeginStoryboard x:Name="NameSwap">
-                                                    <Storyboard RepeatBehavior="Forever">
-                                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="UpperGamertag" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="0" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="0" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="1" />
-                                                        </DoubleAnimationUsingKeyFrames>
-                                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="UpperRealName" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="0" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="1" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="1" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="0" />
-                                                        </DoubleAnimationUsingKeyFrames>
-                                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LowerRealName" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="0" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="0" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="1" />
-                                                        </DoubleAnimationUsingKeyFrames>
-                                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="LowerGamertag" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="0" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="1" />
-                                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="1" />
-                                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="0" />
-                                                        </DoubleAnimationUsingKeyFrames>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </MultiDataTrigger.EnterActions>
-                                            <MultiDataTrigger.ExitActions>
-                                                <RemoveStoryboard BeginStoryboardName="NameSwap" />
-                                            </MultiDataTrigger.ExitActions>
-                                        </MultiDataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
