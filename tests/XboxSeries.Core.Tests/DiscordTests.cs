@@ -145,7 +145,8 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(
                 new[] { "rpc", "identify", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read" },
                 authorize["args"]["scopes"].Select(s => (string)s));
-            Assert.Equal("http://127.0.0.1", (string)authorize["args"]["redirect_uri"]);
+            // Discord refuses a redirect in RPC's AUTHORIZE; it takes the one registered on the app.
+            Assert.Null(authorize["args"]["redirect_uri"]);
             Assert.False(string.IsNullOrEmpty((string)authorize["nonce"]));
             Assert.Equal("Approve the request in Discord", Discord.StatusText);
         }
