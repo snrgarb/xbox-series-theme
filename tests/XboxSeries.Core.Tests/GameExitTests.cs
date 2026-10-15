@@ -98,6 +98,10 @@ namespace XboxSeries.Core.Tests
             windows.CloseWindow(game);
             core.OnGameStopped(library.Id("Hades"));
 
+            // Not while Playnite is still bringing itself back after the game, which left it without the pad.
+            Assert.True(core.Guide.IsOpen);
+            clock.Advance(TimeSpan.FromMilliseconds(500));
+
             Assert.False(core.Guide.IsOpen);
             Assert.Equal(DashboardPage.Home, playnite.Page);
             Assert.Equal(playnite.Window, windows.Foreground);
