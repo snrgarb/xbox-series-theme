@@ -25,6 +25,12 @@ namespace XboxSeries.Core
         private readonly HashSet<string> ringRequests = new HashSet<string>();
 
         /// <summary>
+        /// The GET_CHANNELs of the call's channel sent when someone not in the call came into a channel followed, by
+        /// nonce, with who came: its answer tells whether it was the call they came into, before any DM is asked.
+        /// </summary>
+        private readonly Dictionary<string, string> joinChecks = new Dictionary<string, string>();
+
+        /// <summary>
         /// Whether someone other than the user was in each known DM, as last learned; a DM not yet learned doesn't ring
         /// on its first answer, as someone sitting in a DM call for hours isn't calling.
         /// </summary>
@@ -97,6 +103,7 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Discord is asked who is in each of <paramref name="channelIds"/>, known DMs, its answers telling which ring.</summary>
         private void AskWhoIsIn(IEnumerable<string> channelIds)
         {
             foreach (var id in channelIds)
@@ -107,26 +114,46 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Someone came into a channel followed, VOICE_STATE_CREATE, which doesn't say which. Followed for rings as well
-        /// as the call, it may be a DM ringing: Discord is asked who is in the known DMs, and, in a call, in the call's
-        /// channel, which then shows them if they came there. False when it can only be the call's, which takes them at once.
+        /// as the call, it may be a DM ringing. In a call, Discord is asked first who is in the call's channel, which
+        /// then shows them if they came there, and only if they didn't, who is in the DMs; out of one, at once. Only the
+        /// known DMs nobody else was in are asked, as only those can start ringing. False when it can only be the call's,
+        /// which takes them at once.
         /// </summary>
-        private bool LooksForRing(JObject state)
+        private bool AsksWhereTheyCame(JObject state)
         {
             var userId = (string)state?["user"]?["id"];
-            var dms = ringFollowed.Where(id => id != call?.Id).ToList();
-            if (userId == null || userId == discordUserId || call?.Has(userId) == true || dms.Count == 0)
+            if (userId == null || userId == discordUserId || call?.Has(userId) == true || !ringFollowed.Any(id => id != call?.Id))
             {
                 return false;
             }
 
-            AskWhoIsIn(dms);
             if (call != null)
             {
-                SendCommand("GET_CHANNEL", new JObject { ["channel_id"] = call.Id });
+                joinChecks[SendCommand("GET_CHANNEL", new JObject { ["channel_id"] = call.Id })] = userId;
+            }
+            else
+            {
+                AskEmptyDms();
             }
 
             return true;
         }
+
+        /// <summary>
+        /// The call's channel answered, or refused, after <paramref name="userId"/> came into a channel followed: unless
+        /// the call now has them, they came into a DM, which Discord is asked about.
+        /// </summary>
+        private void OnJoinChecked(string userId)
+        {
+            if (call?.Has(userId) != true)
+            {
+                AskEmptyDms();
+            }
+        }
+
+        /// <summary>Discord is asked who is in each known DM nobody else was in, besides the call's, the only ones that can start ringing.</summary>
+        private void AskEmptyDms() =>
+            AskWhoIsIn(ringFollowed.Where(id => id != call?.Id && dmOccupied.TryGetValue(id, out var occupied) && !occupied).ToList());
 
         /// <summary>
         /// Someone not in the call left a channel followed, VOICE_STATE_DELETE: Discord is asked who is in the known DMs
@@ -204,6 +231,7 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Nothing rings any longer: the call's Toast and "Leave X and answer?" go, without rebuilding the Discord tab.</summary>
         private void StopRinging()
         {
             ringingChannelId = null;
@@ -219,6 +247,7 @@ namespace XboxSeries.Core
             StopRinging();
             ringFollowed.Clear();
             ringRequests.Clear();
+            joinChecks.Clear();
             dmOccupied.Clear();
         }
 
@@ -313,6 +342,7 @@ namespace XboxSeries.Core
             ShowDialog(answerPrompt);
         }
 
+        /// <summary>"Leave X and answer?" goes, if it is still showing, leaving the Guide open.</summary>
         private void CloseAnswerPrompt()
         {
             if (answerPrompt != null && Guide.Dialog == answerPrompt)

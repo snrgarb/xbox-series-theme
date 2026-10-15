@@ -76,10 +76,27 @@ namespace XboxSeries.Core.Tests
             ReplyTo(GetChannel("600"), Dm("600", 1, State(Ana, "ana", AnaAvatar)));
             Reply("GET_SELECTED_VOICE_CHANNEL", null);
 
-            Dispatch("VOICE_STATE_CREATE", State(Bo, "bo"));
-            ReplyTo(GetChannel("600"), Dm("600", 1, State(Ana, "ana", AnaAvatar), State(Bo, "bo")));
+            var fetches = Sent("GET_CHANNEL").Count;
 
+            Dispatch("VOICE_STATE_CREATE", State(Bo, "bo"));
+
+            Assert.Equal(fetches, Sent("GET_CHANNEL").Count);
             Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void Someone_joining_out_of_a_call_asks_only_the_known_DMs_nobody_else_is_in()
+        {
+            NotInCall();
+            KnowDm("600");
+            KnowDm("601");
+            Join(Dm("602", 1, State(Me, "gabe"), State(Bo, "bo")));
+            Leave();
+            var fetches = Sent("GET_CHANNEL").Count;
+
+            Dispatch("VOICE_STATE_CREATE", State(Ana, "ana", AnaAvatar));
+
+            Assert.Equal(new[] { "600", "601" }, Sent("GET_CHANNEL").Skip(fetches).Select(c => (string)c["args"]["channel_id"]));
         }
 
         [Fact]
@@ -105,16 +122,43 @@ namespace XboxSeries.Core.Tests
             NotInCall();
             KnowDm("600");
             Join(VoiceChannel("500", "Late night", "9", State(Me, "gabe")));
+            var fetches = Sent("GET_CHANNEL").Count;
 
             Dispatch("VOICE_STATE_CREATE", State(Bo, "bo"));
-            ReplyTo(GetChannel("600"), Dm("600", 1));
             ReplyTo(GetChannel("500"), VoiceChannel("500", "Late night", "9", State(Me, "gabe"), State(Bo, "bo")));
+
+            Assert.Equal(new[] { "500" }, Sent("GET_CHANNEL").Skip(fetches).Select(c => (string)c["args"]["channel_id"]));
             OpenDiscordTab();
 
             Assert.Equal(
                 new[] { "gabe", "bo" },
                 Guide.Items.Where(i => i.Kind == GuideItemKind.DiscordParticipant).Select(i => i.Title));
             Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void Someone_joining_a_known_DM_during_a_call_asks_the_call_first_then_the_DMs_and_rings()
+        {
+            NotInCall();
+            KnowDm("600");
+            Join(VoiceChannel("500", "Late night", "9", State(Me, "gabe")));
+            var fetches = Sent("GET_CHANNEL").Count;
+
+            Dispatch("VOICE_STATE_CREATE", State(Ana, "ana", AnaAvatar));
+
+            Assert.Equal(new[] { "500" }, Sent("GET_CHANNEL").Skip(fetches).Select(c => (string)c["args"]["channel_id"]));
+
+            ReplyTo(GetChannel("500"), VoiceChannel("500", "Late night", "9", State(Me, "gabe")));
+
+            Assert.Equal(new[] { "500", "600" }, Sent("GET_CHANNEL").Skip(fetches).Select(c => (string)c["args"]["channel_id"]));
+
+            ReplyTo(GetChannel("600"), Dm("600", 1, State(Ana, "ana", AnaAvatar)));
+
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal("ana is calling", core.Toast.Text);
+            OpenGuide();
+            Assert.Equal(GuideTabKind.Discord, Guide.Tab);
+            Assert.DoesNotContain(Guide.Items, i => i.Kind == GuideItemKind.DiscordParticipant && i.Title == "ana");
         }
 
         [Fact]
@@ -204,6 +248,47 @@ namespace XboxSeries.Core.Tests
             OpenGuide();
 
             Assert.Equal(GuideTabKind.Landing, Guide.Tab);
+        }
+
+        [Fact]
+        public void A_Guide_tap_with_the_Guide_open_during_the_call_Toast_goes_to_Answer_closing_what_was_over_it()
+        {
+            NotInCall();
+            KnowDm("600");
+            OpenGuide();
+            foreach (var _ in Guide.Items)
+            {
+                Tap(ControllerButton.DPadDown);
+            }
+
+            Tap(ControllerButton.DPadRight);
+            Tap(ControllerButton.A);
+            Assert.Equal(GuideItemKind.Audio, Guide.Flyout.Kind);
+            Ring("600");
+            Assert.True(core.Toast.IsShown);
+
+            Tap(ControllerButton.Guide);
+
+            Assert.True(Guide.IsOpen);
+            Assert.Null(Guide.Flyout);
+            Assert.Null(Guide.Dialog);
+            Assert.Equal(GuideTabKind.Discord, Guide.Tab);
+            Assert.Equal(GuideItemKind.DiscordIncomingCall, Guide.FocusedItem.Kind);
+            Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void A_Guide_tap_with_the_Guide_open_and_no_call_Toast_closes_the_Guide()
+        {
+            NotInCall();
+            KnowDm("600");
+            Ring("600");
+            clock.Advance(TimeSpan.FromSeconds(30));
+            OpenGuide();
+
+            Tap(ControllerButton.Guide);
+
+            Assert.False(Guide.IsOpen);
         }
 
         [Fact]
@@ -335,7 +420,6 @@ namespace XboxSeries.Core.Tests
 
             Dispatch("VOICE_STATE_CREATE", State(Bo, "bo"));
             ReplyTo(GetChannel("601"), Dm("601", 1, State(Bo, "bo")));
-            ReplyTo(GetChannel("600"), Dm("600", 1, State(Ana, "ana", AnaAvatar)));
 
             Assert.Equal("bo is calling", core.Toast.Text);
             OpenGuide();
@@ -404,12 +488,15 @@ namespace XboxSeries.Core.Tests
             ReplyTo(GetChannel(id), Dm(id, 1, State(Ana, "ana", AnaAvatar)));
         }
 
-        /// <summary>Ana joins the DM <paramref name="id"/> during the call in <paramref name="callId"/>, which Discord is asked about too.</summary>
+        /// <summary>
+        /// Ana joins the DM <paramref name="id"/> during the call in <paramref name="callId"/>: Discord is asked first
+        /// who is in the call, which she isn't, then who is in the DM.
+        /// </summary>
         private void RingDuringCall(string id, string callId)
         {
             Dispatch("VOICE_STATE_CREATE", State(Ana, "ana", AnaAvatar));
-            ReplyTo(GetChannel(id), Dm(id, 1, State(Ana, "ana", AnaAvatar)));
             ReplyTo(GetChannel(callId), VoiceChannel(callId, "Late night", "9", State(Me, "gabe")));
+            ReplyTo(GetChannel(id), Dm(id, 1, State(Ana, "ana", AnaAvatar)));
         }
 
         private JObject GetChannel(string id) =>

@@ -29,8 +29,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Whether the Toast tells of a call ringing ("X is calling — press Guide to answer"), drawn with Discord's
-        /// glyph, rather than a notification. Like <see cref="Text"/>, it stays as the Toast hides.
+        /// Whether the Toast tells of a call ringing, drawn with Discord's glyph, rather than a notification: its
+        /// <see cref="Text"/> is "X is calling", and the view draws "Press ⓧ to answer" under it. Like
+        /// <see cref="Text"/>, it stays as the Toast hides.
         /// </summary>
         public bool IsCall
         {

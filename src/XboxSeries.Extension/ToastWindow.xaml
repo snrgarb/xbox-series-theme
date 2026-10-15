@@ -18,7 +18,7 @@
         The Toast: a strip along the bottom of the screen, above every window, that never takes focus or the mouse, so
         a running game keeps its input. It shows a new Playnite notification as the console shows its own, bottom
         centre: a dark rounded card with the notifications glyph in the accent, the text, and the Guide button to view it.
-        A DM ringing is shown as the console shows a party invite: Discord's mark on a disc in its blurple, as the Discord
+        A DM ringing is shown as the console shows an incoming invite: Discord's mark on a disc in its blurple, as the Discord
         tab's account card has it, who is calling, and the Guide button to answer.
     -->
     <Window.Resources>
