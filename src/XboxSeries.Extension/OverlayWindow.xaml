@@ -41,7 +41,9 @@
             <!--
                 An entry, on a tab or in a flyout. Home and My games & apps are an icon and a title; games show their cover;
                 the profile card shows the account picture; Settings and Power are a smaller icon and title, each under a
-                divider. In a flyout: notifications as cards with their text; Audio's volume slider and mute switch. The
+                divider. On the Discord tab in a call, the people in it with their avatars, then switches for Discord's
+                mute and deafen, also in the Audio flyout. In a flyout: notifications as cards with their text; Audio's
+                volume slider and mute switch. The
                 focused entry is filled a little lighter and wears the tiles' green ring.
             -->
             <DataTemplate x:Key="GuideEntry">
@@ -84,6 +86,20 @@
                                 </Ellipse.Fill>
                             </Ellipse>
                         </Grid>
+                        <!--
+                            Someone in a Discord call, as in the console's party: their avatar on a disc, a grey one for
+                            none (or one that won't load), ringed in the accent while they speak.
+                        -->
+                        <Grid x:Name="Participant" Width="56" Height="56" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
+                            <Ellipse Width="48" Height="48" Fill="#FF4A4A4A" />
+                            <TextBlock Text="&#xE77B;" Style="{StaticResource GuideIcon}" FontSize="22" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
+                            <Ellipse Width="48" Height="48">
+                                <Ellipse.Fill>
+                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <Ellipse x:Name="SpeakingRing" Stroke="{DynamicResource GlyphLightBrush}" StrokeThickness="3" Visibility="Hidden" />
+                        </Grid>
                         <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
                             <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
@@ -110,6 +126,15 @@
                             <Border x:Name="SwitchTrack" CornerRadius="12" BorderBrush="White" BorderThickness="2" />
                             <Ellipse x:Name="SwitchKnob" Width="12" Height="12" Fill="White" HorizontalAlignment="Left" Margin="6,0" />
                         </Grid>
+                        <!-- A person in the call muted (the microphone struck through) or deafened (the headphones struck through). -->
+                        <StackPanel x:Name="CallMarks" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,24,0" Visibility="Collapsed">
+                            <TextBlock x:Name="MutedMark" Text="&#xEC54;" Style="{StaticResource GuideIcon}" FontSize="22" Width="26"
+                                       Foreground="#B3FFFFFF" Visibility="Collapsed" />
+                            <Grid x:Name="DeafenedMark" Width="26" Height="26" Margin="10,0,0,0" Visibility="Collapsed">
+                                <TextBlock Text="&#xE7F6;" Style="{StaticResource GuideIcon}" FontSize="22" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
+                                <Line X1="3" Y1="3" X2="23" Y2="23" Stroke="#B3FFFFFF" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Grid>
+                        </StackPanel>
                         <!-- The tiles' ring, 1 px past the entry as theirs is past their art. -->
                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
@@ -229,6 +254,67 @@
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
                         <Setter TargetName="Title" Property="FontSize" Value="22" />
                         <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
+                    </DataTrigger>
+                    <!--
+                        The Discord tab in a call: the channel's or DM's name over the people in it, each a row with their
+                        avatar, then Mute, Deafen and Leave under a divider.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordChannel">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE767;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="#B3FFFFFF" />
+                        <Setter TargetName="Entry" Property="Height" Value="60" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="24" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordParticipant">
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Participant" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="CallMarks" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="72" />
+                        <Setter TargetName="Text" Property="Margin" Value="88,0,96,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsSpeaking}" Value="True">
+                        <Setter TargetName="SpeakingRing" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                        <Setter TargetName="MutedMark" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsDeafened}" Value="True">
+                        <Setter TargetName="DeafenedMark" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <!-- The user's Discord mute and deafen, on the tab and in the Audio flyout: switches, as Audio's Mute. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordMute">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE720;" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordDeafen">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7F6;" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <!-- Leave: the hang-up, in Discord's red. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordLeave">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE778;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="#FFED4245" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsOn}" Value="True">
                         <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource GlyphLightBrush}" />
