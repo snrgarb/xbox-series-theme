@@ -30,6 +30,9 @@ namespace XboxSeries.Extension
         // slide-out stuck part way. This timer runs off the dispatcher, not rendering, and finishes the slide-out.
         private readonly DispatcherTimer closeDeadline;
 
+        // The open's slide and dim, waiting for the Overlay's first frame to be drawn.
+        private EventHandler pendingOpen;
+
         public OverlayWindow(ExtensionCore core)
         {
             Status = core.Status;
@@ -101,11 +104,11 @@ namespace XboxSeries.Extension
                     closeDeadline.Stop();
                     if (guide.ShowsPanel)
                     {
-                        Animate(0, 1, OpenDuration, EasingMode.EaseOut, null);
+                        AnimateOnceDrawn(0, 1, OpenDuration, EasingMode.EaseOut);
                     }
                     else
                     {
-                        Animate(offscreenX, 1, CloseDuration, EasingMode.EaseIn, null);
+                        AnimateOnceDrawn(offscreenX, 1, CloseDuration, EasingMode.EaseIn);
                     }
                 }
                 else
@@ -203,8 +206,42 @@ namespace XboxSeries.Extension
                 NativeMethods.SWP_SHOWWINDOW);
         }
 
+        /// <summary>
+        /// Starts the open's slide and dim once the Overlay's first frame has been drawn. Showing the window and laying
+        /// out and drawing the Guide for that frame takes longer than a frame, on every open, and an animation started
+        /// with it would have run most of its course by the time anything showed, the panel jumping most of the way in.
+        /// Until then the panel is off screen and the dim clear, so waiting for that frame shows nothing later.
+        /// </summary>
+        private void AnimateOnceDrawn(double slideTo, double dimTo, Duration duration, EasingMode easing)
+        {
+            CancelPendingOpen();
+            var frames = 0;
+            pendingOpen = (_, __) =>
+            {
+                // The first Rendering is the frame that draws the Overlay; the next comes once it is drawn.
+                if (++frames < 2)
+                {
+                    return;
+                }
+
+                Animate(slideTo, dimTo, duration, easing, null);
+            };
+            CompositionTarget.Rendering += pendingOpen;
+        }
+
+        private void CancelPendingOpen()
+        {
+            if (pendingOpen != null)
+            {
+                CompositionTarget.Rendering -= pendingOpen;
+                pendingOpen = null;
+            }
+        }
+
         private void Animate(double slideTo, double dimTo, Duration duration, EasingMode easing, Action completed)
         {
+            CancelPendingOpen();
+
             // To-only animations, so reopening mid slide-out continues from where the panel is.
             var slide = new DoubleAnimation(slideTo, duration) { EasingFunction = new CubicEase { EasingMode = easing } };
             if (completed != null)
