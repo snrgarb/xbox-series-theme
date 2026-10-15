@@ -15,6 +15,8 @@ namespace XboxSeries.Core
         private int gameCount;
         private int? fullLibraryCount;
         private StorageRing storage;
+        private IReadOnlyList<App> apps = new App[0];
+        private bool hasApps;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -102,6 +104,31 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Apps: Playnite's Software tools, as tiles in Playnite's order. Stub for #38: the core fills it in.</summary>
+        public IReadOnlyList<App> Apps
+        {
+            get => apps;
+            internal set
+            {
+                apps = value;
+                Changed(nameof(Apps));
+            }
+        }
+
+        /// <summary>Whether the nav shows Apps: false when Software tools couldn't be read on this Playnite build. Stub for #38.</summary>
+        public bool HasApps
+        {
+            get => hasApps;
+            internal set
+            {
+                if (hasApps != value)
+                {
+                    hasApps = value;
+                    Changed(nameof(HasApps));
+                }
+            }
+        }
+
         /// <summary>The nav's storage ring: the drive holding most installed games; null when there is none to show.</summary>
         public StorageRing Storage
         {
@@ -167,6 +194,7 @@ namespace XboxSeries.Core
     public enum MyGamesItem
     {
         Games,
+        Apps,
         PlayHistory,
         FullLibrary,
     }

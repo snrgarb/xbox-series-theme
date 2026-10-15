@@ -66,6 +66,11 @@ namespace XboxSeries.Extension
             api.StartGame(gameId);
         }
 
+        public void StartApp(App app)
+        {
+            // Stub for #38: the adapter starts the tool's path with its arguments.
+        }
+
         public void OpenGameHub(Guid gameId)
         {
             // The hub is Playnite's details view of the main list's selected game, which opens with focus on Play.

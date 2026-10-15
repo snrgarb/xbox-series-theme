@@ -1198,6 +1198,11 @@ namespace XboxSeries.Core
             MyGames.IsShown = true;
         }
 
+        /// <summary>A on an App's tile: starts the tool with its arguments. Stub for #38: the core fills it in.</summary>
+        public void StartApp(Guid appId)
+        {
+        }
+
         /// <summary>
         /// B on the page: back to Home. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
         /// prompt still showing answers the B instead.
