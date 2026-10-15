@@ -279,7 +279,13 @@ namespace XboxSeries.Core.Tests
             var game = windows.OpenWindow();
 
             Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromSeconds(1));
+            clock.Advance(TimeSpan.FromMilliseconds(999));
+
+            // Not the Guide first: until the hold is known, nothing opens.
+            Assert.False(core.Guide.IsOverlayShown);
+            Assert.Empty(sounds.Played);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
 
             Assert.Equal("What do you want to do?", core.Guide.Dialog?.Title);
             Assert.True(core.Guide.IsOpen);

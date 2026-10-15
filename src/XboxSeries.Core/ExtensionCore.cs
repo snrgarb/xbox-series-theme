@@ -267,19 +267,20 @@ namespace XboxSeries.Core
         public void OnControllerButton(ControllerButton button, ButtonState state) => OnControllerButton(button, state, clock.Now);
 
         /// <summary>
-        /// A button, stamped <paramref name="at"/> when the pad reported it. A busy UI thread can handle a Guide release
-        /// before the hold timer's tick, so a hold is judged by the stamps, not only by the timer.
+        /// A button, stamped <paramref name="at"/> when the pad reported it. The Guide button acts on its release, once
+        /// it is known to be a tap and not a hold for Power. A busy UI thread can handle that release before the hold
+        /// timer's tick, so a hold is judged by the stamps, not only by the timer.
         /// </summary>
         public void OnControllerButton(ControllerButton button, ButtonState state, DateTime at)
         {
+            if (button == ControllerButton.Guide)
+            {
+                OnGuideButton(state, at);
+                return;
+            }
+
             if (state == ButtonState.Released)
             {
-                if (button == ControllerButton.Guide && holdTimer != null && at - guidePressedAt >= HoldForPower)
-                {
-                    CancelHold();
-                    OpenPowerFromHold();
-                }
-
                 if (button == dismissButton)
                 {
                     HandFocusBack();
@@ -295,36 +296,17 @@ namespace XboxSeries.Core
                     tileMenuHoldsA = false;
                 }
 
-                if (button == ControllerButton.Guide)
-                {
-                    CancelHold();
-                }
-
                 return;
             }
 
-            if (button == ControllerButton.Guide)
-            {
-                // Armed before a press that closes the Guide arms its release fallback, so a hold wins the tie.
-                CancelHold();
-                guidePressedAt = at;
-                var left = HoldForPower - (clock.Now - at);
-                holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
-            }
-
             var dialog = ActiveDialog;
-            if (button == ControllerButton.Guide && !Guide.IsOpen)
-            {
-                sounds.Play(UiSound.OpenMenu);
-                OpenGuide();
-            }
-            else if (button == ControllerButton.B && dialog != null)
+            if (button == ControllerButton.B && dialog != null)
             {
                 sounds.Play(UiSound.PromptClose);
                 dialog.Decline();
                 AfterAnswer(handBack => Dismiss(button, handBack));
             }
-            else if ((button == ControllerButton.Guide || button == ControllerButton.B) && Guide.IsOpen)
+            else if (button == ControllerButton.B && Guide.IsOpen)
             {
                 Dismiss(button, ReturnToRecordedWindow);
             }
@@ -368,6 +350,43 @@ namespace XboxSeries.Core
             button == ControllerButton.DPadUp || button == ControllerButton.DPadDown
             || button == ControllerButton.DPadLeft || button == ControllerButton.DPadRight;
 
+        /// <summary>
+        /// Pressed, it waits a second for a hold, which opens Power; released sooner, it is a tap, which opens the Guide
+        /// or closes it. Nothing shows while it waits, so a hold never flashes the Guide first.
+        /// </summary>
+        private void OnGuideButton(ButtonState state, DateTime at)
+        {
+            if (state == ButtonState.Pressed)
+            {
+                CancelHold();
+                guidePressedAt = at;
+                var left = HoldForPower - (clock.Now - at);
+                holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
+                return;
+            }
+
+            if (holdTimer == null)
+            {
+                // The hold already opened Power, or the press was never seen.
+                return;
+            }
+
+            CancelHold();
+            if (at - guidePressedAt >= HoldForPower)
+            {
+                OpenPowerFromHold();
+            }
+            else if (Guide.IsOpen)
+            {
+                DismissAtOnce(ReturnToRecordedWindow);
+            }
+            else
+            {
+                sounds.Play(UiSound.OpenMenu);
+                OpenGuide();
+            }
+        }
+
         private void CancelHold()
         {
             holdTimer?.Dispose();
@@ -375,8 +394,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Guide button held: Power on its own over the dim, as on the console, whether the press opened the Guide
-        /// or closed it. Closing it from there hands focus back to the window in front.
+        /// The Guide button held: Power on its own over the dim, as on the console, in place of the Guide's panel when
+        /// the Guide was open. Closing it from there hands focus back to the window in front.
         /// </summary>
         private void OpenPowerFromHold()
         {
