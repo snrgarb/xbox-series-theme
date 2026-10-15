@@ -265,6 +265,13 @@ namespace XboxSeries.Core
         /// </summary>
         DiscordUnavailable,
 
+        /// <summary>
+        /// The Discord tab's first entry while a known DM rings: "Answer", with who is calling as its
+        /// <see cref="GuideItem.Detail"/> and the DM's avatar as its image. A answers, asking first "Leave X and answer?"
+        /// in a call.
+        /// </summary>
+        DiscordIncomingCall,
+
         /// <summary>The Discord tab's heading in a call: the channel's name, or a DM's, by the other people in it.</summary>
         DiscordChannel,
 
