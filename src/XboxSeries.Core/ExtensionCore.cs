@@ -11,7 +11,7 @@ namespace XboxSeries.Core
     /// </summary>
     public sealed class ExtensionCore
     {
-        /// <summary>How many recent games fit on the landing tab, as on the console.</summary>
+        /// <summary>How many games the landing tab lists, the running one included, as on the console.</summary>
         private const int RecentGameCount = 4;
 
         /// <summary>
@@ -1297,14 +1297,14 @@ namespace XboxSeries.Core
         private void ShowLandingTab()
         {
             var running = GameById(runningGame);
-            var recent = PlayedGames().Where(g => g != running).Take(RecentGameCount);
-            var games = running == null ? recent : new[] { running }.Concat(recent);
+            var recent = PlayedGames().Where(g => g != running);
+            var games = (running == null ? recent : new[] { running }.Concat(recent)).Take(RecentGameCount);
 
             // A divider separates the games from Home and My games & apps.
             var home = new GuideItem(GuideItemKind.Home, "Home");
             Guide.Items = new[] { home, new GuideItem(GuideItemKind.MyGamesAndApps, "My games & apps") }
                 .Concat(games.Select((g, index) => new GuideItem(
-                    g == running ? GuideItemKind.RunningGame : GuideItemKind.RecentGame, g.Name, g.Id, hasDividerAbove: index == 0, image: g.CoverImage)))
+                    g == running ? GuideItemKind.RunningGame : GuideItemKind.RecentGame, g.Name, g.Id, hasDividerAbove: index == 0, image: g.CoverImage, source: g.Source)))
                 .ToList();
             Guide.FocusedItem = home;
         }
