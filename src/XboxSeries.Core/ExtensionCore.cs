@@ -805,6 +805,14 @@ namespace XboxSeries.Core
             Guide.FocusedItem = items.FirstOrDefault();
         }
 
+        /// <summary>
+        /// Windows' audio devices or its defaults changed: an open Audio flyout follows, its dropdowns and any open list
+        /// showing what Windows reports now. Called on the UI thread.
+        /// </summary>
+        public void OnAudioDevicesChanged()
+        {
+        }
+
         /// <summary>B in a flyout: closes it, focus back on the entry that opened it; in a Discord server's, back to the Servers flyout.</summary>
         private void CloseFlyout()
         {

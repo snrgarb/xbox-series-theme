@@ -252,6 +252,24 @@ namespace XboxSeries.Core
         /// <summary>The Audio flyout's mute switch: A turns it on and off.</summary>
         Mute,
 
+        /// <summary>
+        /// The Audio flyout's Output dropdown, naming Windows' default output device as its <see cref="GuideItem.Selection"/>:
+        /// A opens the list of output devices as its <see cref="GuideItem.Options"/>.
+        /// </summary>
+        AudioOutput,
+
+        /// <summary>
+        /// The Audio flyout's Input dropdown, naming Windows' default input device as its <see cref="GuideItem.Selection"/>,
+        /// "None" with none, when A does nothing: A opens the list of input devices as its <see cref="GuideItem.Options"/>.
+        /// </summary>
+        AudioInput,
+
+        /// <summary>
+        /// A device in an open Output or Input dropdown's list, by name, <see cref="GuideItem.IsOn"/> for Windows' current
+        /// default: A makes it the default; B closes the list unchanged.
+        /// </summary>
+        AudioDevice,
+
         /// <summary>The Discord tab's card for the Discord user signed in, by name.</summary>
         DiscordAccount,
 
@@ -320,6 +338,8 @@ namespace XboxSeries.Core
         private bool isMuted;
         private bool isDeafened;
         private IReadOnlyList<string> occupants;
+        private string selection;
+        private IReadOnlyList<GuideItem> options;
 
         internal GuideItem(
             GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null,
@@ -379,6 +399,52 @@ namespace XboxSeries.Core
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Occupants)));
             }
         }
+
+        /// <summary>What an Output or Input dropdown is set to: the default device's name, or "None"; null for other entries.</summary>
+        public string Selection
+        {
+            get => selection;
+            internal set
+            {
+                if (selection == value)
+                {
+                    return;
+                }
+
+                selection = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Selection)));
+            }
+        }
+
+        /// <summary>
+        /// An open Output or Input dropdown's list of devices, <see cref="GuideItemKind.AudioDevice"/> entries shown in
+        /// place under it, focus among them; null while it is closed, and for other entries.
+        /// </summary>
+        public IReadOnlyList<GuideItem> Options
+        {
+            get => options;
+            internal set
+            {
+                if (options == value)
+                {
+                    return;
+                }
+
+                var wasExpanded = IsExpanded;
+                options = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Options)));
+                if (wasExpanded != IsExpanded)
+                {
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
+                }
+            }
+        }
+
+        /// <summary>Whether a dropdown's list is open.</summary>
+        public bool IsExpanded => options != null;
+
+        /// <summary>The Windows device an <see cref="GuideItemKind.AudioDevice"/> entry stands for; null for other entries.</summary>
+        internal AudioDevice Device { get; set; }
 
         /// <summary>The volume slider's level, 0 to 100.</summary>
         public int Level
@@ -447,6 +513,7 @@ namespace XboxSeries.Core
         internal void TakeStateFrom(GuideItem other)
         {
             Level = other.Level;
+            Selection = other.Selection;
             IsOn = other.IsOn;
             IsSpeaking = other.IsSpeaking;
             IsMuted = other.IsMuted;
