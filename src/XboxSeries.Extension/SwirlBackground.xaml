@@ -48,6 +48,11 @@
         </Storyboard>
     </UserControl.Resources>
 
+    <!--
+        Each corner's bands are drawn once into a picture, at 1080p's detail, which the graphics card then drifts and turns,
+        rather than the bands being drawn again every frame; the bands are soft colour, so a 4K screen scaling the picture
+        up barely shows.
+    -->
     <Viewbox Stretch="UniformToFill">
         <Canvas Width="1920" Height="1080" ClipToBounds="True">
             <Canvas.Background>
@@ -66,6 +71,9 @@
 
                 <!-- The top right's bands: sweeping in from the top, round and away off the right edge. -->
                 <Canvas>
+                    <Canvas.CacheMode>
+                        <BitmapCache RenderAtScale="1" />
+                    </Canvas.CacheMode>
                     <Canvas.RenderTransform>
                         <TranslateTransform x:Name="TopDrift" />
                     </Canvas.RenderTransform>
@@ -101,6 +109,9 @@
 
                 <!-- The bottom left's bands: in from the left edge, round and away off the bottom. -->
                 <Canvas>
+                    <Canvas.CacheMode>
+                        <BitmapCache RenderAtScale="1" />
+                    </Canvas.CacheMode>
                     <Canvas.RenderTransform>
                         <TranslateTransform x:Name="BottomDrift" />
                     </Canvas.RenderTransform>
