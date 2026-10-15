@@ -23,8 +23,16 @@ namespace XboxSeries.Core
         /// <summary>The call shown, once its channel has arrived; null out of one.</summary>
         private DiscordCall call;
 
-        /// <summary>The user's own Discord mute and deafen, as Discord's voice settings last said, in a call or out of one.</summary>
+        /// <summary>
+        /// Whether Discord has said which channel the user selected since signing in, which outdates the sign-in's
+        /// GET_SELECTED_VOICE_CHANNEL answer should it come later.
+        /// </summary>
+        private bool channelSelectSeen;
+
+        /// <summary>The user's own Discord mute, as Discord's voice settings last said, in a call or out of one.</summary>
         private bool discordSelfMute;
+
+        /// <summary>The user's own Discord deafen, as Discord's voice settings last said, in a call or out of one.</summary>
         private bool discordSelfDeaf;
 
         /// <summary>Signed in: asks which channel the user is already in, and their voice settings.</summary>
@@ -40,6 +48,12 @@ namespace XboxSeries.Core
             switch (sent)
             {
                 case "GET_SELECTED_VOICE_CHANNEL":
+                    // Answered after Discord has said the user moved, it's stale.
+                    if (channelSelectSeen)
+                    {
+                        break;
+                    }
+
                     selectedChannelId = (string)data?["id"];
                     ShowCall(DiscordCall.FromChannel(data, discordUserId));
                     break;
@@ -57,12 +71,25 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// Discord refused a command sent once signed in. Refused the channel the user moved to, the call shown is no
+        /// longer theirs, so it goes; the user is in a call Discord won't show.
+        /// </summary>
+        private void OnDiscordRefused(string sent)
+        {
+            if (sent == "GET_CHANNEL" && call != null && call.Id != selectedChannelId)
+            {
+                ShowCall(null);
+            }
+        }
+
         /// <summary>An event Discord dispatched once signed in.</summary>
         private void OnDiscordEvent(string evt, JObject data)
         {
             switch (evt)
             {
                 case "VOICE_CHANNEL_SELECT":
+                    channelSelectSeen = true;
                     selectedChannelId = (string)data?["channel_id"];
                     if (selectedChannelId == null)
                     {
@@ -139,6 +166,7 @@ namespace XboxSeries.Core
         private void ForgetCall()
         {
             selectedChannelId = null;
+            channelSelectSeen = false;
             call = null;
             discordSelfMute = false;
             discordSelfDeaf = false;

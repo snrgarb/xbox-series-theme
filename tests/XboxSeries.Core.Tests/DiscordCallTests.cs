@@ -525,6 +525,31 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(GuideItemKind.DiscordMute, core.Guide.FocusedItem.Kind);
         }
 
+        [Fact]
+        public void A_sign_in_answer_arriving_after_the_user_has_left_doesnt_bring_the_call_back()
+        {
+            ConnectFully();
+            Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null });
+
+            Reply("GET_SELECTED_VOICE_CHANNEL", Channel("500", "Late night", 2, State(Me, "gabe")));
+
+            Assert.False(core.Status.IsInDiscordCall);
+        }
+
+        [Fact]
+        public void Discord_refusing_the_new_channel_drops_the_old_call_rather_than_showing_it_as_current()
+        {
+            InCall(Channel("500", "Late night", 2, State(Me, "gabe")));
+            Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = "501" });
+
+            Error("GET_CHANNEL", "No access");
+
+            Assert.False(core.Status.IsInDiscordCall);
+            Assert.Equal("UNSUBSCRIBE", (string)transport.Commands.Last()["cmd"]);
+            Assert.Equal("500", (string)transport.Commands.Last()["args"]["channel_id"]);
+            Assert.True(core.Settings.Discord.IsConnected);
+        }
+
         private void ConnectFully()
         {
             core.SetDiscordClientId(ClientId);

@@ -100,7 +100,10 @@ namespace XboxSeries.Core
     /// <summary>The badge on the status area's Discord icon.</summary>
     public enum DiscordBadge
     {
+        /// <summary>Neither muted nor deafened, or not in a call: no badge.</summary>
         None,
+
+        /// <summary>Muted in Discord.</summary>
         Muted,
 
         /// <summary>Deafened, which wins over muted.</summary>

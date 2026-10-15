@@ -224,6 +224,10 @@ namespace XboxSeries.Core
                 {
                     CloseDiscord("Couldn't connect to Discord: " + (string)data?["message"]);
                 }
+                else
+                {
+                    OnDiscordRefused(sent);
+                }
 
                 return;
             }

@@ -120,6 +120,7 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Whether the person with <paramref name="userId"/> is speaking, as Discord last said.</summary>
         public bool IsSpeaking(string userId) => userId != null && speaking.Contains(userId);
     }
 
@@ -135,6 +136,7 @@ namespace XboxSeries.Core
             IsDeafened = isDeafened;
         }
 
+        /// <summary>Their Discord user id, which the call's events name them by.</summary>
         public string UserId { get; }
 
         /// <summary>Their nickname on the server, else their display name, else their username.</summary>
