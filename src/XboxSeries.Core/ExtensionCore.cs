@@ -197,7 +197,7 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>The next notification's Toast, unless the call's is showing, which they wait behind.</summary>
+        /// <summary>The next notification's Toast, with the notification sound, unless the call's is showing, which they wait behind.</summary>
         private void ShowNextToast()
         {
             toastTimer = null;
@@ -211,6 +211,7 @@ namespace XboxSeries.Core
             Toast.Kind = shownNotification.Kind;
             Toast.Image = null;
             Toast.IsShown = true;
+            sounds.Play(UiSound.Notification);
             toastTimer = clock.After(ToastDuration, () =>
             {
                 shownNotification = null;
