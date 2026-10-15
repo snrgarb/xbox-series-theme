@@ -75,9 +75,14 @@ namespace XboxSeries.Core.Tests.Fakes
         public int? CountUserFilterGames() => UserFilterGameCount;
 
         /// <summary>How many times Playnite was asked to open its Fullscreen settings.</summary>
-        public int SettingsOpened { get; private set; }
+        public int PlayniteSettingsOpened { get; private set; }
 
-        public void OpenSettings() => SettingsOpened++;
+        public void OpenPlayniteSettings() => PlayniteSettingsOpened++;
+
+        /// <summary>How many times Playnite was asked to open its Fullscreen main menu.</summary>
+        public int MainMenuOpened { get; private set; }
+
+        public void OpenMainMenu() => MainMenuOpened++;
 
         /// <summary>Every power command Playnite was asked to carry out, in order.</summary>
         public List<PowerCommand> PowerCommands { get; } = new List<PowerCommand>();

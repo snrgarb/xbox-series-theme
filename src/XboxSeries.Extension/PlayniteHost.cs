@@ -53,8 +53,8 @@ namespace XboxSeries.Extension
         {
             BringToFront();
 
-            // Both pages are Playnite's list view, which the core shows as one or the other; a Game hub open on top of it
-            // is its details view.
+            // Every page is Playnite's list view, which the core shows as one or another; a Game hub open on top of it is
+            // its details view.
             if (api.MainView.ActiveFullscreenView == FullscreenView.Details)
             {
                 api.MainView.ToggleFullscreenView();
@@ -86,9 +86,15 @@ namespace XboxSeries.Extension
             FullscreenCommand("OpenGameMenuCommand")?.Execute(null);
         }
 
-        public void OpenSettings()
+        public void OpenPlayniteSettings()
         {
             Later(FullscreenCommand("OpenSettingsCommand"));
+        }
+
+        public void OpenMainMenu()
+        {
+            // What the top bar's PART_ButtonMainMenu runs, theme-only.
+            Later(FullscreenCommand("OpenMainMenuCommand"));
         }
 
         public void Power(PowerCommand command)
@@ -129,8 +135,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Runs <paramref name="command"/> once the caller is done: settings is a modal window, and the Guide has to
-        /// finish handing focus back before it opens.
+        /// Runs <paramref name="command"/> once the caller is done: settings and the main menu are modal windows, and the
+        /// Guide has to finish handing focus back before they open.
         /// </summary>
         private static void Later(ICommand command)
         {

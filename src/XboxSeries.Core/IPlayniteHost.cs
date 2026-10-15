@@ -41,8 +41,11 @@ namespace XboxSeries.Core
         /// </summary>
         int? CountUserFilterGames();
 
-        /// <summary>Opens Playnite's own Fullscreen settings.</summary>
-        void OpenSettings();
+        /// <summary>Opens Playnite settings: Playnite's own Fullscreen Settings window.</summary>
+        void OpenPlayniteSettings();
+
+        /// <summary>Opens Playnite's own Fullscreen main menu: Switch to Desktop mode, Update library, Minimise, Exit.</summary>
+        void OpenMainMenu();
 
         /// <summary>Carries out <paramref name="command"/> as Playnite's own Fullscreen menu does, closing Playnite cleanly first where it must.</summary>
         void Power(PowerCommand command);
@@ -62,5 +65,6 @@ namespace XboxSeries.Core
     {
         Home,
         MyGamesAndApps,
+        Settings,
     }
 }
