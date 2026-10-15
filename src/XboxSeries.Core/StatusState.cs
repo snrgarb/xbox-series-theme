@@ -10,7 +10,7 @@ namespace XboxSeries.Core
     public sealed class StatusState : INotifyPropertyChanged
     {
         private string time = "";
-        private ControllerBattery battery;
+        private ControllerBattery battery = ControllerBattery.None;
         private int notificationCount;
 
         public event PropertyChangedEventHandler PropertyChanged;

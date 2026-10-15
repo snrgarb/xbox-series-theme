@@ -8,8 +8,9 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Adapter: pad 1's battery, from Windows.Gaming.Input. XInput isn't used: it doesn't report the battery of a pad on
-    /// Bluetooth, as Xbox pads on a PC usually are.
+    /// Adapter: pad 1's battery. Windows.Gaming.Input finds the pad and says whether it is on a cable; the percentage
+    /// of a pad on Bluetooth LE, as Xbox pads on a PC usually are, comes from <see cref="BluetoothBattery"/>. XInput
+    /// isn't used: it reports no battery for a pad on Bluetooth.
     /// </summary>
     internal sealed class GamingInputController : IController
     {
@@ -59,15 +60,23 @@ namespace XboxSeries.Extension
                         return ControllerBattery.Wired;
                     }
 
-                    var report = pad.TryGetBatteryReport();
-                    var remaining = report?.RemainingCapacityInMilliwattHours;
-                    var full = report?.FullChargeCapacityInMilliwattHours;
-                    if (report == null || report.Status == BatteryStatus.NotPresent || remaining == null || full == null || full <= 0)
+                    // On Bluetooth LE, Windows' own percentage for the pad; through a wireless adapter, the pad's report.
+                    var raw = RawGameController.FromGameController(pad);
+                    var percent = raw == null ? null : BluetoothBattery.PercentOf(raw.HardwareVendorId, raw.HardwareProductId);
+                    if (percent == null)
                     {
-                        return ControllerBattery.None;
+                        var report = pad.TryGetBatteryReport();
+                        var remaining = report?.RemainingCapacityInMilliwattHours;
+                        var full = report?.FullChargeCapacityInMilliwattHours;
+                        if (report == null || report.Status == BatteryStatus.NotPresent || remaining == null || full == null || full <= 0)
+                        {
+                            return ControllerBattery.None;
+                        }
+
+                        percent = 100 * remaining.Value / full.Value;
                     }
 
-                    return LevelOf(100 * remaining.Value / full.Value);
+                    return ControllerBattery.Wireless(percent.Value);
                 }
                 catch (Exception e) when (!(e is OutOfMemoryException))
                 {
@@ -75,22 +84,6 @@ namespace XboxSeries.Extension
                     return ControllerBattery.None;
                 }
             }
-        }
-
-        /// <summary>The battery's level, from the percentage left.</summary>
-        private static ControllerBattery LevelOf(int percent)
-        {
-            if (percent < 5)
-            {
-                return ControllerBattery.Empty;
-            }
-
-            if (percent < 35)
-            {
-                return ControllerBattery.Low;
-            }
-
-            return percent < 70 ? ControllerBattery.Medium : ControllerBattery.Full;
         }
     }
 }
