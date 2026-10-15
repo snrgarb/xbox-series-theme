@@ -344,7 +344,7 @@ namespace XboxSeries.Core
         /// <summary>
         /// AUTHENTICATE answered: the status line says who, any need to reconnect is gone, the Discord tab appears or
         /// shows Discord again, the voice events are followed, Discord is asked for the call the user may already be in,
-        /// and the tokens' refresh is set. Signed in again after Discord went, it is all done afresh, as the first time.
+        /// the known DMs are followed for rings, and the tokens' refresh is set. Signed in again after Discord went, it is all done afresh, as the first time.
         /// </summary>
         private void OnDiscordSignedIn(JObject user)
         {
@@ -365,6 +365,7 @@ namespace XboxSeries.Core
             }
 
             AskForCall();
+            WatchForRings();
         }
 
         /// <summary>

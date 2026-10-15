@@ -116,6 +116,7 @@ _Avoid_: home button, Xbox button
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
 - The **Guide** has three tabs: landing, the **Discord tab** (once connected, until disconnected), and Profile & system
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
+- Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 - **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from
 
