@@ -21,6 +21,10 @@
         own: a wide, solid Xbox green banner low at the bottom centre, a square tile of lighter green on its left with
         the image for the Toast's kind (the bell, a camera, Discord's mark, or the caller's avatar; see ToastImages.xaml),
         and large white text beside it that fades back and forth between the Toast's own line and "Press (Guide) to view".
+        It comes in as the console's does: the banner grows from its centre as it fades in, its text at its left where
+        the tile will be; a moment later the tile slides out from behind the banner's left edge as it fades in, pushing
+        the text right into its place. It goes by growing a little as it fades out. The banner is laid out at its final
+        size throughout; only render transforms move (see ToastWindow.xaml.cs).
     -->
     <Window.Resources>
         <ResourceDictionary>
@@ -59,52 +63,70 @@
             <!--
                 The banner: as wide as the longer of its line and the prompt, which share one place, up to 640, where the
                 line ends in an ellipsis (the Guide's Notifications has it whole); the 96 tile and 16 around it make it 128 tall.
+                It grows and fades from its centre (Grow, and its opacity); its values here are where the Toast starts.
             -->
             <Border x:Name="Card" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
-                    MaxWidth="640" CornerRadius="6" Background="{DynamicResource XboxGreenBrush}" Padding="16,16,32,16" Opacity="0">
+                    MaxWidth="640" CornerRadius="6" Background="{DynamicResource XboxGreenBrush}" Opacity="0"
+                    RenderTransformOrigin="0.5,0.5">
                 <Border.RenderTransform>
-                    <TranslateTransform x:Name="Rise" Y="40" />
+                    <ScaleTransform x:Name="Grow" ScaleX="0.3" ScaleY="0.3" />
                 </Border.RenderTransform>
-                <DockPanel>
-                    <!-- The tile: a lighter tint of the green, holding the kind's image, or the Toast's own over it. -->
-                    <Grid DockPanel.Dock="Left" Width="96" Height="96" VerticalAlignment="Center" Margin="0,0,24,0">
-                        <Border CornerRadius="4" Background="#26FFFFFF" />
-                        <ContentControl Content="{Binding}" Focusable="False" IsTabStop="False">
-                            <ContentControl.Style>
-                                <Style TargetType="ContentControl">
-                                    <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Notification}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Screenshot}">
-                                            <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Screenshot}" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Call}">
-                                            <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Call}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ContentControl.Style>
-                        </ContentControl>
-                        <!-- The Toast's own image, as a caller's avatar, filling the tile to its rounded corners over the kind's, which shows while it loads or if it can't. -->
-                        <Grid local:RoundedClip.Radius="4">
-                            <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
+                <!-- Clipped to the banner's rounded bounds, so the tile slides out from behind its left edge. -->
+                <Grid local:RoundedClip.Radius="6">
+                    <DockPanel Margin="16,16,32,16">
+                        <!--
+                            The tile: a lighter tint of the green, holding the kind's image, or the Toast's own over it. It starts
+                            a tile and its gap (120) to the left, behind the banner's edge, and unseen, and slides in (TileShift).
+                        -->
+                        <Grid x:Name="Tile" DockPanel.Dock="Left" Width="96" Height="96" VerticalAlignment="Center" Margin="0,0,24,0"
+                              Opacity="0">
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="TileShift" X="-120" />
+                            </Grid.RenderTransform>
+                            <Border CornerRadius="4" Background="#26FFFFFF" />
+                            <ContentControl Content="{Binding}" Focusable="False" IsTabStop="False">
+                                <ContentControl.Style>
+                                    <Style TargetType="ContentControl">
+                                        <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Notification}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Screenshot}">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Screenshot}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Call}">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Call}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ContentControl.Style>
+                            </ContentControl>
+                            <!-- The Toast's own image, as a caller's avatar, filling the tile to its rounded corners over the kind's, which shows while it loads or if it can't. -->
+                            <Grid local:RoundedClip.Radius="4">
+                                <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=96}" Stretch="UniformToFill" />
+                            </Grid>
                         </Grid>
-                    </Grid>
-                    <!-- The text: the Toast's line, on one line, and the prompt in the same place, fading between them. -->
-                    <Grid VerticalAlignment="Center">
-                        <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="34"
-                                   Foreground="White" TextTrimming="CharacterEllipsis"
-                                   VerticalAlignment="Center" />
-                        <StackPanel x:Name="Prompt" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0">
-                            <TextBlock Text="Press" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
+                        <!--
+                            The text: the Toast's line, on one line, and the prompt in the same place, fading between them. It
+                            starts where the tile will be, 120 to the left, and moves right into its place as the tile slides in.
+                        -->
+                        <Grid VerticalAlignment="Center">
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="TextShift" X="-120" />
+                            </Grid.RenderTransform>
+                            <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="34"
+                                       Foreground="White" TextTrimming="CharacterEllipsis"
                                        VerticalAlignment="Center" />
-                            <!-- The Guide button. -->
-                            <Path Data="{StaticResource SourceXbox}" Fill="White" Width="32" Height="32" Stretch="Uniform"
-                                  Margin="12,2,12,0" VerticalAlignment="Center" />
-                            <TextBlock Text="to view" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Grid>
-                </DockPanel>
+                            <StackPanel x:Name="Prompt" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0">
+                                <TextBlock Text="Press" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
+                                           VerticalAlignment="Center" />
+                                <!-- The Guide button. -->
+                                <Path Data="{StaticResource SourceXbox}" Fill="White" Width="32" Height="32" Stretch="Uniform"
+                                      Margin="12,2,12,0" VerticalAlignment="Center" />
+                                <TextBlock Text="to view" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </DockPanel>
+                </Grid>
             </Border>
         </Grid>
     </Viewbox>
