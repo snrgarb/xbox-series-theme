@@ -52,7 +52,7 @@ One continuous run of a game, from launch to exit, as recorded by the extension.
 _Avoid_: playthrough, visit
 
 **Guide**:
-The flyout panel, modelled on the Xbox Guide, shown over any foreground window when the Guide button is pressed.
+The panel, modelled on the Xbox Guide, shown over any foreground window when the Guide button is pressed.
 _Avoid_: overlay (the overlay is the window hosting the Guide, not the Guide itself), menu, sidebar
 
 **Overlay**:
@@ -63,8 +63,12 @@ Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'
 _Avoid_: status bar, tray
 
 **Utility**:
-One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own) and Audio (Windows master volume and mute). Selecting one shows it in the panel in place of the tab; B goes back.
+One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own) and Audio (Windows master volume and mute). Selecting one opens it in a **Flyout**.
 _Avoid_: widget, quick setting
+
+**Flyout**:
+A second panel the **Guide** opens beside and over its own when an entry is selected, modelled on the console's profile flyout. The tab stays behind it, dimmed; the Flyout has the pad until B closes it, focus going back to the entry that opened it.
+_Avoid_: submenu, popup, page
 
 **Toast**:
 A small notice shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next.

@@ -98,25 +98,29 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Keeps the focused entry on screen as focus moves down a list of notifications longer than the panel, once its
-        /// entry is laid out. A new tab or utility starts from the top.
+        /// Keeps the focused entry on screen as focus moves down a list longer than its panel, such as many
+        /// notifications in their flyout, once its entry is laid out. A new tab or flyout starts from the top.
         /// </summary>
         private void ScrollFocusedIntoView()
         {
-            var focused = core.Guide.FocusedItem;
-            if (focused == null || !core.Guide.Items.Contains(focused))
+            var guide = core.Guide;
+            var focused = guide.FocusedItem;
+            var inFlyout = guide.Flyout != null;
+            var items = inFlyout ? guide.Flyout.Items : guide.Items;
+            if (focused == null || !items.Contains(focused))
             {
                 return;
             }
 
-            if (focused == core.Guide.Items[0])
+            if (focused == items[0])
             {
-                EntriesScroller.ScrollToTop();
+                (inFlyout ? FlyoutScroller : EntriesScroller).ScrollToTop();
                 return;
             }
 
+            var entries = inFlyout ? FlyoutEntries : Entries;
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
-                (Entries.ItemContainerGenerator.ContainerFromItem(focused) as FrameworkElement)?.BringIntoView()));
+                (entries.ItemContainerGenerator.ContainerFromItem(focused) as FrameworkElement)?.BringIntoView()));
         }
 
         /// <summary>
@@ -220,7 +224,7 @@ namespace XboxSeries.Extension
 
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            if (!GuidePanel.IsMouseOver && !DialogPanel.IsMouseOver && !WidePanel.IsMouseOver)
+            if (!GuidePanel.IsMouseOver && !FlyoutPanel.IsMouseOver && !DialogPanel.IsMouseOver && !WidePanel.IsMouseOver)
             {
                 core.DismissGuide();
             }
