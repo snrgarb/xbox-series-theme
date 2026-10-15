@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Playnite.SDK;
 using XboxSeries.Core;
@@ -44,6 +45,14 @@ namespace XboxSeries.Extension
         {
             var context = Guid.Empty;
             With(endpoint => Marshal.ThrowExceptionForHR(endpoint.SetMute(muted, ref context)));
+        }
+
+        public IReadOnlyList<AudioDevice> Devices(AudioDeviceKind kind) => new AudioDevice[0];
+
+        public string DefaultDeviceId(AudioDeviceKind kind) => null;
+
+        public void SetDefaultDevice(AudioDevice device)
+        {
         }
 
         private static void With(Action<IAudioEndpointVolume> use)

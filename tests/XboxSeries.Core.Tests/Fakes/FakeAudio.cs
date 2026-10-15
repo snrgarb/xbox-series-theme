@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using XboxSeries.Core;
 
 namespace XboxSeries.Core.Tests.Fakes
@@ -21,5 +22,13 @@ namespace XboxSeries.Core.Tests.Fakes
         }
 
         public void SetMuted(bool muted) => IsMuted = muted;
+
+        public IReadOnlyList<AudioDevice> Devices(AudioDeviceKind kind) => new AudioDevice[0];
+
+        public string DefaultDeviceId(AudioDeviceKind kind) => null;
+
+        public void SetDefaultDevice(AudioDevice device)
+        {
+        }
     }
 }
