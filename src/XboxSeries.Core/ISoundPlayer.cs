@@ -29,5 +29,8 @@ namespace XboxSeries.Core
 
         /// <summary>Playnite is closing.</summary>
         PowerOff,
+
+        /// <summary>A Toast showed: a new notification, or a call ringing.</summary>
+        Notification,
     }
 }
