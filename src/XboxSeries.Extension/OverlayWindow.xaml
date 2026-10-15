@@ -116,10 +116,13 @@
                     HorizontalAlignment="Left"
                     CornerRadius="12">
                 <Border.Background>
+                    <!-- Sampled down the console's panel: grey through the top half, only then turning a dark green. -->
                     <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                        <GradientStop Color="#FF262626" Offset="0" />
-                        <GradientStop Color="#FF232A23" Offset="0.35" />
-                        <GradientStop Color="#FF1B4A1E" Offset="1" />
+                        <GradientStop Color="#FF1F1F1F" Offset="0" />
+                        <GradientStop Color="#FF1E201C" Offset="0.5" />
+                        <GradientStop Color="#FF172116" Offset="0.71" />
+                        <GradientStop Color="#FF152611" Offset="0.86" />
+                        <GradientStop Color="#FF132A0E" Offset="1" />
                     </LinearGradientBrush>
                 </Border.Background>
                 <!-- Blurred behind a menu or prompt, so the dialog reads clearly over it. -->
@@ -187,9 +190,10 @@
                         <!--
                             The landing tab's row of utilities along the bottom, as on the console: small squares from the
                             left, Notifications, with how many there are, and Audio. Empty, and so gone, on the other tabs
-                            and on a utility.
+                            and on a utility. The squares are the console's: 87 across with 18 between, darker than the
+                            panel behind them.
                         -->
-                        <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Utilities}" Focusable="False" Margin="9,12,9,16"
+                        <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Utilities}" Focusable="False" Margin="15,12,9,16"
                                       HorizontalAlignment="Left">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -198,11 +202,11 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Width="78" Height="78" Margin="0,0,12,0" Background="Transparent"
+                                    <Grid Width="87" Height="87" Margin="0,0,18,0" Background="Transparent"
                                           MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
-                                        <Border x:Name="Fill" CornerRadius="4" Background="#33000000" />
+                                        <Border x:Name="Fill" CornerRadius="4" Background="#73000000" />
                                         <!-- Segoe Fluent Icons / MDL2 Assets glyphs: the bell Home's top bar uses, and the speaker. -->
-                                        <TextBlock x:Name="Glyph" Text="&#xE767;" Style="{StaticResource GuideIcon}" FontSize="30" HorizontalAlignment="Center" />
+                                        <TextBlock x:Name="Glyph" Text="&#xE767;" Style="{StaticResource GuideIcon}" FontSize="33" HorizontalAlignment="Center" />
                                         <Border x:Name="Badge" MinWidth="24" Height="24" CornerRadius="12" Padding="6,0"
                                                 Background="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
                                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0">
@@ -303,7 +307,15 @@
                                             <TextBlock x:Name="Glyph" Style="{StaticResource GuideIcon}" FontSize="30" Width="36"
                                                        HorizontalAlignment="Left" Margin="33,0,0,0" />
                                             <Grid x:Name="Cover" Width="90" Height="90" HorizontalAlignment="Left" Margin="6,0,0,0"
-                                                  Background="#FF1A1A1A" Visibility="Collapsed">
+                                                  Visibility="Collapsed">
+                                                <!--
+                                                    The fallback under the cover, showing for a game with none (or one that won't
+                                                    load): the console's own tile for a title without art, a square in the accent
+                                                    with a controller on it.
+                                                -->
+                                                <Border Background="{DynamicResource GlyphLightBrush}">
+                                                    <TextBlock Text="&#xE7FC;" Style="{StaticResource GuideIcon}" FontSize="36" HorizontalAlignment="Center" />
+                                                </Border>
                                                 <Image Source="{Binding Image, Converter={StaticResource Image}, ConverterParameter=180}" Stretch="UniformToFill" />
                                                 <!-- The game's library source, bottom left, where the console badges its covers. -->
                                                 <Path x:Name="SourceIcon" Width="18" Height="18" Margin="6" Stretch="Uniform"
@@ -456,7 +468,7 @@
                 </Grid>
             </Border>
             <!-- The status area, top right, the clock large under the battery, as on the console. Only with the panel: Power on its own has none. -->
-            <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,62,108,0" Opacity="{Binding Opacity, ElementName=Dim}">
+            <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,86,150,0" Opacity="{Binding Opacity, ElementName=Dim}">
                 <Grid.Style>
                     <Style TargetType="Grid">
                         <Style.Triggers>
