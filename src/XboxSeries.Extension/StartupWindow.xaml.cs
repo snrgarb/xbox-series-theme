@@ -21,7 +21,8 @@ namespace XboxSeries.Extension
     /// window. The pad drives the sequence through the core's controller callback, whatever window is in front, so every
     /// key here is marked handled; the keyboard's own arrows, Enter, Space and Escape stand in for the pad's, and a click
     /// on a profile signs it in. A boot video that is missing or can't play ends as one that finished would; the core
-    /// ends one that runs long.
+    /// ends one that runs long. While it shows, Playnite's own navigation sound is silenced, as Home takes its first focus
+    /// behind it, and comes back once it has gone.
     /// </summary>
     public partial class StartupWindow : Window
     {
@@ -35,22 +36,25 @@ namespace XboxSeries.Extension
 
         private readonly ExtensionCore core;
         private readonly StartupState startup;
-        private readonly Storyboard swirl;
+        private readonly Action<bool> silenceThemeSounds;
+        private readonly Storyboard spin;
         private readonly DispatcherTimer fade;
         private DateTime fadeStarted;
-        private bool swirlRunning;
+        private bool spinning;
         private bool closing;
 
         /// <summary>Counts the videos played, so only the one playing ends the boot video, once.</summary>
         private int videos;
 
-        public StartupWindow(ExtensionCore core)
+        /// <param name="silenceThemeSounds">Silences Playnite's own navigation and activation sounds (true), or puts them back (false).</param>
+        public StartupWindow(ExtensionCore core, Action<bool> silenceThemeSounds)
         {
             InitializeComponent();
             this.core = core;
+            this.silenceThemeSounds = silenceThemeSounds;
             startup = core.Startup;
             DataContext = startup;
-            swirl = (Storyboard)Resources["Swirl"];
+            spin = (Storyboard)Resources["Spin"];
             startup.PropertyChanged += OnStartupChanged;
             SizeChanged += (_, __) => FitToScreen();
             Deactivated += (_, __) => KeepForeground();
@@ -73,7 +77,8 @@ namespace XboxSeries.Extension
             startup.PropertyChanged -= OnStartupChanged;
             fade.Stop();
             StopVideo();
-            StopSwirl();
+            HideSwirl();
+            silenceThemeSounds(false);
             Close();
         }
 
@@ -139,8 +144,7 @@ namespace XboxSeries.Extension
         {
             var playing = ++videos;
             var path = Path.Combine(Path.GetDirectoryName(typeof(StartupWindow).Assembly.Location), "Videos", startup.BootVideo + ".mp4");
-            SwirlLayer.BeginAnimation(OpacityProperty, null);
-            SwirlLayer.Opacity = 0;
+            HideSwirl();
             if (!File.Exists(path))
             {
                 logger.Warn($"No boot video at {path}; going on without it");
@@ -182,31 +186,37 @@ namespace XboxSeries.Extension
             core.OnBootVideoEnded();
         }
 
-        /// <summary>The swirl fading in over whatever was behind it, as the boot video, and set turning.</summary>
+        /// <summary>
+        /// The swirl fading in over whatever was behind it, as the boot video, and set turning, Signing you in's light
+        /// with it. The swirl turns while it is visible.
+        /// </summary>
         private void ShowSwirl()
         {
-            if (!swirlRunning)
+            if (!spinning)
             {
-                swirl.Begin(this, true);
-                swirlRunning = true;
+                spin.Begin(this, true);
+                spinning = true;
             }
 
+            SwirlLayer.Visibility = Visibility.Visible;
             if (SwirlLayer.Opacity < 1 && !SwirlLayer.HasAnimatedProperties)
             {
                 SwirlLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(1, SwirlInDuration));
             }
         }
 
-        private void StopSwirl()
+        /// <summary>The swirl gone and still, as the boot video plays or once the window has hidden.</summary>
+        private void HideSwirl()
         {
-            if (swirlRunning)
+            if (spinning)
             {
-                swirl.Stop(this);
-                swirlRunning = false;
+                spin.Stop(this);
+                spinning = false;
             }
 
             SwirlLayer.BeginAnimation(OpacityProperty, null);
             SwirlLayer.Opacity = 0;
+            SwirlLayer.Visibility = Visibility.Hidden;
         }
 
         /// <summary>
@@ -226,11 +236,12 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Covers the monitor Playnite's window is on, in physical pixels, opaque again if it was fading, and takes the
-        /// foreground so no key reaches Home behind it.
+        /// foreground so no key reaches Home behind it, silencing Playnite's own navigation sound as Home's focus moves.
         /// </summary>
         private void ShowOverPlaynite()
         {
             fade.Stop();
+            silenceThemeSounds(true);
             var playnite = PlayniteWindow();
             var bounds = NativeMethods.MonitorBoundsOf(playnite != IntPtr.Zero ? playnite : NativeMethods.GetForegroundWindow());
             Show();
@@ -318,8 +329,11 @@ namespace XboxSeries.Extension
 
             fade.Stop();
             Hide();
-            StopSwirl();
+            HideSwirl();
             SetOpaque(handle);
+
+            // Only now, with Home in front and focused again behind the fade, so its focus coming back makes no sound.
+            silenceThemeSounds(false);
         }
 
         /// <summary>Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one.</summary>
@@ -417,6 +431,16 @@ namespace XboxSeries.Extension
             core.OnControllerButton(button, ButtonState.Pressed);
             core.OnControllerButton(button, ButtonState.Released);
         }
+    }
+
+    /// <summary>Whether a profile's text, as its real name, has any: Who's playing today? swaps the name's lines only then.</summary>
+    internal sealed class HasTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            !string.IsNullOrWhiteSpace(value as string);
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
     }
 
     /// <summary>Whether a profile in Who's playing today?'s row is the one focused: the row's item, then the focused profile.</summary>

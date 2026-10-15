@@ -35,6 +35,12 @@ namespace XboxSeries.Core
         /// <summary>How long focus has to stay on a Recent-row tile before the hero follows it, so scrolling past doesn't flicker it.</summary>
         private static readonly TimeSpan HeroSettle = TimeSpan.FromSeconds(1.5);
 
+        /// <summary>
+        /// How long the hero waits, once focus has left a Recent-row tile, for it to land on another before the swirl
+        /// comes back: WPF tells of the tile left before the one focused.
+        /// </summary>
+        private static readonly TimeSpan HeroLeave = TimeSpan.FromMilliseconds(100);
+
         private static readonly TimeSpan ReleaseFallback = TimeSpan.FromSeconds(1);
 
         /// <summary>How long the Guide button has to be held to open Power, as on the console.</summary>
@@ -830,8 +836,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A game tile on Home got focus: Menu now opens its tile menu. Once focus has stayed on a Recent-row tile for a
-        /// moment, the hero also crossfades to its game's art, which stays once focus moves on.
+        /// A game tile on Home got focus: Menu now opens its tile menu. The hero shows a Recent-row tile's game art:
+        /// at once as focus comes into the row, and along it once focus has stayed on a tile for a moment. Any other
+        /// tile, as a Group's, has the swirl behind Home.
         /// </summary>
         public void FocusHomeTile(HomeTile tile)
         {
@@ -839,10 +846,17 @@ namespace XboxSeries.Core
             CancelHeroFollow();
             if (!Home.RecentRow.Contains(tile))
             {
+                ShowSwirl();
                 return;
             }
 
             var gameId = tile.GameId;
+            if (heroGame == null)
+            {
+                ShowHeroOf(gameId);
+                return;
+            }
+
             heroTimer = clock.After(HeroSettle, () =>
             {
                 heroTimer = null;
@@ -850,17 +864,35 @@ namespace XboxSeries.Core
             });
         }
 
-        /// <summary>Focus left a game tile on Home, to elsewhere on the Dashboard or with Playnite leaving the foreground.</summary>
+        /// <summary>
+        /// Focus left a game tile on Home, to elsewhere on the Dashboard or with Playnite leaving the foreground: the
+        /// swirl comes back behind Home, unless focus lands on another Recent-row tile straight away.
+        /// </summary>
         public void LeaveHomeTile(HomeTile tile)
         {
             if (focusedTile == tile)
             {
                 focusedTile = null;
                 CancelHeroFollow();
+                if (heroGame != null)
+                {
+                    heroTimer = clock.After(HeroLeave, () =>
+                    {
+                        heroTimer = null;
+                        ShowSwirl();
+                    });
+                }
             }
         }
 
-        /// <summary>Puts the game's art behind Home. A game with no art at all leaves the last art up rather than blanking the hero.</summary>
+        /// <summary>The green swirl behind Home, as when no Recent-row tile has focus.</summary>
+        private void ShowSwirl()
+        {
+            heroGame = null;
+            Home.Hero = null;
+        }
+
+        /// <summary>Puts the game's art behind Home. A game with no art at all leaves the last art, or the swirl, up rather than blanking the hero.</summary>
         private void ShowHeroOf(Guid gameId)
         {
             if (!Home.RecentRow.Any(t => t.GameId == gameId))
@@ -995,8 +1027,8 @@ namespace XboxSeries.Core
             MyGames.GameCount = GameListFilter.Installed.Apply(library.Games).Count();
             RefreshPlayHistory();
 
-            // The hero stays on the last focused game while it exists, and starts on the first game in the row.
-            var hero = row.Concat(played).FirstOrDefault(g => g.Id == heroGame) ?? row.FirstOrDefault();
+            // The hero stays on the focused game while it is still there, with its art as it is now; else the swirl.
+            var hero = heroGame == null ? null : row.Concat(played).FirstOrDefault(g => g.Id == heroGame);
             heroGame = hero?.Id;
             Home.Hero = HeroArtOf(hero);
         }
