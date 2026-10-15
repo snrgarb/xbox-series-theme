@@ -98,6 +98,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Each_game_carries_its_cover_art_path_for_its_tile_and_none_when_it_has_no_cover()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 10), coverImage: @"C:\Covers\halo.jpg")
+                .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), coverImage: @"C:\Covers\hades.png")
+                .WithGame("Tunic", lastActivity: new DateTime(2026, 10, 9));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            Tap(ControllerButton.Guide);
+
+            Assert.Equal(new[] { null, null, @"C:\Covers\halo.jpg", @"C:\Covers\hades.png", null }, core.Guide.Items.Select(i => i.Image));
+        }
+
+        [Fact]
         public void Over_the_Dashboard_with_nothing_running_there_is_no_running_game_row()
         {
             var library = new FakeLibrary()
