@@ -304,7 +304,7 @@ namespace XboxSeries.Core.Tests
         public void A_short_press_of_the_Guide_button_still_opens_and_closes_the_Guide_without_Power()
         {
             Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(799));
+            clock.Advance(TimeSpan.FromMilliseconds(699));
             Release(ControllerButton.Guide);
             clock.Advance(TimeSpan.FromSeconds(2));
 
@@ -317,12 +317,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Holding_the_Guide_button_for_800_ms_opens_Power_on_its_own_over_the_dim()
+        public void Holding_the_Guide_button_for_700_ms_opens_Power_on_its_own_over_the_dim()
         {
             var game = windows.OpenWindow();
 
             Press(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromMilliseconds(799));
+            clock.Advance(TimeSpan.FromMilliseconds(699));
 
             // Not the Guide first: until the hold is known, nothing opens.
             Assert.False(core.Guide.IsOverlayShown);

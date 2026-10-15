@@ -38,7 +38,7 @@ namespace XboxSeries.Core
         private static readonly TimeSpan ReleaseFallback = TimeSpan.FromSeconds(1);
 
         /// <summary>How long the Guide button has to be held to open Power, as on the console.</summary>
-        private static readonly TimeSpan HoldForPower = TimeSpan.FromMilliseconds(800);
+        private static readonly TimeSpan HoldForPower = TimeSpan.FromMilliseconds(700);
 
         /// <summary>A tap opens the Guide this long after its press, as the console's does, not at once.</summary>
         private static readonly TimeSpan TapOpensGuide = TimeSpan.FromMilliseconds(300);
@@ -355,7 +355,7 @@ namespace XboxSeries.Core
             || button == ControllerButton.DPadLeft || button == ControllerButton.DPadRight;
 
         /// <summary>
-        /// Pressed, it waits 0.8 s for a hold, which opens Power as the controller buzzes on its own; released sooner, it
+        /// Pressed, it waits 0.7 s for a hold, which opens Power as the controller buzzes on its own; released sooner, it
         /// is a tap, which closes the Guide at once or opens it 0.3 s after the press. Nothing shows while it waits,
         /// so a hold never flashes the Guide first.
         /// </summary>
