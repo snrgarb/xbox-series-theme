@@ -412,14 +412,17 @@
                     <MultiDataTrigger>
                         <MultiDataTrigger.Conditions>
                             <Condition Binding="{Binding Kind}" Value="DiscordShortcut" />
-                            <Condition Binding="{Binding Detail}" Value="{x:Null}" />
+                            <Condition Binding="{Binding IsDirectMessage}" Value="True" />
                         </MultiDataTrigger.Conditions>
                         <Setter TargetName="TileFallback" Property="CornerRadius" Value="36" />
                         <Setter TargetName="TileArt" Property="CornerRadius" Value="36" />
                         <Setter TargetName="TileSpeaker" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="TileMark" Property="Visibility" Value="Visible" />
-                        <Setter TargetName="TileDetail" Property="Visibility" Value="Collapsed" />
                     </MultiDataTrigger>
+                    <!-- No server's name to show: a DM's, or a voice channel's until its server has said. -->
+                    <DataTrigger Binding="{Binding Detail}" Value="{x:Null}">
+                        <Setter TargetName="TileDetail" Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
                     <!-- Servers, last on the tab under a divider: a row as Settings', opening the flyout of the user's servers. -->
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordServers">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE716;" />

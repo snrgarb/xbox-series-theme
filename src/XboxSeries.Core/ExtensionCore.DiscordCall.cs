@@ -58,11 +58,9 @@ namespace XboxSeries.Core
                     ShowCall(DiscordCall.FromChannel(data, discordUserId));
                     break;
                 case "GET_CHANNEL":
-                    // Fetched for a channel the user has since left, it's stale. Fetched for a server's flyout, it's the
-                    // call only if the user has just moved there and the call hasn't arrived yet: one already shown
-                    // keeps who is speaking.
-                    var forFlyout = occupantRequests.Remove(nonce);
-                    if (selectedChannelId != null && (string)data?["id"] == selectedChannelId && (!forFlyout || call?.Id != selectedChannelId))
+                    // Fetched for a server's flyout, it only shows who is in the channel: the call comes from its own.
+                    // Fetched for a channel the user has since left, it's stale.
+                    if (!occupantRequests.Remove(nonce) && selectedChannelId != null && (string)data?["id"] == selectedChannelId)
                     {
                         ShowCall(DiscordCall.FromChannel(data, discordUserId));
                     }

@@ -153,6 +153,60 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void B_in_a_servers_flyout_goes_back_to_that_server_among_others_of_the_same_name()
+        {
+            OpenServers();
+            Reply("GET_GUILDS", new JObject
+            {
+                ["guilds"] = new JArray(
+                    new JObject { ["id"] = "9", ["name"] = "The Lads" },
+                    new JObject { ["id"] = "8", ["name"] = "The Lads" }),
+            });
+            Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.A);
+
+            Tap(ControllerButton.B);
+
+            Assert.Same(Guide.Flyout.Items[1], Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void Stage_channels_list_among_the_voice_channels_in_Discords_order()
+        {
+            OpenLads();
+
+            Reply("GET_CHANNELS", new JObject
+            {
+                ["channels"] = new JArray(
+                    new JObject { ["id"] = "490", ["name"] = "general", ["type"] = 0 },
+                    new JObject { ["id"] = "510", ["name"] = "Town hall", ["type"] = 13 },
+                    new JObject { ["id"] = "500", ["name"] = "Late night", ["type"] = 2 }),
+            });
+
+            Assert.Equal(new[] { "Town hall", "Late night" }, Guide.Flyout.Items.Select(i => i.Title));
+        }
+
+        [Fact]
+        public void Who_is_in_a_channel_the_user_has_just_joined_arriving_first_fills_it_but_the_call_waits_for_its_own_reply()
+        {
+            OpenLads();
+            ReplyChannels();
+            var fetch = Sent("GET_CHANNEL")[0];
+            Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = "500", ["guild_id"] = "9" });
+            var own = transport.LastCommand("GET_CHANNEL");
+
+            ReplyTo(fetch, VoiceChannel("500", "Late night", "9", State(Me, "gabe"), State(Ana, "ana")));
+
+            Assert.False(core.Status.IsInDiscordCall);
+            Assert.Equal(2, Guide.Flyout.Items[0].Occupants.Count);
+
+            ReplyTo(own, VoiceChannel("500", "Late night", "9", State(Me, "gabe"), State(Ana, "ana")));
+
+            Assert.True(core.Status.IsInDiscordCall);
+            Assert.Equal(GuideItemKind.DiscordChannel, Guide.Items[0].Kind);
+        }
+
+        [Fact]
         public void Channels_arriving_after_the_user_backed_out_of_the_server_are_ignored()
         {
             OpenLads();

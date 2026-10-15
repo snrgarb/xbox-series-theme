@@ -309,9 +309,10 @@ namespace XboxSeries.Core
 
         internal GuideItem(
             GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null,
-            string detail = null)
+            string detail = null, bool isDirectMessage = false)
         {
             Detail = detail;
+            IsDirectMessage = isDirectMessage;
             Source = source;
             Kind = kind;
             Title = title;
@@ -342,6 +343,9 @@ namespace XboxSeries.Core
 
         /// <summary>A second line under the title: the server's name on a voice channel's shortcut; null for none.</summary>
         public string Detail { get; }
+
+        /// <summary>True for a DM's or group DM's shortcut, pictured on a disc; false for a voice channel's and other entries.</summary>
+        public bool IsDirectMessage { get; }
 
         /// <summary>
         /// The avatar URLs of the people in a server's voice channel: null until Discord has said who is there, empty
@@ -421,7 +425,8 @@ namespace XboxSeries.Core
         /// </summary>
         internal bool IsSameEntry(GuideItem other) =>
             Kind == other.Kind && Title == other.Title && GameId == other.GameId && HasDividerAbove == other.HasDividerAbove
-            && Image == other.Image && Source == other.Source && Detail == other.Detail && UserId == other.UserId
+            && Image == other.Image && Source == other.Source && Detail == other.Detail && IsDirectMessage == other.IsDirectMessage
+            && UserId == other.UserId
             && ChannelId == other.ChannelId && GuildId == other.GuildId;
 
         /// <summary>Takes the changeable state of <paramref name="other"/>, the same entry built afresh.</summary>

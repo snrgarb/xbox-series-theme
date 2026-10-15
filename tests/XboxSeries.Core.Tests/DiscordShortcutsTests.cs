@@ -35,6 +35,38 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("Late night", tile.Title);
             Assert.Equal("The Lads", tile.Detail);
             Assert.Equal("https://cdn.discordapp.com/icons/9/abc.png", tile.Image);
+            Assert.False(tile.IsDirectMessage);
+        }
+
+        [Fact]
+        public void A_voice_channel_whose_server_hasnt_answered_is_still_no_DM()
+        {
+            NotInCall();
+            Join(VoiceChannel("500", "Late night", "9"));
+            Error("GET_GUILD", "Nope");
+            Leave();
+
+            OpenDiscordTab();
+
+            var tile = Assert.Single(Shortcuts());
+            Assert.Null(tile.Detail);
+            Assert.False(tile.IsDirectMessage);
+        }
+
+        [Fact]
+        public void The_servers_name_and_icon_arriving_unchanged_save_nothing()
+        {
+            NotInCall();
+            Join(VoiceChannel("500", "Late night", "9"));
+            var guild = new JObject { ["id"] = "9", ["name"] = "The Lads", ["icon_url"] = "https://cdn.discordapp.com/icons/9/abc.png" };
+            Reply("GET_GUILD", guild);
+            Leave();
+            Join(VoiceChannel("500", "Late night", "9"));
+            var writes = secrets.Writes;
+
+            Reply("GET_GUILD", guild);
+
+            Assert.Equal(writes, secrets.Writes);
         }
 
         [Theory]
@@ -52,7 +84,29 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("ana, bo", tile.Title);
             Assert.Equal(AvatarOf(Ana, "a1"), tile.Image);
             Assert.Null(tile.Detail);
+            Assert.True(tile.IsDirectMessage);
             Assert.Null(transport.LastCommand("GET_GUILD"));
+        }
+
+        [Fact]
+        public void A_named_DM_keeps_its_name_and_avatar_as_people_come_and_go_until_it_is_joined_again()
+        {
+            NotInCall();
+            Join(Dm("600", 3, State(Me, "gabe"), State(Ana, "ana", avatar: "a1"), State(Bo, "bo")));
+            OpenDiscordTab();
+            var writes = secrets.Writes;
+
+            Dispatch("VOICE_STATE_DELETE", State(Ana, "ana"));
+
+            Assert.Equal(new[] { "ana, bo" }, ShortcutTitles());
+            Assert.Equal(AvatarOf(Ana, "a1"), Shortcuts()[0].Image);
+            Assert.Equal(writes, secrets.Writes);
+
+            Leave();
+            Join(Dm("600", 3, State(Me, "gabe"), State(Bo, "bo", avatar: "b2")));
+
+            Assert.Equal(new[] { "bo" }, ShortcutTitles());
+            Assert.Equal(AvatarOf(Bo, "b2"), Shortcuts()[0].Image);
         }
 
         [Fact]

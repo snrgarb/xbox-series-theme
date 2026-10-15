@@ -45,7 +45,7 @@ namespace XboxSeries.Core
                 return null;
             }
 
-            // Discord's channel types: 1 a DM, 3 a group DM, 2 a server's voice channel.
+            // Discord's channel types: 1 a DM, 3 a group DM, 2 a server's voice channel, 13 a server's stage channel.
             var type = (int?)channel["type"];
             var guildId = type == 1 || type == 3 ? null : (string)channel["guild_id"];
             var call = new DiscordCall(id, guildId, (string)channel["name"], selfId);

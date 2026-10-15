@@ -43,8 +43,8 @@ namespace XboxSeries.Core
         private void SaveShortcuts() => secrets.Write(ShortcutsSecret, JsonConvert.SerializeObject(knownChannels));
 
         /// <summary>
-        /// A call shown for a channel it wasn't showing before: the channel moves to the front, keeping the name and
-        /// picture learned before until better ones are known, and a voice channel's server is asked for its name and icon.
+        /// A call shown for a channel it wasn't showing before: the channel moves to the front, taking the name and a DM's
+        /// picture now known, else keeping those learned before, and a voice channel's server is asked for its name and icon.
         /// </summary>
         private void LearnChannel(DiscordCall joined)
         {
@@ -52,7 +52,8 @@ namespace XboxSeries.Core
             knownChannels.Remove(known);
             knownChannels.Insert(0, known);
             known.GuildId = joined.GuildId;
-            RememberCall(known, joined);
+            known.Name = joined.HasName ? joined.Title : known.Name;
+            known.Image = joined.GuildId == null ? joined.OtherAvatar ?? known.Image : known.Image;
             for (var i = knownChannels.Count - 1; i >= ShortcutCount; i--)
             {
                 if (knownChannels[i].GuildId != null)
@@ -69,42 +70,39 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The call changed: its shortcut, if it still has one, takes the name now known, and a DM the avatar of the first
-        /// person in it. It doesn't move, and a shortcut removed during the call isn't brought back.
+        /// The call changed: its shortcut, if it still has one and lacks them, takes the name now known, and a DM the
+        /// avatar of the first person in it, as when someone answers a DM rung; one already named keeps its name and
+        /// picture as people come and go. It doesn't move, and a shortcut removed during the call isn't brought back.
         /// </summary>
         private void RememberCall()
         {
             var known = call == null ? null : knownChannels.FirstOrDefault(c => c.Id == call.Id);
-            if (known != null && RememberCall(known, call))
+            if (known == null)
             {
+                return;
+            }
+
+            var name = known.Name ?? (call.HasName ? call.Title : null);
+            var image = known.Image ?? (call.GuildId == null ? call.OtherAvatar : null);
+            if (name != known.Name || image != known.Image)
+            {
+                known.Name = name;
+                known.Image = image;
                 SaveShortcuts();
             }
         }
 
-        /// <summary>Takes <paramref name="current"/>'s name, never the "Call" stand-in over a real one, and a DM's picture; true if anything changed.</summary>
-        private static bool RememberCall(KnownChannel known, DiscordCall current)
-        {
-            var name = current.HasName || known.Name == null ? current.Title : known.Name;
-            var image = current.GuildId == null ? current.OtherAvatar ?? known.Image : known.Image;
-            if (name == known.Name && image == known.Image)
-            {
-                return false;
-            }
-
-            known.Name = name;
-            known.Image = image;
-            return true;
-        }
-
-        /// <summary>GET_GUILD answered: the server's voice channels take its icon and name.</summary>
+        /// <summary>GET_GUILD answered: the server's voice channels take its icon and name, saved and shown only if they changed.</summary>
         private void OnGuild(JObject guild)
         {
             var id = (string)guild?["id"];
+            var image = (string)guild?["icon_url"];
+            var serverName = (string)guild?["name"];
             var changed = false;
-            foreach (var known in knownChannels.Where(c => id != null && c.GuildId == id))
+            foreach (var known in knownChannels.Where(c => id != null && c.GuildId == id && (c.Image != image || c.ServerName != serverName)))
             {
-                known.Image = (string)guild["icon_url"];
-                known.ServerName = (string)guild["name"];
+                known.Image = image;
+                known.ServerName = serverName;
                 changed = true;
             }
 
@@ -123,10 +121,12 @@ namespace XboxSeries.Core
             OnCallChanged();
         }
 
-        /// <summary>The Discord tab's shortcut tiles, the first under a divider.</summary>
+        /// <summary>The Discord tab's shortcut tiles, the first under a divider; a DM nobody else has been seen in is "Call".</summary>
         private IEnumerable<GuideItem> ShortcutItems() =>
             knownChannels.Take(ShortcutCount).Select((c, i) =>
-                new GuideItem(GuideItemKind.DiscordShortcut, c.Name, hasDividerAbove: i == 0, image: c.Image, detail: c.ServerName) { ChannelId = c.Id });
+                new GuideItem(
+                    GuideItemKind.DiscordShortcut, c.Name ?? "Call", hasDividerAbove: i == 0, image: c.Image, detail: c.ServerName,
+                    isDirectMessage: c.GuildId == null) { ChannelId = c.Id });
 
         /// <summary>A on a shortcut or a server's voice channel: asks Discord to join it, unless it is the call's already.</summary>
         private void JoinChannel(string channelId)
@@ -232,7 +232,7 @@ namespace XboxSeries.Core
             /// <summary>The server a voice channel is on; null for a DM or group DM.</summary>
             public string GuildId { get; set; }
 
-            /// <summary>The call's heading when last joined: the channel's name, or a DM's from the people in it.</summary>
+            /// <summary>The call's heading when last joined: the channel's name, or a DM's from the people in it; null while a DM has no real one.</summary>
             public string Name { get; set; }
 
             /// <summary>A DM's first other person's avatar, or a voice channel's server icon; null for none yet.</summary>
