@@ -698,11 +698,7 @@ namespace XboxSeries.Core
         {
             var items = kind == GuideItemKind.Notifications
                 ? notifications.Reverse().Select(n => new GuideItem(GuideItemKind.Notification, n.Text)).ToList()
-                : (IReadOnlyList<GuideItem>)new[]
-                {
-                    new GuideItem(GuideItemKind.Volume, "Volume") { Level = audio.Volume },
-                    new GuideItem(GuideItemKind.Mute, "Mute") { IsOn = audio.IsMuted },
-                };
+                : AudioItems();
             Guide.Flyout = new GuideFlyout(kind, kind == GuideItemKind.Notifications ? "Notifications" : "Audio", items);
             Guide.FocusedItem = items.FirstOrDefault();
         }
@@ -1186,12 +1182,18 @@ namespace XboxSeries.Core
         private void Select(GuideItem item, Action<Action> dismiss)
         {
             if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
-                || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle)
+                || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle
+                || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant)
             {
                 return;
             }
 
             sounds.Play(UiSound.Enter);
+            if (SelectDiscordAction(item.Kind))
+            {
+                return;
+            }
+
             if (item.Kind == GuideItemKind.Power)
             {
                 ShowPower();

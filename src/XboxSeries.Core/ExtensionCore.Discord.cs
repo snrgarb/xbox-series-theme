@@ -8,7 +8,8 @@ namespace XboxSeries.Core
 {
     /// <summary>
     /// Discord: the user's own application, kept in the secret store, and a hand-rolled client for Discord's local RPC:
-    /// the handshake, AUTHORIZE, the token exchange, AUTHENTICATE and SUBSCRIBE, over the transport's raw frames.
+    /// the handshake, AUTHORIZE, the token exchange, AUTHENTICATE and SUBSCRIBE, over the transport's raw frames. The
+    /// call it then follows is in ExtensionCore.DiscordCall.cs.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -199,6 +200,10 @@ namespace XboxSeries.Core
                 {
                     OnDiscordReady();
                 }
+                else if (discordStep == DiscordStep.Connected)
+                {
+                    OnDiscordEvent(evt, frame["data"] as JObject);
+                }
 
                 return;
             }
@@ -213,7 +218,13 @@ namespace XboxSeries.Core
             var data = frame["data"] as JObject;
             if (evt == "ERROR")
             {
-                CloseDiscord("Couldn't connect to Discord: " + (string)data?["message"]);
+                // Refused while connecting, Connect has failed; once signed in, as a voice setting Discord won't change,
+                // the connection stays up and the event that would have followed never comes.
+                if (discordStep != DiscordStep.Connected)
+                {
+                    CloseDiscord("Couldn't connect to Discord: " + (string)data?["message"]);
+                }
+
                 return;
             }
 
@@ -231,6 +242,10 @@ namespace XboxSeries.Core
             else if (sent == "AUTHENTICATE" && discordStep == DiscordStep.Authenticate)
             {
                 OnDiscordSignedIn(data?["user"] as JObject);
+            }
+            else if (discordStep == DiscordStep.Connected)
+            {
+                OnDiscordReply(sent, data);
             }
         }
 
@@ -297,10 +312,14 @@ namespace XboxSeries.Core
             SendCommand("AUTHENTICATE", new JObject { ["access_token"] = token });
         }
 
-        /// <summary>AUTHENTICATE answered: the status line says who, the Discord tab appears, and the voice events are followed.</summary>
+        /// <summary>
+        /// AUTHENTICATE answered: the status line says who, the Discord tab appears, the voice events are followed, and
+        /// Discord is asked for the call the user may already be in.
+        /// </summary>
         private void OnDiscordSignedIn(JObject user)
         {
             discordStep = DiscordStep.Connected;
+            discordUserId = (string)user?["id"];
             var globalName = (string)user?["global_name"];
             discordUser = string.IsNullOrEmpty(globalName) ? (string)user?["username"] : globalName;
             Settings.Discord.IsConnecting = false;
@@ -311,6 +330,8 @@ namespace XboxSeries.Core
             {
                 SendCommand("SUBSCRIBE", new JObject(), voiceEvent);
             }
+
+            AskForCall();
         }
 
         /// <summary>Discord's pipe closed by itself: Discord quit, or dropped the connection.</summary>
@@ -331,6 +352,7 @@ namespace XboxSeries.Core
             signInToken = null;
             Settings.Discord.IsConnecting = false;
             Settings.Discord.StatusText = status;
+            ForgetCall();
             if (Settings.Discord.IsConnected)
             {
                 Settings.Discord.IsConnected = false;
@@ -385,15 +407,11 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>The Discord tab, idle: who is signed in, and that they're not in a voice channel.</summary>
+        /// <summary>The Discord tab: the call, or, out of one, who is signed in and that they're not in a voice channel.</summary>
         private void ShowDiscordTab()
         {
-            Guide.Items = new[]
-            {
-                new GuideItem(GuideItemKind.DiscordAccount, discordUser),
-                new GuideItem(GuideItemKind.DiscordIdle, "You're not in a voice channel"),
-            };
-            Guide.FocusedItem = Guide.Items[0];
+            Guide.Items = DiscordTabItems();
+            Guide.FocusedItem = DiscordTabFocus(Guide.Items);
         }
     }
 }

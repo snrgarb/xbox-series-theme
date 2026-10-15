@@ -12,6 +12,10 @@ namespace XboxSeries.Core
         private string time = "";
         private ControllerBattery battery = ControllerBattery.None;
         private int notificationCount;
+        private bool isInDiscordCall;
+        private bool isDiscordMuted;
+        private bool isDiscordDeafened;
+        private bool isDiscordSpeaking;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -36,15 +40,70 @@ namespace XboxSeries.Core
             internal set => Set(ref notificationCount, value, nameof(NotificationCount));
         }
 
-        private void Set<T>(ref T field, T value, string name)
+        /// <summary>Whether the user is in a Discord call: the Discord icon shows only then.</summary>
+        public bool IsInDiscordCall
+        {
+            get => isInDiscordCall;
+            internal set => Set(ref isInDiscordCall, value, nameof(IsInDiscordCall));
+        }
+
+        /// <summary>Whether the user has muted themselves in Discord, while in a call; false out of one.</summary>
+        public bool IsDiscordMuted
+        {
+            get => isDiscordMuted;
+            internal set
+            {
+                if (Set(ref isDiscordMuted, value, nameof(IsDiscordMuted)))
+                {
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DiscordBadge)));
+                }
+            }
+        }
+
+        /// <summary>Whether the user has deafened themselves in Discord, while in a call; false out of one.</summary>
+        public bool IsDiscordDeafened
+        {
+            get => isDiscordDeafened;
+            internal set
+            {
+                if (Set(ref isDiscordDeafened, value, nameof(IsDiscordDeafened)))
+                {
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DiscordBadge)));
+                }
+            }
+        }
+
+        /// <summary>Whether the user is speaking in the call, which lights the Discord icon; false out of one.</summary>
+        public bool IsDiscordSpeaking
+        {
+            get => isDiscordSpeaking;
+            internal set => Set(ref isDiscordSpeaking, value, nameof(IsDiscordSpeaking));
+        }
+
+        /// <summary>The badge on the Discord icon: deafened over muted, as deafening mutes too.</summary>
+        public DiscordBadge DiscordBadge =>
+            isDiscordDeafened ? DiscordBadge.Deafened : isDiscordMuted ? DiscordBadge.Muted : DiscordBadge.None;
+
+        private bool Set<T>(ref T field, T value, string name)
         {
             if (EqualityComparer<T>.Default.Equals(field, value))
             {
-                return;
+                return false;
             }
 
             field = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            return true;
         }
+    }
+
+    /// <summary>The badge on the status area's Discord icon.</summary>
+    public enum DiscordBadge
+    {
+        None,
+        Muted,
+
+        /// <summary>Deafened, which wins over muted.</summary>
+        Deafened,
     }
 }
