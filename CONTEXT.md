@@ -83,7 +83,7 @@ A small notice shown at the bottom of the screen above every window without taki
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
 **Discord tab**:
-The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears only once the user has connected their own Discord application.
+The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears once the user has connected their own Discord application and stays until they disconnect it: while Discord can't be reached it only says "Discord isn't running", and the extension keeps trying Discord, backing off, until it can sign in again by itself; once it no longer can, it says "Reconnect Discord in settings".
 _Avoid_: party, chats
 
 **Call**:
@@ -114,7 +114,7 @@ _Avoid_: home button, Xbox button
 - Selecting a game anywhere on the **Dashboard** opens its **Game hub**
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
-- The **Guide** has three tabs: landing, the **Discord tab** (when connected), and Profile & system
+- The **Guide** has three tabs: landing, the **Discord tab** (once connected, until disconnected), and Profile & system
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 - **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from

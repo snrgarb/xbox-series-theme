@@ -52,7 +52,7 @@ namespace XboxSeries.Core
             internal set => Set(ref statusText, value, nameof(StatusText));
         }
 
-        /// <summary>Whether Discord has signed the user in; the Guide's Discord tab shows while it has.</summary>
+        /// <summary>Whether Discord has signed the user in; the Guide's Discord tab shows Discord while it has.</summary>
         public bool IsConnected
         {
             get => isConnected;
@@ -81,6 +81,12 @@ namespace XboxSeries.Core
 
         /// <summary>Whether Disconnect does anything: while connected or connecting, or with tokens saved from before.</summary>
         public bool CanDisconnect => isConnected || isConnecting || hasTokens;
+
+        /// <summary>
+        /// Whether the Guide has a Discord tab: signed in, or with tokens saved, from the first Connect until Disconnect.
+        /// Not signed in, it says why: Discord isn't running, or the user has to reconnect.
+        /// </summary>
+        internal bool HasDiscordTab => isConnected || hasTokens;
 
         /// <summary>Whether tokens are saved, as after a start-up that couldn't reach Discord.</summary>
         internal bool HasTokens

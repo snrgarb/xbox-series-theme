@@ -28,6 +28,7 @@ namespace XboxSeries.Core
 
         private const string NotConnected = "Not connected";
         private const string Connecting = "Connecting...";
+        private const string DiscordNotRunning = "Discord isn't running";
 
         private static readonly string[] Scopes = { "rpc", "identify", "rpc.voice.read", "rpc.voice.write", "rpc.notifications.read" };
 
@@ -156,14 +157,17 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Opens the pipe and says hello; once Discord is READY, signs in with the saved <paramref name="token"/>, refreshed
-        /// first when near expiring, or AUTHORIZEs first when null.
+        /// first when near expiring, or AUTHORIZEs first when null. Discord not running, it is tried again later while
+        /// tokens are saved.
         /// </summary>
         private void StartDiscord(string token)
         {
             ForgetRenewal();
+            ForgetProbe();
             if (!discord.Open())
             {
-                CloseDiscord("Discord isn't running");
+                CloseDiscord(DiscordNotRunning);
+                ProbeLater();
                 return;
             }
 
@@ -194,6 +198,7 @@ namespace XboxSeries.Core
             {
                 var message = (string)frame?["message"];
                 CloseDiscord(string.IsNullOrEmpty(message) ? "Discord closed the connection" : "Discord closed the connection: " + message);
+                ProbeLater();
                 return;
             }
 
@@ -329,13 +334,15 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// AUTHENTICATE answered: the status line says who, any need to reconnect is gone, the Discord tab appears, the
-        /// voice events are followed, Discord is asked for the call the user may already be in, and the tokens' refresh is set.
+        /// AUTHENTICATE answered: the status line says who, any need to reconnect is gone, the Discord tab appears or
+        /// shows Discord again, the voice events are followed, Discord is asked for the call the user may already be in,
+        /// and the tokens' refresh is set. Signed in again after Discord went, it is all done afresh, as the first time.
         /// </summary>
         private void OnDiscordSignedIn(JObject user)
         {
             discordStep = DiscordStep.Connected;
             Settings.Discord.NeedsReconnect = false;
+            ResetProbes();
             ScheduleRefresh();
             discordUserId = (string)user?["id"];
             var globalName = (string)user?["global_name"];
@@ -352,32 +359,37 @@ namespace XboxSeries.Core
             AskForCall();
         }
 
-        /// <summary>Discord's pipe closed by itself: Discord quit, or dropped the connection.</summary>
+        /// <summary>
+        /// Discord's pipe closed by itself: Discord quit, or dropped the connection. With tokens saved, Discord is waited
+        /// for, and signed in again once back.
+        /// </summary>
         public void OnDiscordClosed()
         {
             if (discordStep != DiscordStep.Closed)
             {
-                CloseDiscord("Discord closed the connection");
+                CloseDiscord(ReconnectsByItself ? DiscordNotRunning : "Discord closed the connection");
+                ProbeLater();
             }
         }
 
-        /// <summary>Ends the connection, or the connect under way, with <paramref name="status"/> on the status line.</summary>
+        /// <summary>
+        /// Ends the connection, or the connect under way, with <paramref name="status"/> on the status line, and stops
+        /// trying Discord again; the Discord tab, if showing, says why it can't show Discord.
+        /// </summary>
         private void CloseDiscord(string status)
         {
             discord.Close();
             awaitingReplies.Clear();
             ForgetServers();
+            ForgetProbe();
             discordStep = DiscordStep.Closed;
             signInToken = null;
             ForgetRenewal();
             Settings.Discord.IsConnecting = false;
             Settings.Discord.StatusText = status;
+            Settings.Discord.IsConnected = false;
             ForgetCall();
-            if (Settings.Discord.IsConnected)
-            {
-                Settings.Discord.IsConnected = false;
-                OnDiscordTabChanged();
-            }
+            OnDiscordTabChanged();
         }
 
         /// <summary>Sends a command, under a nonce of its own that Discord's reply carries back, and returns the nonce.</summary>
@@ -408,8 +420,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Discord connected or went with the Guide open: the Discord tab's icon comes or goes. Open on the Discord tab as
-        /// it goes, the Guide falls back to the landing tab.
+        /// Discord signed in, went, or was disconnected with the Guide open: the Discord tab's icon comes or goes. Open on
+        /// the Discord tab, the Guide shows it afresh, any flyout closed, unless it shows the same already; as the tab
+        /// goes, the Guide falls back to the landing tab.
         /// </summary>
         private void OnDiscordTabChanged()
         {
@@ -418,17 +431,24 @@ namespace XboxSeries.Core
                 return;
             }
 
-            if (Guide.Tab == GuideTabKind.Discord && !Settings.Discord.IsConnected)
-            {
-                ShowTab(GuideTabKind.Landing);
-            }
-            else
+            if (Guide.Tab != GuideTabKind.Discord)
             {
                 RefreshTabs();
             }
+            else if (!Settings.Discord.HasDiscordTab)
+            {
+                ShowTab(GuideTabKind.Landing);
+            }
+            else if (Guide.Flyout != null || !UpdateInPlace(Guide.Items, DiscordTabItems()))
+            {
+                ShowTab(GuideTabKind.Discord);
+            }
         }
 
-        /// <summary>The Discord tab: the call, or, out of one, who is signed in and that they're not in a voice channel.</summary>
+        /// <summary>
+        /// The Discord tab: the call, or, out of one, who is signed in and that they're not in a voice channel; not signed
+        /// in, why it can't show Discord.
+        /// </summary>
         private void ShowDiscordTab()
         {
             Guide.Items = DiscordTabItems();
