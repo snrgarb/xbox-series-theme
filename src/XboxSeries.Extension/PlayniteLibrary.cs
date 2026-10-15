@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using XboxSeries.Core;
@@ -51,8 +52,62 @@ namespace XboxSeries.Extension
                     p.SortingOrderDirection == SortOrderDirection.Descending ? SortDirection.Descending : SortDirection.Ascending))
                 .ToList();
 
-            // Software tools aren't in the SDK; reading them by reflection lands with Apps (#38). Until then Apps are unavailable.
-            return new LibrarySnapshot(games, presets, apps: null);
+            // In the order of Playnite's own Software tools menu: by name. Null, which hides Apps, when they can't be read.
+            var apps = SoftwareTools()?
+                .OrderBy(a => a.Name)
+                .Select(a => new App(
+                    a.Id,
+                    a.Name,
+                    ExpandVariables(api, a.Path),
+                    ExpandVariables(api, a.Arguments),
+                    FullPath(database, a.Icon),
+                    ExpandVariables(api, a.WorkingDir)))
+                .ToList();
+
+            return new LibrarySnapshot(games, presets, apps);
+        }
+
+        /// <summary>
+        /// Not in the SDK: Playnite's Software tools. Their model is the SDK's <see cref="AppSoftware"/>, but the SDK's
+        /// database API doesn't list them; only Playnite's own database does. Null, and logged, on a build where it
+        /// can't be found or read.
+        /// </summary>
+        internal static List<AppSoftware> SoftwareTools()
+        {
+            try
+            {
+                var app = AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(a => a.GetType("Playnite.PlayniteApplication", throwOnError: false))
+                    .FirstOrDefault(t => t != null);
+                var current = app?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+                var database = current?.GetType().GetProperty("Database")?.GetValue(current);
+                if (database?.GetType().GetProperty("SoftwareApps")?.GetValue(database) is IEnumerable<AppSoftware> tools)
+                {
+                    return tools.ToList();
+                }
+
+                logger.Warn("Can't read Playnite's Software tools: this Playnite build has no Database.SoftwareApps");
+                return null;
+            }
+            catch (Exception e)
+            {
+                logger.Warn(e, "Couldn't read Playnite's Software tools");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// A Software tool's path, arguments or working directory with Playnite's variables filled in, as Playnite fills
+        /// them in to start it; null when it has none.
+        /// </summary>
+        private static string ExpandVariables(IPlayniteAPI api, string value)
+        {
+            // A Software tool has no emulator, so Playnite empties {EmulatorDir}.
+            return string.IsNullOrEmpty(value)
+                ? null
+                : value
+                    .Replace("{PlayniteDir}", api.Paths.ApplicationPath)
+                    .Replace("{EmulatorDir}", string.Empty);
         }
 
         /// <summary>The filter presets in the order the user gave them in Playnite, or the database's order if that can't be read.</summary>

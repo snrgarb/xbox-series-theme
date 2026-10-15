@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -68,7 +69,45 @@ namespace XboxSeries.Extension
 
         public void StartApp(App app)
         {
-            // Stub for #38: the adapter starts the tool's path with its arguments.
+            // Not in the SDK: Playnite's own start of a Software tool, as its Software tools menu runs it. It runs script
+            // tools too, and shows Playnite's error when the tool can't start. Later: that error is a modal window.
+            var model = Application.Current?.MainWindow?.DataContext;
+            var start = model?.GetType().GetMethod("StartSoftwareTool", new[] { typeof(AppSoftware) });
+            var tool = start == null ? null : PlayniteLibrary.SoftwareTools()?.FirstOrDefault(t => t.Id == app.Id);
+            if (tool != null)
+            {
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => start.Invoke(model, new object[] { tool })));
+                return;
+            }
+
+            logger.Warn($"Can't start {app.Name} as Playnite does: this Playnite build has no StartSoftwareTool, or no such tool");
+            Application.Current?.Dispatcher.BeginInvoke(new Action(() => StartProcess(app)));
+        }
+
+        /// <summary>
+        /// Starts an App's path with its arguments as Playnite does when it can't run its own start: in its working
+        /// directory, or else the one its path is in. A tool that can't start shows Playnite's error for it.
+        /// </summary>
+        private void StartProcess(App app)
+        {
+            try
+            {
+                var path = app.Path.Contains("..") ? Path.GetFullPath(app.Path) : app.Path;
+                Process.Start(new ProcessStartInfo(path)
+                {
+                    Arguments = app.Arguments ?? string.Empty,
+                    WorkingDirectory = string.IsNullOrEmpty(app.WorkingDirectory)
+                        ? new FileInfo(path).Directory.FullName
+                        : app.WorkingDirectory,
+                });
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, $"Couldn't start {app.Name}");
+                api.Dialogs.ShowErrorMessage(
+                    ResourceProvider.GetString("LOCAppStartupError") + "\n\n" + e.Message,
+                    ResourceProvider.GetString("LOCStartupError"));
+            }
         }
 
         public void OpenGameHub(Guid gameId)
