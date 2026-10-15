@@ -126,7 +126,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Focus_coming_into_the_Recent_row_shows_its_games_background_art_at_once()
+        public void Focus_coming_into_the_Recent_row_shows_its_games_background_art_once_settled_as_along_it()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
@@ -134,7 +134,10 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             core.FocusHomeTile(Tile("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(1.4));
+            Assert.Null(core.Home.Hero);
 
+            clock.Advance(TimeSpan.FromSeconds(0.1));
             Assert.Equal(@"C:\art\hades-bg.jpg", core.Home.Hero.Image);
             Assert.False(core.Home.Hero.IsCover);
         }
@@ -147,6 +150,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
                 .Snapshot());
             core.FocusHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             MoveFocus("Halo Infinite", "Hades");
             clock.Advance(TimeSpan.FromMilliseconds(1499));
@@ -167,6 +171,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Tunic", lastActivity: new DateTime(2026, 10, 10), backgroundImage: @"C:\art\tunic-bg.jpg")
                 .Snapshot());
             core.FocusHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             MoveFocus("Halo Infinite", "Hades");
             clock.Advance(TimeSpan.FromSeconds(1));
@@ -219,6 +224,7 @@ namespace XboxSeries.Core.Tests
                 .Snapshot());
 
             core.FocusHomeTile(Tile("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             Assert.Equal(@"C:\art\hades-cover.jpg", core.Home.Hero.Image);
             Assert.True(core.Home.Hero.IsCover);
@@ -232,6 +238,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg");
             core.OnLibraryChanged(library.Snapshot());
             core.FocusHomeTile(Tile("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             core.OnLibraryChanged(library.Snapshot());
             core.OnGameStarted(library.Id("Halo Infinite"));
@@ -261,6 +268,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), coverImage: @"C:\art\halo-cover.jpg");
             core.OnLibraryChanged(library.Snapshot());
             core.FocusHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame(library.Id("Halo Infinite"), "Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
@@ -365,6 +373,7 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11))
                 .Snapshot());
             core.FocusHomeTile(Tile("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             MoveFocus("Halo Infinite", "Hades");
             Settle();
