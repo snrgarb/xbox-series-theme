@@ -252,13 +252,15 @@
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                     </Grid>
                     <!--
-                        An Output or Input dropdown's open list, in place under its box and as wide, pushing the entries
-                        below it down: a box a little lighter than the flyout, each device a row of this template (so it
-                        has the entries' focus and is pointed at and picked as they are), the one set ticked. Gone
-                        while the list is closed.
+                        An Output or Input dropdown's open list, under its box and as wide, laid over the entries below
+                        it rather than pushing them down: the Canvas takes no height, and the list sits on it at its own.
+                        A box a little lighter than the flyout, each device a row of this template (so it has the
+                        entries' focus and is pointed at and picked as they are), the one set ticked. Gone while the
+                        list is closed.
                     -->
-                    <Border x:Name="OptionList" Margin="78,-8,33,12" Padding="0,6" CornerRadius="4" Background="#FF2E2E2E"
-                            BorderBrush="#33FFFFFF" BorderThickness="1">
+                    <Canvas x:Name="OptionLayer" Height="0" Margin="78,-8,33,0">
+                    <Border x:Name="OptionList" Width="{Binding ActualWidth, ElementName=OptionLayer}" Padding="0,6" CornerRadius="4"
+                            Background="#FF2E2E2E" BorderBrush="#33FFFFFF" BorderThickness="1">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -272,6 +274,7 @@
                         <ItemsControl x:Name="Options" ItemsSource="{Binding Options}" ItemTemplate="{DynamicResource GuideEntry}"
                                       Focusable="False" />
                     </Border>
+                    </Canvas>
                 </StackPanel>
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding Source}" Value="Steam">
@@ -975,7 +978,18 @@
                     <!-- Its entries, the focused one scrolled into view when a long list of notifications runs past the bottom. -->
                     <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
                         <ItemsControl x:Name="FlyoutEntries" ItemsSource="{Binding Flyout.Items}" ItemTemplate="{StaticResource GuideEntry}"
-                                      Focusable="False" Margin="0,0,0,24" />
+                                      Focusable="False" Margin="0,0,0,24">
+                            <!-- A dropdown with its list open is drawn over the entries after it, which its list covers. -->
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                            <Setter Property="Panel.ZIndex" Value="1" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                        </ItemsControl>
                     </ScrollViewer>
                 </DockPanel>
             </Border>
