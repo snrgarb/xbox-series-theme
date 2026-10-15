@@ -36,7 +36,10 @@ namespace XboxSeries.Core
             internal set => Set(ref groups, value, nameof(Groups));
         }
 
-        /// <summary>The art behind Home, from the last Recent-row game to have focus; null when there is none.</summary>
+        /// <summary>
+        /// The art behind Home, from the Recent-row game that has focus; null for the green swirl, as while focus is
+        /// anywhere else, or on a game with no art.
+        /// </summary>
         public HeroArt Hero
         {
             get => hero;

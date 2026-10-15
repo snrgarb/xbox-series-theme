@@ -54,6 +54,37 @@ namespace XboxSeries.Extension
 
         public void Play(UiSound sound) => PlayFile(Next(sound));
 
+        /// <summary>
+        /// Silences Playnite's own navigation and activation sounds, the Dashboard's audio\navigation.wav and
+        /// activation.wav, which Playnite plays as focus lands on its buttons and lists, or puts them back at its interface
+        /// volume. Start-up silences them while it covers Home, as Home takes its first focus behind it. Only the volume of
+        /// Playnite's loaded sounds changes, never its settings, so nothing of it can outlast Playnite; the Bundle's own
+        /// sounds, the Start-up's among them, play on.
+        /// </summary>
+        public void SilenceThemeSounds(bool silent)
+        {
+            if (engine == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var volume = silent ? 0 : engine.InterfaceVolume();
+                foreach (var sound in engine.ThemeSounds())
+                {
+                    if (sound != IntPtr.Zero)
+                    {
+                        engine.SetSoundVolume(sound, volume);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, $"Failed to {(silent ? "silence" : "restore")} Playnite's own sounds");
+            }
+        }
+
         /// <summary>Plays <paramref name="sound"/> and waits for it to finish, as when Playnite is about to close.</summary>
         public void PlayToEnd(UiSound sound)
         {
@@ -167,9 +198,9 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Playnite Fullscreen's audio engine (FullscreenApplication.Audio) and its interface volume setting. Playnite's
-        /// own PlaySound reopens the audio device when Playnite has closed it after a while without sound, as it does
-        /// while a game runs.
+        /// Playnite Fullscreen's audio engine (FullscreenApplication.Audio), its interface volume setting, and its own
+        /// navigation and activation sounds as it loaded them from the theme. Playnite's own PlaySound reopens the audio
+        /// device when Playnite has closed it after a while without sound, as it does while a game runs.
         /// </summary>
         private sealed class Engine
         {
@@ -177,6 +208,9 @@ namespace XboxSeries.Extension
             public Action<IntPtr, float> SetSoundVolume { get; private set; }
             public Action<IntPtr> PlaySound { get; private set; }
             public Func<float> InterfaceVolume { get; private set; }
+
+            /// <summary>Playnite's navigation and activation sounds, read afresh; <see cref="IntPtr.Zero"/> for one the theme lacks.</summary>
+            public Func<IntPtr[]> ThemeSounds { get; private set; }
 
             public static Engine Find(IPlayniteAPI api)
             {
@@ -196,6 +230,8 @@ namespace XboxSeries.Extension
                         .GetField("settings", BindingFlags.NonPublic | BindingFlags.Instance)
                         .GetValue(wrapper);
 
+                    var navigate = app.GetProperty("NavigateSound", BindingFlags.Public | BindingFlags.Static);
+                    var activate = app.GetProperty("ActivateSound", BindingFlags.Public | BindingFlags.Static);
                     return new Engine
                     {
                         LoadSound = Bind<Func<string, IntPtr>>(audio, "LoadSound"),
@@ -203,6 +239,8 @@ namespace XboxSeries.Extension
                         PlaySound = Bind<Action<IntPtr>>(audio, "PlaySound"),
                         InterfaceVolume = (Func<float>)Delegate.CreateDelegate(
                             typeof(Func<float>), settings, settings.GetType().GetProperty("InterfaceVolume").GetGetMethod()),
+                        // Missing from some Playnite, they are simply left as they are.
+                        ThemeSounds = () => new[] { navigate, activate }.Where(p => p != null).Select(p => (IntPtr)p.GetValue(null)).ToArray(),
                     };
                 }
                 catch (Exception e)

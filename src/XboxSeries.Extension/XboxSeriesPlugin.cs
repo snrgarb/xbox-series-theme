@@ -198,7 +198,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            startupWindow = new StartupWindow(core);
+            startupWindow = new StartupWindow(core, sounds.SilenceThemeSounds);
             toastWindow = toastWindow ?? new ToastWindow(core.Toast);
             core.OnStartup();
             startupWindow.Follow();

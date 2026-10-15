@@ -1,0 +1,149 @@
+<UserControl x:Class="XboxSeries.Extension.SwirlBackground"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False" IsTabStop="False" IsHitTestVisible="False" ClipToBounds="True">
+    <!--
+        The console's green swirl, behind Start-up's Who's playing today? and Signing you in, and behind Home while no
+        Recent-row tile has focus: dark green with broad bands of lime and green sweeping in from the top right and the
+        bottom left, drifting and turning slowly. It fills whatever it is given, whatever its aspect: drawn 1920 × 1080,
+        scaled up a little past the edges so its turning never shows them, and cropped.
+    -->
+    <UserControl.Resources>
+        <!--
+            The slow movement, only while the swirl is loaded and visible, so it never keeps WPF rendering behind a game
+            or Playnite: the whole turning a few degrees back and forth, and each corner's bands drifting along their own
+            way at their own pace.
+        -->
+        <Storyboard x:Key="Swirl">
+            <DoubleAnimation Storyboard.TargetName="SwirlTurn" Storyboard.TargetProperty="Angle"
+                             From="-5" To="5" Duration="0:0:22" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="TopDrift" Storyboard.TargetProperty="X"
+                             From="-60" To="60" Duration="0:0:13" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="TopDrift" Storyboard.TargetProperty="Y"
+                             From="30" To="-30" Duration="0:0:17" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="BottomDrift" Storyboard.TargetProperty="X"
+                             From="50" To="-50" Duration="0:0:15" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="BottomDrift" Storyboard.TargetProperty="Y"
+                             From="-40" To="40" Duration="0:0:19" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </UserControl.Resources>
+
+    <Viewbox Stretch="UniformToFill">
+        <Canvas Width="1920" Height="1080" ClipToBounds="True">
+            <Canvas.Background>
+                <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.75" RadiusY="0.75">
+                    <GradientStop Offset="0" Color="#FF1E2C1C" />
+                    <GradientStop Offset="1" Color="#FF0C140B" />
+                </RadialGradientBrush>
+            </Canvas.Background>
+            <Canvas Width="1920" Height="1080" RenderTransformOrigin="0.5,0.5">
+                <Canvas.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform ScaleX="1.2" ScaleY="1.2" />
+                        <RotateTransform x:Name="SwirlTurn" />
+                    </TransformGroup>
+                </Canvas.RenderTransform>
+
+                <!-- The top right's bands: sweeping in from the top, round and away off the right edge. -->
+                <Canvas>
+                    <Canvas.RenderTransform>
+                        <TranslateTransform x:Name="TopDrift" />
+                    </Canvas.RenderTransform>
+                    <Path Data="M 520,-260 C 600,140 920,250 1360,250 C 1760,250 1960,420 2200,720"
+                          StrokeThickness="300" Opacity="0.9">
+                        <Path.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FF14581A" />
+                                <GradientStop Offset="1" Color="#FF2E8B22" />
+                            </LinearGradientBrush>
+                        </Path.Stroke>
+                    </Path>
+                    <Path Data="M 600,-260 C 680,90 980,180 1380,180 C 1760,180 1980,330 2240,620"
+                          StrokeThickness="150">
+                        <Path.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FF3E9A24" />
+                                <GradientStop Offset="0.6" Color="#FF8FD13A" />
+                                <GradientStop Offset="1" Color="#FF5CB02A" />
+                            </LinearGradientBrush>
+                        </Path.Stroke>
+                    </Path>
+                    <Path Data="M 650,-260 C 730,60 1020,130 1400,130 C 1770,130 2000,270 2260,560"
+                          StrokeThickness="46" Opacity="0.85">
+                        <Path.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FF9BE03A" />
+                                <GradientStop Offset="1" Color="#FFC6F25A" />
+                            </LinearGradientBrush>
+                        </Path.Stroke>
+                    </Path>
+                </Canvas>
+
+                <!-- The bottom left's bands: in from the left edge, round and away off the bottom. -->
+                <Canvas>
+                    <Canvas.RenderTransform>
+                        <TranslateTransform x:Name="BottomDrift" />
+                    </Canvas.RenderTransform>
+                    <Path Data="M -300,520 C 60,640 160,880 560,940 C 900,990 1060,1060 1200,1400"
+                          StrokeThickness="320" Opacity="0.9">
+                        <Path.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FF2E8B22" />
+                                <GradientStop Offset="1" Color="#FF14581A" />
+                            </LinearGradientBrush>
+                        </Path.Stroke>
+                    </Path>
+                    <Path Data="M -300,600 C 40,720 140,960 540,1020 C 860,1070 1000,1140 1120,1460"
+                          StrokeThickness="160">
+                        <Path.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FF5CB02A" />
+                                <GradientStop Offset="0.4" Color="#FFA6E040" />
+                                <GradientStop Offset="1" Color="#FF3E9A24" />
+                            </LinearGradientBrush>
+                        </Path.Stroke>
+                    </Path>
+                    <Path Data="M -300,660 C 20,780 120,1020 520,1080 C 830,1130 960,1200 1060,1500"
+                          StrokeThickness="50" Opacity="0.85">
+                        <Path.Stroke>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Offset="0" Color="#FFC6F25A" />
+                                <GradientStop Offset="1" Color="#FF9BE03A" />
+                            </LinearGradientBrush>
+                        </Path.Stroke>
+                    </Path>
+                </Canvas>
+            </Canvas>
+
+            <!-- A soft darkening to the centre, where the title and pictures sit. -->
+            <Rectangle Width="1920" Height="1080">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.45" RadiusY="0.55">
+                        <GradientStop Offset="0" Color="#88101810" />
+                        <GradientStop Offset="1" Color="#00101810" />
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Canvas>
+    </Viewbox>
+</UserControl>

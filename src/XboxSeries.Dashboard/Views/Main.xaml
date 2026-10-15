@@ -196,7 +196,8 @@
 
                             <!--
                                 Hero. Theme-only: the selected game's background art (per the user's background settings) over the
-                                default background. With the extension: the focused Recent-row game's art, from XboxSeries_Hero.
+                                default background. With the extension, from XboxSeries_Hero: the focused Recent-row game's art, and the
+                                green swirl while no Recent-row tile has focus.
                                 Playnite binds the parts' own Visibility, so they are hidden through a wrapper.
                             -->
                             <Grid Grid.RowSpan="2" Style="{StaticResource XboxThemeOnly}">
