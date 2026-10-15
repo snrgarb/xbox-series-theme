@@ -101,6 +101,23 @@
                             <Ellipse x:Name="SpeakingRing" Stroke="{DynamicResource GlyphLightBrush}" StrokeThickness="3" Visibility="Hidden" />
                         </Grid>
                         <!--
+                            Someone calling, as the console's incoming party invite: their avatar on a disc as a person in a
+                            call has it, a grey one for none (or one that won't load), and a green phone badged at its foot.
+                        -->
+                        <Grid x:Name="Caller" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
+                            <Ellipse Fill="#FF4A4A4A" />
+                            <TextBlock Text="&#xE77B;" Style="{StaticResource GuideIcon}" FontSize="26" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
+                            <Ellipse>
+                                <Ellipse.Fill>
+                                    <ImageBrush ImageSource="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" Stretch="UniformToFill" />
+                                </Ellipse.Fill>
+                            </Ellipse>
+                            <Grid Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-4,-4">
+                                <Ellipse Fill="#FF23A55A" Stroke="#FF1F1F1F" StrokeThickness="2" />
+                                <TextBlock Text="&#xE717;" Style="{StaticResource GuideIcon}" FontSize="13" HorizontalAlignment="Center" />
+                            </Grid>
+                        </Grid>
+                        <!--
                             A Discord server in the Servers flyout: its icon on a rounded square, as Discord shows them, over a grey
                             one with Discord's mark for a server without an icon (or one that won't load).
                         -->
@@ -119,6 +136,9 @@
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
                             <TextBlock x:Name="Running" Text="Running" Style="{StaticResource GuideText}" FontSize="22"
                                        Foreground="#B3FFFFFF" Visibility="Collapsed" />
+                            <!-- Who is calling, under Answer. -->
+                            <TextBlock x:Name="Calling" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22"
+                                       Foreground="#B3FFFFFF" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
                             <!-- Audio's volume slider: a track filled to the level, in the accent. -->
                             <ProgressBar x:Name="Slider" Minimum="0" Maximum="100" Value="{Binding Level, Mode=OneWay}"
                                          Height="6" Margin="0,12,56,0" Visibility="Collapsed" Focusable="False">
@@ -481,6 +501,20 @@
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Occupants.Count}" Value="0">
                         <Setter TargetName="EmptyChannel" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <!--
+                        A DM ringing, first on the Discord tab: the caller's avatar with the green phone, Answer in Discord's
+                        green over who is calling, a row as tall as the account card's so it stands out above the rest.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordIncomingCall">
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Caller" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Calling" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="105" />
+                        <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="25" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                        <Setter TargetName="Title" Property="Foreground" Value="#FF23A55A" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
             </DataTemplate>
