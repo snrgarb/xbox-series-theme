@@ -9,16 +9,12 @@
         can't drift apart. Sized at 1080p.
     -->
     <UserControl.Resources>
-        <!-- A battery of three bars, as the console's; a pad on a cable shows the pad instead, and no pad shows nothing. -->
+        <!-- A battery filled to its level; a pad on a cable shows the pad instead, and no pad shows nothing. -->
         <DataTemplate x:Key="BatteryTemplate">
             <Grid x:Name="Battery" VerticalAlignment="Center">
                 <StackPanel x:Name="Cell" Orientation="Horizontal">
                     <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
-                        <UniformGrid Rows="1" Columns="3">
-                            <Border x:Name="Bar1" Background="White" Margin="0,0,1,0" Visibility="Hidden" />
-                            <Border x:Name="Bar2" Background="White" Margin="1,0" Visibility="Hidden" />
-                            <Border x:Name="Bar3" Background="White" Margin="1,0,0,0" Visibility="Hidden" />
-                        </UniformGrid>
+                        <Border x:Name="Fill" Background="White" CornerRadius="1" HorizontalAlignment="Left" Width="0" />
                     </Border>
                     <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
                 </StackPanel>
@@ -34,17 +30,18 @@
                     <Setter TargetName="Cell" Property="Visibility" Value="Collapsed" />
                     <Setter TargetName="Wired" Property="Visibility" Value="Visible" />
                 </DataTrigger>
+                <!-- The inside is 22 wide: a sliver when empty, a quarter when low, half at medium, and all of it when full. -->
+                <DataTrigger Binding="{Binding Battery}" Value="Empty">
+                    <Setter TargetName="Fill" Property="Width" Value="2" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Battery}" Value="Low">
-                    <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Fill" Property="Width" Value="6" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Battery}" Value="Medium">
-                    <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
-                    <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Fill" Property="Width" Value="11" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Battery}" Value="Full">
-                    <Setter TargetName="Bar1" Property="Visibility" Value="Visible" />
-                    <Setter TargetName="Bar2" Property="Visibility" Value="Visible" />
-                    <Setter TargetName="Bar3" Property="Visibility" Value="Visible" />
+                    <Setter TargetName="Fill" Property="Width" Value="22" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>

@@ -77,7 +77,7 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>The console's three bars, from the percentage left.</summary>
+        /// <summary>The battery's level, from the percentage left.</summary>
         private static ControllerBattery LevelOf(int percent)
         {
             if (percent < 5)
