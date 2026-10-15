@@ -14,7 +14,7 @@ namespace XboxSeries.Core
         private IReadOnlyList<GuideTab> tabs = new GuideTab[0];
         private IReadOnlyList<GuideItem> items = new GuideItem[0];
         private IReadOnlyList<GuideItem> utilities = new GuideItem[0];
-        private GuideItemKind? utility;
+        private GuideFlyout flyout;
         private GuideItem focusedItem;
         private Dialog dialog;
 
@@ -85,7 +85,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The landing tab's row of utilities along the bottom of the panel, left to right: Notifications and Audio. Focus
-        /// reaches them down from the tab's last entry. Empty on the other tabs and on a utility.
+        /// reaches them down from the tab's last entry. Empty on the other tabs.
         /// </summary>
         public IReadOnlyList<GuideItem> Utilities
         {
@@ -94,16 +94,16 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The utility showing in the panel in place of the tab, as <see cref="GuideItemKind.Notifications"/> or
-        /// <see cref="GuideItemKind.Audio"/>, its entries in <see cref="Items"/>; null while the tab shows. B goes back to the tab.
+        /// The flyout open beside the panel, over the tab it was opened from, which stays behind it dimmed; null when
+        /// none is. It has the pad: focus is among its entries, and B closes it, focus going back to the entry that opened it.
         /// </summary>
-        public GuideItemKind? Utility
+        public GuideFlyout Flyout
         {
-            get => utility;
-            internal set => Set(ref utility, value, nameof(Utility));
+            get => flyout;
+            internal set => Set(ref flyout, value, nameof(Flyout));
         }
 
-        /// <summary>The entry with focus, among <see cref="Items"/> or <see cref="Utilities"/>; null on an empty utility. Each item's <see cref="GuideItem.IsFocused"/> follows it.</summary>
+        /// <summary>The entry with focus, among <see cref="Items"/> or <see cref="Utilities"/>, or the <see cref="Flyout"/>'s entries while it is open; null in an empty flyout. Each item's <see cref="GuideItem.IsFocused"/> follows it.</summary>
         public GuideItem FocusedItem
         {
             get => focusedItem;
@@ -149,6 +149,29 @@ namespace XboxSeries.Core
             field = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+    }
+
+    /// <summary>
+    /// A secondary panel the Guide opens beside its own when an entry is selected, as the console's profile flyout:
+    /// the Notifications and Audio utilities open in one.
+    /// </summary>
+    public sealed class GuideFlyout
+    {
+        internal GuideFlyout(GuideItemKind kind, string title, IReadOnlyList<GuideItem> items)
+        {
+            Kind = kind;
+            Title = title;
+            Items = items;
+        }
+
+        /// <summary>The kind of entry that opened it, such as <see cref="GuideItemKind.Notifications"/>.</summary>
+        public GuideItemKind Kind { get; }
+
+        /// <summary>The heading along its top.</summary>
+        public string Title { get; }
+
+        /// <summary>Its entries, top to bottom.</summary>
+        public IReadOnlyList<GuideItem> Items { get; }
     }
 
     /// <summary>A Guide tab. The Discord tab slots in between the two later.</summary>
@@ -201,19 +224,19 @@ namespace XboxSeries.Core
         Settings,
         Power,
 
-        /// <summary>The landing tab's Notifications utility, which lists Playnite's notifications.</summary>
+        /// <summary>The landing tab's Notifications utility, whose flyout lists Playnite's notifications.</summary>
         Notifications,
 
-        /// <summary>The landing tab's Audio utility, with Windows' master volume and mute.</summary>
+        /// <summary>The landing tab's Audio utility, whose flyout has Windows' master volume and mute.</summary>
         Audio,
 
-        /// <summary>One of Playnite's notifications, in the Notifications utility.</summary>
+        /// <summary>One of Playnite's notifications, in the Notifications flyout.</summary>
         Notification,
 
-        /// <summary>The Audio utility's volume slider: left and right turn it down and up.</summary>
+        /// <summary>The Audio flyout's volume slider: left and right turn it down and up.</summary>
         Volume,
 
-        /// <summary>The Audio utility's mute switch: A turns it on and off.</summary>
+        /// <summary>The Audio flyout's mute switch: A turns it on and off.</summary>
         Mute,
     }
 

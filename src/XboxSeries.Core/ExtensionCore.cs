@@ -160,11 +160,12 @@ namespace XboxSeries.Core
             seenNotifications = new HashSet<string>(current.Select(n => n.Id));
             notifications = current;
             Status.NotificationCount = current.Count;
-            if (Guide.IsOpen && Guide.Utility == GuideItemKind.Notifications)
+            if (Guide.IsOpen && Guide.Flyout?.Kind == GuideItemKind.Notifications)
             {
-                var index = Guide.Items.ToList().IndexOf(Guide.FocusedItem);
-                ShowNotifications();
-                Guide.FocusedItem = Guide.Items.Count == 0 ? null : Guide.Items[Clamp(index, Guide.Items.Count)];
+                var index = Guide.Flyout.Items.ToList().IndexOf(Guide.FocusedItem);
+                OpenFlyout(GuideItemKind.Notifications);
+                var items = Guide.Flyout.Items;
+                Guide.FocusedItem = items.Count == 0 ? null : items[Clamp(index, items.Count)];
                 return;
             }
 
@@ -305,7 +306,7 @@ namespace XboxSeries.Core
             {
                 LaunchAfterQuit(next.Value);
             }
-            else if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing && Guide.Utility == null)
+            else if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
             {
                 RefreshLandingTab();
             }
@@ -419,9 +420,9 @@ namespace XboxSeries.Core
                 dialog.Decline();
                 AfterAnswer(handBack => Dismiss(button, handBack));
             }
-            else if (button == ControllerButton.B && Guide.IsOpen && Guide.Utility != null)
+            else if (button == ControllerButton.B && Guide.IsOpen && Guide.Flyout != null)
             {
-                LeaveUtility();
+                CloseFlyout();
             }
             else if (button == ControllerButton.B && Guide.IsOpen)
             {
@@ -450,7 +451,7 @@ namespace XboxSeries.Core
                 // Playnite hands the pad's A to WPF as a key with no Key, which never clicks the tile.
                 ChooseHomeTile(focusedTile);
             }
-            else if ((button == ControllerButton.LeftShoulder || button == ControllerButton.RightShoulder) && Guide.IsOpen && dialog == null)
+            else if ((button == ControllerButton.LeftShoulder || button == ControllerButton.RightShoulder) && Guide.IsOpen && dialog == null && Guide.Flyout == null)
             {
                 SwitchTab(button == ControllerButton.LeftShoulder ? -1 : 1);
             }
@@ -536,7 +537,7 @@ namespace XboxSeries.Core
             OpenGuide();
             if (toastAtGuidePress)
             {
-                ShowUtility(GuideItemKind.Notifications);
+                OpenFlyout(GuideItemKind.Notifications);
             }
         }
 
@@ -655,7 +656,7 @@ namespace XboxSeries.Core
                 new GuideTab(GuideTabKind.ProfileAndSystem, tab == GuideTabKind.ProfileAndSystem, account.Picture),
             };
             Guide.Tab = tab;
-            Guide.Utility = null;
+            Guide.Flyout = null;
             if (tab == GuideTabKind.Landing)
             {
                 ShowLandingTab();
@@ -667,40 +668,30 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>A utility in the panel in place of the landing tab, focus on its first entry.</summary>
-        private void ShowUtility(GuideItemKind utility)
+        /// <summary>
+        /// Opens the flyout for a utility beside the panel, over the landing tab, focus on its first entry; opened
+        /// again, it is rebuilt from what Playnite and Windows report now.
+        /// </summary>
+        private void OpenFlyout(GuideItemKind kind)
         {
-            Guide.Utility = utility;
-            Guide.Utilities = new GuideItem[0];
-            if (utility == GuideItemKind.Notifications)
-            {
-                ShowNotifications();
-            }
-            else
-            {
-                Guide.Items = new[]
+            var items = kind == GuideItemKind.Notifications
+                ? notifications.Reverse().Select(n => new GuideItem(GuideItemKind.Notification, n.Text)).ToList()
+                : (IReadOnlyList<GuideItem>)new[]
                 {
                     new GuideItem(GuideItemKind.Volume, "Volume") { Level = audio.Volume },
                     new GuideItem(GuideItemKind.Mute, "Mute") { IsOn = audio.IsMuted },
                 };
-            }
-
-            Guide.FocusedItem = Guide.Items.FirstOrDefault();
+            Guide.Flyout = new GuideFlyout(kind, kind == GuideItemKind.Notifications ? "Notifications" : "Audio", items);
+            Guide.FocusedItem = items.FirstOrDefault();
         }
 
-        /// <summary>The Notifications utility's entries: Playnite's notifications, newest first.</summary>
-        private void ShowNotifications()
+        /// <summary>B in a flyout: closes it, focus back on the entry that opened it.</summary>
+        private void CloseFlyout()
         {
-            Guide.Items = notifications.Reverse().Select(n => new GuideItem(GuideItemKind.Notification, n.Text)).ToList();
-        }
-
-        /// <summary>B on a utility: back to the landing tab, focus on the utility.</summary>
-        private void LeaveUtility()
-        {
-            var utility = Guide.Utility;
+            var kind = Guide.Flyout.Kind;
             StopRepeat();
-            ShowTab(GuideTabKind.Landing);
-            Guide.FocusedItem = Guide.Utilities.First(u => u.Kind == utility);
+            Guide.Flyout = null;
+            Guide.FocusedItem = Guide.Utilities.Concat(Guide.Items).First(i => i.Kind == kind);
         }
 
         /// <summary>Profile &amp; system: the profile card with the Windows user, then Settings and Power, each under a divider.</summary>
@@ -1137,7 +1128,7 @@ namespace XboxSeries.Core
             if (item.Kind == GuideItemKind.Notifications || item.Kind == GuideItemKind.Audio)
             {
                 StopRepeat();
-                ShowUtility(item.Kind);
+                OpenFlyout(item.Kind);
                 return;
             }
 
@@ -1253,7 +1244,8 @@ namespace XboxSeries.Core
 
             var vertical = direction == ControllerButton.DPadUp || direction == ControllerButton.DPadDown;
             var by = direction == ControllerButton.DPadUp || direction == ControllerButton.DPadLeft ? -1 : 1;
-            if (Guide.Utilities.Contains(Guide.FocusedItem))
+            var entries = Guide.Flyout?.Items ?? Guide.Items;
+            if (Guide.Flyout == null && Guide.Utilities.Contains(Guide.FocusedItem))
             {
                 // The utilities row: left and right along it, up back to the tab's last entry.
                 if (!vertical)
@@ -1266,14 +1258,14 @@ namespace XboxSeries.Core
                     Guide.FocusedItem = Guide.Items.Last();
                 }
             }
-            else if (vertical && by > 0 && Guide.FocusedItem == Guide.Items.Last() && Guide.Utilities.Count > 0)
+            else if (Guide.Flyout == null && vertical && by > 0 && Guide.FocusedItem == Guide.Items.Last() && Guide.Utilities.Count > 0)
             {
                 sounds.Play(UiSound.Navigate);
                 Guide.FocusedItem = Guide.Utilities[0];
             }
             else if (vertical)
             {
-                Guide.FocusedItem = Step(Guide.Items, Guide.FocusedItem, by);
+                Guide.FocusedItem = Step(entries, Guide.FocusedItem, by);
             }
             else if (Guide.FocusedItem.Kind == GuideItemKind.Volume)
             {
@@ -1334,7 +1326,9 @@ namespace XboxSeries.Core
             }
         }
 
-        private bool IsShowing(GuideItem item) => Guide.Items.Contains(item) || Guide.Utilities.Contains(item);
+        /// <summary>Whether the mouse can reach <paramref name="item"/>: an open flyout's entries, otherwise the tab's and its utilities.</summary>
+        private bool IsShowing(GuideItem item) =>
+            Guide.Flyout != null ? Guide.Flyout.Items.Contains(item) : Guide.Items.Contains(item) || Guide.Utilities.Contains(item);
 
         /// <summary>A click on an entry. No pad button is held, so focus goes on at once.</summary>
         public void ChooseItem(GuideItem item)
@@ -1519,12 +1513,21 @@ namespace XboxSeries.Core
         private IEnumerable<LibraryGame> PlayedGames() =>
             library.Games.Where(g => g.LastActivity != null && !g.Hidden).OrderByDescending(g => g.LastActivity);
 
-        /// <summary>A game went with the Guide open: rebuild the entries, keeping focus at the same place in the list.</summary>
+        /// <summary>
+        /// A game went with the Guide open: rebuild the entries, keeping focus at the same place in the list, or in the
+        /// flyout open over them.
+        /// </summary>
         private void RefreshLandingTab()
         {
             var focused = Guide.FocusedItem;
             var index = Guide.Items.ToList().IndexOf(focused);
             ShowLandingTab();
+            if (Guide.Flyout != null)
+            {
+                Guide.FocusedItem = focused;
+                return;
+            }
+
             Guide.FocusedItem = Guide.Utilities.FirstOrDefault(u => u.Kind == focused.Kind) ?? Guide.Items[Clamp(index, Guide.Items.Count)];
         }
 

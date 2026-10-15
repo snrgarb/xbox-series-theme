@@ -92,7 +92,7 @@ namespace XboxSeries.Core.Tests
             TapGuide();
 
             Assert.True(core.Guide.IsOpen);
-            Assert.Equal(GuideItemKind.Notifications, core.Guide.Utility);
+            Assert.Equal(GuideItemKind.Notifications, core.Guide.Flyout?.Kind);
             Assert.Equal("Library updated", core.Guide.FocusedItem.Title);
             Assert.False(core.Toast.IsShown);
 
@@ -109,7 +109,7 @@ namespace XboxSeries.Core.Tests
 
             TapGuide();
 
-            Assert.Null(core.Guide.Utility);
+            Assert.Null(core.Guide.Flyout);
             Assert.Equal("Home", core.Guide.FocusedItem.Title);
         }
 
@@ -138,12 +138,12 @@ namespace XboxSeries.Core.Tests
             }
 
             core.OnControllerButton(ControllerButton.A, ButtonState.Pressed);
-            Assert.Equal(GuideItemKind.Notifications, core.Guide.Utility);
+            Assert.Equal(GuideItemKind.Notifications, core.Guide.Flyout?.Kind);
 
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
 
             Assert.False(core.Toast.IsShown);
-            Assert.Equal(new[] { "Library updated" }, core.Guide.Items.Select(i => i.Title));
+            Assert.Equal(new[] { "Library updated" }, core.Guide.Flyout.Items.Select(i => i.Title));
         }
 
         private void TapGuide()
