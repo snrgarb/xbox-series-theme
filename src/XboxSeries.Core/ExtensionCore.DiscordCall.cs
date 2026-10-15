@@ -73,6 +73,14 @@ namespace XboxSeries.Core
                     }
 
                     ShowOccupants(data);
+
+                    // Fetched as someone came into a channel followed, it tells whether it was the call they came into.
+                    if (joinChecks.TryGetValue(nonce, out var joiner))
+                    {
+                        joinChecks.Remove(nonce);
+                        OnJoinChecked(joiner);
+                    }
+
                     break;
                 case "GET_GUILD":
                     OnGuild(data);
@@ -93,6 +101,7 @@ namespace XboxSeries.Core
         /// Discord refused a command sent once signed in. Refused the channel the user moved to, the call shown is no
         /// longer theirs, so it goes; the user is in a call Discord won't show. Refused who is in a server's voice
         /// channel or a known DM, it stays unknown; refused the servers or a server's channels, the flyout shows none.
+        /// Refused the call's channel as someone came into a channel followed, the DMs they may have come into are asked.
         /// </summary>
         private void OnDiscordRefused(string sent, string nonce)
         {
@@ -101,6 +110,9 @@ namespace XboxSeries.Core
                 return;
             }
 
+            string joiner = null;
+            var refusedJoinCheck = sent == "GET_CHANNEL" && joinChecks.TryGetValue(nonce, out joiner);
+
             if (sent == "GET_CHANNEL" && !occupantRequests.Remove(nonce) && call != null && call.Id != selectedChannelId)
             {
                 ShowCall(null);
@@ -108,6 +120,12 @@ namespace XboxSeries.Core
             else if (sent == "GET_GUILDS" || sent == "GET_CHANNELS")
             {
                 OnFlyoutRefused(nonce);
+            }
+
+            if (refusedJoinCheck)
+            {
+                joinChecks.Remove(nonce);
+                OnJoinChecked(joiner);
             }
         }
 
@@ -139,7 +157,7 @@ namespace XboxSeries.Core
                     OnVoiceSettings(data);
                     break;
                 case "VOICE_STATE_CREATE":
-                    if (!LooksForRing(data))
+                    if (!AsksWhereTheyCame(data))
                     {
                         call?.Upsert(data);
                         OnCallChanged();

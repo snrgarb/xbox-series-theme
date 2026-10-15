@@ -495,7 +495,8 @@ namespace XboxSeries.Core
         /// <summary>
         /// Pressed, it waits 0.7 s for a hold, which opens Power as the controller buzzes on its own; released sooner, it
         /// is a tap, which closes the Guide at once or opens it 0.3 s after the press. Nothing shows while it waits,
-        /// so a hold never flashes the Guide first.
+        /// so a hold never flashes the Guide first. With the call's Toast showing over the Guide at the press, the tap
+        /// goes to Answer instead of closing it.
         /// </summary>
         private void OnGuideButton(ButtonState state, DateTime at)
         {
@@ -523,6 +524,10 @@ namespace XboxSeries.Core
             if (at - guidePressedAt >= HoldForPower)
             {
                 OpenPowerFromHold();
+            }
+            else if (Guide.IsOpen && toastAtGuidePress == GuideItemKind.DiscordIncomingCall && ringingChannelId != null && Settings.Discord.HasDiscordTab)
+            {
+                GoToAnswer();
             }
             else if (Guide.IsOpen)
             {
@@ -572,6 +577,22 @@ namespace XboxSeries.Core
             {
                 ShowTab(GuideTabKind.Discord);
             }
+        }
+
+        /// <summary>
+        /// A tap with the Guide open while the call's Toast showed, as it does over the Guide: the Discord tab, focus on
+        /// Answer, any menu, prompt or flyout over it gone, and the call's Toast with it.
+        /// </summary>
+        private void GoToAnswer()
+        {
+            StopRepeat();
+            Guide.Dialog?.Decline();
+            Guide.Dialog = null;
+            answerHandBack = null;
+            Guide.ShowsPanel = true;
+            sounds.Play(UiSound.Navigate);
+            ShowTab(GuideTabKind.Discord);
+            HideRingToast();
         }
 
         private void CancelHold()

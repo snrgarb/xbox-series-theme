@@ -101,7 +101,7 @@
                             <Ellipse x:Name="SpeakingRing" Stroke="{DynamicResource GlyphLightBrush}" StrokeThickness="3" Visibility="Hidden" />
                         </Grid>
                         <!--
-                            Someone calling, as the console's incoming party invite: their avatar on a disc as a person in a
+                            Someone calling, as the console's incoming invite: their avatar on a disc as a person in a
                             call has it, a grey one for none (or one that won't load), and a green phone badged at its foot.
                         -->
                         <Grid x:Name="Caller" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
