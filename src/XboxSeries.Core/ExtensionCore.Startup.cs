@@ -20,12 +20,18 @@ namespace XboxSeries.Core
         /// <summary>How long Signing you in shows before "Hi X!" and Home.</summary>
         private static readonly TimeSpan SigningInDuration = TimeSpan.FromSeconds(3);
 
+        /// <summary>The longest any boot video is let run before the sequence goes on without it; each is under 15 s.</summary>
+        private static readonly TimeSpan BootVideoDeadline = TimeSpan.FromSeconds(20);
+
         private List<Profile> profiles = new List<Profile>();
 
         /// <summary>The profile signed in last, whom Who's playing today? focuses and, when it doesn't ask, signs in; null for the first.</summary>
         private string lastProfileId;
 
         private IDisposable signingInTimer;
+
+        /// <summary>The boot video's deadline, while it plays; null otherwise.</summary>
+        private IDisposable bootVideoTimer;
 
         /// <summary>The greeting's Toast showing, until it goes; null otherwise.</summary>
         private IDisposable greetingTimer;
@@ -38,7 +44,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Playnite started in Fullscreen: the sequence begins with the chosen boot video, or Who's playing today? with
-        /// it Off.
+        /// it Off. A video that runs past <see cref="BootVideoDeadline"/> ends as one that finished, so nothing it shows
+        /// can hold Playnite up.
         /// </summary>
         public void OnStartup()
         {
@@ -56,6 +63,11 @@ namespace XboxSeries.Core
             else
             {
                 Startup.Phase = StartupPhase.BootVideo;
+                bootVideoTimer = clock.After(BootVideoDeadline, () =>
+                {
+                    bootVideoTimer = null;
+                    OnBootVideoEnded();
+                });
             }
         }
 
@@ -64,6 +76,8 @@ namespace XboxSeries.Core
         {
             if (Startup.Phase == StartupPhase.BootVideo)
             {
+                bootVideoTimer?.Dispose();
+                bootVideoTimer = null;
                 AfterBootVideo();
             }
         }

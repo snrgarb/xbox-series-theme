@@ -1,10 +1,11 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay and the Toast over a monitor, and the debug hotkey and closing a game.</summary>
+    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay and the Toast over a monitor, and the debug hotkey, closing a game, and fading Start-up out.</summary>
     internal static class NativeMethods
     {
         public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -14,6 +15,7 @@ namespace XboxSeries.Extension
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_NOREPEAT = 0x4000;
         public const uint WM_CLOSE = 0x0010;
+        private const int GWL_EXSTYLE = -20;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -44,6 +46,7 @@ namespace XboxSeries.Extension
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr hWnd, uint cmd);
         [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int index);
         [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int index, int value);
+        [DllImport("user32.dll")] private static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint key, byte alpha, uint flags);
         [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
         [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
@@ -82,7 +85,6 @@ namespace XboxSeries.Extension
         public static IntPtr FindTopLevelWindow(Func<string, bool> matches)
         {
             const uint GW_OWNER = 4;
-            const int GWL_EXSTYLE = -20;
             const int WS_EX_TOOLWINDOW = 0x80;
             var found = IntPtr.Zero;
             EnumWindows((hWnd, _) =>
@@ -113,7 +115,6 @@ namespace XboxSeries.Extension
         /// </summary>
         public static void MakeClickThrough(IntPtr window)
         {
-            const int GWL_EXSTYLE = -20;
             const int WS_EX_TRANSPARENT = 0x20;
             const int WS_EX_TOOLWINDOW = 0x80;
             const int WS_EX_NOACTIVATE = 0x08000000;
@@ -125,6 +126,48 @@ namespace XboxSeries.Extension
         {
             GetWindowThreadProcessId(window, out var processId);
             return (int)processId;
+        }
+
+        /// <summary>Whether <paramref name="window"/> is one of this process's, Playnite's own or the extension's.</summary>
+        public static bool IsOfThisProcess(IntPtr window)
+        {
+            if (window == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            using (var self = Process.GetCurrentProcess())
+            {
+                return ProcessIdOf(window) == self.Id;
+            }
+        }
+
+        /// <summary>
+        /// Draws <paramref name="window"/> at <paramref name="alpha"/>, making it a layered window first: Start-up's fade,
+        /// the window's own alpha, which only Windows draws.
+        /// </summary>
+        public static void SetAlpha(IntPtr window, byte alpha)
+        {
+            const int WS_EX_LAYERED = 0x80000;
+            const uint LWA_ALPHA = 0x2;
+            var style = GetWindowLong(window, GWL_EXSTYLE);
+            if ((style & WS_EX_LAYERED) == 0)
+            {
+                SetWindowLong(window, GWL_EXSTYLE, style | WS_EX_LAYERED);
+            }
+
+            SetLayeredWindowAttributes(window, 0, alpha, LWA_ALPHA);
+        }
+
+        /// <summary>Makes <paramref name="window"/> an ordinary window again, no longer layered, after <see cref="SetAlpha"/>.</summary>
+        public static void SetOpaque(IntPtr window)
+        {
+            const int WS_EX_LAYERED = 0x80000;
+            var style = GetWindowLong(window, GWL_EXSTYLE);
+            if ((style & WS_EX_LAYERED) != 0)
+            {
+                SetWindowLong(window, GWL_EXSTYLE, style & ~WS_EX_LAYERED);
+            }
         }
 
         private static string ProgramPathOf(uint processId)

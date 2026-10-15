@@ -103,6 +103,35 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_boot_video_running_past_20_s_ends_as_one_that_finished()
+        {
+            core.OnStartup();
+
+            clock.Advance(TimeSpan.FromSeconds(19.9));
+            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
+
+            clock.Advance(TimeSpan.FromSeconds(0.1));
+            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
+        }
+
+        [Fact]
+        public void A_boot_video_ended_or_skipped_isnt_ended_again_by_the_deadline()
+        {
+            core.OnStartup();
+            core.OnBootVideoEnded();
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(10));
+            core.OnStartup();
+
+            clock.Advance(TimeSpan.FromSeconds(10));
+            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
+
+            Tap(ControllerButton.B);
+            clock.Advance(TimeSpan.FromSeconds(20));
+            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
+        }
+
+        [Fact]
         public void The_A_that_skips_the_boot_video_doesnt_also_sign_in()
         {
             core.OnStartup();

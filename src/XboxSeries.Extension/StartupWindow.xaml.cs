@@ -1,9 +1,8 @@
 using System;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -20,8 +19,9 @@ namespace XboxSeries.Extension
     /// monitor Playnite's window is on while <see cref="StartupState.IsShown"/>, holding the foreground so no key reaches
     /// Home behind it, and fading out to reveal Home once the sequence ends, the foreground handed back to Playnite's
     /// window. The pad drives the sequence through the core's controller callback, whatever window is in front, so every
-    /// key here is marked handled. Nothing it shows can hold Playnite up: a boot video that is missing, can't play, or
-    /// runs long ends as one that finished would.
+    /// key here is marked handled; the keyboard's own arrows, Enter, Space and Escape stand in for the pad's, and a click
+    /// on a profile signs it in. A boot video that is missing or can't play ends as one that finished would; the core
+    /// ends one that runs long.
     /// </summary>
     public partial class StartupWindow : Window
     {
@@ -31,15 +31,11 @@ namespace XboxSeries.Extension
         /// <summary>The swirl's fade in, as the boot video gives way to Who's playing today?.</summary>
         private static readonly Duration SwirlInDuration = TimeSpan.FromMilliseconds(300);
 
-        /// <summary>The longest any boot video is let run before the sequence goes on without it; each is under 15 s.</summary>
-        private static readonly TimeSpan VideoDeadline = TimeSpan.FromSeconds(20);
-
         private static readonly ILogger logger = LogManager.GetLogger();
 
         private readonly ExtensionCore core;
         private readonly StartupState startup;
         private readonly Storyboard swirl;
-        private readonly DispatcherTimer videoDeadline;
         private readonly DispatcherTimer fade;
         private DateTime fadeStarted;
         private bool swirlRunning;
@@ -65,13 +61,6 @@ namespace XboxSeries.Extension
                 EndVideo(videos);
             };
 
-            videoDeadline = new DispatcherTimer { Interval = VideoDeadline };
-            videoDeadline.Tick += (_, __) =>
-            {
-                logger.Warn("The boot video ran past its deadline; going on without it");
-                EndVideo(videos);
-            };
-
             // A timer, not an animation: the fade is the window's own alpha, which only Windows draws.
             fade = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(15) };
             fade.Tick += (_, __) => StepFade();
@@ -81,7 +70,10 @@ namespace XboxSeries.Extension
         public void Shutdown()
         {
             closing = true;
+            startup.PropertyChanged -= OnStartupChanged;
+            fade.Stop();
             StopVideo();
+            StopSwirl();
             Close();
         }
 
@@ -159,13 +151,10 @@ namespace XboxSeries.Extension
             Video.Visibility = Visibility.Visible;
             Video.Source = new Uri(path, UriKind.Absolute);
             Video.Play();
-            videoDeadline.Stop();
-            videoDeadline.Start();
         }
 
         private void StopVideo()
         {
-            videoDeadline.Stop();
             if (Video.Source == null)
             {
                 return;
@@ -178,7 +167,7 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The boot video playing ended, failed or ran long: the sequence goes on, once, and only if it is still the
+        /// The boot video playing ended or failed: the sequence goes on, once, and only if it is still the
         /// video that is playing, not one a press has skipped already.
         /// </summary>
         private void EndVideo(int playing)
@@ -284,7 +273,7 @@ namespace XboxSeries.Extension
 
                 var handle = new WindowInteropHelper(this).Handle;
                 var front = NativeMethods.GetForegroundWindow();
-                if (front != handle && IsOurs(front))
+                if (front != handle && NativeMethods.IsOfThisProcess(front))
                 {
                     TakeForeground(handle);
                 }
@@ -340,50 +329,11 @@ namespace XboxSeries.Extension
             return main == null || main == this ? IntPtr.Zero : new WindowInteropHelper(main).Handle;
         }
 
-        private static bool IsOurs(IntPtr window)
-        {
-            if (window == IntPtr.Zero)
-            {
-                return false;
-            }
-
-            GetWindowThreadProcessId(window, out var processId);
-            using (var self = Process.GetCurrentProcess())
-            {
-                return processId == self.Id;
-            }
-        }
-
         // The fade is the window's own alpha, set on it as a layered window only while it fades, so the boot video and
         // the swirl draw as an ordinary window's would. Off again once hidden.
-        private const int GWL_EXSTYLE = -20;
-        private const int WS_EX_LAYERED = 0x80000;
-        private const uint LWA_ALPHA = 0x2;
+        private static void SetAlpha(IntPtr handle, byte alpha) => NativeMethods.SetAlpha(handle, alpha);
 
-        [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int index);
-        [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr hWnd, int index, int value);
-        [DllImport("user32.dll")] private static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint key, byte alpha, uint flags);
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-        private static void SetAlpha(IntPtr handle, byte alpha)
-        {
-            var style = GetWindowLong(handle, GWL_EXSTYLE);
-            if ((style & WS_EX_LAYERED) == 0)
-            {
-                SetWindowLong(handle, GWL_EXSTYLE, style | WS_EX_LAYERED);
-            }
-
-            SetLayeredWindowAttributes(handle, 0, alpha, LWA_ALPHA);
-        }
-
-        private static void SetOpaque(IntPtr handle)
-        {
-            var style = GetWindowLong(handle, GWL_EXSTYLE);
-            if ((style & WS_EX_LAYERED) != 0)
-            {
-                SetWindowLong(handle, GWL_EXSTYLE, style & ~WS_EX_LAYERED);
-            }
-        }
+        private static void SetOpaque(IntPtr handle) => NativeMethods.SetOpaque(handle);
 
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -396,23 +346,76 @@ namespace XboxSeries.Extension
             // Playnite routes controller input here as key events. The sequence is driven by Playnite's controller
             // callback instead, so every key, Alt+F4 too, is marked handled and Home behind never reacts.
             e.Handled = true;
-#if DEBUG
-            if (!e.IsRepeat && PlayniteInput.DebugButtonFor(e.Key) is ControllerButton button)
+            if (!e.IsRepeat && ButtonFor(e) is ControllerButton button)
             {
                 core.OnControllerButton(button, ButtonState.Pressed);
             }
-#endif
         }
 
         protected override void OnPreviewKeyUp(KeyEventArgs e)
         {
             e.Handled = true;
-#if DEBUG
-            if (PlayniteInput.DebugButtonFor(e.Key) is ControllerButton button)
+            if (ButtonFor(e) is ControllerButton button)
             {
                 core.OnControllerButton(button, ButtonState.Released);
             }
+        }
+
+        /// <summary>
+        /// The pad button a real key stands in for, so the sequence can be got through without a pad: the arrows move
+        /// along the profiles, Enter and Space are A, Escape is B, and any of them skips the boot video. Null for the
+        /// pad's own key events, which reach the core through its controller callback already, and for any other key.
+        /// </summary>
+        private static ControllerButton? ButtonFor(KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) != null)
+            {
+                return null;
+            }
+
+            switch (e.Key)
+            {
+                case Key.Left: return ControllerButton.DPadLeft;
+                case Key.Right: return ControllerButton.DPadRight;
+                case Key.Enter:
+                case Key.Space: return ControllerButton.A;
+                case Key.Escape: return ControllerButton.B;
+            }
+
+#if DEBUG
+            return PlayniteInput.DebugButtonFor(e.Key);
+#else
+            return null;
 #endif
+        }
+
+        /// <summary>A click on a profile in Who's playing today?: focus moves to it, as the arrows would, and A signs it in.</summary>
+        private void OnProfileClick(object sender, MouseButtonEventArgs e)
+        {
+            if (startup.Phase != StartupPhase.WhosPlaying || !((sender as FrameworkElement)?.DataContext is Profile clicked))
+            {
+                return;
+            }
+
+            e.Handled = true;
+            var profiles = startup.Profiles.ToList();
+            var target = profiles.FindIndex(p => p.Id == clicked.Id);
+            for (var step = 0; step < profiles.Count && startup.FocusedProfile?.Id != clicked.Id; step++)
+            {
+                var here = profiles.FindIndex(p => p.Id == startup.FocusedProfile?.Id);
+                Tap(here < target ? ControllerButton.DPadRight : ControllerButton.DPadLeft);
+            }
+
+            if (startup.FocusedProfile?.Id == clicked.Id)
+            {
+                Tap(ControllerButton.A);
+            }
+        }
+
+        private void Tap(ControllerButton button)
+        {
+            core.OnControllerButton(button, ButtonState.Pressed);
+            core.OnControllerButton(button, ButtonState.Released);
         }
     }
 
