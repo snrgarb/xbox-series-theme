@@ -9,7 +9,7 @@ namespace XboxSeries.Core
     /// <summary>
     /// Discord: the user's own application, kept in the secret store, and a hand-rolled client for Discord's local RPC:
     /// the handshake, AUTHORIZE, the token exchange, AUTHENTICATE and SUBSCRIBE, over the transport's raw frames. The
-    /// call it then follows is in ExtensionCore.DiscordCall.cs.
+    /// call it then follows is in ExtensionCore.DiscordCall.cs, and keeping the tokens good in ExtensionCore.DiscordTokens.cs.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -40,7 +40,10 @@ namespace XboxSeries.Core
 
         private DiscordStep discordStep;
 
-        /// <summary>The access token to sign in with once Discord is READY: the saved one at start-up, or null to AUTHORIZE first.</summary>
+        /// <summary>
+        /// The saved access token to sign in with once Discord is READY, or null for Connect, which AUTHORIZEs first. It
+        /// stays set through the sign-in, refreshed or not, marking it as one with saved tokens.
+        /// </summary>
         private string signInToken;
 
         /// <summary>The commands sent and not yet answered, by nonce, which Discord's replies carry back.</summary>
@@ -65,6 +68,9 @@ namespace XboxSeries.Core
             /// <summary>The code sent to the token endpoint, waiting for its answer.</summary>
             TokenExchange,
 
+            /// <summary>The saved refresh token sent to the token endpoint, waiting for its answer.</summary>
+            Refresh,
+
             /// <summary>AUTHENTICATE sent.</summary>
             Authenticate,
 
@@ -86,11 +92,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnApplicationStarted()
         {
-            var token = secrets.Read(AccessTokenSecret);
-            if (token != null && Settings.Discord.ClientId != null)
-            {
-                StartDiscord(token);
-            }
+            SignInWithSavedTokens();
         }
 
         /// <summary>Settings' Client ID field, pasted or typed: saved at once, trimmed; empty forgets it.</summary>
@@ -132,7 +134,10 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Settings' Disconnect: closes the connection and forgets the tokens. The Client ID and Secret stay.</summary>
+        /// <summary>
+        /// Settings' Disconnect: closes the connection and forgets the tokens, and with them any need to reconnect. The
+        /// Client ID and Secret stay.
+        /// </summary>
         public void DisconnectDiscord()
         {
             // Greyed with nothing to disconnect: pressed then, it leaves the status line saying what last went wrong.
@@ -145,12 +150,17 @@ namespace XboxSeries.Core
             secrets.Delete(RefreshTokenSecret);
             secrets.Delete(ExpiresAtSecret);
             Settings.Discord.HasTokens = false;
+            Settings.Discord.NeedsReconnect = false;
             CloseDiscord(NotConnected);
         }
 
-        /// <summary>Opens the pipe and says hello; once Discord is READY, signs in with <paramref name="token"/>, or AUTHORIZEs first when null.</summary>
+        /// <summary>
+        /// Opens the pipe and says hello; once Discord is READY, signs in with the saved <paramref name="token"/>, refreshed
+        /// first when near expiring, or AUTHORIZEs first when null.
+        /// </summary>
         private void StartDiscord(string token)
         {
+            ForgetRenewal();
             if (!discord.Open())
             {
                 CloseDiscord("Discord isn't running");
@@ -218,11 +228,12 @@ namespace XboxSeries.Core
             var data = frame["data"] as JObject;
             if (evt == "ERROR")
             {
-                // Refused while connecting, Connect has failed; once signed in, as a voice setting Discord won't change,
-                // the connection stays up and the event that would have followed never comes.
-                if (discordStep != DiscordStep.Connected)
+                // Refused while connecting, or authorizing again while connected, signing in has failed; once signed in,
+                // as a voice setting Discord won't change, the connection stays up and the event that would have
+                // followed never comes.
+                if (discordStep != DiscordStep.Connected || (sent == "AUTHORIZE" && renewal == DiscordStep.Authorize))
                 {
-                    CloseDiscord("Couldn't connect to Discord: " + (string)data?["message"]);
+                    OnSignInRefused(sent, (string)data?["message"]);
                 }
                 else
                 {
@@ -232,10 +243,14 @@ namespace XboxSeries.Core
                 return;
             }
 
-            if (sent == "AUTHORIZE" && discordStep == DiscordStep.Authorize)
+            if (sent == "AUTHORIZE" && TokenStep == DiscordStep.Authorize)
             {
-                discordStep = DiscordStep.TokenExchange;
-                Settings.Discord.StatusText = Connecting;
+                SetTokenStep(DiscordStep.TokenExchange);
+                if (discordStep != DiscordStep.Connected)
+                {
+                    Settings.Discord.StatusText = Connecting;
+                }
+
                 discordOAuth.RequestToken(Settings.Discord.ClientId, secrets.Read(ClientSecretSecret), new Dictionary<string, string>
                 {
                     ["grant_type"] = "authorization_code",
@@ -257,33 +272,36 @@ namespace XboxSeries.Core
         {
             if (signInToken != null)
             {
-                Authenticate(signInToken);
-                return;
+                SignInWithSavedToken();
             }
-
-            discordStep = DiscordStep.Authorize;
-            Settings.Discord.StatusText = "Approve the request in Discord";
-            SendCommand("AUTHORIZE", new JObject
+            else
             {
-                ["client_id"] = Settings.Discord.ClientId,
-                ["scopes"] = new JArray(Scopes),
-            });
+                SendAuthorize();
+            }
         }
 
         /// <summary>
         /// The token endpoint's answer: its HTTP status and body, or status 0 with the error's message when no answer
-        /// came. Granted, the tokens are saved and Discord signed in with them.
+        /// came. Granted, the tokens are saved and Discord signed in with them; an answer nothing is waiting for, as after
+        /// Disconnect, is ignored.
         /// </summary>
         public void OnDiscordTokenResponse(int status, string body)
         {
-            if (discordStep != DiscordStep.TokenExchange)
+            var step = TokenStep;
+            if (step == DiscordStep.Refresh)
+            {
+                OnRefreshAnswer(status, status == 0 ? null : Parse(body));
+                return;
+            }
+
+            if (step != DiscordStep.TokenExchange)
             {
                 return;
             }
 
             if (status == 0)
             {
-                CloseDiscord("The token request failed: " + body);
+                OnTokensRefused("The token request failed: " + body);
                 return;
             }
 
@@ -291,23 +309,17 @@ namespace XboxSeries.Core
             if (status < 200 || status > 299)
             {
                 var error = (string)answer?["error_description"] ?? (string)answer?["error"] ?? "HTTP " + status;
-                CloseDiscord("Couldn't connect to Discord: " + error);
+                OnTokensRefused("Couldn't connect to Discord: " + error);
                 return;
             }
 
-            var accessToken = (string)answer?["access_token"];
-            if (accessToken == null)
+            if ((string)answer?["access_token"] == null)
             {
-                CloseDiscord("Couldn't connect to Discord: no access token came back");
+                OnTokensRefused("Couldn't connect to Discord: no access token came back");
                 return;
             }
 
-            secrets.Write(AccessTokenSecret, accessToken);
-            secrets.Write(RefreshTokenSecret, (string)answer["refresh_token"] ?? "");
-            var expiresIn = (double?)answer["expires_in"] ?? 0;
-            secrets.Write(ExpiresAtSecret, clock.Now.AddSeconds(expiresIn).ToString("o", CultureInfo.InvariantCulture));
-            Settings.Discord.HasTokens = true;
-            Authenticate(accessToken);
+            OnTokensGranted(answer);
         }
 
         private void Authenticate(string token)
@@ -317,12 +329,14 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// AUTHENTICATE answered: the status line says who, the Discord tab appears, the voice events are followed, and
-        /// Discord is asked for the call the user may already be in.
+        /// AUTHENTICATE answered: the status line says who, any need to reconnect is gone, the Discord tab appears, the
+        /// voice events are followed, Discord is asked for the call the user may already be in, and the tokens' refresh is set.
         /// </summary>
         private void OnDiscordSignedIn(JObject user)
         {
             discordStep = DiscordStep.Connected;
+            Settings.Discord.NeedsReconnect = false;
+            ScheduleRefresh();
             discordUserId = (string)user?["id"];
             var globalName = (string)user?["global_name"];
             discordUser = string.IsNullOrEmpty(globalName) ? (string)user?["username"] : globalName;
@@ -355,6 +369,7 @@ namespace XboxSeries.Core
             ForgetServers();
             discordStep = DiscordStep.Closed;
             signInToken = null;
+            ForgetRenewal();
             Settings.Discord.IsConnecting = false;
             Settings.Discord.StatusText = status;
             ForgetCall();
