@@ -66,6 +66,18 @@ namespace XboxSeries.Extension
             ShowActivated = true;
         }
 
+        /// <summary>
+        /// The Overlay is see-through by Windows drawing its transparent pixels so, not by WPF's AllowsTransparency,
+        /// whose layered window is copied back through the processor every frame: at 4K that stutters the slide.
+        /// </summary>
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var source = (HwndSource)PresentationSource.FromVisual(this);
+            source.CompositionTarget.BackgroundColor = Colors.Transparent;
+            NativeMethods.SeeThrough(source.Handle);
+        }
+
         /// <summary>The status area at the top right, and the Notifications utility's count.</summary>
         public StatusState Status { get; }
 
