@@ -133,7 +133,7 @@ namespace XboxSeries.Core.Tests
             Release(ControllerButton.A);
 
             Assert.True(core.Settings.IsShown);
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.StartUp, core.Settings.Category);
             Assert.Equal(SettingsOrigin.Guide, core.Settings.OpenedFrom);
             Assert.Equal(DashboardPage.Settings, playnite.Page);
             Assert.Equal(playnite.Window, windows.Foreground);

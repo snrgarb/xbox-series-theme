@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using XboxSeries.Core;
 
 namespace XboxSeries.Core.Tests.Fakes
@@ -8,5 +9,9 @@ namespace XboxSeries.Core.Tests.Fakes
         public string Name { get; set; } = "Gabe";
 
         public string Picture { get; set; } = @"C:\Users\Public\AccountPictures\gabe.png";
+
+        public string RealName { get; set; } = "Gabe Smith";
+
+        public IReadOnlyList<string> Gamerpics { get; set; } = new[] { @"C:\Gamerpics\a.png", @"C:\Gamerpics\b.png" };
     }
 }

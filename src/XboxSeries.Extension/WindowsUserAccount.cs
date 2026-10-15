@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security;
 using System.Security.Principal;
@@ -14,6 +15,12 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
 
         public string Name => Environment.UserName;
+
+        // Filled in by #58's core work: the user's full name from Windows.
+        public string RealName => "";
+
+        // Filled in by #58's core work: the images in the extension's Gamerpics folder.
+        public IReadOnlyList<string> Gamerpics => new string[0];
 
         /// <summary>
         /// The account picture at 192 px, which Windows records per user under AccountPicture; Windows' default user

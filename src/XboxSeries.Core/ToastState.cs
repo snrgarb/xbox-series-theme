@@ -13,6 +13,9 @@ namespace XboxSeries.Core
 
         /// <summary>A known DM ringing: the caller's avatar, or Discord's mark.</summary>
         Call,
+
+        /// <summary>"Hi X!" as a profile finishes signing in: the profile's picture, with no "Press ⓧ to view".</summary>
+        Greeting,
     }
 
     /// <summary>
