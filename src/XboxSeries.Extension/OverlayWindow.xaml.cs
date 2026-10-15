@@ -18,7 +18,7 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class OverlayWindow : Window
     {
-        private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(180);
+        private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(120);
         private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
         private static readonly ILogger logger = LogManager.GetLogger();
 
