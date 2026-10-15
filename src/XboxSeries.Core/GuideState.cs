@@ -247,6 +247,24 @@ namespace XboxSeries.Core
 
         /// <summary>The Discord tab's line saying the user isn't in a voice channel.</summary>
         DiscordIdle,
+
+        /// <summary>The Discord tab's heading in a call: the channel's name, or a DM's, by the other people in it.</summary>
+        DiscordChannel,
+
+        /// <summary>
+        /// One person in the call, on the Discord tab: their name and avatar, and whether they are speaking, muted and
+        /// deafened. The user comes first.
+        /// </summary>
+        DiscordParticipant,
+
+        /// <summary>The user's Discord mute, on the Discord tab and in the Audio flyout in a call: A asks Discord to turn it on or off.</summary>
+        DiscordMute,
+
+        /// <summary>The user's Discord deafen, on the Discord tab and in the Audio flyout in a call: A asks Discord to turn it on or off.</summary>
+        DiscordDeafen,
+
+        /// <summary>The Discord tab's Leave: A asks Discord to leave the call.</summary>
+        DiscordLeave,
     }
 
     /// <summary>One entry on a Guide tab.</summary>
@@ -255,6 +273,9 @@ namespace XboxSeries.Core
         private bool isFocused;
         private int level;
         private bool isOn;
+        private bool isSpeaking;
+        private bool isMuted;
+        private bool isDeafened;
 
         internal GuideItem(GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null)
         {
@@ -299,20 +320,64 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Whether the mute switch is on.</summary>
+        /// <summary>Whether the switch is on: Windows' mute, or the user's Discord mute or deafen.</summary>
         public bool IsOn
         {
             get => isOn;
-            internal set
-            {
-                if (isOn == value)
-                {
-                    return;
-                }
+            internal set => Set(ref isOn, value, nameof(IsOn));
+        }
 
-                isOn = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsOn)));
+        /// <summary>Whether the person in the call is speaking, which rings their avatar.</summary>
+        public bool IsSpeaking
+        {
+            get => isSpeaking;
+            internal set => Set(ref isSpeaking, value, nameof(IsSpeaking));
+        }
+
+        /// <summary>Whether the person in the call is muted, by themselves or the server.</summary>
+        public bool IsMuted
+        {
+            get => isMuted;
+            internal set => Set(ref isMuted, value, nameof(IsMuted));
+        }
+
+        /// <summary>Whether the person in the call is deafened, by themselves or the server.</summary>
+        public bool IsDeafened
+        {
+            get => isDeafened;
+            internal set => Set(ref isDeafened, value, nameof(IsDeafened));
+        }
+
+        /// <summary>The Discord user a participant stands for; null for other entries.</summary>
+        internal string UserId { get; set; }
+
+        /// <summary>
+        /// Whether <paramref name="other"/>, built afresh, is this same entry, so that this one can take its state
+        /// in place rather than be replaced.
+        /// </summary>
+        internal bool IsSameEntry(GuideItem other) =>
+            Kind == other.Kind && Title == other.Title && GameId == other.GameId && HasDividerAbove == other.HasDividerAbove
+            && Image == other.Image && Source == other.Source && UserId == other.UserId;
+
+        /// <summary>Takes the changeable state of <paramref name="other"/>, the same entry built afresh.</summary>
+        internal void TakeStateFrom(GuideItem other)
+        {
+            Level = other.Level;
+            IsOn = other.IsOn;
+            IsSpeaking = other.IsSpeaking;
+            IsMuted = other.IsMuted;
+            IsDeafened = other.IsDeafened;
+        }
+
+        private void Set(ref bool field, bool value, string name)
+        {
+            if (field == value)
+            {
+                return;
             }
+
+            field = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         /// <summary>Whether Menu opens a menu on this entry. Only the running game has one, with Quit.</summary>

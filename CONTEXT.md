@@ -67,11 +67,11 @@ _Avoid_: overlay (the overlay is the window hosting the Guide, not the Guide its
 The topmost, full-screen, transparent window the extension draws the Guide into, above every other window.
 
 **Status area**:
-Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears.
+Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears. In a **Call** it shows a Discord icon too, badged muted or deafened, and lit while the user speaks.
 _Avoid_: status bar, tray
 
 **Utility**:
-One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own) and Audio (Windows master volume and mute). Selecting one opens it in a **Flyout**.
+One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own) and Audio (Windows master volume and mute, and in a **Call** Discord's mute and deafen). Selecting one opens it in a **Flyout**.
 _Avoid_: widget, quick setting
 
 **Flyout**:
@@ -85,6 +85,10 @@ _Avoid_: popup, notification (Notifications are Playnite's own messages)
 **Discord tab**:
 The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears only once the user has connected their own Discord application.
 _Avoid_: party, chats
+
+**Call**:
+The Discord voice channel, DM or group DM the user is in, as Discord reports it: its name and the people in it. Mute, Deafen and Leave are asked of Discord and shown done only once Discord says so.
+_Avoid_: party, voice chat, session (a **Play session** is a game's)
 
 **Guide button**:
 The Xbox logo button in the centre of an Xbox controller.

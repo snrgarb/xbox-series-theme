@@ -215,7 +215,7 @@ namespace XboxSeries.Core.Tests
             ConnectFully();
 
             var nonces = transport.Commands.Select(c => (string)c["nonce"]).ToList();
-            Assert.Equal(5, nonces.Count);
+            Assert.Equal(7, nonces.Count);
             Assert.Equal(nonces.Count, nonces.Distinct().Count());
         }
 
