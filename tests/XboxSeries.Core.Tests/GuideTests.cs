@@ -32,11 +32,16 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Guide_button_opens_the_Guide_over_the_game_and_takes_the_foreground()
+        public void Guide_button_opens_the_Guide_over_the_game_and_takes_the_foreground_when_tapped()
         {
             windows.OpenWindow();
 
             Press(ControllerButton.Guide);
+
+            // Held, it may yet be a hold for Power, so only the release opens the Guide.
+            Assert.False(core.Guide.IsOverlayShown);
+
+            Release(ControllerButton.Guide);
 
             Assert.True(core.Guide.IsOpen);
             Assert.True(core.Guide.IsOverlayShown);
@@ -62,17 +67,18 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Guide_button_again_closes_the_Guide_and_hands_focus_back_when_it_is_released()
+        public void Guide_button_tapped_again_closes_the_Guide_and_hands_focus_back_when_it_is_released()
         {
             var game = windows.OpenWindow();
             Tap(ControllerButton.Guide);
 
             Press(ControllerButton.Guide);
 
-            Assert.False(core.Guide.IsOpen);
-            Assert.Equal(FakeWindowSystem.Overlay, windows.Foreground);
+            Assert.True(core.Guide.IsOpen);
 
             Release(ControllerButton.Guide);
+
+            Assert.False(core.Guide.IsOpen);
 
             Assert.False(core.Guide.IsOverlayShown);
             Assert.Equal(game, windows.Foreground);
