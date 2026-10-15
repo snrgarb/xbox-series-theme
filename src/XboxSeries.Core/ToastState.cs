@@ -2,6 +2,19 @@ using System.ComponentModel;
 
 namespace XboxSeries.Core
 {
+    /// <summary>What a Toast tells of, which picks the image on its tile.</summary>
+    public enum ToastKind
+    {
+        /// <summary>One of Playnite's notifications: the bell.</summary>
+        Notification,
+
+        /// <summary>A Playnite notification about a screenshot: a camera.</summary>
+        Screenshot,
+
+        /// <summary>A known DM ringing: the caller's avatar, or Discord's mark.</summary>
+        Call,
+    }
+
     /// <summary>
     /// The Toast at the bottom of the screen: a new Playnite notification, or a known DM ringing, shown above every
     /// window without taking focus. Views bind to it and hold no logic of their own.
@@ -11,6 +24,8 @@ namespace XboxSeries.Core
         private string text = "";
         private bool isShown;
         private bool isCall;
+        private ToastKind kind;
+        private string image;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -42,6 +57,37 @@ namespace XboxSeries.Core
                 {
                     isCall = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsCall)));
+                }
+            }
+        }
+
+        /// <summary>What the Toast tells of, which picks its tile's image. Like <see cref="Text"/>, it stays as the Toast hides.</summary>
+        public ToastKind Kind
+        {
+            get => kind;
+            internal set
+            {
+                if (kind != value)
+                {
+                    kind = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Kind)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// The image the tile shows in place of its kind's own, as the caller's avatar for a call; null for the kind's
+        /// own. Like <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public string Image
+        {
+            get => image;
+            internal set
+            {
+                if (image != value)
+                {
+                    image = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Image)));
                 }
             }
         }
