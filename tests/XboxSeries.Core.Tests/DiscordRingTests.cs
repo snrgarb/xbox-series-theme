@@ -39,8 +39,19 @@ namespace XboxSeries.Core.Tests
             Ring("600");
 
             Assert.True(core.Toast.IsShown);
-            Assert.True(core.Toast.IsCall);
+            Assert.Equal(ToastKind.Call, core.Toast.Kind);
             Assert.Equal("ana is calling", core.Toast.Text);
+        }
+
+        [Fact]
+        public void The_call_Toast_carries_the_callers_avatar_for_its_tile()
+        {
+            NotInCall();
+            KnowDm("600");
+
+            Ring("600");
+
+            Assert.Equal(AvatarOf(Ana, AnaAvatar), core.Toast.Image);
         }
 
         [Fact]
@@ -201,7 +212,7 @@ namespace XboxSeries.Core.Tests
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated"), new Notification("b", "Update available") });
 
             Assert.Equal("ana is calling", core.Toast.Text);
-            Assert.True(core.Toast.IsCall);
+            Assert.Equal(ToastKind.Call, core.Toast.Kind);
             clock.Advance(TimeSpan.FromSeconds(10));
             Assert.True(core.Toast.IsShown);
             Assert.Equal("ana is calling", core.Toast.Text);
@@ -212,7 +223,7 @@ namespace XboxSeries.Core.Tests
 
             clock.Advance(TimeSpan.FromSeconds(0.5));
             Assert.True(core.Toast.IsShown);
-            Assert.False(core.Toast.IsCall);
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
             Assert.Equal("Library updated", core.Toast.Text);
             clock.Advance(TimeSpan.FromSeconds(5.5));
             Assert.Equal("Update available", core.Toast.Text);

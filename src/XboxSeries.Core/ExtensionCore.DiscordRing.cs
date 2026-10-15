@@ -261,7 +261,7 @@ namespace XboxSeries.Core
             {
                 toastTimer.Dispose();
                 toastTimer = null;
-                if (Toast.IsShown && !Toast.IsCall && shownNotification != null)
+                if (Toast.IsShown && Toast.Kind != ToastKind.Call && shownNotification != null)
                 {
                     var waiting = waitingToasts.ToList();
                     waitingToasts.Clear();
@@ -277,7 +277,8 @@ namespace XboxSeries.Core
 
             ringToastTimer?.Dispose();
             Toast.Text = ringCaller + " is calling";
-            Toast.IsCall = true;
+            Toast.Kind = ToastKind.Call;
+            Toast.Image = ringImage;
             Toast.IsShown = true;
             ringToastTimer = clock.After(RingToastDuration, HideRingToast);
         }
