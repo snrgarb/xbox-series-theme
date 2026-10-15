@@ -87,7 +87,7 @@
                             </Ellipse>
                         </Grid>
                         <!--
-                            Someone in a Discord call, as in the console's party: their avatar on a disc, a grey one for
+                            Someone in a Discord call, as in the console's Parties &amp; chats: their avatar on a disc, a grey one for
                             none (or one that won't load), ringed in the accent while they speak.
                         -->
                         <Grid x:Name="Participant" Width="56" Height="56" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
