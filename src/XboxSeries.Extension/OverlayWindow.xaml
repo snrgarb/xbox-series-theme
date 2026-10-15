@@ -25,6 +25,8 @@
             </ResourceDictionary.MergedDictionaries>
             <!-- The Xbox sphere, 24 units square (Simple Icons' xbox, CC0). -->
             <Geometry x:Key="XboxLogo">M4.102 21.033C6.211 22.881 8.977 24 12 24c3.026 0 5.789-1.119 7.902-2.967 1.877-1.912-4.316-8.709-7.902-11.417-3.582 2.708-9.779 9.505-7.898 11.417zm11.16-14.406c2.5 2.961 7.484 10.313 6.076 12.912C23.002 17.48 24 14.861 24 12.004c0-3.34-1.365-6.362-3.57-8.536 0 0-.027-.022-.082-.042-.063-.022-.152-.045-.281-.045-.592 0-1.985.434-4.805 3.246zM3.654 3.426c-.057.02-.082.041-.086.042C1.365 5.642 0 8.664 0 12.004c0 2.854.998 5.473 2.661 7.533-1.401-2.605 3.579-9.951 6.08-12.91-2.82-2.813-4.216-3.245-4.806-3.245-.131 0-.223.021-.281.046v-.002zM12 3.551S9.055 1.828 6.755 1.746c-.903-.033-1.454.295-1.521.339C7.379.646 9.659 0 11.984 0H12c2.334 0 4.605.646 6.766 2.085-.068-.046-.615-.372-1.52-.339C14.946 1.828 12 3.545 12 3.545v.006z</Geometry>
+            <!-- Discord's mark, 24 units wide (Simple Icons' discord, CC0), for the Discord tab and its account card. -->
+            <Geometry x:Key="DiscordLogo">M 20.317 4.3698 a 19.7913 19.7913 0 0 0 -4.8851 -1.5152 .0741 .0741 0 0 0 -.0785 .0371 c -.211 .3753 -.4447 .8648 -.6083 1.2495 -1.8447 -.2762 -3.68 -.2762 -5.4868 0 -.1636 -.3933 -.4058 -.8742 -.6177 -1.2495 a .077 .077 0 0 0 -.0785 -.037 19.7363 19.7363 0 0 0 -4.8852 1.515 .0699 .0699 0 0 0 -.0321 .0277 C .5334 9.0458 -.319 13.5799 .0992 18.0578 a .0824 .0824 0 0 0 .0312 .0561 c 2.0528 1.5076 4.0413 2.4228 5.9929 3.0294 a .0777 .0777 0 0 0 .0842 -.0276 c .4616 -.6304 .8731 -1.2952 1.226 -1.9942 a .076 .076 0 0 0 -.0416 -.1057 c -.6528 -.2476 -1.2743 -.5495 -1.8722 -.8923 a .077 .077 0 0 1 -.0076 -.1277 c .1258 -.0943 .2517 -.1923 .3718 -.2914 a .0743 .0743 0 0 1 .0776 -.0105 c 3.9278 1.7933 8.18 1.7933 12.0614 0 a .0739 .0739 0 0 1 .0785 .0095 c .1202 .099 .246 .1981 .3728 .2924 a .077 .077 0 0 1 -.0066 .1276 12.2986 12.2986 0 0 1 -1.873 .8914 .0766 .0766 0 0 0 -.0407 .1067 c .3604 .698 .7719 1.3628 1.225 1.9932 a .076 .076 0 0 0 .0842 .0286 c 1.961 -.6067 3.9495 -1.5219 6.0023 -3.0294 a .077 .077 0 0 0 .0313 -.0552 c .5004 -5.177 -.8382 -9.6739 -3.5485 -13.6604 a .061 .061 0 0 0 -.0312 -.0286 z M 8.02 15.3312 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9555 -2.4189 2.157 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.9555 2.4189 -2.1569 2.4189 z m 7.9748 0 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9554 -2.4189 2.1569 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.946 2.4189 -2.1568 2.4189 Z</Geometry>
             <Style x:Key="GuideText" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="Foreground" Value="White" />
@@ -50,6 +52,11 @@
                         <Border x:Name="Fill" CornerRadius="4" Background="Transparent" />
                         <TextBlock x:Name="Glyph" Style="{StaticResource GuideIcon}" FontSize="30" Width="36"
                                    HorizontalAlignment="Left" Margin="33,0,0,0" />
+                        <!-- The Discord tab's account card: Discord's mark on a disc in its blurple, where the profile card has the picture. -->
+                        <Grid x:Name="DiscordMark" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
+                            <Ellipse Fill="#FF5865F2" />
+                            <Path Data="{StaticResource DiscordLogo}" Fill="White" Width="32" Height="32" Stretch="Uniform" />
+                        </Grid>
                         <Grid x:Name="Cover" Width="90" Height="90" HorizontalAlignment="Left" Margin="6,0,0,0"
                               Visibility="Collapsed">
                             <!--
@@ -204,6 +211,25 @@
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                         <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
                     </DataTrigger>
+                    <!-- The Discord tab: who is signed in, as the profile card, then a quieter line about voice. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordAccount">
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="DiscordMark" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="105" />
+                        <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="27" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Kind}" Value="DiscordIdle">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7F6;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="#B3FFFFFF" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
+                    </DataTrigger>
                     <DataTrigger Binding="{Binding IsOn}" Value="True">
                         <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource GlyphLightBrush}" />
                         <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
@@ -342,7 +368,10 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <!-- The tabs: the landing tab's Xbox sphere, then Profile & system's account picture. A tab not showing is greyed, as on the console. -->
+                    <!--
+                        The tabs: the landing tab's Xbox sphere, Discord's mark while it is connected, then Profile & system's
+                        account picture. A tab not showing is greyed, as on the console.
+                    -->
                     <Border Background="#FF1F1F1F" />
                     <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
                         <ItemsControl.ItemsPanel>
@@ -366,6 +395,10 @@
                                             Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden" />
                                 </Grid>
                                 <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Kind}" Value="Discord">
+                                        <Setter TargetName="Logo" Property="Data" Value="{StaticResource DiscordLogo}" />
+                                        <Setter TargetName="Logo" Property="Width" Value="36" />
+                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding Kind}" Value="ProfileAndSystem">
                                         <Setter TargetName="Logo" Property="Visibility" Value="Collapsed" />
                                         <Setter TargetName="Picture" Property="Visibility" Value="Visible" />
@@ -426,12 +459,16 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- The heading: Profile & system's. The landing tab has none. -->
+                        <!-- The heading: Discord's or Profile & system's. The landing tab has none. -->
                         <TextBlock DockPanel.Dock="Top" FontSize="33" Margin="28,-4,0,12">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Tab}" Value="Discord">
+                                            <Setter Property="Text" Value="Discord" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Tab}" Value="ProfileAndSystem">
                                             <Setter Property="Text" Value="Profile &amp; system" />
                                             <Setter Property="Visibility" Value="Visible" />
