@@ -126,6 +126,12 @@
                 <Button x:Name="MorePlayniteOptionsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
                     <TextBlock Text="More Playnite options" Style="{StaticResource RailText}" />
                 </Button>
+                <!-- Debug builds only, shown by the code-behind: under a second divider, the Debug menu, to try Toasts. -->
+                <Border x:Name="DebugDivider" Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}"
+                        Visibility="Collapsed" />
+                <Button x:Name="DebugItem" Style="{StaticResource RailItem}" Visibility="Collapsed">
+                    <TextBlock Text="Debug menu" Style="{StaticResource RailText}" />
+                </Button>
             </StackPanel>
         </StackPanel>
 
@@ -230,6 +236,36 @@
                 </StackPanel>
 
                 <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!--
+                Debug builds only: buttons that put up Toasts, one a row. Right or A on the rail's Debug menu comes in; Left
+                or B goes back to it. The code-behind wires them; in a Release build the pane stays collapsed and out of reach.
+            -->
+            <StackPanel x:Name="DebugPane" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Left">
+                <TextBlock Text="Try the Toasts. Each button puts one up as Playnite or Discord would."
+                           Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,30" />
+                <Button x:Name="DebugNotificationButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Notification" Style="{StaticResource Text}" />
+                </Button>
+                <Button x:Name="DebugScreenshotButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Screenshot notification" Style="{StaticResource Text}" />
+                </Button>
+                <Button x:Name="DebugLongButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Long notification" Style="{StaticResource Text}" />
+                </Button>
+                <Button x:Name="DebugThreeButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Three notifications" Style="{StaticResource Text}" />
+                </Button>
+                <Button x:Name="DebugCallButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Call" Style="{StaticResource Text}" />
+                </Button>
+                <Button x:Name="DebugCallAvatarButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Call with avatar" Style="{StaticResource Text}" />
+                </Button>
+                <Button x:Name="DebugCallAvatarFailsButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14">
+                    <TextBlock Text="Call, avatar fails" Style="{StaticResource Text}" />
+                </Button>
             </StackPanel>
         </Grid>
     </Grid>
