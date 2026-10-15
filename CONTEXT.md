@@ -48,7 +48,7 @@ The Dashboard's page for finding games and **Apps** by name. It exists only when
 _Avoid_: filter (narrowing the list currently shown by name is Playnite's own filter, not Search)
 
 **Settings**:
-The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Personalisation, Guide, Discord, then **Playnite settings** and More Playnite options) beside the selected category. It exists only when the extension is installed.
+The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Start up, Personalisation, Guide, Discord, then **Playnite settings** and More Playnite options) beside the selected category. It exists only when the extension is installed.
 _Avoid_: Bundle settings, plugin settings, add-on settings
 
 **Playnite settings**:
@@ -81,6 +81,22 @@ _Avoid_: submenu, popup, page
 **Toast**:
 A green banner, as the console's, shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next.
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
+
+**Start-up**:
+The console's start-up sequence, shown full screen over Playnite as it starts in Fullscreen, before **Home**: the **Boot video**, **Who's playing today?**, Signing you in, then a **Toast** saying "Hi" and the **Profile**'s first name. It has the pad to itself, the **Guide button** too.
+_Avoid_: splash, intro, login screen
+
+**Boot video**:
+One console generation's boot animation, from the original Xbox to the Series X, chosen on **Settings**, or Off. Any button skips it.
+_Avoid_: intro video, splash
+
+**Profile**:
+One person who plays on this PC: a gamertag, a real name and a picture, kept in the extension's encrypted store. It is identity only; the **Bundle**'s options are shared by every Profile. The first is made from the Windows user; the one signed in shows on the **Status area** and the **Guide**'s Profile & system.
+_Avoid_: account, user (that is the Windows user), gamer
+
+**Who's playing today?**:
+**Start-up**'s profile picker: the **Profiles** in a row, focus on the one signed in last, and A signs the focused one in. It asks on every start and on waking from sleep, unless turned off on **Settings**, when the last Profile signs in by itself.
+_Avoid_: profile select, login, user switcher
 
 **Discord tab**:
 The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears once the user has connected their own Discord application and stays until they disconnect it: while it can't show Discord it says only why: "Connecting to Discord" while a connect is under way, and "Discord isn't running" while Discord can't be reached and the extension keeps trying it, backing off, until it can sign in again by itself; once nothing is trying Discord, as when it no longer can sign in by itself, it says "Reconnect Discord in settings".
@@ -118,6 +134,8 @@ _Avoid_: home button, Xbox button
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
 - Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
+- **Start-up** plays the **Boot video**, then **Who's playing today?** signs a **Profile** in; its "Hi" **Toast** shows first, Playnite's notifications and a ringing **Call**'s Toast after it, and pressing the **Guide button** during it opens the **Guide** on Profile & system
+- Waking from sleep asks **Who's playing today?** again, without the **Boot video**
 - **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from
 
 ## Flagged ambiguities

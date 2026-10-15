@@ -254,27 +254,17 @@ namespace XboxSeries.Core
         /// <summary>
         /// "<paramref name="caller"/> is calling", with <paramref name="image"/> on its tile, for up to
         /// <see cref="RingToastDuration"/>, even over the Guide, with the notification sound. It cuts in before a notification's Toast, which waits
-        /// to show again after it with those behind it.
+        /// to show again after it with those behind it. During Start-up and the greeting it waits, and shows as the greeting goes.
         /// </summary>
         private void ShowRingToast(string caller, string image)
         {
-            if (toastTimer != null)
+            if (Startup.IsShown || greetingTimer != null)
             {
-                toastTimer.Dispose();
-                toastTimer = null;
-                if (Toast.IsShown && Toast.Kind != ToastKind.Call && shownNotification != null)
-                {
-                    var waiting = waitingToasts.ToList();
-                    waitingToasts.Clear();
-                    waitingToasts.Enqueue(shownNotification);
-                    foreach (var notification in waiting)
-                    {
-                        waitingToasts.Enqueue(notification);
-                    }
-                }
-
-                shownNotification = null;
+                waitingRingToast = () => ShowRingToast(caller, image);
+                return;
             }
+
+            PutBackShownNotification();
 
             ringToastTimer?.Dispose();
             Toast.Text = caller + " is calling";
@@ -285,9 +275,10 @@ namespace XboxSeries.Core
             ringToastTimer = clock.After(RingToastDuration, HideRingToast);
         }
 
-        /// <summary>The call's Toast goes, and any notifications waiting behind it follow.</summary>
+        /// <summary>The call's Toast goes, or no longer waits to show, and any notifications waiting behind it follow.</summary>
         private void HideRingToast()
         {
+            waitingRingToast = null;
             if (ringToastTimer == null)
             {
                 return;
