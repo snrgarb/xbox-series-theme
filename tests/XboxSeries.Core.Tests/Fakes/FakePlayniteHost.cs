@@ -88,5 +88,12 @@ namespace XboxSeries.Core.Tests.Fakes
         public List<PowerCommand> PowerCommands { get; } = new List<PowerCommand>();
 
         public void Power(PowerCommand command) => PowerCommands.Add(command);
+#if DEBUG
+
+        /// <summary>Every notification posted to Playnite, in order.</summary>
+        public List<(string Id, string Text)> PostedNotifications { get; } = new List<(string, string)>();
+
+        public void AddNotification(string id, string text) => PostedNotifications.Add((id, text));
+#endif
     }
 }

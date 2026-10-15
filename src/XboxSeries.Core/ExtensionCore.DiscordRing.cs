@@ -217,7 +217,7 @@ namespace XboxSeries.Core
             ringCaller = known?.Name ?? (string.IsNullOrEmpty(caller.Name) ? "Someone" : caller.Name);
             ringImage = known?.Image ?? caller.Avatar;
             CloseAnswerPrompt();
-            ShowRingToast();
+            ShowRingToast(ringCaller, ringImage);
             OnCallChanged();
         }
 
@@ -252,10 +252,11 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// "X is calling", for up to <see cref="RingToastDuration"/>, even over the Guide. It cuts in before a
-        /// notification's Toast, which waits to show again after it with those behind it.
+        /// "<paramref name="caller"/> is calling", with <paramref name="image"/> on its tile, for up to
+        /// <see cref="RingToastDuration"/>, even over the Guide. It cuts in before a notification's Toast, which waits
+        /// to show again after it with those behind it.
         /// </summary>
-        private void ShowRingToast()
+        private void ShowRingToast(string caller, string image)
         {
             if (toastTimer != null)
             {
@@ -276,9 +277,9 @@ namespace XboxSeries.Core
             }
 
             ringToastTimer?.Dispose();
-            Toast.Text = ringCaller + " is calling";
+            Toast.Text = caller + " is calling";
             Toast.Kind = ToastKind.Call;
-            Toast.Image = ringImage;
+            Toast.Image = image;
             Toast.IsShown = true;
             ringToastTimer = clock.After(RingToastDuration, HideRingToast);
         }
