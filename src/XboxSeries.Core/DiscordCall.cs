@@ -69,6 +69,9 @@ namespace XboxSeries.Core
         /// <summary>The avatar of the first person in the call other than the user, which pictures a DM; null while there is none.</summary>
         public string OtherAvatar => people.FirstOrDefault(p => p.UserId != selfId)?.Avatar;
 
+        /// <summary>Whether anyone other than the user is in the call.</summary>
+        public bool HasOthers => OtherAvatar != null;
+
         /// <summary>The user first, then the others in Discord's order.</summary>
         public IEnumerable<DiscordParticipant> UserFirst => people.OrderBy(p => p.UserId != selfId);
 
@@ -135,6 +138,21 @@ namespace XboxSeries.Core
 
         /// <summary>Whether the person with <paramref name="userId"/> is speaking, as Discord last said.</summary>
         public bool IsSpeaking(string userId) => userId != null && speaking.Contains(userId);
+
+        /// <summary>Whether the person with <paramref name="userId"/> is in the call.</summary>
+        public bool Has(string userId) => userId != null && people.Any(p => p.UserId == userId);
+
+        /// <summary>
+        /// The same channel fetched afresh: those still in it who were speaking in <paramref name="before"/> still are,
+        /// as Discord says so only as they start and stop.
+        /// </summary>
+        public void KeepSpeakingFrom(DiscordCall before)
+        {
+            foreach (var userId in before.speaking.Where(Has))
+            {
+                speaking.Add(userId);
+            }
+        }
     }
 
     /// <summary>One person in a call, as their voice state has them.</summary>
