@@ -4,8 +4,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
-using System.Windows.Shapes;
 using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
@@ -25,16 +23,16 @@ namespace XboxSeries.Extension
 
         /// <summary>The swirl, under the art: shown while art is fading in or out over it, and none is up.</summary>
         private readonly SwirlBackground swirl = new SwirlBackground();
-        private Layer front;
-        private Layer back;
+        private HeroLayer front;
+        private HeroLayer back;
 
         public HeroControl(HomeState home)
         {
             this.home = home;
             Focusable = false;
             IsHitTestVisible = false;
-            front = new Layer();
-            back = new Layer();
+            front = new HeroLayer();
+            back = new HeroLayer();
             var root = new Grid();
             root.Children.Add(swirl);
             root.Children.Add(back.Root);
@@ -87,46 +85,6 @@ namespace XboxSeries.Extension
             };
             front.Root.BeginAnimation(OpacityProperty, fadeIn);
             back.Root.BeginAnimation(OpacityProperty, new DoubleAnimation(0, Crossfade));
-        }
-
-        /// <summary>One image of the crossfade, with the blur and darkening a cover needs.</summary>
-        private sealed class Layer
-        {
-            private readonly Image image = new Image
-            {
-                Stretch = Stretch.UniformToFill,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Top,
-            };
-
-            private readonly Rectangle darken = new Rectangle { Fill = new SolidColorBrush(Color.FromArgb(0x99, 0, 0, 0)) };
-
-            public Layer()
-            {
-                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-                Root.Children.Add(image);
-                Root.Children.Add(darken);
-                Root.Opacity = 0;
-            }
-
-            public Grid Root { get; } = new Grid { ClipToBounds = true };
-
-            public void Show(HeroArt art)
-            {
-                if (art == null)
-                {
-                    return;
-                }
-
-                var isCover = art.IsCover;
-                image.Source = DecodedImageConverter.Load(art.Image, isCover ? 480 : 1920);
-
-                // A cover is small and portrait: blurred, it reads as colour behind Home rather than as a stretched picture.
-                // It overhangs the hero so the blur's soft edges fall outside it.
-                image.Effect = isCover ? new BlurEffect { Radius = 60, RenderingBias = RenderingBias.Performance } : null;
-                image.Margin = isCover ? new Thickness(-120) : new Thickness(0);
-                darken.Visibility = isCover ? Visibility.Visible : Visibility.Collapsed;
-            }
         }
     }
 }

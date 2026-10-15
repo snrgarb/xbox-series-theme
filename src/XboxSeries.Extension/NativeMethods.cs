@@ -5,12 +5,14 @@ using System.Text;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay and the Toast over a monitor, and the debug hotkey, closing a game, and fading Start-up out.</summary>
+    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay, the Toast and the Launch screen over a monitor, and the debug hotkey, closing a game, and fading Start-up out.</summary>
     internal static class NativeMethods
     {
         public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         public const uint SWP_SHOWWINDOW = 0x0040;
         public const uint SWP_NOACTIVATE = 0x0010;
+        public const uint SWP_NOSIZE = 0x0001;
+        public const uint SWP_NOMOVE = 0x0002;
         public const int SW_RESTORE = 9;
         public const int WM_HOTKEY = 0x0312;
         public const uint MOD_NOREPEAT = 0x4000;

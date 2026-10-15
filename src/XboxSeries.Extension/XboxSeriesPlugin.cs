@@ -26,6 +26,7 @@ namespace XboxSeries.Extension
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private bool libraryPushed;
         private ToastWindow toastWindow;
+        private LaunchScreenWindow launchScreenWindow;
         private StartupWindow startupWindow;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
@@ -88,6 +89,9 @@ namespace XboxSeries.Extension
             // Made and laid out once the UI thread is idle, so the Guide's first open is as quick as the rest.
             PlayniteApi.MainView.UIDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(overlay.Prewarm));
             toastWindow = toastWindow ?? new ToastWindow(core.Toast);
+
+            // Beneath the Toast's and the Overlay, which it keeps above it as it shows, so Toasts and the Guide show over it.
+            launchScreenWindow = launchScreenWindow ?? new LaunchScreenWindow(core.LaunchScreen, toastWindow, overlay);
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
@@ -135,6 +139,7 @@ namespace XboxSeries.Extension
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             windows.Overlay?.Close();
             toastWindow?.Close();
+            launchScreenWindow?.Close();
             startupWindow?.Shutdown();
             discordPipe.Close();
             audio.Dispose();

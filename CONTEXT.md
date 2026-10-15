@@ -82,6 +82,10 @@ _Avoid_: submenu, popup, page
 A green banner, as the console's, shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next.
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
+**Launch screen**:
+The launching game's art, full screen above every window, as on the console: its background art, or its cover blurred and darkened, chosen as **Home**'s hero chooses it. It fades in as a game is launched from anywhere in the **Bundle**, hides Steam, the Xbox app, Epic's launcher and any splash or update windows behind it, and fades out once the game is running, or the launch is cancelled, fails or times out. It never takes focus, so the game gets the pad as soon as it starts. It is separate from the **Overlay**.
+_Avoid_: splash, loading screen
+
 **Start-up**:
 The console's start-up sequence, shown full screen over Playnite as it starts in Fullscreen, before **Home**: the **Boot video**, **Who's playing today?**, Signing you in, then a **Toast** saying "Hi" and the **Profile**'s first name. It has the pad to itself, the **Guide button** too.
 _Avoid_: splash, intro, login screen
@@ -131,6 +135,7 @@ _Avoid_: home button, Xbox button
 - A game exiting, however it was quit, returns to **Home** from wherever it was launched, the Recent row focused on that game; a game quit from the **Guide** closes the **Guide** as it goes
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
 - A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject
+- A **Launch screen** never takes focus; the **Guide** and **Toasts** show over it
 - The **Guide** has three tabs: landing, the **Discord tab** (once connected, until disconnected), and Profile & system
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
 - Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
