@@ -52,27 +52,42 @@ namespace XboxSeries.Extension
                     p.SortingOrderDirection == SortOrderDirection.Descending ? SortDirection.Descending : SortDirection.Ascending))
                 .ToList();
 
-            // In the order of Playnite's own Software tools menu: by name. Null, which hides Apps, when they can't be read.
-            var apps = SoftwareTools()?
-                .OrderBy(a => a.Name)
-                .Select(a => new App(
-                    a.Id,
-                    a.Name,
-                    ExpandVariables(api, a.Path),
-                    ExpandVariables(api, a.Arguments),
-                    FullPath(database, a.Icon),
-                    ExpandVariables(api, a.WorkingDir)))
-                .ToList();
-
-            return new LibrarySnapshot(games, presets, apps);
+            return new LibrarySnapshot(games, presets, Apps(api));
         }
 
         /// <summary>
-        /// Not in the SDK: Playnite's Software tools. Their model is the SDK's <see cref="AppSoftware"/>, but the SDK's
-        /// database API doesn't list them; only Playnite's own database does. Null, and logged, on a build where it
-        /// can't be found or read.
+        /// The Apps, in the order of Playnite's own Software tools menu: by name. Null, which hides Apps, and logged, when
+        /// Software tools can't be read, so a failure reading them leaves the games as they are.
         /// </summary>
-        internal static List<AppSoftware> SoftwareTools()
+        private static List<App> Apps(IPlayniteAPI api)
+        {
+            try
+            {
+                return SoftwareTools()?
+                    .OrderBy(a => a.Name)
+                    .Select(a => new App(
+                        a.Id,
+                        a.Name,
+                        ExpandVariables(api, a.Path),
+                        ExpandVariables(api, a.Arguments),
+                        FullPath(api.Database, a.Icon),
+                        ExpandVariables(api, a.WorkingDir)))
+                    .ToList();
+            }
+            catch (Exception e)
+            {
+                logger.Warn(e, "Couldn't read Playnite's Software tools");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Not in the SDK: Playnite's Software tools, live. Their model is the SDK's <see cref="AppSoftware"/>, but the
+        /// SDK's database API doesn't list them; only Playnite's own database does, as an SDK
+        /// <see cref="IItemCollection{TItem}"/> that tells when they change. Null, and logged, on a build where it
+        /// can't be found.
+        /// </summary>
+        internal static IEnumerable<AppSoftware> SoftwareTools()
         {
             try
             {
@@ -83,7 +98,7 @@ namespace XboxSeries.Extension
                 var database = current?.GetType().GetProperty("Database")?.GetValue(current);
                 if (database?.GetType().GetProperty("SoftwareApps")?.GetValue(database) is IEnumerable<AppSoftware> tools)
                 {
-                    return tools.ToList();
+                    return tools;
                 }
 
                 logger.Warn("Can't read Playnite's Software tools: this Playnite build has no Database.SoftwareApps");

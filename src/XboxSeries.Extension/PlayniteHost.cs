@@ -70,13 +70,32 @@ namespace XboxSeries.Extension
         public void StartApp(App app)
         {
             // Not in the SDK: Playnite's own start of a Software tool, as its Software tools menu runs it. It runs script
-            // tools too, and shows Playnite's error when the tool can't start. Later: that error is a modal window.
+            // tools too, and shows Playnite's error when the App can't start. Later: that error is a modal window.
             var model = Application.Current?.MainWindow?.DataContext;
             var start = model?.GetType().GetMethod("StartSoftwareTool", new[] { typeof(AppSoftware) });
-            var tool = start == null ? null : PlayniteLibrary.SoftwareTools()?.FirstOrDefault(t => t.Id == app.Id);
+            AppSoftware tool = null;
+            try
+            {
+                tool = start == null ? null : PlayniteLibrary.SoftwareTools()?.FirstOrDefault(t => t.Id == app.Id);
+            }
+            catch (Exception e)
+            {
+                logger.Warn(e, "Couldn't read Playnite's Software tools");
+            }
+
             if (tool != null)
             {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() => start.Invoke(model, new object[] { tool })));
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        start.Invoke(model, new object[] { tool });
+                    }
+                    catch (Exception e)
+                    {
+                        ShowStartupError(app, (e as TargetInvocationException)?.InnerException ?? e);
+                    }
+                }));
                 return;
             }
 
@@ -86,12 +105,18 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Starts an App's path with its arguments as Playnite does when it can't run its own start: in its working
-        /// directory, or else the one its path is in. A tool that can't start shows Playnite's error for it.
+        /// directory, or else the one its path is in. An App that can't start, or a script tool, which has no path to
+        /// start, shows Playnite's error for it.
         /// </summary>
         private void StartProcess(App app)
         {
             try
             {
+                if (string.IsNullOrEmpty(app.Path))
+                {
+                    throw new InvalidOperationException($"{app.Name} has no path to start; only Playnite can run a script tool.");
+                }
+
                 var path = app.Path.Contains("..") ? Path.GetFullPath(app.Path) : app.Path;
                 Process.Start(new ProcessStartInfo(path)
                 {
@@ -103,11 +128,17 @@ namespace XboxSeries.Extension
             }
             catch (Exception e)
             {
-                logger.Error(e, $"Couldn't start {app.Name}");
-                api.Dialogs.ShowErrorMessage(
-                    ResourceProvider.GetString("LOCAppStartupError") + "\n\n" + e.Message,
-                    ResourceProvider.GetString("LOCStartupError"));
+                ShowStartupError(app, e);
             }
+        }
+
+        /// <summary>Logs an App that couldn't start and shows Playnite's own startup error for it.</summary>
+        private void ShowStartupError(App app, Exception e)
+        {
+            logger.Error(e, $"Couldn't start {app.Name}");
+            api.Dialogs.ShowErrorMessage(
+                ResourceProvider.GetString("LOCAppStartupError") + "\n\n" + e.Message,
+                ResourceProvider.GetString("LOCStartupError"));
         }
 
         public void OpenGameHub(Guid gameId)

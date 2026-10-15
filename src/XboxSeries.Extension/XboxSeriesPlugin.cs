@@ -117,6 +117,14 @@ namespace XboxSeries.Extension
             PlayniteApi.Database.Games.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
             PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
             PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
+
+            // Apps follow Software tools added, renamed or removed in Playnite, on a build that tells when they change.
+            if (PlayniteLibrary.SoftwareTools() is IItemCollection<Playnite.SDK.Models.AppSoftware> softwareTools)
+            {
+                softwareTools.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
+                softwareTools.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
+            }
+
             PushNotifications();
             controller.Changed += () => OnUiThread(core.OnControllersChanged);
             audio.DevicesChanged += () => OnUiThread(core.OnAudioDevicesChanged);
