@@ -14,7 +14,7 @@ namespace XboxSeries.Core.Tests
 
         public StatusTests()
         {
-            core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), controller);
+            core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), controller, new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore());
         }
 
         [Fact]

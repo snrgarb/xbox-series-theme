@@ -174,10 +174,13 @@ namespace XboxSeries.Core
         public IReadOnlyList<GuideItem> Items { get; }
     }
 
-    /// <summary>A Guide tab. The Discord tab slots in between the two later.</summary>
+    /// <summary>A Guide tab, in the order they sit along its top.</summary>
     public enum GuideTabKind
     {
         Landing,
+
+        /// <summary>The Discord tab, in the console's Parties &amp; chats slot: only there while Discord is connected.</summary>
+        Discord,
         ProfileAndSystem,
     }
 
@@ -238,6 +241,12 @@ namespace XboxSeries.Core
 
         /// <summary>The Audio flyout's mute switch: A turns it on and off.</summary>
         Mute,
+
+        /// <summary>The Discord tab's card for the Discord user signed in, by name.</summary>
+        DiscordAccount,
+
+        /// <summary>The Discord tab's line saying the user isn't in a voice channel.</summary>
+        DiscordIdle,
     }
 
     /// <summary>One entry on a Guide tab.</summary>

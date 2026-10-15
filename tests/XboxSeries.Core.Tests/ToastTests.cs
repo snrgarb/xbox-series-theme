@@ -14,7 +14,7 @@ namespace XboxSeries.Core.Tests
         public ToastTests()
         {
             core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(),
-                new FakeUserAccount(), new FakeAudio(), new FakeController());
+                new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore());
         }
 
         [Fact]

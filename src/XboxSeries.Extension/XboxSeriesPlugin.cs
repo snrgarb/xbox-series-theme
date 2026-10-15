@@ -34,7 +34,8 @@ namespace XboxSeries.Extension
             Properties = new GenericPluginProperties { HasSettings = false };
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
-            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), controller);
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(), new WindowsAudio(), controller,
+                null, null, null); // wired in the next step
 
             // Home's elements, its top bar's status area, My games & apps and Settings, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs

@@ -17,7 +17,7 @@ namespace XboxSeries.Core.Tests
         public MyGamesTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), drives, new FakeUserAccount(), new FakeAudio(), new FakeController());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), drives, new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore());
         }
 
         [Fact]
