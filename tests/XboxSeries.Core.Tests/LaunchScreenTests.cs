@@ -171,6 +171,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_launch_the_extension_sends_shows_the_Launch_screen_only_once_Playnite_begins_it()
+        {
+            // Playnite may never begin it, as for a game that isn't installed, whose install dialog must not be hidden.
+            core.PlayGame(library.Id("Hades"));
+            Assert.False(core.LaunchScreen.IsShown);
+
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+
+            Assert.True(core.LaunchScreen.IsShown);
+            Assert.Equal(library.Id("Hades"), core.LaunchScreen.Art.GameId);
+        }
+
+        [Fact]
         public void The_Guide_button_opens_the_Guide_over_the_Launch_screen()
         {
             core.OnGameStarting(library.Id("Halo Infinite"));
