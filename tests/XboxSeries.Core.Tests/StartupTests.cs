@@ -544,6 +544,15 @@ namespace XboxSeries.Core.Tests
         }
 #if DEBUG
 
+        [Theory]
+        [InlineData("Gabe Smith", true)]
+        [InlineData("", false)]
+        [InlineData("   ", false)]
+        public void A_profile_has_a_real_name_for_Homes_top_bar_to_swap_with_its_gamertag_only_with_some_text(string realName, bool has)
+        {
+            Assert.Equal(has, new Profile("p", "gabe", realName, null).HasRealName);
+        }
+
         [Fact]
         public void A_call_ringing_during_Start_up_shows_its_Toast_after_the_greeting()
         {

@@ -56,6 +56,9 @@ namespace XboxSeries.Core
         /// <summary>A full path to the profile's picture: a gamerpic or the Windows account picture; null for none.</summary>
         public string Picture { get; }
 
+        /// <summary>Whether the profile has a real name: only then does Home's top bar swap it with the gamertag.</summary>
+        public bool HasRealName => RealName.Trim().Length > 0;
+
         /// <summary>The name "Hi X!" greets: the real name's first word, or the gamertag without one.</summary>
         public string FirstName
         {

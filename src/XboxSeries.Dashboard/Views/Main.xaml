@@ -66,7 +66,7 @@
     <!--
         The top bar's profile: the user's picture and name. With the extension, a button that opens the Guide on Profile &
         system, ringed like the round icons when focused, showing the profile signed in (its Tag, the extension's
-        State.Profile) by its picture and gamertag; theme-only, or before anyone has signed in, the person glyph and the
+        State.Profile) by its picture and gamertag, taking turns with its real name when it has one; theme-only, or before anyone has signed in, the person glyph and the
         Windows user's name, and never focused theme-only. A picture that won't load leaves the glyph showing.
     -->
     <Style x:Key="XboxTopBarProfile" TargetType="Button">
@@ -92,13 +92,47 @@
                             <Ellipse x:Name="Ring" Margin="-4" StrokeThickness="3"
                                      Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                         </Grid>
-                        <TextBlock Text="{Binding Tag.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
-                                   Style="{StaticResource XboxText}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                        <Grid VerticalAlignment="Center" Margin="16,0,0,0">
+                            <TextBlock x:Name="Gamertag" Text="{Binding Tag.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
+                                       Style="{StaticResource XboxText}" />
+                            <TextBlock x:Name="RealName" Text="{Binding Tag.RealName, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Null}}"
+                                       Style="{StaticResource XboxText}" Opacity="0" />
+                        </Grid>
                     </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
                         </Trigger>
+
+                        <!--
+                            With a real name, the gamertag and the real name take turns in the name's place, as on the
+                            console, crossfading on the Toast's text cycle: each for 2.2 s, a 0.3 s crossfade to the other.
+                        -->
+                        <DataTrigger Binding="{Binding Tag.HasRealName, RelativeSource={RelativeSource Self}, FallbackValue=False}" Value="True">
+                            <DataTrigger.EnterActions>
+                                <BeginStoryboard x:Name="NameSwap">
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Gamertag" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="0" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="0" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="1" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RealName" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="0" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="1" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="1" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="0" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </DataTrigger.EnterActions>
+                            <DataTrigger.ExitActions>
+                                <RemoveStoryboard BeginStoryboardName="NameSwap" />
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
