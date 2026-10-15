@@ -22,9 +22,13 @@ namespace XboxSeries.Extension
 
         private readonly ToastState toast;
 
+        /// <summary>The text's fade between the Toast's line and "Press (Guide) to view", running while it shows.</summary>
+        private readonly Storyboard textCycle;
+
         public ToastWindow(ToastState toast)
         {
             InitializeComponent();
+            textCycle = (Storyboard)Resources["TextCycle"];
             this.toast = toast;
             DataContext = toast;
             toast.PropertyChanged += OnToastChanged;
@@ -50,6 +54,9 @@ namespace XboxSeries.Extension
             if (toast.IsShown)
             {
                 ShowOverForeground();
+
+                // On the Toast's line first, each time it shows.
+                textCycle.Begin(this, true);
                 Animate(0, 1, InDuration, null);
             }
             else
@@ -58,6 +65,7 @@ namespace XboxSeries.Extension
                 {
                     if (!toast.IsShown)
                     {
+                        textCycle.Stop(this);
                         Hide();
                     }
                 });
