@@ -11,6 +11,8 @@
   <ItemGroup>
     <!-- Playnite provides Playnite.SDK.dll at runtime, so it is never copied into the package. -->
     <PackageReference Include="PlayniteSDK" Version="6.18.0" ExcludeAssets="runtime" />
+    <!-- Windows.Gaming.Input, for pad 1's battery over Bluetooth, which XInput doesn't report. Windows provides it at runtime. -->
+    <PackageReference Include="Microsoft.Windows.SDK.Contracts" Version="10.0.19041.1" ExcludeAssets="runtime" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XboxSeries.Core\XboxSeries.Core.csproj" />
@@ -19,5 +21,14 @@
     <None Remove="extension.yaml" />
     <AssemblyMetadata Include="PluginGuid" Value="$(PluginGuid)" />
   </ItemGroup>
+  <!--
+    The Windows SDK contracts bring .NET Standard facades into the build, which the XAML compiler needs. They aren't
+    copied out: .NET Framework 4.7.2 and later, which Playnite runs on, have them built in.
+  -->
+  <Target Name="KeepNETStandardFacadesOutOfThePackage" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FullPath)').Contains('Microsoft.NET.Build.Extensions'))" />
+    </ItemGroup>
+  </Target>
   <Import Project="$(RepoRoot)build\Bundle.targets" />
 </Project>
