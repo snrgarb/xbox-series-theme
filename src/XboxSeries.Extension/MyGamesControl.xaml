@@ -129,7 +129,7 @@
             </Style>
 
             <!--
-                An App's tile, after the console's app tiles: square, filled with the accent, the tool's icon centred and its
+                An App's tile, after the console's app tiles: square, filled with the accent, the App's icon centred and its
                 name at the bottom left. Square from its width, which the grid sets to a fifth of the row. As on a Play
                 history row, the focus ring sits in the tile's own 4 px edge, so the list's scrolling never clips it.
             -->
@@ -315,7 +315,7 @@
             </ListBox>
 
             <!--
-                Apps, five to a row like Games' grid. Not virtualized: a library has a handful of Software tools, and their
+                Apps, five to a row like Games' grid. Not virtualized: a library has a handful of Apps, and their
                 icons are read small.
             -->
             <ListBox x:Name="AppsList" Grid.Row="1" ItemsSource="{Binding Apps}" ItemContainerStyle="{StaticResource AppTile}"
@@ -331,7 +331,7 @@
                 </ListBox.Template>
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <UniformGrid Columns="5" VerticalAlignment="Top" />
+                        <UniformGrid Columns="{x:Static local:MyGamesControl.AppsPerRow}" VerticalAlignment="Top" />
                     </ItemsPanelTemplate>
                 </ListBox.ItemsPanel>
                 <ListBox.ItemTemplate>

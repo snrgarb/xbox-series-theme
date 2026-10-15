@@ -40,8 +40,8 @@ namespace XboxSeries.Extension
             " SmoothScrollEnabled=\"{Settings Fullscreen.SmoothScrolling}\" />" +
             "</ItemsPanelTemplate>";
 
-        /// <summary>Apps to a row, as Games' grid: the Apps list's UniformGrid lays them out in as many columns.</summary>
-        private const int AppsPerRow = 5;
+        /// <summary>Apps to a row, as Games' grid: the Apps list's UniformGrid takes its columns from this.</summary>
+        public const int AppsPerRow = 5;
 
         private readonly ExtensionCore core;
         private FrameworkElement viewHost;
