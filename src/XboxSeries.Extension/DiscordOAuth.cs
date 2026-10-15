@@ -52,9 +52,9 @@ namespace XboxSeries.Extension
                     body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 }
 
-                if (status != 200)
+                if (status < 200 || status > 299)
                 {
-                    // The body is Discord's error, e.g. invalid_grant; a 200's body holds the tokens.
+                    // The body is Discord's error, e.g. invalid_grant; a success's body holds the tokens, so it is never logged.
                     logger.Warn($"Discord's token endpoint answered {status}: {body}");
                 }
             }

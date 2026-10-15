@@ -131,6 +131,12 @@ namespace XboxSeries.Core
         /// <summary>Settings' Disconnect: closes the connection and forgets the tokens. The Client ID and Secret stay.</summary>
         public void DisconnectDiscord()
         {
+            // Greyed with nothing to disconnect: pressed then, it leaves the status line saying what last went wrong.
+            if (!Settings.Discord.CanDisconnect)
+            {
+                return;
+            }
+
             secrets.Delete(AccessTokenSecret);
             secrets.Delete(RefreshTokenSecret);
             secrets.Delete(ExpiresAtSecret);
