@@ -214,7 +214,7 @@
                                             <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
                                                        Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
                                         </Border>
-                                        <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="6"
+                                        <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
                                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                                     </Grid>
                                     <DataTemplate.Triggers>
@@ -361,7 +361,7 @@
                                                 <Ellipse x:Name="SwitchKnob" Width="12" Height="12" Fill="White" HorizontalAlignment="Left" Margin="6,0" />
                                             </Grid>
                                             <!-- The tiles' ring, 1 px past the entry as theirs is past their art. -->
-                                            <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="6"
+                                            <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
                                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
                                         </Grid>
                                     </StackPanel>
@@ -424,11 +424,21 @@
                                             <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
                                             <Setter TargetName="Title" Property="FontSize" Value="24" />
                                         </DataTrigger>
-                                        <!-- A notification: its text, wrapping, with no icon. -->
+                                        <!--
+                                            A notification: a card in the console's inbox, slightly lighter than the panel, with
+                                            the bell Home's top bar uses beside its wrapping text.
+                                        -->
                                         <DataTrigger Binding="{Binding Kind}" Value="Notification">
                                             <Setter TargetName="Entry" Property="Height" Value="NaN" />
-                                            <Setter TargetName="Entry" Property="MinHeight" Value="75" />
-                                            <Setter TargetName="Text" Property="Margin" Value="24,14,24,14" />
+                                            <Setter TargetName="Entry" Property="MinHeight" Value="87" />
+                                            <Setter TargetName="Entry" Property="Margin" Value="9,0,9,9" />
+                                            <Setter TargetName="Fill" Property="Background" Value="#14FFFFFF" />
+                                            <Setter TargetName="Glyph" Property="Text" Value="&#xE91C;" />
+                                            <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                                            <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                                            <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
+                                            <Setter TargetName="Glyph" Property="Padding" Value="0,24,0,0" />
+                                            <Setter TargetName="Text" Property="Margin" Value="69,18,24,18" />
                                             <Setter TargetName="Title" Property="FontSize" Value="22" />
                                             <Setter TargetName="Title" Property="MaxHeight" Value="120" />
                                         </DataTrigger>
