@@ -286,17 +286,17 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Audio_shows_Windows_volume_and_mute_as_they_are_when_it_opens_with_focus_on_the_volume()
+        public void Audio_shows_Windows_volume_and_mute_as_they_are_when_it_opens_under_Output_and_Input()
         {
             audio.Volume = 36;
             audio.IsMuted = true;
 
             OpenUtility(GuideItemKind.Audio);
 
-            Assert.Equal(new[] { GuideItemKind.Volume, GuideItemKind.Mute }, Flyout.Select(i => i.Kind));
-            Assert.Equal(36, Flyout[0].Level);
-            Assert.True(Flyout[1].IsOn);
-            Assert.Equal(GuideItemKind.Volume, core.Guide.FocusedItem.Kind);
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, Flyout.Select(i => i.Kind));
+            Assert.Equal(36, Flyout[2].Level);
+            Assert.True(Flyout[3].IsOn);
+            Assert.Equal(GuideItemKind.AudioOutput, core.Guide.FocusedItem.Kind);
         }
 
         [Fact]
@@ -304,6 +304,7 @@ namespace XboxSeries.Core.Tests
         {
             audio.Volume = 97;
             OpenUtility(GuideItemKind.Audio);
+            FocusOn(GuideItemKind.Volume);
             sounds.Played.Clear();
 
             Tap(ControllerButton.DPadRight);
@@ -330,6 +331,7 @@ namespace XboxSeries.Core.Tests
             audio.Volume = 0;
             audio.Refuses = true;
             OpenUtility(GuideItemKind.Audio);
+            FocusOn(GuideItemKind.Volume);
             sounds.Played.Clear();
 
             Tap(ControllerButton.DPadRight);
@@ -343,6 +345,7 @@ namespace XboxSeries.Core.Tests
         {
             audio.Volume = 50;
             OpenUtility(GuideItemKind.Audio);
+            FocusOn(GuideItemKind.Volume);
 
             Press(ControllerButton.DPadLeft);
             clock.Advance(TimeSpan.FromMilliseconds(700 + 80 * 4));
@@ -356,8 +359,7 @@ namespace XboxSeries.Core.Tests
         public void A_on_Mute_mutes_and_unmutes_Windows()
         {
             OpenUtility(GuideItemKind.Audio);
-            Tap(ControllerButton.DPadDown);
-            Assert.Equal(GuideItemKind.Mute, core.Guide.FocusedItem.Kind);
+            FocusOn(GuideItemKind.Mute);
 
             Tap(ControllerButton.A);
             Assert.True(audio.IsMuted);
@@ -374,7 +376,7 @@ namespace XboxSeries.Core.Tests
         {
             audio.Volume = 50;
             OpenUtility(GuideItemKind.Audio);
-            Tap(ControllerButton.DPadDown);
+            FocusOn(GuideItemKind.Mute);
 
             Tap(ControllerButton.DPadRight);
 
@@ -397,6 +399,15 @@ namespace XboxSeries.Core.Tests
             }
 
             Tap(ControllerButton.A);
+        }
+
+        /// <summary>Down through the flyout until focus is on the entry of <paramref name="kind"/>.</summary>
+        private void FocusOn(GuideItemKind kind)
+        {
+            while (core.Guide.FocusedItem.Kind != kind)
+            {
+                Tap(ControllerButton.DPadDown);
+            }
         }
 
         private void Press(ControllerButton button) => core.OnControllerButton(button, ButtonState.Pressed);

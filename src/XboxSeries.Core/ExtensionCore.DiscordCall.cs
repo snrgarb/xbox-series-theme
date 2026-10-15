@@ -264,13 +264,7 @@ namespace XboxSeries.Core
 
             if (Guide.Flyout?.Kind == GuideItemKind.Audio)
             {
-                var items = AudioItems();
-                if (!UpdateInPlace(Guide.Flyout.Items, items))
-                {
-                    var focus = FocusAfterRebuild(Guide.Flyout.Items, items);
-                    Guide.Flyout = new GuideFlyout(GuideItemKind.Audio, "Audio", items);
-                    Guide.FocusedItem = focus;
-                }
+                RefreshAudioFlyout();
             }
             else if (Guide.Tab == GuideTabKind.Discord)
             {
@@ -361,14 +355,15 @@ namespace XboxSeries.Core
             ?? items.FirstOrDefault(i => i.Kind == GuideItemKind.DiscordServers)
             ?? items[0];
 
-        /// <summary>The Audio flyout: Windows' volume and mute, then, in a call, the user's Discord mute and deafen.</summary>
+        /// <summary>
+        /// The Audio flyout: the Output and Input dropdowns, Windows' volume and mute, then, in a call, the user's Discord
+        /// mute and deafen.
+        /// </summary>
         private IReadOnlyList<GuideItem> AudioItems()
         {
-            var items = new List<GuideItem>
-            {
-                new GuideItem(GuideItemKind.Volume, "Volume") { Level = audio.Volume },
-                new GuideItem(GuideItemKind.Mute, "Mute") { IsOn = audio.IsMuted },
-            };
+            var items = AudioDropdowns().ToList();
+            items.Add(new GuideItem(GuideItemKind.Volume, "Volume") { Level = audio.Volume });
+            items.Add(new GuideItem(GuideItemKind.Mute, "Mute") { IsOn = audio.IsMuted });
             if (call != null)
             {
                 items.Add(new GuideItem(GuideItemKind.DiscordMute, "Mute in Discord") { IsOn = discordSelfMute });

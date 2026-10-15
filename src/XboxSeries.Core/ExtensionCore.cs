@@ -493,6 +493,11 @@ namespace XboxSeries.Core
                 dialog.Decline();
                 AfterAnswer(handBack => Dismiss(button, handBack));
             }
+            else if (button == ControllerButton.B && Guide.IsOpen && OpenDropdown != null)
+            {
+                StopRepeat();
+                CloseDeviceList(OpenDropdown);
+            }
             else if (button == ControllerButton.B && Guide.IsOpen && Guide.Flyout != null)
             {
                 CloseFlyout();
@@ -803,14 +808,6 @@ namespace XboxSeries.Core
                 : AudioItems();
             Guide.Flyout = new GuideFlyout(kind, kind == GuideItemKind.Notifications ? "Notifications" : "Audio", items);
             Guide.FocusedItem = items.FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Windows' audio devices or its defaults changed: an open Audio flyout follows, its dropdowns and any open list
-        /// showing what Windows reports now. Called on the UI thread.
-        /// </summary>
-        public void OnAudioDevicesChanged()
-        {
         }
 
         /// <summary>B in a flyout: closes it, focus back on the entry that opened it; in a Discord server's, back to the Servers flyout.</summary>
@@ -1339,7 +1336,7 @@ namespace XboxSeries.Core
         {
             if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
                 || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle || item.Kind == GuideItemKind.DiscordUnavailable
-                || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant)
+                || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant || IsEmptyDropdown(item))
             {
                 return;
             }
@@ -1360,6 +1357,19 @@ namespace XboxSeries.Core
             {
                 StopRepeat();
                 OpenFlyout(item.Kind);
+                return;
+            }
+
+            if (IsDropdown(item))
+            {
+                StopRepeat();
+                OpenDeviceList(item, null);
+                return;
+            }
+
+            if (item.Kind == GuideItemKind.AudioDevice)
+            {
+                ChooseDevice(item);
                 return;
             }
 
@@ -1499,6 +1509,14 @@ namespace XboxSeries.Core
             {
                 // Among the Discord tab's shortcut tiles, or onto them.
             }
+            else if (OpenDropdown != null)
+            {
+                // An open list has the pad: up and down along it, left and right nothing.
+                if (vertical)
+                {
+                    Guide.FocusedItem = Step(OpenDropdown.Options, Guide.FocusedItem, by);
+                }
+            }
             else if (vertical)
             {
                 Guide.FocusedItem = Step(entries, Guide.FocusedItem, by);
@@ -1562,9 +1580,14 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Whether the mouse can reach <paramref name="item"/>: an open flyout's entries, otherwise the tab's and its utilities.</summary>
+        /// <summary>
+        /// Whether the mouse can reach <paramref name="item"/>: an open dropdown's devices, otherwise an open flyout's
+        /// entries, otherwise the tab's and its utilities.
+        /// </summary>
         private bool IsShowing(GuideItem item) =>
-            Guide.Flyout != null ? Guide.Flyout.Items.Contains(item) : Guide.Items.Contains(item) || Guide.Utilities.Contains(item);
+            OpenDropdown != null ? OpenDropdown.Options.Contains(item)
+            : Guide.Flyout != null ? Guide.Flyout.Items.Contains(item)
+            : Guide.Items.Contains(item) || Guide.Utilities.Contains(item);
 
         /// <summary>A click on an entry. No pad button is held, so focus goes on at once.</summary>
         public void ChooseItem(GuideItem item)

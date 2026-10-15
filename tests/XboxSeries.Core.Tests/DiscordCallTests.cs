@@ -23,12 +23,13 @@ namespace XboxSeries.Core.Tests
         private readonly FakeDiscordTransport transport = new FakeDiscordTransport();
         private readonly FakeDiscordOAuth oauth = new FakeDiscordOAuth();
         private readonly FakeSecretStore secrets = new FakeSecretStore();
+        private readonly FakeAudio audio = new FakeAudio();
         private readonly ExtensionCore core;
 
         public DiscordCallTests()
         {
             core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(),
-                new FakeAudio(), new FakeController(), transport, oauth, secrets);
+                audio, new FakeController(), transport, oauth, secrets);
         }
 
         private StatusState Status => core.Status;
@@ -456,7 +457,7 @@ namespace XboxSeries.Core.Tests
 
             OpenAudio();
 
-            Assert.Equal(new[] { GuideItemKind.Volume, GuideItemKind.Mute }, core.Guide.Flyout.Items.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, core.Guide.Flyout.Items.Select(i => i.Kind));
         }
 
         [Fact]
@@ -467,11 +468,12 @@ namespace XboxSeries.Core.Tests
             OpenAudio();
 
             var items = core.Guide.Flyout.Items;
-            Assert.Equal(new[] { GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.DiscordMute, GuideItemKind.DiscordDeafen }, items.Select(i => i.Kind));
-            Assert.Equal(new[] { false, true }, items.Skip(2).Select(i => i.IsOn));
+            Assert.Equal(
+                new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.DiscordMute, GuideItemKind.DiscordDeafen },
+                items.Select(i => i.Kind));
+            Assert.Equal(new[] { false, true }, items.Skip(4).Select(i => i.IsOn));
 
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
+            FocusOn(GuideItemKind.DiscordMute);
             Tap(ControllerButton.A);
 
             Assert.True(JToken.DeepEquals(new JObject { ["mute"] = true }, transport.LastCommand("SET_VOICE_SETTINGS")["args"]));
@@ -480,7 +482,7 @@ namespace XboxSeries.Core.Tests
             Dispatch("VOICE_SETTINGS_UPDATE", Settings(mute: true, deaf: true));
 
             Assert.Same(items, core.Guide.Flyout.Items);
-            Assert.True(items[2].IsOn);
+            Assert.True(items[4].IsOn);
         }
 
         [Fact]
@@ -488,13 +490,12 @@ namespace XboxSeries.Core.Tests
         {
             NotInCall();
             OpenAudio();
-            Tap(ControllerButton.DPadDown);
-            Assert.Equal(GuideItemKind.Mute, core.Guide.FocusedItem.Kind);
+            FocusOn(GuideItemKind.Mute);
 
             Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = "500" });
             Reply("GET_CHANNEL", Channel("500", "Late night", 2, State(Me, "gabe")));
 
-            Assert.Equal(4, core.Guide.Flyout.Items.Count);
+            Assert.Equal(6, core.Guide.Flyout.Items.Count);
             Assert.Equal(GuideItemKind.Audio, core.Guide.Flyout.Kind);
             Assert.Equal(GuideItemKind.Mute, core.Guide.FocusedItem.Kind);
             Assert.Contains(core.Guide.FocusedItem, core.Guide.Flyout.Items);
@@ -505,15 +506,51 @@ namespace XboxSeries.Core.Tests
         {
             InCall(Channel("500", "Late night", 2, State(Me, "gabe")));
             OpenAudio();
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
-            Assert.Equal(GuideItemKind.DiscordDeafen, core.Guide.FocusedItem.Kind);
+            FocusOn(GuideItemKind.DiscordDeafen);
 
             Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null });
 
-            Assert.Equal(new[] { GuideItemKind.Volume, GuideItemKind.Mute }, core.Guide.Flyout.Items.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, core.Guide.Flyout.Items.Select(i => i.Kind));
             Assert.Equal(GuideItemKind.Mute, core.Guide.FocusedItem.Kind);
+        }
+
+        [Fact]
+        public void Discord_s_toggles_changing_leave_an_open_Output_list_open_with_focus_where_it_was()
+        {
+            audio.Add("speakers", "Speakers", AudioDeviceKind.Output);
+            audio.Add("headphones", "Headphones", AudioDeviceKind.Output);
+            InCall(Channel("500", "Late night", 2, State(Me, "gabe")));
+            OpenAudio();
+            Tap(ControllerButton.A);
+            Tap(ControllerButton.DPadDown);
+            var output = core.Guide.Flyout.Items[0];
+
+            Dispatch("VOICE_SETTINGS_UPDATE", Settings(mute: true, deaf: false));
+
+            Assert.True(output.IsExpanded);
+            Assert.Same(core.Guide.Flyout.Items[0], output);
+            Assert.Equal("Headphones", core.Guide.FocusedItem.Title);
+            Assert.Contains(core.Guide.FocusedItem, output.Options);
+        }
+
+        [Fact]
+        public void A_call_ending_with_an_Output_list_open_closes_it_focus_on_Output()
+        {
+            audio.Add("speakers", "Speakers", AudioDeviceKind.Output);
+            InCall(Channel("500", "Late night", 2, State(Me, "gabe")));
+            OpenAudio();
+            Tap(ControllerButton.A);
+            Assert.Equal(GuideItemKind.AudioDevice, core.Guide.FocusedItem.Kind);
+
+            Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null });
+
+            var output = core.Guide.Flyout.Items[0];
+            Assert.Equal(4, core.Guide.Flyout.Items.Count);
+            Assert.False(output.IsExpanded);
+            Assert.Same(output, core.Guide.FocusedItem);
+
+            Tap(ControllerButton.B);
+            Assert.Null(core.Guide.Flyout);
         }
 
         [Fact]
@@ -607,6 +644,15 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.DPadRight);
             Tap(ControllerButton.A);
             Assert.Equal(GuideItemKind.Audio, core.Guide.Flyout.Kind);
+        }
+
+        /// <summary>Down through the flyout until focus is on the entry of <paramref name="kind"/>.</summary>
+        private void FocusOn(GuideItemKind kind)
+        {
+            while (core.Guide.FocusedItem.Kind != kind)
+            {
+                Tap(ControllerButton.DPadDown);
+            }
         }
 
         private IReadOnlyList<GuideItemKind> Kinds() => core.Guide.Items.Select(i => i.Kind).ToList();
