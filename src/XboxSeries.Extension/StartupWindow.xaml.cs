@@ -37,10 +37,8 @@ namespace XboxSeries.Extension
         private readonly ExtensionCore core;
         private readonly StartupState startup;
         private readonly Action<bool> silenceThemeSounds;
-        private readonly Storyboard spin;
         private readonly DispatcherTimer fade;
         private DateTime fadeStarted;
-        private bool spinning;
         private bool closing;
 
         /// <summary>Counts the videos played, so only the one playing ends the boot video, once.</summary>
@@ -54,7 +52,6 @@ namespace XboxSeries.Extension
             this.silenceThemeSounds = silenceThemeSounds;
             startup = core.Startup;
             DataContext = startup;
-            spin = (Storyboard)Resources["Spin"];
             startup.PropertyChanged += OnStartupChanged;
             SizeChanged += (_, __) => FitToScreen();
             Deactivated += (_, __) => KeepForeground();
@@ -187,17 +184,11 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The swirl fading in over whatever was behind it, as the boot video, and set turning, Signing you in's light
-        /// with it. The swirl turns while it is visible.
+        /// The swirl fading in over whatever was behind it, as the boot video, and set turning. The swirl, and Signing you
+        /// in's spinner, turn while they are visible.
         /// </summary>
         private void ShowSwirl()
         {
-            if (!spinning)
-            {
-                spin.Begin(this, true);
-                spinning = true;
-            }
-
             SwirlLayer.Visibility = Visibility.Visible;
             if (SwirlLayer.Opacity < 1 && !SwirlLayer.HasAnimatedProperties)
             {
@@ -208,12 +199,6 @@ namespace XboxSeries.Extension
         /// <summary>The swirl gone and still, as the boot video plays or once the window has hidden.</summary>
         private void HideSwirl()
         {
-            if (spinning)
-            {
-                spin.Stop(this);
-                spinning = false;
-            }
-
             SwirlLayer.BeginAnimation(OpacityProperty, null);
             SwirlLayer.Opacity = 0;
             SwirlLayer.Visibility = Visibility.Hidden;

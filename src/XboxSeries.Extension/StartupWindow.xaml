@@ -19,8 +19,8 @@
         green swirl (SwirlBackground). Who's playing today? has the profiles in a row, centred, each a large round picture
         with its gamertag under it, the focused one bigger in a green ring a little way out from it, its real name under
         its gamertag, the two swapping places on a loop. Signing you in has the chosen profile's picture alone in the
-        centre in its ring, its gamertag and "Signing you in" under it, and a light running round the ring. A picture that
-        is missing or won't load shows the person glyph on green.
+        centre, its gamertag and "Signing you in" under it, and the console's loading spinner turning round the picture
+        where its ring would be. A picture that is missing or won't load shows the person glyph on green.
     -->
     <Window.Resources>
         <ResourceDictionary>
@@ -29,15 +29,6 @@
                 <local:HomeTiles />
             </ResourceDictionary.MergedDictionaries>
             <local:SameProfileConverter x:Key="IsFocused" />
-
-            <!--
-                Signing you in's light, once round the ring each 1.2 s: begun while Who's playing today? or Signing you in
-                shows and stopped once the window hides, so it never keeps WPF rendering behind Playnite.
-            -->
-            <Storyboard x:Key="Spin">
-                <DoubleAnimation Storyboard.TargetName="SigningSpin" Storyboard.TargetProperty="Angle"
-                                 From="0" To="360" Duration="0:0:1.2" RepeatBehavior="Forever" />
-            </Storyboard>
 
             <Style x:Key="StartupText" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
@@ -155,8 +146,9 @@
                     </ScrollViewer>
 
                     <!--
-                        Signing you in: the chosen profile's picture alone, centred, a light running round its ring, 5 out
-                        from the picture as on Who's playing today?, its gamertag and "Signing you in" under it.
+                        Signing you in: the chosen profile's picture alone, centred, the loading spinner turning round it 5
+                        out from the picture, where the ring is on Who's playing today?, with no ring under it, its
+                        gamertag and "Signing you in" under it. The spinner turns only while this shows.
                     -->
                     <StackPanel VerticalAlignment="Top" Margin="0,340,0,0" HorizontalAlignment="Center">
                         <StackPanel.Style>
@@ -172,14 +164,7 @@
                         <Grid Width="410" Height="410" Margin="-5">
                             <ContentPresenter Content="{Binding SigningIn}" ContentTemplate="{StaticResource ProfilePicture}"
                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <Ellipse Width="404" Height="404" StrokeThickness="7" Stroke="{DynamicResource GlyphLightBrush}" />
-                            <!-- The light: a short white arc of the ring, turning. -->
-                            <Ellipse Width="404" Height="404" StrokeThickness="7" Stroke="White"
-                                     StrokeDashArray="16 200" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
-                                <Ellipse.RenderTransform>
-                                    <RotateTransform x:Name="SigningSpin" />
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
+                            <local:LoadingSpinner Width="404" Height="404" StrokeThickness="7" />
                         </Grid>
                         <TextBlock Text="{Binding SigningIn.Gamertag}" Style="{StaticResource StartupText}" FontSize="30"
                                    FontWeight="SemiBold" Margin="10,6,10,0" />
