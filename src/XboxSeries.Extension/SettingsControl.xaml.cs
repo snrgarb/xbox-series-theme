@@ -28,6 +28,9 @@ namespace XboxSeries.Extension
         /// <summary>The rail item of each category.</summary>
         private readonly Dictionary<SettingsCategory, Button> categoryItems;
 
+        /// <summary>The category last shown, for which way along the rail focus moved to the next.</summary>
+        private SettingsCategory shownCategory;
+
         internal SettingsControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -49,6 +52,7 @@ namespace XboxSeries.Extension
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            shownCategory = core.Settings.Category;
             ShowCategory();
         }
 
@@ -80,6 +84,7 @@ namespace XboxSeries.Extension
             core.Settings.PropertyChanged += OnStateChanged;
 
             // Put up before the page was loaded, as when the Guide brings Playnite back from a Game hub.
+            shownCategory = core.Settings.Category;
             ShowCategory();
             if (core.Settings.IsShown)
             {
@@ -112,6 +117,7 @@ namespace XboxSeries.Extension
             {
                 case nameof(SettingsState.Category):
                     ShowCategory();
+                    FlyInCategory();
 
                     // Opened again from the Guide while up: focus follows the category back to the rail's first.
                     if (IsKeyboardFocusWithin && !categoryItems[core.Settings.Category].IsKeyboardFocused)
@@ -121,6 +127,9 @@ namespace XboxSeries.Extension
 
                     break;
                 case nameof(SettingsState.IsShown):
+                    // Opened or closed, the category is just there, as it is today.
+                    PaneFlyIn.Stop(CategoryHost);
+                    shownCategory = core.Settings.Category;
                     ShowCategory();
 
                     // Opened from the top bar or the Guide: focus goes to the category showing, the rail's first.
@@ -130,6 +139,21 @@ namespace XboxSeries.Extension
                     }
 
                     break;
+            }
+        }
+
+        /// <summary>
+        /// As focus moves along the rail, the new category comes in from below for a move down it, or from above for a
+        /// move up. Changed any other way, as the page opening, it is just there.
+        /// </summary>
+        private void FlyInCategory()
+        {
+            var from = shownCategory;
+            shownCategory = core.Settings.Category;
+            if (core.Settings.IsShown && Rail.IsKeyboardFocusWithin)
+            {
+                var items = RailItems;
+                PaneFlyIn.Play(Array.IndexOf(items, categoryItems[shownCategory]) - Array.IndexOf(items, categoryItems[from]), CategoryHost);
             }
         }
 

@@ -254,7 +254,11 @@
 
         <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
 
-        <Grid Grid.Column="2" Margin="77,72,170,0">
+        <!--
+            What the nav item shows: its header, and Apps or Play history. As focus moves along the nav it comes in a short
+            way from below or above, as on the console, with Playnite's main list as Games' grid (PaneFlyIn).
+        -->
+        <Grid x:Name="ItemHost" Grid.Column="2" Margin="77,72,170,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="118" />
                 <RowDefinition Height="*" />

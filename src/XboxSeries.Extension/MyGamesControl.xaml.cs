@@ -60,6 +60,9 @@ namespace XboxSeries.Extension
         /// <summary>Whether the core is yet to hear of the main list's latest changes.</summary>
         private bool mainListChangePending;
 
+        /// <summary>The nav item last shown, for which way along the nav focus moved to the next.</summary>
+        private MyGamesItem shownItem;
+
         internal MyGamesControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -68,6 +71,7 @@ namespace XboxSeries.Extension
             OpenGamesCommand = new RelayCommand(() => core.OpenMyGames(MyGamesItem.Games));
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            shownItem = core.MyGames.Item;
             ShowHistory();
             ShowItem();
             ShowStorage();
@@ -139,6 +143,7 @@ namespace XboxSeries.Extension
                 case nameof(MyGamesState.IsShown):
                 case nameof(MyGamesState.Item):
                     ShowItem();
+                    FlyInItem(e.PropertyName == nameof(MyGamesState.Item));
 
                     // Opened from Home, the top bar or the Guide: focus goes to the first tile. Moving through the nav keeps it there.
                     if (core.MyGames.IsShown && !Nav.IsKeyboardFocusWithin)
@@ -199,6 +204,26 @@ namespace XboxSeries.Extension
             var noApps = core.MyGames.Apps.Count == 0;
             AppsList.Visibility = apps && !noApps ? Visibility.Visible : Visibility.Collapsed;
             NoApps.Visibility = apps && noApps ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// As focus moves along the nav, the new item's content comes in from below for a move down it, or from above for
+        /// a move up, Playnite's main list with it when it shows Games' grid. Changed any other way, as the page opening,
+        /// it is just there.
+        /// </summary>
+        private void FlyInItem(bool itemChanged)
+        {
+            var from = shownItem;
+            shownItem = core.MyGames.Item;
+            if (!itemChanged || !core.MyGames.IsShown || !Nav.IsKeyboardFocusWithin)
+            {
+                PaneFlyIn.Stop(ItemHost, mainList);
+                return;
+            }
+
+            var down = Nav.Children.IndexOf(NavItemOf(shownItem)) - Nav.Children.IndexOf(NavItemOf(from));
+            var grid = shownItem == MyGamesItem.Games || shownItem == MyGamesItem.FullLibrary;
+            PaneFlyIn.Play(down, grid ? new UIElement[] { ItemHost, mainList } : new UIElement[] { ItemHost });
         }
 
         /// <summary>The storage ring, filled round as far as the drive is used; hidden without a drive to show.</summary>
