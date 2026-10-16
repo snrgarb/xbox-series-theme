@@ -21,6 +21,7 @@ namespace XboxSeries.Extension
     {
         private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(120);
         private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
+        private static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(100);
         private static readonly ILogger logger = LogManager.GetLogger();
 
         private readonly ExtensionCore core;
@@ -33,7 +34,7 @@ namespace XboxSeries.Extension
         // The open's slide and dim, waiting for the Overlay's first frame to be drawn.
         private EventHandler pendingOpen;
 
-        // Counts slides, so only the latest one's finish stops the panel being drawn as a picture.
+        // Counts slides, so only the latest one's finish, its contents' included, stops the panel being drawn as a picture.
         private int slideRun;
 
         public OverlayWindow(ExtensionCore core)
@@ -199,6 +200,7 @@ namespace XboxSeries.Extension
             logger.Info("Guide slide-out stalled; finishing it without the animation");
             Slide.BeginAnimation(TranslateTransform.XProperty, null);
             Slide.X = offscreenX;
+            HideContents();
             StopSlidingAsPicture();
             Dim.BeginAnimation(Brush.OpacityProperty, null);
             Dim.Opacity = 0;
@@ -256,14 +258,17 @@ namespace XboxSeries.Extension
         {
             CancelPendingOpen();
 
-            // To-only animations, so reopening mid slide-out continues from where the panel is.
+            // To-only animations, so reopening mid slide-out continues from where the panel and its contents are.
             var slide = new DoubleAnimation(slideTo, duration) { EasingFunction = new CubicEase { EasingMode = easing } };
+            var slidesIn = slideTo > offscreenX;
             var run = ++slideRun;
             slide.Completed += (_, __) =>
             {
-                // A newer slide, started before this one finished, keeps the picture until it finishes.
-                if (run == slideRun)
+                // A newer slide, started before this one finished, keeps the picture until it finishes. Sliding in,
+                // the contents finish later and stop it then; slid out, they are put back to wait for the next open.
+                if (run == slideRun && !slidesIn)
                 {
+                    HideContents();
                     StopSlidingAsPicture();
                 }
 
@@ -273,12 +278,46 @@ namespace XboxSeries.Extension
             SlideAsPicture();
             Slide.BeginAnimation(TranslateTransform.XProperty, slide);
             Dim.BeginAnimation(Brush.OpacityProperty, new DoubleAnimation(dimTo, duration));
+
+            // As on the console, the contents come in a moment behind the panel's background, but go out with it,
+            // held where they are, so a close before they have started never brings them in after.
+            if (slidesIn)
+            {
+                var contents = new DoubleAnimation(0, duration)
+                {
+                    BeginTime = ContentLag,
+                    EasingFunction = new CubicEase { EasingMode = easing },
+                };
+                contents.Completed += (_, __) =>
+                {
+                    if (run == slideRun)
+                    {
+                        StopSlidingAsPicture();
+                    }
+                };
+                ContentSlide.BeginAnimation(TranslateTransform.XProperty, contents);
+            }
+            else
+            {
+                var x = ContentSlide.X;
+                ContentSlide.BeginAnimation(TranslateTransform.XProperty, null);
+                ContentSlide.X = x;
+            }
+        }
+
+        /// <summary>Puts the panel's contents back off its left edge, for the next open to bring them in.</summary>
+        private void HideContents()
+        {
+            ContentSlide.BeginAnimation(TranslateTransform.XProperty, null);
+            ContentSlide.X = offscreenX;
         }
 
         /// <summary>
-        /// While it slides, the panel is drawn once into a picture at the screen's own resolution, so sharp, and the
-        /// graphics card moves that picture rather than redrawing the panel, its covers' shadows and all, every frame.
-        /// Still, it is drawn as itself again.
+        /// While it slides, the panel's contents and the flyout are each drawn once into a picture at the screen's own
+        /// resolution, so sharp, and the graphics card moves those pictures rather than redrawing the covers' shadows
+        /// and the flyout's every frame. The panel itself, a gradient, is cheap to redraw, and caching it with its
+        /// contents would redraw the picture every frame as the contents move within it. Still, each is drawn as
+        /// itself again.
         /// </summary>
         private void SlideAsPicture()
         {
@@ -289,13 +328,14 @@ namespace XboxSeries.Extension
             }
 
             var pixelsPerUnit = ActualHeight / Root.ActualHeight * source.CompositionTarget.TransformToDevice.M22;
-            if (!(Sliding.CacheMode is BitmapCache cache) || cache.RenderAtScale != pixelsPerUnit)
+            if (!(PanelContents.CacheMode is BitmapCache cache) || cache.RenderAtScale != pixelsPerUnit)
             {
-                Sliding.CacheMode = new BitmapCache(pixelsPerUnit) { SnapsToDevicePixels = true };
+                PanelContents.CacheMode = new BitmapCache(pixelsPerUnit) { SnapsToDevicePixels = true };
+                FlyoutPanel.CacheMode = new BitmapCache(pixelsPerUnit) { SnapsToDevicePixels = true };
             }
         }
 
-        private void StopSlidingAsPicture() => Sliding.CacheMode = null;
+        private void StopSlidingAsPicture() => PanelContents.CacheMode = FlyoutPanel.CacheMode = null;
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {

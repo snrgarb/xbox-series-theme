@@ -748,6 +748,18 @@
                         account picture. A tab not showing is greyed, as on the console.
                     -->
                     <Border Background="#FF1F1F1F" />
+                    <!--
+                        Everything on the panel but its background comes in a moment behind it, as on the console: held
+                        off to the left and slid in from the panel's left edge, which hides it until then.
+                    -->
+                    <Grid x:Name="PanelContents" Grid.RowSpan="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="102" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="ContentSlide" X="-700" />
+                        </Grid.RenderTransform>
                     <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -889,6 +901,7 @@
                         </ItemsControl>
                         </ScrollViewer>
                     </DockPanel>
+                    </Grid>
                     <!-- Dimmed behind a flyout, as on the console, so the flyout in front stands out. -->
                     <Border Grid.RowSpan="2" Background="#73000000">
                         <Border.Style>
