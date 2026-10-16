@@ -144,8 +144,8 @@
                             <!--
                                 Audio's Output and Input dropdowns, as the console's Settings ones: a box under the title naming
                                 the device set, a long name cut short, with a chevron at its end, pointing up while the list is open.
-                                Open, the accent's edge and its glow are a border of their own over the box's, so the glow
-                                traces the box and not the name in it.
+                                Open, the accent's edge and its glow, a blurred band centred on it, are a border of their own
+                                over the box's, so the glow traces the box and not the name in it.
                             -->
                             <Grid x:Name="DropBox" Height="48" Margin="0,10,0,0" Visibility="Collapsed">
                                 <Border CornerRadius="4" BorderThickness="2" BorderBrush="#80FFFFFF" Background="#14FFFFFF" />
@@ -154,7 +154,10 @@
                                 <TextBlock x:Name="Chevron" Text="&#xE70D;" Style="{StaticResource GuideIcon}" FontSize="16"
                                            HorizontalAlignment="Right" Margin="0,0,16,0" />
                                 <Border x:Name="DropRing" CornerRadius="4" BorderThickness="2" BorderBrush="{DynamicResource GlyphLightBrush}"
-                                        Visibility="Collapsed" Effect="{DynamicResource XboxFocusGlow}" />
+                                        Visibility="Collapsed">
+                                    <!-- The band centred on this thinner edge: half its 2 and 8 more out. -->
+                                    <Border Style="{DynamicResource XboxFocusGlow}" Margin="-9" />
+                                </Border>
                             </Grid>
                             <!-- Audio's volume slider: a track filled to the level, in the accent. -->
                             <ProgressBar x:Name="Slider" Minimum="0" Maximum="100" Value="{Binding Level, Mode=OneWay}"
@@ -251,10 +254,11 @@
                             <TextBlock x:Name="TileDetail" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="17"
                                        Foreground="#B3FFFFFF" TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                        <!-- The tiles' ring, 1 px past the entry as theirs is past their art, with the console's glow round it. -->
+                        <!-- The tiles' ring, 1 px past the entry as theirs is past their art, carrying the console's glow as a blurred band. -->
                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
-                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                Effect="{DynamicResource XboxFocusGlow}" />
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                            <Border Style="{DynamicResource XboxFocusGlow}" />
+                        </Border>
                     </Grid>
                     <!--
                         An Output or Input dropdown's open list, under its box and as wide, laid over the entries below
@@ -812,10 +816,11 @@
                                             </Ellipse.Fill>
                                         </Ellipse>
                                     </Grid>
-                                    <!-- The showing tab's underline, glowing as the console's does. -->
+                                    <!-- The showing tab's underline, glowing as the console's does, with a blurred band round it. -->
                                     <Border x:Name="Underline" Height="6" VerticalAlignment="Bottom" Margin="0,0,0,-4" CornerRadius="2"
-                                            Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden"
-                                            Effect="{DynamicResource XboxFocusGlow}" />
+                                            Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
                                 </Grid>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding Kind}" Value="Discord">
@@ -872,10 +877,11 @@
                                             <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
                                                        Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
                                         </Border>
-                                        <!-- The entries' ring and glow. -->
+                                        <!-- The entries' ring, carrying the glow as a blurred band. -->
                                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
-                                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                                Effect="{DynamicResource XboxFocusGlow}" />
+                                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                            <Border Style="{DynamicResource XboxFocusGlow}" />
+                                        </Border>
                                     </Grid>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding Kind}" Value="Notifications">
@@ -916,10 +922,10 @@
                             The tab's entries. They wrap, so that the Discord tab's shortcuts, a third of the panel wide, sit
                             three to a row as the core moves between them, while every other entry is the panel's full
                             width and so a row of its own. The tiles of a row stand on its bottom, so the first one's
-                            divider, above it, leaves them level. They sit 18 in from the scroller's top and sides, which its
-                            margin cancels, so a focused entry's glow isn't cut off there.
+                            divider, above it, leaves them level. They sit 24 in from the scroller's top and sides, which its
+                            margin cancels, so a focused entry's glow band isn't cut off there.
                         -->
-                        <ScrollViewer x:Name="EntriesScroller" VerticalScrollBarVisibility="Hidden" Focusable="False" Margin="-18,-18,-18,0">
+                        <ScrollViewer x:Name="EntriesScroller" VerticalScrollBarVisibility="Hidden" Focusable="False" Margin="-24,-24,-24,0">
                         <ItemsControl x:Name="Entries" ItemsSource="{Binding Items}" ItemTemplate="{StaticResource GuideEntry}" Focusable="False">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -943,11 +949,11 @@
                             </ItemsControl.ItemContainerStyle>
                             <ItemsControl.Style>
                                 <Style TargetType="ItemsControl">
-                                    <Setter Property="Margin" Value="18,18,18,0" />
+                                    <Setter Property="Margin" Value="24,24,24,0" />
                                     <Style.Triggers>
                                         <!-- The landing tab's Home sits a little lower, where the other tab has its heading. -->
                                         <DataTrigger Binding="{Binding Tab}" Value="Landing">
-                                            <Setter Property="Margin" Value="18,36,18,0" />
+                                            <Setter Property="Margin" Value="24,42,24,0" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -1051,12 +1057,12 @@
                         </TextBlock>
                         <!--
                             Its entries, the focused one scrolled into view when a long list of notifications runs past the
-                            bottom. They sit 18 down from the scroller's top, which its margin cancels, so the first one's glow
-                            isn't cut off there; at the sides the flyout's own rounded edge is where the glow stops.
+                            bottom. They sit 24 down from the scroller's top, which its margin cancels, so the first one's glow
+                            band isn't cut off there; at the sides the flyout's own rounded edge is where the glow stops.
                         -->
-                        <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False" Margin="0,-18,0,0">
+                        <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False" Margin="0,-24,0,0">
                             <ItemsControl x:Name="FlyoutEntries" ItemsSource="{Binding Flyout.Items}" ItemTemplate="{StaticResource GuideEntry}"
-                                          Focusable="False" Margin="0,18,0,24">
+                                          Focusable="False" Margin="0,24,0,24">
                                 <!--
                                     A focused entry is drawn over the ones after it, so their art doesn't cover its glow; a
                                     dropdown with its list open, over every other entry, as its list covers those after it.
