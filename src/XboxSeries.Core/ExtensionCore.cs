@@ -96,6 +96,9 @@ namespace XboxSeries.Core
         /// </summary>
         private GuideItemKind? toastAtGuidePress;
         private Guid? runningGame;
+
+        /// <summary>Whether the running game is frozen under the Guide; only <see cref="FreezeRunningGame"/> and <see cref="ThawGame"/> change it.</summary>
+        private bool gameFrozen;
         private IntPtr recordedForeground;
 
         /// <summary>
@@ -393,6 +396,8 @@ namespace XboxSeries.Core
                 return;
             }
 
+            // Whatever of it is left frozen under the Guide is let go with it.
+            ThawGame();
             runningGame = null;
             RefreshHome();
 
@@ -470,6 +475,8 @@ namespace XboxSeries.Core
                 return;
             }
 
+            // A frozen game can't answer a close; it stays thawed until it has gone, the Guide not freezing it meanwhile.
+            ThawGame();
             quittingGame = gameId;
             var window = RunningGameWindow();
             if (window != IntPtr.Zero)
@@ -1322,9 +1329,10 @@ namespace XboxSeries.Core
             Settings.IsShown = false;
         }
 
-        /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back.</summary>
+        /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back, and a game frozen under the Guide thaws.</summary>
         public void OnApplicationStopped()
         {
+            ThawGame();
             GiveBackMainList();
         }
 
@@ -1452,6 +1460,33 @@ namespace XboxSeries.Core
 
             // Taking the foreground can fail; the Overlay is Topmost and the Guide follows Playnite's callback either way.
             windowSystem.TakeForeground();
+            FreezeRunningGame();
+        }
+
+        /// <summary>
+        /// Freezes the running game under the Guide, so a game that reads the pad in the background can't take its
+        /// input. Not one that is quitting, which must be free to close, nor one whose programs can't be found.
+        /// </summary>
+        private void FreezeRunningGame()
+        {
+            var directory = GameById(runningGame)?.InstallDirectory;
+            if (gameFrozen || quittingGame != null || string.IsNullOrEmpty(directory))
+            {
+                return;
+            }
+
+            windowSystem.FreezeGame(directory, RunningGameWindow());
+            gameFrozen = true;
+        }
+
+        /// <summary>Thaws the game frozen under the Guide, if it is, so it can run, take the foreground or close again.</summary>
+        private void ThawGame()
+        {
+            if (gameFrozen)
+            {
+                gameFrozen = false;
+                windowSystem.ThawGame();
+            }
         }
 
         /// <summary>
@@ -1946,10 +1981,15 @@ namespace XboxSeries.Core
             Guide.FocusedItem = home;
         }
 
+        /// <summary>
+        /// The Guide has gone: hands focus on as it was closed. Every close comes through here, so this is where the
+        /// game frozen under it thaws, first, so it can take the foreground again.
+        /// </summary>
         private void HandFocusBack()
         {
             var handBack = pendingHandBack;
             CancelReleaseWait();
+            ThawGame();
             handBack();
             homeOwed = false;
             Guide.IsOverlayShown = false;
