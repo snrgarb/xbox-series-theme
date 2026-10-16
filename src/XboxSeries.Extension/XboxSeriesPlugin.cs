@@ -82,6 +82,7 @@ namespace XboxSeries.Extension
                 case "MyGames": return new MyGamesControl(core);
                 case "Settings": return new SettingsControl(core);
                 case "Status": return new StatusControl(core);
+                case "InstallAction": return new InstallActionControl(core);
                 default: return null;
             }
         }

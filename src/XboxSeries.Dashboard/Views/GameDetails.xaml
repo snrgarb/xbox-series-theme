@@ -113,8 +113,11 @@
         <Setter Property="Template" Value="{StaticResource XboxHubActionTemplate}" />
     </Style>
 
-    <!-- The main action, Play or Install: wide, and in capitals as on the console. -->
-    <Style x:Key="XboxHubDefaultAction" TargetType="ButtonEx" BasedOn="{StaticResource XboxHubAction}">
+    <!--
+        The main action, Play or Install: wide, and in capitals as on the console. For any button, so that the extension's
+        own Install, a plain Button, wears it too.
+    -->
+    <Style x:Key="XboxHubDefaultAction" TargetType="ButtonBase" BasedOn="{StaticResource XboxHubAction}">
         <Setter Property="Width" Value="380" />
         <Setter Property="ContentTemplate">
             <Setter.Value>
@@ -124,6 +127,37 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!--
+        The main action's content: its label, and for a game that isn't installed the console's subtitle under it: there
+        "Included with Game Pass", here the library it installs from, such as Steam; none when the game has no source.
+        Shared by Playnite's main action and the extension's own Install (XboxSeries_InstallAction), which wears it by
+        this key. The content is the label, so the game comes from the button's own DataContext: Playnite's library entry
+        for its action, the game itself for the extension's; both name the same properties.
+    -->
+    <DataTemplate x:Key="XboxHubMainActionContent">
+        <StackPanel HorizontalAlignment="Left">
+            <TextBlock Text="{Binding Converter={StaticResource StringToUpperCaseConverter}}" />
+            <TextBlock x:Name="Subtitle" Style="{StaticResource XboxHubDimText}" Visibility="Collapsed"
+                       Text="{Binding DataContext.Source.Name, RelativeSource={RelativeSource AncestorType=ButtonBase}}" />
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding DataContext.IsInstalled, RelativeSource={RelativeSource AncestorType=ButtonBase}}" Value="False" />
+                    <Condition Binding="{Binding DataContext.IsInstalling, RelativeSource={RelativeSource AncestorType=ButtonBase}}" Value="False" />
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="Subtitle" Property="Visibility" Value="Visible" />
+            </MultiDataTrigger>
+            <!--
+                After the one above, so a game with no source shows Install alone: Playnite gives such a game an empty
+                source rather than none, as the badge's trigger knows.
+            -->
+            <DataTrigger Binding="{Binding DataContext.SourceId, RelativeSource={RelativeSource AncestorType=ButtonBase}}" Value="{x:Static sys:Guid.Empty}">
+                <Setter TargetName="Subtitle" Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
 
     <!-- An icon-only action; its Tag names it above the button while it has focus. -->
     <Style x:Key="XboxHubIconAction" TargetType="ButtonEx" BasedOn="{StaticResource XboxHubAction}">
@@ -425,51 +459,34 @@
                                     </ButtonEx.Style>
                                 </ButtonEx>
                                 <!--
-                                    Install, for a game that isn't installed, carries the console's subtitle under it: there
-                                    "Included with Game Pass", here the library it installs from, such as Steam; none when the
-                                    game has no source. While the game installs Playnite labels the action Installing... and A
-                                    only offers to stop watching the install, so it never starts a second one; that is near
-                                    enough the console's, which leaves the install to the queue, and it carries no subtitle.
+                                    Install, for a game that isn't installed, carries the console's subtitle under it
+                                    (XboxHubMainActionContent). While the game installs Playnite labels the action Installing...
+                                    and A only offers to stop watching the install, so it never starts a second one; that is
+                                    near enough the console's, which leaves the install to the queue, and it carries no subtitle.
                                 -->
                                 <ButtonEx x:Name="PART_ButtonContext">
                                     <ButtonEx.Style>
                                         <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxHubDefaultAction}">
-                                            <Setter Property="ContentTemplate">
-                                                <Setter.Value>
-                                                    <DataTemplate>
-                                                        <StackPanel HorizontalAlignment="Left">
-                                                            <TextBlock Text="{Binding Converter={StaticResource StringToUpperCaseConverter}}" />
-                                                            <!-- The content is Playnite's label, so the source comes from the button's game. -->
-                                                            <TextBlock x:Name="Subtitle" Style="{StaticResource XboxHubDimText}" Visibility="Collapsed"
-                                                                       Text="{Binding DataContext.Source.Name, RelativeSource={RelativeSource AncestorType=ButtonEx}}" />
-                                                        </StackPanel>
-                                                        <DataTemplate.Triggers>
-                                                            <MultiDataTrigger>
-                                                                <MultiDataTrigger.Conditions>
-                                                                    <Condition Binding="{Binding DataContext.IsInstalled, RelativeSource={RelativeSource AncestorType=ButtonEx}}" Value="False" />
-                                                                    <Condition Binding="{Binding DataContext.IsInstalling, RelativeSource={RelativeSource AncestorType=ButtonEx}}" Value="False" />
-                                                                </MultiDataTrigger.Conditions>
-                                                                <Setter TargetName="Subtitle" Property="Visibility" Value="Visible" />
-                                                            </MultiDataTrigger>
-                                                            <!--
-                                                                After the one above, so a game with no source shows Install alone: Playnite
-                                                                gives such a game an empty source rather than none, as the badge's trigger knows.
-                                                            -->
-                                                            <DataTrigger Binding="{Binding DataContext.SourceId, RelativeSource={RelativeSource AncestorType=ButtonEx}}" Value="{x:Static sys:Guid.Empty}">
-                                                                <Setter TargetName="Subtitle" Property="Visibility" Value="Collapsed" />
-                                                            </DataTrigger>
-                                                        </DataTemplate.Triggers>
-                                                    </DataTemplate>
-                                                </Setter.Value>
-                                            </Setter>
+                                            <Setter Property="ContentTemplate" Value="{StaticResource XboxHubMainActionContent}" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <!-- The extension's own Install stands in for it; empty, and so never matching, without it. -->
+                                                <DataTrigger Binding="{Binding Content.Visibility, ElementName=XboxSeries_InstallAction}" Value="Visible">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </ButtonEx.Style>
                                 </ButtonEx>
+                                <!--
+                                    With the extension, its own Install, drawn as the action above and in its place: shown, with
+                                    the action hidden, only for a game the extension installs silently, as a Steam game, whose
+                                    Install from Playnite would open the client's own dialog. It takes the action's focus as the
+                                    hub opens. Empty, and so harmless, without the extension.
+                                -->
+                                <ContentControl x:Name="XboxSeries_InstallAction" Focusable="False" IsTabStop="False" />
                                 <ButtonEx x:Name="PART_ButtonOptions" Style="{StaticResource XboxHubIconAction}"
                                           Tag="Manage" Content="&#xE713;" />
                                 <!-- Turns between the two pages; it names the page it turns to. -->
