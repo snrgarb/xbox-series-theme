@@ -16,6 +16,9 @@ namespace XboxSeries.Core
 
         /// <summary>"Hi X!" as a profile finishes signing in: the profile's picture, with no "Press ⓧ to view".</summary>
         Greeting,
+
+        /// <summary>"Queued" as a game joins the queue: the game's cover; ⓧ goes to Manage Queue rather than the Guide.</summary>
+        Queued,
     }
 
     /// <summary>
