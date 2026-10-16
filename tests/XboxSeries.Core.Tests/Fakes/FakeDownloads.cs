@@ -33,7 +33,7 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void Install(Guid gameId) => InstallsAsked.Add(gameId);
 
-        /// <summary>The installs the client reports running that Playnite doesn't know of.</summary>
+        /// <summary>The installs the client reports running, whether Playnite knows of them or not.</summary>
         public List<Guid> ClientInstalls { get; } = new List<Guid>();
 
         public IReadOnlyList<Guid> Installing() => ClientInstalls.ToList();
@@ -41,5 +41,9 @@ namespace XboxSeries.Core.Tests.Fakes
         public List<Guid> MarkedInstalled { get; } = new List<Guid>();
 
         public void MarkInstalled(Guid gameId) => MarkedInstalled.Add(gameId);
+
+        public List<Guid> MarkedCancelled { get; } = new List<Guid>();
+
+        public void MarkCancelled(Guid gameId) => MarkedCancelled.Add(gameId);
     }
 }

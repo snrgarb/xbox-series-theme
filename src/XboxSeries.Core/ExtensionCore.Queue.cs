@@ -60,6 +60,18 @@ namespace XboxSeries.Core
         /// <summary>The queued games the client has reported installing that Playnite isn't, to mark installed once it stops.</summary>
         private readonly HashSet<Guid> clientReported = new HashSet<Guid>();
 
+        /// <summary>
+        /// The installs Playnite started that the client can follow but hasn't reported yet, with when each was first
+        /// seen: Steam writes nothing for a game while its install dialog waits, and nothing ever once that is cancelled.
+        /// </summary>
+        private readonly Dictionary<Guid, DateTime> playniteInstallsWaiting = new Dictionary<Guid, DateTime>();
+
+        /// <summary>The installs Playnite started that the client has reported, so one it stops reporting has ended.</summary>
+        private readonly HashSet<Guid> playniteInstallsReported = new HashSet<Guid>();
+
+        /// <summary>The installs Playnite started that have been marked cancelled, until Playnite's snapshot agrees.</summary>
+        private readonly HashSet<Guid> playniteInstallsCancelled = new HashSet<Guid>();
+
         /// <summary>The next read of the queue's progress, while anything is installing; null otherwise.</summary>
         private IDisposable queueTimer;
 
@@ -120,6 +132,7 @@ namespace XboxSeries.Core
             // is queued has no poll to find it, so it joins with the next library snapshot: Playnite sends one often
             // enough that polling the client all the time isn't worth it.
             var clientInstalling = new HashSet<Guid>(downloads.Installing());
+            FollowPlayniteInstalls(clientInstalling);
             foreach (var reported in installsAsked.Keys.Where(clientInstalling.Contains).ToList())
             {
                 installsAsked.Remove(reported);
@@ -211,6 +224,53 @@ namespace XboxSeries.Core
             }
 
             clientReported.UnionWith(clientInstalling.Where(id => queued.TryGetValue(id, out var game) && !game.Installing));
+        }
+
+        /// <summary>
+        /// The installs Playnite started that the client can follow. Playnite's own Steam install watches only for the
+        /// game installed, so one cancelled in Steam, at its install dialog or mid-download, would read installing for
+        /// ever: one the client stops reporting, or says nothing of a minute on, is marked cancelled, once, and leaves
+        /// the queue with the snapshot that follows. Marking does nothing while the client has any of it, as when it
+        /// has just finished, which Playnite's watch then finds.
+        /// </summary>
+        private void FollowPlayniteInstalls(HashSet<Guid> clientInstalling)
+        {
+            var followed = new HashSet<Guid>(library.Games.Where(g => g.Installing && downloads.ProgressOf(g.Id) != null).Select(g => g.Id));
+            foreach (var gone in playniteInstallsWaiting.Keys.Where(id => !followed.Contains(id)).ToList())
+            {
+                playniteInstallsWaiting.Remove(gone);
+            }
+
+            playniteInstallsReported.IntersectWith(followed);
+            playniteInstallsCancelled.IntersectWith(followed);
+
+            foreach (var id in followed.Where(id => !playniteInstallsCancelled.Contains(id)))
+            {
+                if (clientInstalling.Contains(id))
+                {
+                    playniteInstallsReported.Add(id);
+                    playniteInstallsWaiting.Remove(id);
+                    continue;
+                }
+
+                if (!playniteInstallsReported.Remove(id))
+                {
+                    if (!playniteInstallsWaiting.TryGetValue(id, out var since))
+                    {
+                        playniteInstallsWaiting[id] = clock.Now;
+                        continue;
+                    }
+
+                    if (clock.Now - since < AskedInstallGivesUpAfter)
+                    {
+                        continue;
+                    }
+                }
+
+                playniteInstallsWaiting.Remove(id);
+                playniteInstallsCancelled.Add(id);
+                downloads.MarkCancelled(id);
+            }
         }
 
         /// <summary>

@@ -574,7 +574,7 @@
             <StackPanel x:Name="LookingForMore" Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="3,0,0,20">
                 <TextBlock Text="Looking for more?" Style="{StaticResource Text}" Margin="0,0,0,12" />
                 <Button x:Name="SeeFullLibrary" Style="{StaticResource FooterButton}" Click="OnSeeFullLibrary"
-                        PreviewKeyDown="OnSeeFullLibraryKeyDown">
+                        KeyDown="OnSeeFullLibraryKeyDown">
                     <TextBlock Text="SEE FULL LIBRARY" Style="{StaticResource Text}" FontSize="22" />
                 </Button>
             </StackPanel>

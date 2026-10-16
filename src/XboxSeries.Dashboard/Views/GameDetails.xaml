@@ -76,7 +76,7 @@
         <Grid>
             <Border x:Name="Slab" Background="{TemplateBinding Background}" CornerRadius="4" />
             <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="False"
-                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
             <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}">
                 <Border Style="{DynamicResource XboxFocusGlow}" />
             </Border>
@@ -109,16 +109,18 @@
         <Setter Property="Height" Value="80" />
         <Setter Property="MinWidth" Value="80" />
         <Setter Property="Padding" Value="28,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="Margin" Value="0,0,12,0" />
         <Setter Property="Template" Value="{StaticResource XboxHubActionTemplate}" />
     </Style>
 
     <!--
-        The main action, Play or Install: wide, and in capitals as on the console. For any button, so that the extension's
-        own Install, a plain Button, wears it too.
+        The main action, Play or Install: wide, its label at its left, and in capitals as on the console. For any button,
+        so that the extension's own Install, a plain Button, wears it too.
     -->
     <Style x:Key="XboxHubDefaultAction" TargetType="ButtonBase" BasedOn="{StaticResource XboxHubAction}">
         <Setter Property="Width" Value="380" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="ContentTemplate">
             <Setter.Value>
                 <DataTemplate>
