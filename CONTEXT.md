@@ -28,7 +28,7 @@ Playnite's Software tools, shown under **My games & apps**. They are not games.
 _Avoid_: tools, programs
 
 **Queue**:
-Every game Playnite is installing, as **My games & apps** shows it: the current download first, then those next up. Steam's own queue order can't be read, so next up is the order they started installing. A queued game's tiles read *Queued*, then *Installing...* once its download starts.
+Every game being installed, as **My games & apps** shows it: those Playnite is installing, and those Steam is installing that Playnite doesn't know of (the Game hub's Install for a Steam game asks Steam itself, without its windows, or the user started one in Steam). It shows the current download first, then those next up. Steam's own queue order can't be read, so next up is the order they started installing. A queued game's tiles read *Queued*, then *Installing...* once its download starts.
 _Avoid_: downloads, download list
 
 **Manage**:
