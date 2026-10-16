@@ -17,15 +17,15 @@ namespace XboxSeries.Extension
             IsVisibleChanged += (_, __) => SlideInOnceDrawn();
         }
 
-        // How far behind the band its contents come in, a touch sooner than the Guide's behind its panel.
+        // How long after the band shows its contents start to come in.
         private static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(40);
 
         // The slide-in, waiting for the band's first frame to be drawn.
         private EventHandler pendingSlide;
 
         /// <summary>
-        /// As it shows, holds the band and its contents off the left of the screen and slides them in once the band's
-        /// first frame has been drawn, as the Guide's panel does, so the slide isn't spent while that frame is laid out.
+        /// As it shows, the band is there at once while its contents are held off the left of the screen and slide in
+        /// a moment after the band's first frame has been drawn, so the slide isn't spent while that frame is laid out.
         /// </summary>
         private void SlideInOnceDrawn()
         {
@@ -35,17 +35,16 @@ namespace XboxSeries.Extension
                 pendingSlide = null;
             }
 
-            BandSlide.BeginAnimation(TranslateTransform.XProperty, null);
             ContentSlide.BeginAnimation(TranslateTransform.XProperty, null);
             if (!IsVisible)
             {
-                BandSlide.X = ContentSlide.X = 0;
+                ContentSlide.X = 0;
                 return;
             }
 
             // Off the screen, which the band spans, whatever its width.
             var offscreen = -Math.Max(ActualWidth, 1920);
-            BandSlide.X = ContentSlide.X = offscreen;
+            ContentSlide.X = offscreen;
             var frames = 0;
             pendingSlide = (_, __) =>
             {
@@ -57,18 +56,14 @@ namespace XboxSeries.Extension
 
                 CompositionTarget.Rendering -= pendingSlide;
                 pendingSlide = null;
-                BandSlide.BeginAnimation(TranslateTransform.XProperty, SlideIn(TimeSpan.Zero));
-                ContentSlide.BeginAnimation(TranslateTransform.XProperty, SlideIn(ContentLag));
+                ContentSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, OverlayWindow.OpenDuration)
+                {
+                    BeginTime = ContentLag,
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                });
             };
             CompositionTarget.Rendering += pendingSlide;
         }
-
-        private static DoubleAnimation SlideIn(TimeSpan lag) =>
-            new DoubleAnimation(0, OverlayWindow.OpenDuration)
-            {
-                BeginTime = lag,
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            };
 
         /// <summary>The core the mouse reports to, in debug builds.</summary>
         internal ExtensionCore Core { get; set; }
