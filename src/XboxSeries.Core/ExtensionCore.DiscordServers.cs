@@ -31,6 +31,12 @@ namespace XboxSeries.Core
         /// <summary>The server whose flyout is open or loading, which B goes back to among the servers.</summary>
         private string openServerId;
 
+        /// <summary>How long a flyout's spinner shows at least, however quickly Discord answers.</summary>
+        private static readonly TimeSpan SpinnerShown = TimeSpan.FromSeconds(1);
+
+        /// <summary>When the loading flyout showing put its spinner up.</summary>
+        private DateTime spinnerSince;
+
         /// <summary>The GET_CHANNELs sent to learn who is in a server's voice channels, by nonce.</summary>
         private readonly HashSet<string> occupantRequests = new HashSet<string>();
 
@@ -79,8 +85,7 @@ namespace XboxSeries.Core
             }
             else
             {
-                Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServers, "Servers", new GuideItem[0], isLoading: true);
-                Guide.FocusedItem = null;
+                ShowLoading(GuideItemKind.DiscordServers, "Servers");
             }
 
             flyoutRequest = SendCommand("GET_GUILDS", new JObject());
@@ -108,11 +113,41 @@ namespace XboxSeries.Core
             }
             else
             {
-                Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServer, server.Title, new GuideItem[0], isLoading: true);
-                Guide.FocusedItem = null;
+                ShowLoading(GuideItemKind.DiscordServer, server.Title);
             }
 
             flyoutRequest = SendCommand("GET_CHANNELS", new JObject { ["guild_id"] = server.GuildId });
+        }
+
+        /// <summary>A flyout with its spinner up, nothing in it to focus, while Discord is asked for its entries.</summary>
+        private void ShowLoading(GuideItemKind kind, string title)
+        {
+            Guide.Flyout = new GuideFlyout(kind, title, new GuideItem[0], isLoading: true);
+            Guide.FocusedItem = null;
+            spinnerSince = clock.Now;
+        }
+
+        /// <summary>
+        /// Shows Discord's answer once the loading flyout showing has had its spinner up a second, at once if it has or
+        /// isn't loading; not at all if another flyout, or none, shows by then.
+        /// </summary>
+        private void AfterSpinner(Action show)
+        {
+            var flyout = Guide.Flyout;
+            var left = SpinnerShown - (clock.Now - spinnerSince);
+            if (!flyout.IsLoading || left <= TimeSpan.Zero)
+            {
+                show();
+                return;
+            }
+
+            clock.After(left, () =>
+            {
+                if (Guide.Flyout == flyout)
+                {
+                    show();
+                }
+            });
         }
 
         /// <summary>B in a server's flyout: back to the servers, focus on the one it was.</summary>
@@ -178,8 +213,9 @@ namespace XboxSeries.Core
             }
 
             flyoutRequest = null;
-            serverItems = ShowAnswered(InServerOrder((data?["guilds"] as JArray ?? new JArray()).OfType<JObject>()
-                .Select(g => new GuideItem(GuideItemKind.DiscordServer, (string)g["name"], image: (string)g["icon_url"]) { GuildId = (string)g["id"] })));
+            AfterSpinner(() =>
+                serverItems = ShowAnswered(InServerOrder((data?["guilds"] as JArray ?? new JArray()).OfType<JObject>()
+                    .Select(g => new GuideItem(GuideItemKind.DiscordServer, (string)g["name"], image: (string)g["icon_url"]) { GuildId = (string)g["id"] }))));
         }
 
         /// <summary>
@@ -194,6 +230,12 @@ namespace XboxSeries.Core
             }
 
             flyoutRequest = null;
+            AfterSpinner(() => ShowChannels(data));
+        }
+
+        /// <summary>A server's voice channels, from Discord's answer, in the flyout under its name; then who is in each is asked.</summary>
+        private void ShowChannels(JObject data)
+        {
             var known = Guide.Flyout.Items;
             var channels = (data?["channels"] as JArray ?? new JArray()).OfType<JObject>()
                 .Where(c => (int?)c["type"] == 2 || (int?)c["type"] == 13)
