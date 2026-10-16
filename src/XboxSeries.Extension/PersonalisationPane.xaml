@@ -37,7 +37,7 @@
             <!--
                 A box, as the console's: a dark rectangle, its line icon (Tag) at the left and its name beside it, the name
                 alone, never a second line saying what it's set to. Focused, as the console's, it lightens, all of it
-                alike, and the accent ring stands 3 off it with the console's faint green glow; the ring
+                alike, and the accent ring stands 3 off it carrying the console's green glow as a blurred band; the ring
                 is a Border of its own, so the glow traces only it, and its corners keep the gap even.
             -->
             <Style x:Key="Box" TargetType="Button">
@@ -57,8 +57,9 @@
                                 <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
                                 <!-- 3 of gap and 4 of ring out from the box. -->
                                 <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="7"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                        Effect="{DynamicResource XboxFocusGlow}" />
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
@@ -69,7 +70,7 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
-                <!-- Focused, drawn over the boxes round it, so their backs don't cover its ring's glow. -->
+                <!-- Focused, drawn over the boxes round it, so their backs don't cover its ring's glow band. -->
                 <Style.Triggers>
                     <Trigger Property="IsKeyboardFocused" Value="True">
                         <Setter Property="Panel.ZIndex" Value="1" />
@@ -94,8 +95,9 @@
                                 <Border x:Name="Back" Background="#FF2D2D2D" />
                                 <ContentPresenter VerticalAlignment="Center" />
                                 <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="7"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                        Effect="{DynamicResource XboxFocusGlow}" />
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
@@ -110,7 +112,7 @@
 
             <!--
                 The holder of a box or row in a list: drawn over its neighbours while what it holds is focused, so their
-                backs don't cover the ring's glow, the 8 or 18 between them being less than the ring and glow stand out.
+                backs don't cover the ring's glow band, the 8 or 18 between them being less than the ring and band stand out.
             -->
             <Style x:Key="RaisedWhenFocused" TargetType="ContentPresenter">
                 <Style.Triggers>
@@ -152,7 +154,8 @@
 
             <!--
                 A gamerpic to choose, on Picture: its disc, ringed while focused with a gap between the two, the ring
-                glowing faintly green, and ticked while it's the one worn.
+                carrying the console's green glow as a blurred band, and ticked while it's the one worn. The ring is a
+                Border rounded to a circle, so it can carry the band.
             -->
             <Style x:Key="PictureButton" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -164,8 +167,10 @@
                         <ControlTemplate TargetType="Button">
                             <Grid Background="Transparent">
                                 <ContentPresenter Margin="12" />
-                                <Ellipse x:Name="Ring" Stroke="{DynamicResource GlyphLightBrush}" StrokeThickness="6" Visibility="Hidden"
-                                         Effect="{DynamicResource XboxFocusGlow}" />
+                                <Border x:Name="Ring" CornerRadius="999" BorderBrush="{DynamicResource GlyphLightBrush}" BorderThickness="6"
+                                        Visibility="Hidden">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-11" />
+                                </Border>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
@@ -217,12 +222,12 @@
         </StackPanel>
 
         <!--
-            Profiles: each in a box, its picture and gamertag, then Add profile last. The boxes sit 26 in from the scroller's
-            top and left, which its margin cancels, so a focused box's ring and glow aren't cut off there.
+            Profiles: each in a box, its picture and gamertag, then Add profile last. The boxes sit 32 in from the scroller's
+            top and left, which its margin cancels, so a focused box's ring and glow band aren't cut off there.
         -->
-        <ScrollViewer x:Name="ProfilesPage" Visibility="Collapsed" Focusable="False" Margin="-26,-26,0,0"
+        <ScrollViewer x:Name="ProfilesPage" Visibility="Collapsed" Focusable="False" Margin="-32,-32,0,0"
                       VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl x:Name="ProfileBoxes" Focusable="False" HorizontalAlignment="Left" Margin="26,26,0,0"
+            <ItemsControl x:Name="ProfileBoxes" Focusable="False" HorizontalAlignment="Left" Margin="32,32,0,0"
                           ItemContainerStyle="{StaticResource RaisedWhenFocused}">
                 <ItemsControl.Resources>
                     <DataTemplate DataType="{x:Type core:Profile}">
@@ -277,9 +282,9 @@
         <DockPanel x:Name="PicturesPage" Visibility="Collapsed">
             <TextBlock x:Name="PicturesHint" DockPanel.Dock="Top" Text="Add images to the Gamerpics folder to choose from more."
                        Style="{StaticResource MutedText}" Margin="0,0,0,26" />
-            <!-- As Profiles' boxes, the gamerpics sit in from the scroller's top and left, 18, so a ring's glow isn't cut off. -->
-            <ScrollViewer Focusable="False" Margin="-18,-18,0,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl x:Name="PictureButtons" Focusable="False" HorizontalAlignment="Left" Margin="18,18,0,0">
+            <!-- As Profiles' boxes, the gamerpics sit in from the scroller's top and left, 24, so a ring's glow band isn't cut off. -->
+            <ScrollViewer Focusable="False" Margin="-24,-24,0,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="PictureButtons" Focusable="False" HorizontalAlignment="Left" Margin="24,24,0,0">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Button Style="{StaticResource PictureButton}" Click="OnPictureClick">

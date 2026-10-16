@@ -33,7 +33,8 @@
             <!--
                 A rail item, edge to edge across the rail, as My games & apps' nav items. The category showing (Tag
                 "Selected") is lit and marked by an accent bar on its right edge; the focused item fills with the accent and
-                wears the console's faint green glow. The fill is a Border of its own behind the name, so the glow traces only it.
+                carries the console's green glow as a blurred band. The fill is a Border of its own behind the name, carrying
+                the band, so the glow traces only it.
             -->
             <Style x:Key="RailItem" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -43,7 +44,9 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid Background="Transparent">
-                                <Border x:Name="Back" />
+                                <Border x:Name="Back">
+                                    <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlow}" Visibility="Collapsed" />
+                                </Border>
                                 <ContentPresenter Margin="75,0,43,0" VerticalAlignment="Center" />
                                 <Border x:Name="Bar" Width="6" HorizontalAlignment="Right"
                                         Background="{DynamicResource GlyphBrush}" Visibility="Collapsed" />
@@ -55,7 +58,7 @@
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
-                                    <Setter TargetName="Back" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
+                                    <Setter TargetName="Glow" Property="Visibility" Value="Visible" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -69,8 +72,8 @@
 
             <!--
                 A button in a category: a dark block. Focused, as Personalisation's boxes, it lightens and the accent ring
-                stands 3 off it with the console's faint green glow; the ring is a Border of its own, so the glow traces
-                only it, its corners the block's plus the gap and ring, and it is drawn over the buttons round it, so they
+                stands 3 off it carrying the console's green glow as a blurred band; the ring is a Border of its own, so the
+                glow traces only it, its corners the block's plus the gap and ring, and it is drawn over the buttons round it, so they
                 don't cover the glow. One that does nothing now (Tag False, as Connect without a Client ID and Secret) is
                 greyed but keeps its place in the pad's path, so focus never drops off it when it stops applying.
             -->
@@ -86,8 +89,9 @@
                                 <ContentPresenter x:Name="Content" Margin="30,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 <!-- 3 of gap and 4 of ring out from the block. -->
                                 <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="9"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                        Effect="{DynamicResource XboxFocusGlow}" />
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Tag">
