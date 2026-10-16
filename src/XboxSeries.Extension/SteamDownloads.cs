@@ -1,19 +1,215 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security;
+using Microsoft.Win32;
 using Playnite.SDK;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>Adapter: Steam's downloads, read from its app manifests, for the games Playnite is installing from Steam.</summary>
+    /// <summary>
+    /// Adapter: Steam's downloads, read from its app manifests, for the games Playnite is installing from Steam. Asked
+    /// once a second on the UI thread for each game being installed, so a call reads one small manifest and at most
+    /// one registry value; Steam's library folders are remembered between calls. A game from another library, or one
+    /// Steam can't be read for, has no progress.
+    /// </summary>
     internal sealed class SteamDownloads : IDownloads
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
+
+        // Playnite's own Steam library plugin, whose games' GameId is the Steam app id.
+        private static readonly Guid SteamLibraryId = new Guid("CB91DFC9-B977-43BF-8E70-55F46E410FAB");
+
+        // StateFlags' UpdateRunning bit (Steam's EAppState): set while Steam works on the app's download, through
+        // preallocating, downloading, staging and committing; clear while it waits in Steam's queue (UpdateRequired |
+        // UpdateStarted) or is paused (UpdatePaused).
+        private const long UpdateRunning = 256;
+
+        // How long a miss waits before Steam's library folders are read again: a manifest Steam hasn't written yet
+        // would otherwise have libraryfolders.vdf reread every second.
+        private static readonly TimeSpan FoldersLifetime = TimeSpan.FromSeconds(5);
+
         private readonly IPlayniteAPI api;
+        private List<string> libraryFolders;
+        private DateTime foldersRead;
+        private bool warned;
 
         public SteamDownloads(IPlayniteAPI api)
         {
             this.api = api;
         }
 
-        public DownloadProgress ProgressOf(Guid gameId) => null;
+        public DownloadProgress ProgressOf(Guid gameId)
+        {
+            var game = api.Database.Games.Get(gameId);
+            if (game == null || game.PluginId != SteamLibraryId || !uint.TryParse(game.GameId, out var appId))
+            {
+                return null;
+            }
+
+            try
+            {
+                var manifest = ManifestOf(appId);
+                if (manifest == null)
+                {
+                    // Steam hasn't started on it: it's waiting behind another download, or on Steam's install dialog.
+                    return new DownloadProgress(false, 0, 0);
+                }
+
+                var values = Values(manifest, "StateFlags", "BytesDownloaded", "BytesToDownload");
+                var active = (Number(values, "StateFlags") & UpdateRunning) != 0 || IsUpdating(appId);
+                return new DownloadProgress(active, Number(values, "BytesDownloaded"), Number(values, "BytesToDownload"));
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is SecurityException || e is ArgumentException || e is NotSupportedException)
+            {
+                // Steam rewrites the manifest as it goes, so a read can meet it mid-write; the next second's read
+                // usually succeeds, and one warning is enough.
+                if (!warned)
+                {
+                    warned = true;
+                    logger.Warn(e, $"Couldn't read Steam's progress on app {appId}");
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Steam's manifest for the app, in whichever library folder holds it; null when there's none yet. Steam
+        /// writes it when it starts on the app, possibly into a library added since the folders were read, so a miss
+        /// rereads them, at most every few seconds.
+        /// </summary>
+        private string ManifestOf(uint appId)
+        {
+            var name = $"appmanifest_{appId}.acf";
+            var found = Find(name, LibraryFolders(refresh: false));
+            if (found == null && DateTime.UtcNow - foldersRead > FoldersLifetime)
+            {
+                found = Find(name, LibraryFolders(refresh: true));
+            }
+
+            return found;
+        }
+
+        private static string Find(string manifestName, List<string> folders)
+        {
+            foreach (var folder in folders)
+            {
+                var path = Path.Combine(folder, "steamapps", manifestName);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Steam's own folder and the libraries libraryfolders.vdf names; none when Steam isn't installed.</summary>
+        private List<string> LibraryFolders(bool refresh)
+        {
+            if (libraryFolders != null && !refresh)
+            {
+                return libraryFolders;
+            }
+
+            var folders = new List<string>();
+            var steam = SteamPath();
+            if (steam != null)
+            {
+                folders.Add(steam);
+                var vdf = Path.Combine(steam, "steamapps", "libraryfolders.vdf");
+                if (File.Exists(vdf))
+                {
+                    foreach (var line in File.ReadLines(vdf))
+                    {
+                        // Steam lists its own folder among the libraries too, in its own capitalisation.
+                        if (TryKeyValue(line, out var key, out var value)
+                            && key.Equals("path", StringComparison.OrdinalIgnoreCase)
+                            && !folders.Exists(f => string.Equals(f.TrimEnd('\\'), value.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)))
+                        {
+                            folders.Add(value);
+                        }
+                    }
+                }
+            }
+
+            libraryFolders = folders;
+            foldersRead = DateTime.UtcNow;
+            return folders;
+        }
+
+        /// <summary>Steam's folder, which it records, with forward slashes, for the user it runs as; null when it has none.</summary>
+        private static string SteamPath()
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam"))
+            {
+                var path = key?.GetValue("SteamPath") as string;
+                return string.IsNullOrEmpty(path) ? null : path.Replace('/', '\\');
+            }
+        }
+
+        /// <summary>
+        /// Whether Steam marks the app as updating in the registry, which it keeps more current than the manifest it
+        /// rewrites only every so often: a second witness for a download that's just started.
+        /// </summary>
+        private static bool IsUpdating(uint appId)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey($@"Software\Valve\Steam\Apps\{appId}"))
+            {
+                return key?.GetValue("Updating") is int updating && updating == 1;
+            }
+        }
+
+        /// <summary>
+        /// The first value of each of the keys in a Valve KeyValues file (an .acf or .vdf), by key. Enough for the
+        /// manifest's top-level numbers, whose keys appear nowhere else in it; nesting isn't followed.
+        /// </summary>
+        private static Dictionary<string, string> Values(string path, params string[] keys)
+        {
+            var wanted = new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var line in File.ReadLines(path))
+            {
+                if (TryKeyValue(line, out var key, out var value) && wanted.Contains(key) && !values.ContainsKey(key))
+                {
+                    values[key] = value;
+                    if (values.Count == wanted.Count)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return values;
+        }
+
+        /// <summary>A key's value as a number; 0 when it's missing or not a number, as for a total Steam doesn't know yet.</summary>
+        private static long Number(Dictionary<string, string> values, string key)
+        {
+            return values.TryGetValue(key, out var value) && long.TryParse(value, out var number) ? number : 0;
+        }
+
+        /// <summary>
+        /// A <c>"key" "value"</c> line of a KeyValues file, its escaped backslashes undone; false for any other line,
+        /// such as a section's name or brace.
+        /// </summary>
+        private static bool TryKeyValue(string line, out string key, out string value)
+        {
+            key = value = null;
+            var keyStart = line.IndexOf('"');
+            var keyEnd = keyStart < 0 ? -1 : line.IndexOf('"', keyStart + 1);
+            var valueStart = keyEnd < 0 ? -1 : line.IndexOf('"', keyEnd + 1);
+            var valueEnd = valueStart < 0 ? -1 : line.LastIndexOf('"');
+            if (valueEnd <= valueStart)
+            {
+                return false;
+            }
+
+            key = line.Substring(keyStart + 1, keyEnd - keyStart - 1);
+            value = line.Substring(valueStart + 1, valueEnd - valueStart - 1).Replace(@"\\", @"\");
+            return true;
+        }
     }
 }
