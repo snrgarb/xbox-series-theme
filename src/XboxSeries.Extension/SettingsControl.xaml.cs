@@ -103,6 +103,9 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.Settings.PropertyChanged -= OnStateChanged;
+
+            // Gone mid-slide, the category is left where it settles.
+            PaneFlyIn.Stop(CategoryHost);
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
@@ -127,7 +130,7 @@ namespace XboxSeries.Extension
 
                     break;
                 case nameof(SettingsState.IsShown):
-                    // Opened or closed, the category is just there, as it is today.
+                    // Opened or closed, the page shows its category at once, with no slide.
                     PaneFlyIn.Stop(CategoryHost);
                     shownCategory = core.Settings.Category;
                     ShowCategory();
@@ -148,13 +151,10 @@ namespace XboxSeries.Extension
         /// </summary>
         private void FlyInCategory()
         {
-            var from = shownCategory;
-            shownCategory = core.Settings.Category;
-            if (core.Settings.IsShown && Rail.IsKeyboardFocusWithin)
-            {
-                var items = RailItems;
-                PaneFlyIn.Play(Array.IndexOf(items, categoryItems[shownCategory]) - Array.IndexOf(items, categoryItems[from]), CategoryHost);
-            }
+            var items = RailItems;
+            PaneFlyIn.Follow(
+                ref shownCategory, core.Settings.Category, category => Array.IndexOf(items, categoryItems[category]),
+                core.Settings.IsShown && Rail.IsKeyboardFocusWithin, CategoryHost);
         }
 
         /// <summary>The header and the lit rail item.</summary>

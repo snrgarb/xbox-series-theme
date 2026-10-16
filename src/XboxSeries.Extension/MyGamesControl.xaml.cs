@@ -87,6 +87,9 @@ namespace XboxSeries.Extension
         {
             core.MyGames.PropertyChanged += OnStateChanged;
 
+            // Put up before the page was loaded: what it shows now is where the next move along the nav is from.
+            shownItem = core.MyGames.Item;
+
             // Playnite's own pad B reaches whatever has focus on the page: the nav, Play history or its main list.
             viewHost = HomeRows.FindPart(this, "PART_ViewHost");
             if (viewHost != null)
@@ -114,6 +117,9 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.MyGames.PropertyChanged -= OnStateChanged;
+
+            // Gone mid-slide, nothing is left hidden or out of place, Playnite's main list least of all.
+            PaneFlyIn.Stop(ItemHost, mainList);
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
@@ -213,17 +219,11 @@ namespace XboxSeries.Extension
         /// </summary>
         private void FlyInItem(bool itemChanged)
         {
-            var from = shownItem;
-            shownItem = core.MyGames.Item;
-            if (!itemChanged || !core.MyGames.IsShown || !Nav.IsKeyboardFocusWithin)
-            {
-                PaneFlyIn.Stop(ItemHost, mainList);
-                return;
-            }
-
-            var down = Nav.Children.IndexOf(NavItemOf(shownItem)) - Nav.Children.IndexOf(NavItemOf(from));
-            var grid = shownItem == MyGamesItem.Games || shownItem == MyGamesItem.FullLibrary;
-            PaneFlyIn.Play(down, grid ? new UIElement[] { ItemHost, mainList } : new UIElement[] { ItemHost });
+            var item = core.MyGames.Item;
+            PaneFlyIn.Follow(
+                ref shownItem, item, shown => Nav.Children.IndexOf(NavItemOf(shown)),
+                itemChanged && core.MyGames.IsShown && Nav.IsKeyboardFocusWithin,
+                ItemHost, item == MyGamesItem.Games || item == MyGamesItem.FullLibrary ? mainList : null);
         }
 
         /// <summary>The storage ring, filled round as far as the drive is used; hidden without a drive to show.</summary>
