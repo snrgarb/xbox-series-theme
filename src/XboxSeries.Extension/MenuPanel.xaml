@@ -53,10 +53,11 @@
                                 <TextBlock Text="{Binding Label}" Margin="20,0,0,0" VerticalAlignment="Center"
                                            FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White" />
                             </StackPanel>
-                            <!-- The tiles' ring, 1 px past the row as theirs is past their art, with the console's glow round it. -->
+                            <!-- The tiles' ring, 1 px past the row as theirs is past their art, carrying the console's glow as a blurred band. -->
                             <Border x:Name="FocusRing" Margin="-1" BorderThickness="4" CornerRadius="7"
-                                    BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                    Effect="{DynamicResource XboxFocusGlow}" />
+                                    BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                            </Border>
                         </Grid>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsFocused}" Value="True">
