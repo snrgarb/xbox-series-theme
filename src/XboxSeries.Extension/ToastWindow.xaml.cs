@@ -12,8 +12,9 @@ namespace XboxSeries.Extension
     /// The Toast's window. It follows the core's <see cref="ToastState"/> and holds no logic, coming in and going as the
     /// console's Toast does: the banner grows from its centre as it fades in; for a kind whose tile slides (ToastSlide.&lt;Kind&gt;
     /// in ToastImages.xaml), its text starts at its left where the tile will be, and after a moment the tile slides out
-    /// from behind the banner's left edge as it fades in while the text moves right into its place, and as it goes the
-    /// tile first slides back behind that edge; for any other kind the tile and text sit in their place from the start.
+    /// from behind the banner's left edge as it fades in while the text moves right into its place, and as it goes, for a
+    /// kind that slides back (ToastSlideBack.&lt;Kind&gt;), the tile first slides back behind that edge; for any other kind
+    /// the tile and text sit in their place from the start.
     /// It goes by shrinking a little as it fades out. Only render transforms and opacity move, so the banner's size never
     /// changes. It never takes focus or the mouse.
     /// </summary>
@@ -132,8 +133,14 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Whether the tile of the Toast's kind slides in and out: ToastSlide.&lt;Kind&gt; in ToastImages.xaml, or not.</summary>
+        /// <summary>Whether the tile of the Toast's kind slides in: ToastSlide.&lt;Kind&gt; in ToastImages.xaml, or not.</summary>
         private bool Slides => TryFindResource("ToastSlide." + toast.Kind) is bool slides && slides;
+
+        /// <summary>
+        /// Whether the tile of the Toast's kind, having slid in, slides back as it goes: ToastSlideBack.&lt;Kind&gt; in
+        /// ToastImages.xaml, or it stays in its place.
+        /// </summary>
+        private bool SlidesBack => Slides && TryFindResource("ToastSlideBack." + toast.Kind) is bool back && back;
 
         /// <summary>Along the bottom of the monitor of the window in front, in physical pixels, without activating.</summary>
         private void ShowOverForeground()
@@ -193,13 +200,13 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The Toast going: for a kind that slides, its tile first slides back behind the banner's left edge, unless it is
-        /// already there unseen (gone before its slide began); then the banner shrinks out.
+        /// The Toast going: for a kind that slides back, its tile first slides back behind the banner's left edge, unless it
+        /// is already there unseen (gone before its slide began); then the banner shrinks out, any other kind's tile with it.
         /// </summary>
         private void Go()
         {
             var going = ++goings;
-            if (!Slides || (TileShift.X <= -SlideBy && Tile.Opacity <= 0))
+            if (!SlidesBack || (TileShift.X <= -SlideBy && Tile.Opacity <= 0))
             {
                 ShrinkOut(going);
                 return;
