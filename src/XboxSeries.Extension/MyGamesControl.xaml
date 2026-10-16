@@ -80,6 +80,12 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <!-- Focused, drawn over the items round it, so their fills don't cover its glow. -->
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <!--
