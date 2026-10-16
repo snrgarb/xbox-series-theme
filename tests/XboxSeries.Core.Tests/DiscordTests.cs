@@ -563,7 +563,7 @@ namespace XboxSeries.Core.Tests
 
         private ExtensionCore NewCore() =>
             new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(),
-                new FakeAudio(), new FakeController(), transport, oauth, secrets);
+                new FakeAudio(), new FakeController(), transport, oauth, secrets, new FakeDownloads());
 
         private void EnterApp()
         {

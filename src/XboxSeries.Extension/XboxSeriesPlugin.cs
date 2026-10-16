@@ -48,7 +48,7 @@ namespace XboxSeries.Extension
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
-                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()));
+                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), new SteamDownloads(api));
 
             // Home's elements, its top bar's status area, My games & apps and Settings, placed by the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs

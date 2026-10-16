@@ -29,7 +29,7 @@ namespace XboxSeries.Core.Tests
         public DiscordCallTests()
         {
             core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(),
-                audio, new FakeController(), transport, oauth, secrets);
+                audio, new FakeController(), transport, oauth, secrets, new FakeDownloads());
         }
 
         private StatusState Status => core.Status;

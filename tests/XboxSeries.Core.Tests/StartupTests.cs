@@ -24,7 +24,7 @@ namespace XboxSeries.Core.Tests
         private void NewCore()
         {
             core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), account,
-                new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), secrets);
+                new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), secrets, new FakeDownloads());
             core.OnLibraryChanged(library.Snapshot());
             core.OnNotificationsChanged(new Notification[0]);
         }

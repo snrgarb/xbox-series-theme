@@ -51,6 +51,11 @@ namespace XboxSeries.Extension
 
             // Every page is Playnite's list view, which the core shows as one or another; a Game hub open on top of it is
             // its details view.
+            CloseGameHub();
+        }
+
+        public void CloseGameHub()
+        {
             if (api.MainView.ActiveFullscreenView == FullscreenView.Details)
             {
                 api.MainView.ToggleFullscreenView();

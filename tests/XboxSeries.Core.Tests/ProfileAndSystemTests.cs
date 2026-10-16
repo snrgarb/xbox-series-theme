@@ -20,7 +20,7 @@ namespace XboxSeries.Core.Tests
         public ProfileAndSystemTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), account, new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore());
+            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), account, new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: HaloDirectory, coverImage: @"C:\covers\halo.jpg");
             core.OnLibraryChanged(library.Snapshot());
