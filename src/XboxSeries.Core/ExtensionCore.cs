@@ -187,7 +187,11 @@ namespace XboxSeries.Core
 
         public void OnLibraryChanged(LibrarySnapshot snapshot)
         {
+            var previous = library;
             library = snapshot;
+            FollowInstalls(previous);
+            RefreshQueue();
+            RefreshRecentlyInstalled();
             RefreshHome();
             RefreshFullLibraryCount();
             RefreshApps(snapshot.Apps);
@@ -605,6 +609,12 @@ namespace XboxSeries.Core
             else if (button == ControllerButton.Start && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
             {
                 ShowTileMenu(focusedTile);
+            }
+            else if (button == ControllerButton.Back && dialog == null && focusedTile != null && !Guide.IsOverlayShown
+                && MyGames.IsShown && MyGames.Item == MyGamesItem.Queue)
+            {
+                // Manage Queue's hint bar offers View for Manage game, on its rows and Recently installed covers alike.
+                playnite.OpenGameMenu(focusedTile.GameId);
             }
             else if (button == ControllerButton.A && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
             {
@@ -1106,10 +1116,10 @@ namespace XboxSeries.Core
                 .Take(RecentRowCount)
                 .ToList();
 
-            Home.RecentRow = row.Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, g == running)).ToList();
+            Home.RecentRow = row.Select(TileOf).ToList();
             Home.PlayHistory = played.Where(g => !row.Contains(g))
                 .Take(PlayHistoryCollageCount)
-                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
+                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
                 .ToList();
             Home.Groups = Groups();
             MyGames.GameCount = GameListFilter.Installed.Apply(library.Games).Count();
@@ -1161,19 +1171,21 @@ namespace XboxSeries.Core
                     .ToList(),
                 sorted.Skip(GroupTileCount)
                     .Take(PlayHistoryCollageCount)
-                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false))
+                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
                     .ToList());
         }
 
-        /// <summary>A game's tile, marked when the game is running.</summary>
-        private HomeTile TileOf(LibraryGame game) => new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame);
+        /// <summary>A game's tile, marked when the game is running, and reading "Queued" or "Installing..." while it installs.</summary>
+        private HomeTile TileOf(LibraryGame game) =>
+            new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame, StatusOf(game.Id));
 
         /// <summary>
         /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings if that is up, or moves it there. Full
         /// library is the main list under the user's own filter and sort. Games and Play history take the main list over,
         /// keeping the user's filter and sort first (as Full library last left them), to give back on Full library or when
         /// the page goes. Apps shows its own tiles and leaves the main list as it is, hidden behind them; with no Apps to
-        /// show (Software tools couldn't be read), it opens nothing.
+        /// show (Software tools couldn't be read), it opens nothing. Manage and Manage Queue show their own content too,
+        /// Manage Queue even with nothing queued, as the console's shows its empty box.
         /// </summary>
         public void OpenMyGames(MyGamesItem item)
         {
@@ -1188,7 +1200,7 @@ namespace XboxSeries.Core
             {
                 GiveBackMainList();
             }
-            else
+            else if (item == MyGamesItem.Games || item == MyGamesItem.PlayHistory)
             {
                 if (!ownsMainList)
                 {
@@ -1257,14 +1269,21 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// B on the page: back to Home. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
-        /// prompt still showing answers the B instead.
+        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it. Playnite's own B reaches the
+        /// page before the pad's reaches the core, so a menu or prompt still showing answers the B instead.
         /// </summary>
         public void LeaveMyGames()
         {
             if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
             {
-                CloseMyGames();
+                if (MyGames.Item == MyGamesItem.Queue)
+                {
+                    MyGames.Item = MyGamesItem.Manage;
+                }
+                else
+                {
+                    CloseMyGames();
+                }
             }
         }
 

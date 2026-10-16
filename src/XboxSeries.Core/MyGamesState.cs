@@ -54,7 +54,7 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games. Play history and Apps show their own.</summary>
+        /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games. Play history, Apps, Manage and Manage Queue show their own.</summary>
         public bool ShowsGameGrid => IsShown && (Item == MyGamesItem.Games || Item == MyGamesItem.FullLibrary);
 
         /// <summary>
@@ -168,7 +168,10 @@ namespace XboxSeries.Core
         /// <summary>The download shown above All storage: the queue's first while it is downloading; null otherwise.</summary>
         public QueueEntry CurrentDownload => Queue.Count > 0 && Queue[0].IsCurrent ? Queue[0] : null;
 
-        /// <summary>Manage Queue's Recently installed row, most recently installed first.</summary>
+        /// <summary>
+        /// Manage Queue's Recently installed row: up to 10 installed games, those seen to finish installing since Playnite
+        /// started first, the latest first, then the rest by when they were added.
+        /// </summary>
         public IReadOnlyList<HomeTile> RecentlyInstalled
         {
             get => recentlyInstalled;
@@ -205,18 +208,23 @@ namespace XboxSeries.Core
 
             var used = (double)(space.TotalBytes - space.FreeBytes) / space.TotalBytes;
             var culture = CultureInfo.CurrentCulture;
-            return new StorageRing(used, (used * 100).ToString("0.0", culture) + "%", Size(space.FreeBytes) + " free");
+            return new StorageRing(used, (used * 100).ToString("0.0", culture) + "%", Size(space.FreeBytes, 1) + " free");
         }
 
-        /// <summary>A size as the console shows it, to a tenth: in GB, in MB below one, in TB from 1,024 GB up.</summary>
-        private static string Size(long bytes)
+        /// <summary>
+        /// A size as the console shows it, to <paramref name="decimals"/> places: in GB, in MB below one, in TB from
+        /// 1,024 GB up. The unit goes by the size as rounded, so it never reads "1024.0 GB". The storage ring shows a
+        /// tenth; a download's amount, two places.
+        /// </summary>
+        internal static string Size(long bytes, int decimals)
         {
             const double GB = 1L << 30;
             var culture = CultureInfo.CurrentCulture;
-            var gb = Math.Round(bytes / GB, 1);
-            return gb >= 1024 ? (bytes / GB / 1024).ToString("0.0", culture) + " TB"
-                : gb >= 1 ? gb.ToString("0.0", culture) + " GB"
-                : (bytes / (GB / 1024)).ToString("0.0", culture) + " MB";
+            var format = "0." + new string('0', decimals);
+            var gb = Math.Round(bytes / GB, decimals);
+            return gb >= 1024 ? (bytes / GB / 1024).ToString(format, culture) + " TB"
+                : gb >= 1 ? gb.ToString(format, culture) + " GB"
+                : (bytes / (GB / 1024)).ToString(format, culture) + " MB";
         }
 
         /// <summary>How much of the drive is used, from 0 to 1: how far round the ring fills.</summary>
@@ -254,10 +262,16 @@ namespace XboxSeries.Core
         /// <summary>"Installing..." or "Queued".</summary>
         public string State { get; }
 
-        /// <summary>The download's speed, such as "106 Mbps"; null when queued or the library can't say.</summary>
+        /// <summary>
+        /// The download's speed, such as "106 Mbps" or "323 Kbps"; null when queued, when the library can't say, or until
+        /// its bytes have first moved.
+        /// </summary>
         public string Speed { get; }
 
-        /// <summary>How much is down of the whole, such as "67.80 MB of 3.55 GB"; null when queued or the library can't say.</summary>
+        /// <summary>
+        /// How much is down of the whole, such as "67.80 MB of 3.55 GB"; null when queued, when the library can't say, or
+        /// while its client doesn't know the whole yet.
+        /// </summary>
         public string Amount { get; }
 
         /// <summary>The share down, such as "1.9%" ("0.0%" when queued); null when the library can't say.</summary>
