@@ -29,7 +29,7 @@ namespace XboxSeries.Core.Tests
         {
             var windows = new FakeWindowSystem();
             core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), account,
-                new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), secrets);
+                new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), secrets, new FakeDownloads());
         }
 
         private StartUpSettingsState StartUp => core.Settings.StartUp;

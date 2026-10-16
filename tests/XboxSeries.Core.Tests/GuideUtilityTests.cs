@@ -18,7 +18,7 @@ namespace XboxSeries.Core.Tests
         public GuideUtilityTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), new FakeUserAccount(), audio, new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore());
+            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(), new FakeUserAccount(), audio, new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12))
                 .Snapshot());

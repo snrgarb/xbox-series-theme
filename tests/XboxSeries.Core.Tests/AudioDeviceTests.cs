@@ -17,7 +17,7 @@ namespace XboxSeries.Core.Tests
 
         public AudioDeviceTests()
         {
-            core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(), audio, new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore());
+            core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(), audio, new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
             core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12)).Snapshot());
             audio.Add("speakers", "Speakers", AudioDeviceKind.Output);
             audio.Add("headphones", "Headphones", AudioDeviceKind.Output);

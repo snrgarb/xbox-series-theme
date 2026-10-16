@@ -76,6 +76,7 @@ namespace XboxSeries.Core
         private readonly IPlayniteHost playnite;
         private readonly ISoundPlayer sounds;
         private readonly IDrives drives;
+        private readonly IDownloads downloads;
         private readonly IUserAccount account;
         private readonly IAudio audio;
         private readonly IController controller;
@@ -148,8 +149,10 @@ namespace XboxSeries.Core
             IController controller,
             IDiscordTransport discord,
             IDiscordOAuth discordOAuth,
-            ISecretStore secrets)
+            ISecretStore secrets,
+            IDownloads downloads)
         {
+            this.downloads = downloads;
             this.discord = discord;
             this.discordOAuth = discordOAuth;
             this.secrets = secrets;

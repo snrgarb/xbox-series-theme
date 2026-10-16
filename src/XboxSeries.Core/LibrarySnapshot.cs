@@ -47,7 +47,8 @@ namespace XboxSeries.Core
             DateTime? releaseDate = null,
             DateTime? modified = null,
             string sortingName = null,
-            string platform = null)
+            string platform = null,
+            bool installing = false)
         {
             Id = id;
             Name = name;
@@ -68,6 +69,7 @@ namespace XboxSeries.Core
             Modified = modified;
             SortingName = string.IsNullOrEmpty(sortingName) ? name : sortingName;
             Platform = platform;
+            Installing = installing;
         }
 
         public Guid Id { get; }
@@ -107,6 +109,9 @@ namespace XboxSeries.Core
 
         /// <summary>The game's platform (the first, for games on several), or null for games without one.</summary>
         public string Platform { get; }
+
+        /// <summary>Whether Playnite is installing the game: queued or downloading in its library's client.</summary>
+        public bool Installing { get; }
     }
 
     /// <summary>A Playnite filter preset. Snapshots list them in Playnite's own order.</summary>

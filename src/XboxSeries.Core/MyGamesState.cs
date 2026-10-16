@@ -17,6 +17,8 @@ namespace XboxSeries.Core
         private StorageRing storage;
         private IReadOnlyList<App> apps = new App[0];
         private bool hasApps;
+        private IReadOnlyList<QueueEntry> queue = new QueueEntry[0];
+        private IReadOnlyList<HomeTile> recentlyInstalled = new HomeTile[0];
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -140,6 +142,43 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// The queue: every game Playnite is installing, the current download first, then those next up in the order
+        /// they'll download. Empty when nothing is installing.
+        /// </summary>
+        public IReadOnlyList<QueueEntry> Queue
+        {
+            get => queue;
+            internal set
+            {
+                queue = value;
+                Changed(nameof(Queue));
+                Changed(nameof(QueueCount));
+                Changed(nameof(HasQueue));
+                Changed(nameof(CurrentDownload));
+            }
+        }
+
+        /// <summary>How many games the queue holds, for Manage's Queue box and the nav's Queue line.</summary>
+        public int QueueCount => Queue.Count;
+
+        /// <summary>Whether anything is queued: the nav shows its Queue line, Manage Queue its Installing section.</summary>
+        public bool HasQueue => Queue.Count > 0;
+
+        /// <summary>The download shown above All storage: the queue's first while it is downloading; null otherwise.</summary>
+        public QueueEntry CurrentDownload => Queue.Count > 0 && Queue[0].IsCurrent ? Queue[0] : null;
+
+        /// <summary>Manage Queue's Recently installed row, most recently installed first.</summary>
+        public IReadOnlyList<HomeTile> RecentlyInstalled
+        {
+            get => recentlyInstalled;
+            internal set
+            {
+                recentlyInstalled = value;
+                Changed(nameof(RecentlyInstalled));
+            }
+        }
+
         private void Changed(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
@@ -190,6 +229,44 @@ namespace XboxSeries.Core
         public string Free { get; }
     }
 
+    /// <summary>
+    /// One game in the queue, as Manage Queue's row and the nav's block above All storage show it. Its tile takes focus,
+    /// A and Menu as a Home tile does; View opens Manage game.
+    /// </summary>
+    public sealed class QueueEntry
+    {
+        internal QueueEntry(HomeTile tile, bool isCurrent, string state, string speed, string amount, string percent, double fraction)
+        {
+            Tile = tile;
+            IsCurrent = isCurrent;
+            State = state;
+            Speed = speed;
+            Amount = amount;
+            Percent = percent;
+            Fraction = fraction;
+        }
+
+        public HomeTile Tile { get; }
+
+        /// <summary>Whether this is the current download, rather than one next up.</summary>
+        public bool IsCurrent { get; }
+
+        /// <summary>"Installing..." or "Queued".</summary>
+        public string State { get; }
+
+        /// <summary>The download's speed, such as "106 Mbps"; null when queued or the library can't say.</summary>
+        public string Speed { get; }
+
+        /// <summary>How much is down of the whole, such as "67.80 MB of 3.55 GB"; null when queued or the library can't say.</summary>
+        public string Amount { get; }
+
+        /// <summary>The share down, such as "1.9%" ("0.0%" when queued); null when the library can't say.</summary>
+        public string Percent { get; }
+
+        /// <summary>How far the bar fills, from 0 to 1.</summary>
+        public double Fraction { get; }
+    }
+
     /// <summary>The items of My games &amp; apps' left nav.</summary>
     public enum MyGamesItem
     {
@@ -197,6 +274,12 @@ namespace XboxSeries.Core
         Apps,
         PlayHistory,
         FullLibrary,
+
+        /// <summary>Manage, below the nav's line: its Queue box.</summary>
+        Manage,
+
+        /// <summary>Manage Queue, opened from Manage's Queue box: Recently installed, then the queue's rows.</summary>
+        Queue,
     }
 
     /// <summary>One section of Play history: Today, Yesterday, This week and so on.</summary>

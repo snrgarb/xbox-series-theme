@@ -101,8 +101,9 @@ namespace XboxSeries.Core
     /// <summary>One game tile on the Dashboard: on Home, or a game in My games &amp; apps' Play history.</summary>
     public sealed class HomeTile
     {
-        internal HomeTile(Guid gameId, string title, string coverImage, string source, bool isRunning)
+        internal HomeTile(Guid gameId, string title, string coverImage, string source, bool isRunning, string status = null)
         {
+            Status = status;
             GameId = gameId;
             Title = title;
             CoverImage = coverImage;
@@ -120,6 +121,9 @@ namespace XboxSeries.Core
         public string Source { get; }
 
         public bool IsRunning { get; }
+
+        /// <summary>The tile's install state, as its caption reads it: "Queued" or "Installing..."; null for neither.</summary>
+        public string Status { get; }
     }
 
     /// <summary>The hero's art: a game's background art, or its cover to be shown blurred and darkened.</summary>
