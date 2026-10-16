@@ -35,7 +35,7 @@ namespace XboxSeries.Core.Tests
                            from effect in XDocument.Load(file).Descendants()
                            where effect.Name.LocalName == "DropShadowEffect"
                                  && (string)effect.Attribute(X + "Key") != "XboxFocusGlow"
-                                 && ((string)effect.Attribute("Color") ?? "").Contains("Glyph")
+                                 && IsGreen((string)effect.Attribute("Color") ?? "")
                            select Relative(file);
 
             Assert.Empty(ownGlows);
@@ -59,6 +59,14 @@ namespace XboxSeries.Core.Tests
                 .Select(Relative);
 
             Assert.Empty(unglowing);
+        }
+
+        // The accent by name, or the console's greens written out: the Dashboard's light accent and Xbox green.
+        private static bool IsGreen(string color)
+        {
+            string[] greens = { "2CA243", "107C10" };
+            var hex = color.TrimStart('#').ToUpperInvariant();
+            return color.Contains("Glyph") || greens.Any(green => hex == green || hex == "FF" + green);
         }
 
         private static string[] ThemeAndExtensionXaml() =>
