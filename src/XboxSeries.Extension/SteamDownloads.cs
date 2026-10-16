@@ -4,6 +4,7 @@ using System.IO;
 using System.Security;
 using Microsoft.Win32;
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -42,15 +43,15 @@ namespace XboxSeries.Extension
 
         public DownloadProgress ProgressOf(Guid gameId)
         {
-            var game = api.Database.Games.Get(gameId);
-            if (game == null || game.PluginId != SteamLibraryId || !uint.TryParse(game.GameId, out var appId))
+            var appId = AppIdOf(gameId);
+            if (appId == null)
             {
                 return null;
             }
 
             try
             {
-                var manifest = ManifestOf(appId);
+                var manifest = ManifestOf(appId.Value);
                 if (manifest == null)
                 {
                     // Steam hasn't started on it: it's waiting behind another download, or on Steam's install dialog.
@@ -58,20 +59,43 @@ namespace XboxSeries.Extension
                 }
 
                 var values = Values(manifest, "StateFlags", "BytesDownloaded", "BytesToDownload");
-                var active = (Number(values, "StateFlags") & UpdateRunning) != 0 || IsUpdating(appId);
+                var active = (Number(values, "StateFlags") & UpdateRunning) != 0 || IsUpdating(appId.Value);
                 return new DownloadProgress(active, Number(values, "BytesDownloaded"), Number(values, "BytesToDownload"));
             }
-            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is SecurityException || e is ArgumentException || e is NotSupportedException)
+            catch (Exception e) when (IsReadFailure(e))
             {
                 // Steam rewrites the manifest as it goes, so a read can meet it mid-write; the next second's read
                 // usually succeeds, and one warning is enough.
-                if (!warned)
-                {
-                    warned = true;
-                    logger.Warn(e, $"Couldn't read Steam's progress on app {appId}");
-                }
-
+                WarnOnce(ref warned, e, $"Couldn't read Steam's progress on app {appId}");
                 return null;
+            }
+        }
+
+        /// <summary>The game's Steam app id; null when it isn't from Playnite's Steam library.</summary>
+        private uint? AppIdOf(Guid gameId) => SteamAppId(api.Database.Games.Get(gameId));
+
+        /// <summary>
+        /// A game's Steam app id, which Playnite's Steam library keeps as its GameId; null for a game from any other
+        /// library, or none.
+        /// </summary>
+        private static uint? SteamAppId(Game game)
+        {
+            return game != null && game.PluginId == SteamLibraryId && uint.TryParse(game.GameId, out var appId) ? appId : (uint?)null;
+        }
+
+        /// <summary>The failures reading Steam's files or registry can meet, all of which leave that read without an answer.</summary>
+        private static bool IsReadFailure(Exception e)
+        {
+            return e is IOException || e is UnauthorizedAccessException || e is SecurityException || e is ArgumentException || e is NotSupportedException;
+        }
+
+        /// <summary>Logs a failure the first time only: each is asked about every second, and one warning says it.</summary>
+        private static void WarnOnce(ref bool warned, Exception e, string message)
+        {
+            if (!warned)
+            {
+                warned = true;
+                logger.Warn(e, message);
             }
         }
 

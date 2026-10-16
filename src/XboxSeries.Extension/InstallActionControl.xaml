@@ -6,10 +6,11 @@
     <!--
         The Game hub's Install for a game the extension installs silently, placed by the Dashboard beside Playnite's own
         main action, which it hides while this shows. Drawn by the theme's own resources, so it is that action exactly:
-        its style and its Install content, the game's source under the label. Collapsed, and so never in the way, for any
-        other game (InstallActionControl.xaml.cs).
+        its style and its content, Install with the game's source under it, or Queued or Installing... alone once the
+        extension has queued it. The label is the core's (InstallActionControl.xaml.cs). Collapsed, and so never in the
+        way, for any other game.
     -->
-    <Button x:Name="InstallButton" Content="Install"
+    <Button x:Name="InstallButton"
             Style="{DynamicResource XboxHubDefaultAction}"
             ContentTemplate="{DynamicResource XboxHubMainActionContent}"
             Click="OnClick" PreviewKeyDown="OnPreviewKeyDown" />
