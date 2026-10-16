@@ -6,8 +6,8 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The queue: the games Playnite is installing, as My games &amp; apps' nav, Manage and Manage Queue show them, with
-    /// each download's progress as its library's client reports it.
+    /// The queue: the games Playnite is installing, and those its client (Steam) is installing without Playnite knowing,
+    /// as My games &amp; apps' nav, Manage and Manage Queue show them, with each download's progress as the client reports it.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -20,6 +20,9 @@ namespace XboxSeries.Core
 
         /// <summary>How often the queue reads its downloads' progress again while anything is installing.</summary>
         private static readonly TimeSpan QueuePoll = TimeSpan.FromSeconds(1);
+
+        /// <summary>How long a game the client was asked to install can go unreported before the queue gives up on it.</summary>
+        private static readonly TimeSpan AskedInstallGivesUpAfter = TimeSpan.FromSeconds(60);
 
         /// <summary>
         /// How long a download's bytes can stand still before its speed reads 0 Kbps. Steam writes its progress only
@@ -45,6 +48,15 @@ namespace XboxSeries.Core
         /// <summary>What each installing game's tile reads, by game, as the queue last found it.</summary>
         private Dictionary<Guid, string> tileStatuses = new Dictionary<Guid, string>();
 
+        /// <summary>
+        /// The games <see cref="InstallGame"/> asked the client to install that it hasn't yet reported installing, with
+        /// when each was asked. The client writes nothing for a moment after it is asked, so they are queued meanwhile.
+        /// </summary>
+        private readonly Dictionary<Guid, DateTime> installsAsked = new Dictionary<Guid, DateTime>();
+
+        /// <summary>The queued games the client has reported installing that Playnite isn't, to mark installed once it stops.</summary>
+        private readonly HashSet<Guid> clientReported = new HashSet<Guid>();
+
         /// <summary>The next read of the queue's progress, while anything is installing; null otherwise.</summary>
         private IDisposable queueTimer;
 
@@ -52,7 +64,11 @@ namespace XboxSeries.Core
         /// Whether the Game hub's Install installs the game through its client without the client's own windows (a Steam
         /// game not installed, installing or queued), in place of Playnite's own Install.
         /// </summary>
-        public bool CanInstallSilently(Guid gameId) => false;
+        public bool CanInstallSilently(Guid gameId)
+        {
+            var game = library.Games.FirstOrDefault(g => g.Id == gameId);
+            return game != null && !game.Installed && !game.Installing && !installOrder.Contains(gameId) && downloads.CanInstall(gameId);
+        }
 
         /// <summary>
         /// The Game hub's Install, for a game <see cref="CanInstallSilently"/>: asks its client to install it, puts it in
@@ -60,6 +76,18 @@ namespace XboxSeries.Core
         /// </summary>
         public void InstallGame(Guid gameId)
         {
+            if (!CanInstallSilently(gameId))
+            {
+                return;
+            }
+
+            downloads.Install(gameId);
+            installsAsked[gameId] = clock.Now;
+            RefreshQueue();
+            RefreshHome();
+
+            // Playnite never sees this install start, so FollowInstalls won't close the hub: it is closed here.
+            playnite.CloseGameHub(gameId);
         }
 
         /// <summary>
@@ -69,11 +97,41 @@ namespace XboxSeries.Core
         /// </summary>
         private bool RefreshQueue()
         {
-            var installing = library.Games.Where(g => g.Installing).ToDictionary(g => g.Id);
-            installOrder.RemoveAll(id => !installing.ContainsKey(id));
-            installOrder.AddRange(library.Games.Where(g => g.Installing && !installOrder.Contains(g.Id)).Select(g => g.Id));
+            // The client's own installs are read on each snapshot and each poll. One started in the client while nothing
+            // is queued has no poll to find it, so it joins with the next library snapshot: Playnite sends one often
+            // enough that polling the client all the time isn't worth it.
+            var clientInstalling = new HashSet<Guid>(downloads.Installing());
+            foreach (var reported in installsAsked.Keys.Where(clientInstalling.Contains).ToList())
+            {
+                installsAsked.Remove(reported);
+            }
 
-            var progress = installOrder.ToDictionary(id => id, id => downloads.ProgressOf(id));
+            // One a snapshot shows installed got there between two reads, as a small game can in a few seconds.
+            foreach (var installed in library.Games.Where(g => g.Installed && installsAsked.ContainsKey(g.Id)))
+            {
+                installsAsked.Remove(installed.Id);
+                installedThisSession.Remove(installed.Id);
+                installedThisSession.Insert(0, installed.Id);
+            }
+
+            // One the client says nothing of a minute on, not even its progress, it won't install (it isn't owned, or
+            // the client refused): it leaves the queue rather than read Queued for ever.
+            foreach (var refused in installsAsked.Where(a => clock.Now - a.Value >= AskedInstallGivesUpAfter && downloads.ProgressOf(a.Key) == null).ToList())
+            {
+                installsAsked.Remove(refused.Key);
+            }
+
+            var installing = library.Games
+                .Where(g => g.Installing || (!g.Installed && (clientInstalling.Contains(g.Id) || installsAsked.ContainsKey(g.Id))))
+                .ToDictionary(g => g.Id);
+            FollowClientInstalls(installing, clientInstalling);
+            installOrder.RemoveAll(id => !installing.ContainsKey(id));
+            installOrder.AddRange(installing.Keys.Where(id => !installOrder.Contains(id)).ToList());
+
+            // A game the client was asked to install that it says nothing of yet is waiting its turn: queued.
+            var progress = installOrder.ToDictionary(
+                id => id,
+                id => downloads.ProgressOf(id) ?? (installing[id].Installing ? null : new DownloadProgress(false, 0, 0)));
             foreach (var gone in speedSamples.Keys.Where(id => !progress.TryGetValue(id, out var p) || p?.IsActive != true).ToList())
             {
                 speedSamples.Remove(gone);
@@ -105,6 +163,26 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
+        /// The installs the client reported that Playnite doesn't know of: one the client stops reporting has finished
+        /// (or was cancelled), and Playnite, which never saw it start, won't notice. It is marked installed, which does
+        /// nothing if the client didn't install it, and heads Recently installed once a snapshot shows it installed.
+        /// A game Playnite itself is installing is left to Playnite.
+        /// </summary>
+        private void FollowClientInstalls(Dictionary<Guid, LibraryGame> queued, HashSet<Guid> clientInstalling)
+        {
+            clientReported.RemoveWhere(id => queued.TryGetValue(id, out var game) && game.Installing);
+            foreach (var finished in clientReported.Where(id => !clientInstalling.Contains(id)).ToList())
+            {
+                clientReported.Remove(finished);
+                downloads.MarkInstalled(finished);
+                installedThisSession.Remove(finished);
+                installedThisSession.Insert(0, finished);
+            }
+
+            clientReported.UnionWith(clientInstalling.Where(id => queued.TryGetValue(id, out var game) && !game.Installing));
+        }
+
+        /// <summary>
         /// The queue's second is up: its progress is read again, and the storage ring with it while the page shows it,
         /// as the download takes the drive's space. Home's rows are only rebuilt when a tile's state changed, since
         /// rebuilding them loads every tile's art again.
@@ -115,6 +193,14 @@ namespace XboxSeries.Core
             if (RefreshQueue())
             {
                 RefreshHome();
+            }
+
+            // A small game can install between two reads, so the client never reports it installing: each one asked for
+            // and not yet reported is marked installed, which does nothing until the client has installed it. The
+            // snapshot that follows shows it installed, and takes it from the queue.
+            foreach (var asked in installsAsked.Keys.ToList())
+            {
+                downloads.MarkInstalled(asked);
             }
 
             if (MyGames.IsShown)
