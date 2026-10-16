@@ -816,11 +816,9 @@
                                             </Ellipse.Fill>
                                         </Ellipse>
                                     </Grid>
-                                    <!-- The showing tab's underline, glowing as the console's does, with a blurred band round it. -->
+                                    <!-- The showing tab's underline: a solid line, no glow. -->
                                     <Border x:Name="Underline" Height="6" VerticalAlignment="Bottom" Margin="0,0,0,-4" CornerRadius="2"
-                                            Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
-                                        <Border Style="{DynamicResource XboxFocusGlow}" />
-                                    </Border>
+                                            Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden" />
                                 </Grid>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding Kind}" Value="Discord">
