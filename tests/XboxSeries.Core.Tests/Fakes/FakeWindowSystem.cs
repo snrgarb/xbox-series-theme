@@ -32,6 +32,12 @@ namespace XboxSeries.Core.Tests.Fakes
         /// <summary>Whether the game is frozen now: frozen since the last thaw.</summary>
         public bool IsFrozen { get; private set; }
 
+        /// <summary>Every window handed the foreground while the game was frozen, in order. A frozen game can't take it.</summary>
+        public List<IntPtr> HandedForegroundWhileFrozen { get; } = new List<IntPtr>();
+
+        /// <summary>Every window asked to close or killed while the game was frozen, in order. A frozen game can't answer a close.</summary>
+        public List<IntPtr> QuitWhileFrozen { get; } = new List<IntPtr>();
+
         /// <summary>When true, Windows refuses to hand the Overlay the foreground.</summary>
         public bool RefusesForeground { get; set; }
 
@@ -74,16 +80,37 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void SetForeground(IntPtr window)
         {
+            if (IsFrozen)
+            {
+                HandedForegroundWhileFrozen.Add(window);
+            }
+
             if (Exists(window))
             {
                 Foreground = window;
             }
         }
 
-        public void CloseGracefully(IntPtr window) => CloseRequests.Add(window);
+        public void CloseGracefully(IntPtr window)
+        {
+            if (IsFrozen)
+            {
+                QuitWhileFrozen.Add(window);
+            }
+
+            CloseRequests.Add(window);
+        }
 
         /// <summary>Records the kill. Like the real thing, Playnite's game stopped event is left to the test.</summary>
-        public void ForceKill(IntPtr window) => Killed.Add(window);
+        public void ForceKill(IntPtr window)
+        {
+            if (IsFrozen)
+            {
+                QuitWhileFrozen.Add(window);
+            }
+
+            Killed.Add(window);
+        }
 
         public void FreezeGame(string directory, IntPtr window)
         {
