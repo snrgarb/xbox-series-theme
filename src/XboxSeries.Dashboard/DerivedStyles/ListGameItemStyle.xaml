@@ -67,10 +67,16 @@
                                     <GradientStop Color="#E6000000" Offset="1" />
                                 </LinearGradientBrush>
                             </Border.Background>
-                            <TextBlock Text="{Binding DisplayName}" Margin="12,36,12,10"
-                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="56"
-                                       FontFamily="{DynamicResource XboxFont}" FontSize="20"
-                                       Foreground="{DynamicResource XboxTextBrush}" />
+                            <StackPanel Margin="12,36,12,10">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="56"
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="20"
+                                           Foreground="{DynamicResource XboxTextBrush}" />
+                                <!-- As the console's focused tile: the title over Installing..., which the tile shows unfocused. -->
+                                <TextBlock x:Name="InstallingCaption" Text="Installing..." TextTrimming="CharacterEllipsis"
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="20"
+                                           Foreground="{DynamicResource XboxTextBrush}" Visibility="Collapsed" />
+                            </StackPanel>
                         </Border>
 
                         <!-- As Home's Recent row: standing 4 px off the tile, its corners following the tile's (6 + 4 + 4). -->
@@ -80,6 +86,9 @@
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsInstalling}" Value="True">
+                            <Setter TargetName="InstallingCaption" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                             <Setter Property="Panel.ZIndex" Value="90" />
