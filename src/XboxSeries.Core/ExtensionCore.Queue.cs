@@ -115,8 +115,9 @@ namespace XboxSeries.Core
             }
 
             // One the client says nothing of a minute on, not even its progress, it won't install (it isn't owned, or
-            // the client refused): it leaves the queue rather than read Queued for ever.
-            foreach (var refused in installsAsked.Where(a => clock.Now - a.Value >= AskedInstallGivesUpAfter && downloads.ProgressOf(a.Key) == null).ToList())
+            // the client refused): it leaves the queue rather than read Queued for ever. Steam's adapter reports a game
+            // it has written nothing for as waiting with 0 of 0 bytes, which is no sign of an install either.
+            foreach (var refused in installsAsked.Where(a => clock.Now - a.Value >= AskedInstallGivesUpAfter && !HasStarted(downloads.ProgressOf(a.Key))).ToList())
             {
                 installsAsked.Remove(refused.Key);
             }
@@ -316,6 +317,10 @@ namespace XboxSeries.Core
             speedSamples[gameId] = new SpeedSample(bytes, now, speed);
             return speed;
         }
+
+        /// <summary>Whether the client has begun on a download: it is downloading it, or knows its size.</summary>
+        private static bool HasStarted(DownloadProgress progress) =>
+            progress != null && (progress.IsActive || progress.BytesTotal > 0 || progress.BytesDownloaded > 0);
 
         /// <summary>A share as the console shows it, to a tenth: "1.9%".</summary>
         private static string PercentOf(double fraction) => (fraction * 100).ToString("0.0", CultureInfo.CurrentCulture) + "%";
