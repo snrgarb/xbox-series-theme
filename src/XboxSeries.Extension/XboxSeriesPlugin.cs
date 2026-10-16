@@ -87,9 +87,6 @@ namespace XboxSeries.Extension
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
-            // Thawed as the exception passes, left for Playnite to handle or crash on.
-            PlayniteApi.MainView.UIDispatcher.UnhandledException += (_, __) => windows.ThawGame();
-
             // Created here, on the UI thread, which owns the Overlay and runs the core. The Toast's may be already, for
             // the Start-up sequence's greeting.
             var overlay = new OverlayWindow(core);

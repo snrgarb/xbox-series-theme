@@ -133,7 +133,7 @@ namespace XboxSeries.Extension
 
         public void ThawGame() => freezer.Thaw();
 
-        /// <summary>Resumes the programs of a game a Playnite that stopped without thawing it left frozen.</summary>
+        /// <summary>Resumes the processes of a game a Playnite that stopped without thawing it left frozen.</summary>
         public void ThawLeftoverGame() => freezer.ThawLeftovers();
     }
 }
