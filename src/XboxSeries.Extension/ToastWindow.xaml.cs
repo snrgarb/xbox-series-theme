@@ -12,9 +12,8 @@ namespace XboxSeries.Extension
     /// The Toast's window. It follows the core's <see cref="ToastState"/> and holds no logic, coming in and going as the
     /// console's Toast does: the banner grows from its centre as it fades in; for a kind whose tile slides (ToastSlide.&lt;Kind&gt;
     /// in ToastImages.xaml), its text starts at its left where the tile will be, and after a moment the tile slides out
-    /// from behind the banner's left edge as it fades in while the text moves right into its place, and as it goes, for a
-    /// kind that slides back (ToastSlideBack.&lt;Kind&gt;), the tile first slides back behind that edge; for any other kind
-    /// the tile and text sit in their place from the start.
+    /// from behind the banner's left edge as it fades in while the text moves right into its place, and stays there as it
+    /// goes; for any other kind the tile and text sit in their place from the start.
     /// It goes by shrinking a little as it fades out. Only render transforms and opacity move, so the banner's size never
     /// changes. It never takes focus or the mouse.
     /// </summary>
@@ -39,9 +38,6 @@ namespace XboxSeries.Extension
         /// <summary>The tile's slide in and the text's move right.</summary>
         private static readonly TimeSpan SlideDuration = TimeSpan.FromMilliseconds(450);
 
-        /// <summary>The tile's slide back behind the banner's left edge, and the text's move left, as the Toast goes.</summary>
-        private static readonly Duration SlideOutDuration = TimeSpan.FromMilliseconds(300);
-
         /// <summary>The tile's width and its gap to the text: how far left the tile and text start.</summary>
         private const double SlideBy = 96 + 24;
 
@@ -56,7 +52,7 @@ namespace XboxSeries.Extension
         /// <summary>The text's fade between the Toast's line and "Press (Guide) to view", running while it shows, but for a greeting.</summary>
         private readonly Storyboard textCycle;
 
-        /// <summary>Counts the goings, so only the latest one's steps go on to the next, and its end hides the window.</summary>
+        /// <summary>Counts the goings, so only the latest one's end hides the window.</summary>
         private int goings;
 
         public ToastWindow(ToastState toast)
@@ -136,12 +132,6 @@ namespace XboxSeries.Extension
         /// <summary>Whether the tile of the Toast's kind slides in: ToastSlide.&lt;Kind&gt; in ToastImages.xaml, or not.</summary>
         private bool Slides => TryFindResource("ToastSlide." + toast.Kind) is bool slides && slides;
 
-        /// <summary>
-        /// Whether the tile of the Toast's kind, having slid in, slides back as it goes: ToastSlideBack.&lt;Kind&gt; in
-        /// ToastImages.xaml, or it stays in its place.
-        /// </summary>
-        private bool SlidesBack => Slides && TryFindResource("ToastSlideBack." + toast.Kind) is bool back && back;
-
         /// <summary>Along the bottom of the monitor of the window in front, in physical pixels, without activating.</summary>
         private void ShowOverForeground()
         {
@@ -168,7 +158,7 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The tile and text as the Toast's kind comes in: sliding in, or in their place at once. Either replaces whatever
-        /// they were at, as a slide part done, a slide-out, or the last Toast's place.
+        /// they were at, as a slide part done or the last Toast's place.
         /// </summary>
         private void ComeIn()
         {
@@ -200,38 +190,12 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The Toast going: for a kind that slides back, its tile first slides back behind the banner's left edge, unless it
-        /// is already there unseen (gone before its slide began); then the banner shrinks out, any other kind's tile with it.
+        /// The Toast going: the banner shrinking a little as it fades out, its tile and text where they are, then the window
+        /// hiding if the Toast hasn't shown or gone again.
         /// </summary>
         private void Go()
         {
             var going = ++goings;
-            if (!SlidesBack || (TileShift.X <= -SlideBy && Tile.Opacity <= 0))
-            {
-                ShrinkOut(going);
-                return;
-            }
-
-            var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
-            var fade = new DoubleAnimation(0, SlideOutDuration) { EasingFunction = ease };
-            fade.Completed += (_, __) =>
-            {
-                // Not if the Toast has shown again, or gone again since, whose own steps follow on.
-                if (going == goings && !toast.IsShown)
-                {
-                    ShrinkOut(going);
-                }
-            };
-
-            // From wherever the tile and text are, as part way through their slide in.
-            TileShift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-SlideBy, SlideOutDuration) { EasingFunction = ease });
-            TextShift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-SlideBy, SlideOutDuration) { EasingFunction = ease });
-            Tile.BeginAnimation(OpacityProperty, fade);
-        }
-
-        /// <summary>The banner shrinking a little as it fades out, then the window hiding if the Toast hasn't shown or gone again.</summary>
-        private void ShrinkOut(int going)
-        {
             var fade = new DoubleAnimation(0, OutDuration);
             fade.Completed += (_, __) =>
             {
