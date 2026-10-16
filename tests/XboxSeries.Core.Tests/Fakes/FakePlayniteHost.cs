@@ -45,9 +45,9 @@ namespace XboxSeries.Core.Tests.Fakes
         public void OpenGameHub(Guid gameId) => OpenedHubs.Add(gameId);
 
         /// <summary>How many times Playnite was asked to close the Game hub.</summary>
-        public int ClosedGameHubs { get; private set; }
+        public List<Guid> ClosedGameHubs { get; } = new List<Guid>();
 
-        public void CloseGameHub() => ClosedGameHubs++;
+        public void CloseGameHub(Guid gameId) => ClosedGameHubs.Add(gameId);
 
         /// <summary>Every game whose game menu Playnite was asked to open, in order.</summary>
         public List<Guid> OpenedGameMenus { get; } = new List<Guid>();

@@ -245,7 +245,7 @@ namespace XboxSeries.Extension
             var history = item == MyGamesItem.PlayHistory;
             var library = item == MyGamesItem.FullLibrary;
             var manage = item == MyGamesItem.Manage;
-            var queue = item == MyGamesItem.Queue;
+            var queue = item == MyGamesItem.ManageQueue;
             Header.Text = apps ? "Apps" : history ? "Play history" : library ? "Full library" : manage ? "Manage" : "Games";
             GamesItem.Tag = games ? "Selected" : null;
             AppsItem.Tag = apps ? "Selected" : null;
@@ -351,7 +351,7 @@ namespace XboxSeries.Extension
             item == MyGamesItem.Apps ? AppsItem
             : item == MyGamesItem.PlayHistory ? PlayHistoryItem
             : item == MyGamesItem.FullLibrary ? FullLibraryItem
-            : item == MyGamesItem.Manage || item == MyGamesItem.Queue ? ManageItem
+            : item == MyGamesItem.Manage || item == MyGamesItem.ManageQueue ? ManageItem
             : GamesItem;
 
         /// <summary>Play history's games, top to bottom, in their sections.</summary>
@@ -495,7 +495,7 @@ namespace XboxSeries.Extension
         {
             // Back from a Game hub opened from Play history or Manage Queue. Playnite puts focus back on Games' main list itself.
             if (!(bool)e.NewValue && core.MyGames.IsShown
-                && (core.MyGames.Item == MyGamesItem.PlayHistory || core.MyGames.Item == MyGamesItem.Queue))
+                && (core.MyGames.Item == MyGamesItem.PlayHistory || core.MyGames.Item == MyGamesItem.ManageQueue))
             {
                 FocusContentSoon();
             }
@@ -665,7 +665,7 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                if (core.MyGames.Item == MyGamesItem.Queue)
+                if (core.MyGames.Item == MyGamesItem.ManageQueue)
                 {
                     FocusQueuePage();
                     return;
@@ -779,7 +779,7 @@ namespace XboxSeries.Extension
 
             Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
             {
-                if (core.MyGames.IsShown && core.MyGames.Item == MyGamesItem.Queue && IsVisible
+                if (core.MyGames.IsShown && core.MyGames.Item == MyGamesItem.ManageQueue && IsVisible
                     && (!QueuePage.IsKeyboardFocusWithin || QueuePage.IsKeyboardFocused))
                 {
                     FocusQueuePage();
@@ -868,7 +868,7 @@ namespace XboxSeries.Extension
         // Manage's Queue box: the keyboard's Enter and the mouse; the pad's A arrives as OnQueueBoxKeyDown.
         private void OnQueueBoxClick(object sender, RoutedEventArgs e)
         {
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
         }
 
         /// <summary>The pad's A opens Manage Queue; left goes back to the nav. It is Manage's only box, so nothing else moves.</summary>
@@ -877,7 +877,7 @@ namespace XboxSeries.Extension
             if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
             {
                 e.Handled = true;
-                core.OpenMyGames(MyGamesItem.Queue);
+                core.OpenMyGames(MyGamesItem.ManageQueue);
             }
             else if (e.Key == Key.Left)
             {

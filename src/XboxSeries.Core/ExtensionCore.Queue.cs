@@ -118,9 +118,12 @@ namespace XboxSeries.Core
         private void FollowInstalls(LibrarySnapshot previous)
         {
             var wasInstalling = new HashSet<Guid>(previous.Games.Where(g => g.Installing).Select(g => g.Id));
-            if (librarySeen && library.Games.Any(g => g.Installing && !wasInstalling.Contains(g.Id)))
+            if (librarySeen)
             {
-                playnite.CloseGameHub();
+                foreach (var started in library.Games.Where(g => g.Installing && !wasInstalling.Contains(g.Id)))
+                {
+                    playnite.CloseGameHub(started.Id);
+                }
             }
 
             librarySeen = true;
@@ -151,8 +154,8 @@ namespace XboxSeries.Core
         private string StatusOf(Guid gameId) => tileStatuses.TryGetValue(gameId, out var status) ? status : null;
 
         /// <summary>
-        /// A game's row in the queue. Downloading, it shows its amount, share and speed; queued behind another, only its
-        /// share (0.0% until it starts). A game whose library can't say how far it has got (any but Steam) still reads
+        /// A game's row in the queue. Downloading, it shows its amount, share and speed; queued behind another, only 0.0%.
+        /// A game whose library can't say how far it has got (any but Steam) still reads
         /// "Installing...", without numbers, as Playnite says it is installing. Its tile is <paramref name="lastTile"/>,
         /// its row's tile until now, while that still reads the same.
         /// </summary>
@@ -170,12 +173,14 @@ namespace XboxSeries.Core
                 return new QueueEntry(tile, first, Installing, null, null, null, 0);
             }
 
-            var fraction = progress.BytesTotal <= 0 ? 0 : Math.Max(0, Math.Min(1, (double)progress.BytesDownloaded / progress.BytesTotal));
-            var percent = (fraction * 100).ToString("0.0", CultureInfo.CurrentCulture) + "%";
+            // As on the console, a game waiting its turn reads 0.0% with an empty bar, whatever of it is already down.
             if (!progress.IsActive)
             {
-                return new QueueEntry(tile, false, Queued, null, null, percent, fraction);
+                return new QueueEntry(tile, false, Queued, null, null, PercentOf(0), 0);
             }
+
+            var fraction = progress.BytesTotal <= 0 ? 0 : Math.Max(0, Math.Min(1, (double)progress.BytesDownloaded / progress.BytesTotal));
+            var percent = PercentOf(fraction);
 
             var amount = progress.BytesTotal <= 0 ? null
                 : StorageRing.Size(progress.BytesDownloaded, 2) + " of " + StorageRing.Size(progress.BytesTotal, 2);
@@ -211,6 +216,9 @@ namespace XboxSeries.Core
             speedSamples[gameId] = new SpeedSample(bytes, now, speed);
             return speed;
         }
+
+        /// <summary>A share as the console shows it, to a tenth: "1.9%".</summary>
+        private static string PercentOf(double fraction) => (fraction * 100).ToString("0.0", CultureInfo.CurrentCulture) + "%";
 
         /// <summary>Whether two tiles show the same: same game, name, art, source, running mark and install state.</summary>
         private static bool SameTile(HomeTile a, HomeTile b) =>

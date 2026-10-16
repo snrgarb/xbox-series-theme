@@ -51,10 +51,19 @@ namespace XboxSeries.Extension
 
             // Every page is Playnite's list view, which the core shows as one or another; a Game hub open on top of it is
             // its details view.
-            CloseGameHub();
+            LeaveDetailsView();
         }
 
-        public void CloseGameHub()
+        public void CloseGameHub(Guid gameId)
+        {
+            // The details view shows the main list's selected game: another game's hub is left open.
+            if (api.MainView.SelectedGames?.Any(g => g.Id == gameId) == true)
+            {
+                LeaveDetailsView();
+            }
+        }
+
+        private void LeaveDetailsView()
         {
             if (api.MainView.ActiveFullscreenView == FullscreenView.Details)
             {
