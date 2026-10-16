@@ -156,7 +156,7 @@
                                 <Border x:Name="DropRing" CornerRadius="4" BorderThickness="2" BorderBrush="{DynamicResource GlyphLightBrush}"
                                         Visibility="Collapsed">
                                     <!-- The band centred on this thinner edge: half its 2 and 8 more out. -->
-                                    <Border Style="{DynamicResource XboxFocusGlow}" Margin="-9" />
+                                    <Border Style="{DynamicResource XboxFocusGlow}" Margin="-6.5" />
                                 </Border>
                             </Grid>
                             <!-- Audio's volume slider: a track filled to the level, in the accent. -->

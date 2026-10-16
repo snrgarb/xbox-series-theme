@@ -169,7 +169,7 @@
                                 <ContentPresenter Margin="12" />
                                 <Border x:Name="Ring" CornerRadius="999" BorderBrush="{DynamicResource GlyphLightBrush}" BorderThickness="6"
                                         Visibility="Hidden">
-                                    <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-11" />
+                                    <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-8.5" />
                                 </Border>
                             </Grid>
                             <ControlTemplate.Triggers>

@@ -21,18 +21,18 @@ namespace XboxSeries.Core.Tests
             var glow = constants.Descendants().Single(e => (string)e.Attribute(X + "Key") == "XboxFocusGlow");
 
             // A band, wider than a 4 px ring and blurred, centred on it from inside: a ring's own drop shadow is too thin
-            // to show. Matched against the console's recording: about 46 of green 3 px out, fading out by 20.
+            // to show. Matched to the console's recording (about 46 of green 3 px out), then drawn 30% tighter.
             Assert.Equal("Style", glow.Name.LocalName);
             Assert.Equal("Border", (string)glow.Attribute("TargetType"));
             var setters = glow.Elements().Where(e => e.Name.LocalName == "Setter")
                 .ToDictionary(s => (string)s.Attribute("Property"), s => s);
-            Assert.Equal("16", (string)setters["BorderThickness"].Attribute("Value"));
-            Assert.Equal("-10", (string)setters["Margin"].Attribute("Value"));
+            Assert.Equal("11", (string)setters["BorderThickness"].Attribute("Value"));
+            Assert.Equal("-7.5", (string)setters["Margin"].Attribute("Value"));
             Assert.Equal("0.5", (string)setters["Opacity"].Attribute("Value"));
             Assert.Equal("False", (string)setters["IsHitTestVisible"].Attribute("Value"));
             Assert.Equal("{DynamicResource GlyphLightBrush}", (string)setters["BorderBrush"].Attribute("Value"));
             var blur = setters["Effect"].Descendants().Single(e => e.Name.LocalName == "BlurEffect");
-            Assert.Equal("24", (string)blur.Attribute("Radius"));
+            Assert.Equal("17", (string)blur.Attribute("Radius"));
         }
 
         [Fact]
