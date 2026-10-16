@@ -14,13 +14,13 @@ namespace XboxSeries.Extension
     /// in ToastImages.xaml), its text starts at its left where the tile will be, and after a moment the tile slides out
     /// from behind the banner's left edge as it fades in while the text moves right into its place, and as it goes the
     /// tile first slides back behind that edge; for any other kind the tile and text sit in their place from the start.
-    /// It goes by growing a little as it fades out. Only render transforms and opacity move, so the banner's size never
+    /// It goes by shrinking a little as it fades out. Only render transforms and opacity move, so the banner's size never
     /// changes. It never takes focus or the mouse.
     /// </summary>
     public partial class ToastWindow : Window
     {
         /// <summary>
-        /// How much of the 1080 the window covers, from the bottom: room for the 128 card 64 up, grown to 1.1 as it goes.
+        /// How much of the 1080 the window covers, from the bottom: room for the 128 card 64 up.
         /// </summary>
         public const double StripHeight = 240;
 
@@ -44,11 +44,11 @@ namespace XboxSeries.Extension
         /// <summary>The tile's width and its gap to the text: how far left the tile and text start.</summary>
         private const double SlideBy = 96 + 24;
 
-        /// <summary>The banner's grow to <see cref="GrowTo"/> and fade out.</summary>
+        /// <summary>The banner's shrink to <see cref="ShrinkTo"/> and fade out.</summary>
         private static readonly Duration OutDuration = TimeSpan.FromMilliseconds(270);
 
-        /// <summary>How far out the banner grows as it goes.</summary>
-        private const double GrowTo = 1.1;
+        /// <summary>How far in the banner shrinks as it goes.</summary>
+        private const double ShrinkTo = 0.9;
 
         private readonly ToastState toast;
 
@@ -194,14 +194,14 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The Toast going: for a kind that slides, its tile first slides back behind the banner's left edge, unless it is
-        /// already there unseen (gone before its slide began); then the banner grows out.
+        /// already there unseen (gone before its slide began); then the banner shrinks out.
         /// </summary>
         private void Go()
         {
             var going = ++goings;
             if (!Slides || (TileShift.X <= -SlideBy && Tile.Opacity <= 0))
             {
-                GrowOut(going);
+                ShrinkOut(going);
                 return;
             }
 
@@ -212,7 +212,7 @@ namespace XboxSeries.Extension
                 // Not if the Toast has shown again, or gone again since, whose own steps follow on.
                 if (going == goings && !toast.IsShown)
                 {
-                    GrowOut(going);
+                    ShrinkOut(going);
                 }
             };
 
@@ -222,8 +222,8 @@ namespace XboxSeries.Extension
             Tile.BeginAnimation(OpacityProperty, fade);
         }
 
-        /// <summary>The banner growing a little as it fades out, then the window hiding if the Toast hasn't shown or gone again.</summary>
-        private void GrowOut(int going)
+        /// <summary>The banner shrinking a little as it fades out, then the window hiding if the Toast hasn't shown or gone again.</summary>
+        private void ShrinkOut(int going)
         {
             var fade = new DoubleAnimation(0, OutDuration);
             fade.Completed += (_, __) =>
@@ -235,7 +235,7 @@ namespace XboxSeries.Extension
                 }
             };
 
-            Scale(new DoubleAnimation(GrowTo, OutDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            Scale(new DoubleAnimation(ShrinkTo, OutDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
             Card.BeginAnimation(OpacityProperty, fade);
         }
 

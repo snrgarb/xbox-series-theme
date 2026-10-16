@@ -26,7 +26,7 @@
         tile slides (ToastSlide.<Kind> in ToastImages.xaml), its text starts at its left where the tile will be, and
         0.7 s after the grow the tile slides out from behind the banner's left edge as it fades in, pushing the text right
         into its place; as it goes, the tile first slides back behind that edge. Any other kind has its tile and text in
-        their place from the start. It goes by growing a little as it fades out. The banner is laid out at its final size
+        their place from the start. It goes by shrinking a little as it fades out. The banner is laid out at its final size
         throughout; only render transforms move (see ToastWindow.xaml.cs).
     -->
     <Window.Resources>
