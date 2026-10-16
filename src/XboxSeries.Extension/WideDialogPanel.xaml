@@ -30,9 +30,19 @@
         </Style>
     </UserControl.Resources>
 
+    <!--
+        As it shows, the band slides in from the left as the Guide's panel does, and its contents a moment behind it,
+        trailing out past its left edge until they catch up.
+    -->
     <Border Height="808" Margin="0,134,0,0" Background="#FF2D2D2D">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="BandSlide" />
+        </Border.RenderTransform>
         <!-- The console's margins: tiles three to a row span all but the right 245, narrowing on a narrower screen. -->
         <StackPanel Margin="132,78,229,0">
+            <StackPanel.RenderTransform>
+                <TranslateTransform x:Name="ContentSlide" />
+            </StackPanel.RenderTransform>
             <TextBlock Text="{Binding Title}" FontFamily="{DynamicResource XboxFont}" FontSize="54" Foreground="White" />
             <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" Margin="0,79,0,0">
                 <ItemsControl.ItemsPanel>
