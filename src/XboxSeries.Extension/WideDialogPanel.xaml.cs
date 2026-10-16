@@ -20,12 +20,16 @@ namespace XboxSeries.Extension
         // How long after the band shows its contents start to come in.
         private static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(40);
 
+        // How far left of where they settle the contents start.
+        private const double ContentTravel = 200;
+
         // The slide-in, waiting for the band's first frame to be drawn.
         private EventHandler pendingSlide;
 
         /// <summary>
-        /// As it shows, the band is there at once while its contents are held off the left of the screen and slide in
-        /// a moment after the band's first frame has been drawn, so the slide isn't spent while that frame is laid out.
+        /// As it shows, the band is there at once while its contents are hidden, and a moment after the band's first
+        /// frame has been drawn they slide in a short way from the left as they fade in, so the slide isn't spent while
+        /// that frame is laid out.
         /// </summary>
         private void SlideInOnceDrawn()
         {
@@ -36,15 +40,16 @@ namespace XboxSeries.Extension
             }
 
             ContentSlide.BeginAnimation(TranslateTransform.XProperty, null);
+            Contents.BeginAnimation(OpacityProperty, null);
             if (!IsVisible)
             {
                 ContentSlide.X = 0;
+                Contents.Opacity = 1;
                 return;
             }
 
-            // Off the screen, which the band spans, whatever its width.
-            var offscreen = -Math.Max(ActualWidth, 1920);
-            ContentSlide.X = offscreen;
+            ContentSlide.X = -ContentTravel;
+            Contents.Opacity = 0;
             var frames = 0;
             pendingSlide = (_, __) =>
             {
@@ -61,6 +66,7 @@ namespace XboxSeries.Extension
                     BeginTime = ContentLag,
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
                 });
+                Contents.BeginAnimation(OpacityProperty, new DoubleAnimation(1, OverlayWindow.OpenDuration) { BeginTime = ContentLag });
             };
             CompositionTarget.Rendering += pendingSlide;
         }
