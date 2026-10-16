@@ -10,9 +10,9 @@
     <SolidColorBrush x:Key="GlyphLightBrush" Color="#FF2CA243" />
     <!--
         The faint green glow the console gives whatever has focus: set as the Effect of the element that draws only the
-        focus shape (a ring, slab or bar), never of one holding text or a cover. Not shared, so each element gets its own.
+        focus shape (a ring, slab or bar), never of one holding text or a cover. One glow serves every element that wears it.
     -->
-    <DropShadowEffect x:Key="XboxFocusGlow" x:Shared="False" ShadowDepth="0" BlurRadius="18" Opacity="0.6"
+    <DropShadowEffect x:Key="XboxFocusGlow" ShadowDepth="0" BlurRadius="18" Opacity="0.6"
                       Color="{StaticResource GlyphLightColor}" />
     <!--
         Xbox green (brand #107C10), the Toast's banner, as the console's notifications wear it. The brand's Xbox light

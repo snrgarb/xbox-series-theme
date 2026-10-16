@@ -21,7 +21,6 @@ namespace XboxSeries.Core.Tests
             var glow = constants.Descendants().Single(e => (string)e.Attribute(X + "Key") == "XboxFocusGlow");
 
             Assert.Equal("DropShadowEffect", glow.Name.LocalName);
-            Assert.Equal("False", (string)glow.Attribute(X + "Shared"));
             Assert.Equal("0", (string)glow.Attribute("ShadowDepth"));
             Assert.Equal("18", (string)glow.Attribute("BlurRadius"));
             Assert.Equal("0.6", (string)glow.Attribute("Opacity"));
