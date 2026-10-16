@@ -33,14 +33,50 @@
 
     <!--
         The Settings icon: the gear, solid while its button has focus, as the console fills a focused icon. Segoe Fluent
-        Icons and MDL2 Assets both have the solid gear; the theme's other top-bar glyphs (Library, Search, Download,
-        ActionCenter) have no solid counterpart in either font, so they keep their outline.
+        Icons and MDL2 Assets both have the solid gear.
     -->
     <Style x:Key="XboxSettingsIcon" TargetType="TextBlock" BasedOn="{StaticResource XboxIcon}">
         <Setter Property="Text" Value="&#xE713;" />
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
                 <Setter Property="Text" Value="&#xF8B0;" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--
+        Top-bar glyphs with no solid counterpart in either font. Library and ActionCenter are filled by a shape of their
+        own, the glyph's outline at 26 without its holes, shown over the glyph while the button has focus; Search, whose
+        filled lens would read as a disc, is drawn bold instead.
+    -->
+    <Style x:Key="XboxOutlineIcon" TargetType="TextBlock" BasedOn="{StaticResource XboxIcon}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                <Setter Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="XboxFilledIcon" TargetType="Path">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Stretch" Value="None" />
+        <Setter Property="Fill" Value="{DynamicResource XboxTextBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Visibility" Value="Hidden" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                <Setter Property="Visibility" Value="Visible" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Geometry x:Key="XboxLibrarySolid">F1M19.94,4.86C20.22,4.86 20.49,4.91 20.75,5.01 21.01,5.11 21.24,5.24 21.45,5.41 21.66,5.58 21.83,5.78 21.98,6.01 22.13,6.24 22.24,6.5 22.31,6.77L25.94,22.57C25.98,22.77 26,22.95 26,23.12 26,23.69 25.83,24.18 25.5,24.61 25.16,25.04 24.73,25.33 24.18,25.48 23.83,25.58 23.46,25.69 23.09,25.81 22.71,25.93 22.33,25.99 21.95,25.99 21.66,25.99 21.39,25.94 21.12,25.84 20.86,25.74 20.63,25.61 20.41,25.44 20.2,25.27 20.02,25.07 19.87,24.83 19.73,24.58 19.62,24.32 19.56,24.04L16.31,8.14C16.28,7.99 16.26,7.83 16.26,7.66 16.26,7.1 16.43,6.61 16.75,6.18 17.08,5.76 17.51,5.47 18.04,5.31 18.34,5.21 18.66,5.12 18.98,5.01 19.3,4.91 19.62,4.86 19.94,4.86z M10.56,0L12.19,0C12.52,0 12.83,0.06 13.13,0.19 13.42,0.32 13.68,0.49 13.91,0.72 14.13,0.94 14.31,1.2 14.43,1.5 14.56,1.79 14.62,2.11 14.62,2.44L14.62,23.56C14.62,23.89 14.56,24.21 14.43,24.5 14.31,24.8 14.13,25.06 13.91,25.28 13.68,25.51 13.42,25.68 13.13,25.81 12.83,25.94 12.52,26 12.19,26L10.56,26C10.23,26 9.92,25.94 9.62,25.81 9.33,25.68 9.07,25.51 8.84,25.28 8.62,25.06 8.44,24.8 8.32,24.5 8.19,24.21 8.12,23.89 8.12,23.56L8.12,2.44C8.12,2.11 8.19,1.79 8.32,1.5 8.44,1.2 8.62,0.94 8.84,0.72 9.07,0.49 9.33,0.32 9.62,0.19 9.92,0.06 10.23,0 10.56,0z M2.44,0L4.06,0C4.39,0 4.71,0.06 5,0.19 5.3,0.32 5.56,0.49 5.78,0.72 6.01,0.94 6.18,1.2 6.31,1.5 6.44,1.79 6.5,2.11 6.5,2.44L6.5,23.56C6.5,23.89 6.44,24.21 6.31,24.5 6.18,24.8 6.01,25.06 5.78,25.28 5.56,25.51 5.3,25.68 5,25.81 4.71,25.94 4.39,26 4.06,26L2.44,26C2.11,26 1.79,25.94 1.5,25.81 1.2,25.68 0.94,25.51 0.72,25.28 0.49,25.06 0.32,24.8 0.19,24.5 0.06,24.21 0,23.89 0,23.56L0,2.44C0,2.11 0.06,1.79 0.19,1.5 0.32,1.2 0.49,0.94 0.72,0.72 0.94,0.49 1.2,0.32 1.5,0.19 1.79,0.06 2.11,0 2.44,0z</Geometry>
+    <Geometry x:Key="XboxActionCenterSolid">F1M4.81,1.62L21.19,1.62C21.61,1.63 22.02,1.71 22.4,1.89 22.79,2.06 23.12,2.29 23.42,2.58 23.71,2.88 23.94,3.21 24.11,3.6 24.29,3.98 24.37,4.39 24.38,4.81L24.38,17.94C24.37,18.38 24.29,18.79 24.11,19.18 23.93,19.56 23.69,19.9 23.4,20.19 23.1,20.47 22.76,20.7 22.36,20.87 21.97,21.04 21.56,21.12 21.12,21.12L17.75,21.12 13.61,25.73C13.45,25.91 13.25,26 13,26 12.75,26 12.55,25.91 12.39,25.73L8.25,21.12 4.81,21.12C4.39,21.12 3.98,21.04 3.6,20.86 3.21,20.69 2.88,20.46 2.58,20.17 2.29,19.87 2.06,19.54 1.89,19.15 1.71,18.77 1.62,18.36 1.62,17.94L1.62,4.81C1.62,4.39 1.71,3.98 1.89,3.6 2.06,3.21 2.29,2.88 2.58,2.58 2.88,2.29 3.21,2.06 3.6,1.89 3.98,1.71 4.39,1.63 4.81,1.62z</Geometry>
+    <Style x:Key="XboxSearchIcon" TargetType="TextBlock" BasedOn="{StaticResource XboxIcon}">
+        <Setter Property="Text" Value="&#xE721;" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                <Setter Property="FontWeight" Value="Bold" />
             </DataTrigger>
         </Style.Triggers>
     </Style>
@@ -376,11 +412,14 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </ButtonEx.Style>
-                                        <TextBlock Text="&#xE8F1;" Style="{StaticResource XboxIcon}" />
+                                        <Grid>
+                                            <TextBlock Text="&#xE8F1;" Style="{StaticResource XboxOutlineIcon}" />
+                                            <Path Data="{StaticResource XboxLibrarySolid}" Style="{StaticResource XboxFilledIcon}" />
+                                        </Grid>
                                     </ButtonEx>
                                     <!-- Playnite's name filter of the main list, as Y. Search proper is the extension's page. -->
                                     <ButtonEx x:Name="PART_ButtonSearch" Tag="Filter by name" Style="{StaticResource XboxTopBarButton}">
-                                        <TextBlock Text="&#xE721;" Style="{StaticResource XboxIcon}" />
+                                        <TextBlock Style="{StaticResource XboxSearchIcon}" />
                                     </ButtonEx>
                                     <!--
                                         Settings, in one place either way. Theme-only, Playnite's menu, which holds its settings;
@@ -462,7 +501,8 @@
 
                                     <ButtonEx x:Name="PART_ButtonNotifications" Tag="Notifications" Style="{StaticResource XboxTopBarButton}">
                                         <Grid>
-                                            <TextBlock Text="&#xE91C;" Style="{StaticResource XboxIcon}" />
+                                            <TextBlock Text="&#xE91C;" Style="{StaticResource XboxOutlineIcon}" />
+                                            <Path Data="{StaticResource XboxActionCenterSolid}" Style="{StaticResource XboxFilledIcon}" />
                                             <Ellipse Width="10" Height="10" Fill="{DynamicResource GlyphLightBrush}"
                                                      HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-4,-6,0">
                                                 <Ellipse.Style>
