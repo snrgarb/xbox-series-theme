@@ -35,6 +35,9 @@ namespace XboxSeries.Extension
         // The open's slide and dim, waiting for the Overlay's first frame to be drawn.
         private EventHandler pendingOpen;
 
+        // The tab last shown, for which way along the tabs LB or RB moved to the next.
+        private GuideTabKind shownTab;
+
         // Counts slides, so only the latest one's finish, its contents' included, stops the panel being drawn as a picture.
         private int slideRun;
 
@@ -99,6 +102,12 @@ namespace XboxSeries.Extension
             if (e.PropertyName == nameof(GuideState.FocusedItem))
             {
                 ScrollFocusedIntoView();
+            }
+            else if (e.PropertyName == nameof(GuideState.Tab))
+            {
+                // Switched with the panel in, the new tab's content comes in from the side it was switched towards;
+                // opening on a tab, it is just there.
+                PaneFlyIn.FollowAcross(ref shownTab, guide.Tab, tab => (int)tab, guide.IsOpen && guide.ShowsPanel, TabContent, asPicture: true);
             }
             else if (e.PropertyName == nameof(GuideState.IsOverlayShown))
             {
