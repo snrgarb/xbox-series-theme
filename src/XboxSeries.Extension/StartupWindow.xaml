@@ -73,10 +73,10 @@
                         Who's playing today?: the profiles in a row, centred, their pictures centred on the screen's middle.
                         Each is 380 round, drawn at 300 unless focused, when it grows to its full size in its green ring,
                         5 out from the picture, and its real name shows under its gamertag. A row wider than the screen
-                        scrolls to keep the focused profile on it. The row sits 20 below the scroller's top, which its
-                        margin takes back, so the ring's glow isn't cut off there.
+                        scrolls to keep the focused profile on it. The row sits 24 below the scroller's top, which its
+                        margin takes back, so the ring's glow band isn't cut off there.
                     -->
-                    <ScrollViewer x:Name="ProfileScroller" VerticalAlignment="Top" Margin="0,320,0,0"
+                    <ScrollViewer x:Name="ProfileScroller" VerticalAlignment="Top" Margin="0,316,0,0"
                                   HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
                                   Focusable="False" IsHitTestVisible="False">
                         <ScrollViewer.Style>
@@ -90,7 +90,7 @@
                             </Style>
                         </ScrollViewer.Style>
                         <ItemsControl x:Name="ProfileRow" ItemsSource="{Binding Profiles}" HorizontalAlignment="Center"
-                                      Margin="0,20,0,0" Focusable="False">
+                                      Margin="0,24,0,0" Focusable="False">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" />
@@ -106,10 +106,14 @@
                                                     <ScaleTransform x:Name="Grow" ScaleX="0.79" ScaleY="0.79" />
                                                 </Grid.RenderTransform>
                                                 <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource ProfilePicture}" />
-                                                <!-- The ring wears the console's faint green glow, fading in and out with it. -->
-                                                <Ellipse x:Name="Ring" Margin="-12" StrokeThickness="7"
-                                                         Stroke="{DynamicResource GlyphLightBrush}" Opacity="0"
-                                                         Effect="{DynamicResource XboxFocusGlow}" />
+                                                <!--
+                                                    The ring, a Border rounded to a circle, carries the console's green glow
+                                                    as a blurred band, fading in and out with it.
+                                                -->
+                                                <Border x:Name="Ring" Margin="-12" CornerRadius="999" BorderThickness="7"
+                                                        BorderBrush="{DynamicResource GlyphLightBrush}" Opacity="0">
+                                                    <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-11.5" />
+                                                </Border>
                                             </Grid>
                                         </Grid>
                                         <!-- The gamertag alone, as Who's playing today? shows it on the console. -->
