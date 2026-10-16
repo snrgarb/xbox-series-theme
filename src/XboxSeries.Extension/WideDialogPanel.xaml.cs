@@ -17,6 +17,9 @@ namespace XboxSeries.Extension
             IsVisibleChanged += (_, __) => SlideInOnceDrawn();
         }
 
+        // How far behind the band its contents come in, a touch sooner than the Guide's behind its panel.
+        private static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(40);
+
         // The slide-in, waiting for the band's first frame to be drawn.
         private EventHandler pendingSlide;
 
@@ -55,7 +58,7 @@ namespace XboxSeries.Extension
                 CompositionTarget.Rendering -= pendingSlide;
                 pendingSlide = null;
                 BandSlide.BeginAnimation(TranslateTransform.XProperty, SlideIn(TimeSpan.Zero));
-                ContentSlide.BeginAnimation(TranslateTransform.XProperty, SlideIn(OverlayWindow.ContentLag));
+                ContentSlide.BeginAnimation(TranslateTransform.XProperty, SlideIn(ContentLag));
             };
             CompositionTarget.Rendering += pendingSlide;
         }
