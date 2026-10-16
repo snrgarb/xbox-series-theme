@@ -1044,7 +1044,7 @@
                         </ScrollViewer>
                     </DockPanel>
                     <!-- The console's spinner, big in the middle of the flyout, turning on without a rest, while Discord is being asked for the entries. -->
-                    <local:LoadingSpinner Width="128" Height="128" StrokeThickness="8" LineCap="Flat" Unbroken="True"
+                    <local:LoadingSpinner Width="102" Height="102" StrokeThickness="6.4" LineCap="Flat" Unbroken="True"
                                           HorizontalAlignment="Center" VerticalAlignment="Center">
                         <local:LoadingSpinner.Style>
                             <Style TargetType="local:LoadingSpinner">
