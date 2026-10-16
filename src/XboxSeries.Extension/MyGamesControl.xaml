@@ -159,14 +159,13 @@
 
             <!--
                 An App's tile, after the console's app tiles: square, filled with the accent, the App's icon centred and its
-                name at the bottom left. Square from its width, which the grid sets to a fifth of the row. As on a Play
-                history row, the focus ring sits in the tile's own 4 px edge, so the list's scrolling never clips it, and it
-                carries the glow band as a row's does.
+                name at the bottom left. Square from its width, which the grid sets to a fifth of the row. As Games' grid
+                tiles: 15 apart, rounded, and ringed 4 px off the tile, its ring carrying the glow band.
             -->
             <Style x:Key="AppTile" TargetType="ListBoxItem">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Height" Value="{Binding ActualWidth, RelativeSource={RelativeSource Self}}" />
-                <Setter Property="Margin" Value="0,0,14,14" />
+                <Setter Property="Margin" Value="7.5" />
                 <EventSetter Event="GotKeyboardFocus" Handler="OnAppFocused" />
                 <EventSetter Event="KeyDown" Handler="OnAppKeyDown" />
                 <EventSetter Event="MouseLeftButtonUp" Handler="OnAppClick" />
@@ -174,10 +173,10 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="ListBoxItem">
                             <Grid>
-                                <Border Margin="4" CornerRadius="3" Background="{DynamicResource GlyphBrush}">
+                                <Border CornerRadius="6" Background="{DynamicResource GlyphBrush}">
                                     <ContentPresenter />
                                 </Border>
-                                <Border x:Name="FocusRing" CornerRadius="6" BorderThickness="4"
+                                <Border x:Name="FocusRing" CornerRadius="14" Margin="-8" BorderThickness="4"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                     <Border Style="{DynamicResource XboxFocusGlow}" />
                                 </Border>
@@ -367,9 +366,12 @@
                      KeyboardNavigation.DirectionalNavigation="Contained" PreviewKeyDown="OnAppsKeyDown">
                 <ListBox.Template>
                     <ControlTemplate TargetType="ListBox">
-                        <!-- The tiles sit 24 in from the list's top and sides, which its margin cancels, so their glow band isn't cut off there. -->
+                        <!--
+                            The tiles sit 24 in from the list's top and sides, which its margin cancels, so their ring and glow
+                            band aren't cut off there; less their own 7.5 margin, so they are flush with the list's edges.
+                        -->
                         <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
-                            <ItemsPresenter Margin="24,24,24,0" />
+                            <ItemsPresenter Margin="16.5,16.5,16.5,0" />
                         </ScrollViewer>
                     </ControlTemplate>
                 </ListBox.Template>
