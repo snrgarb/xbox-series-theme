@@ -30,13 +30,15 @@ namespace XboxSeries.Core
         void ForceKill(IntPtr window);
 
         /// <summary>
-        /// Suspends a running game's programs while the Guide is open, so a game that reads the pad in the background
-        /// can't take its input: every program under <paramref name="directory"/>, its install directory, and the one
-        /// that owns <paramref name="window"/>, when there is one. A program Windows won't let us suspend is skipped.
+        /// Suspends a running game's processes while the Guide is open, so a game that reads the pad in the background
+        /// can't take its input: every process under <paramref name="directory"/>, its install directory, and the one
+        /// that owns <paramref name="window"/>, when there is one. A process Windows won't let us suspend, or one that
+        /// ends meanwhile, is skipped, and nothing is frozen when <paramref name="directory"/> is a drive's root. Never
+        /// throws for a reason of Windows'.
         /// </summary>
         void FreezeGame(string directory, IntPtr window);
 
-        /// <summary>Resumes every program <see cref="FreezeGame"/> suspended; nothing when none is.</summary>
+        /// <summary>Resumes every process <see cref="FreezeGame"/> suspended; nothing when none is.</summary>
         void ThawGame();
     }
 }

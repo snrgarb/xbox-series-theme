@@ -1465,7 +1465,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Freezes the running game under the Guide, so a game that reads the pad in the background can't take its
-        /// input. Not one that is quitting, which must be free to close, nor one whose programs can't be found.
+        /// input. Not one that is quitting, which must be free to close, nor one whose processes can't be found.
         /// </summary>
         private void FreezeRunningGame()
         {
