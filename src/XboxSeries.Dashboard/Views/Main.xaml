@@ -273,11 +273,11 @@
                 <Setter Property="Grid.RowSpan" Value="3" />
                 <!--
                     Games: beside the nav, under the page's header, its tiles flush with Play history's rows (x 524 to 174
-                    from the right, as the page is as wide as the screen's aspect ratio makes it): the list from 509, the
-                    tiles' 15 gap each side, and the Grid's 80 more each side is the list's margin. The extension keeps the
+                    from the right, as the page is as wide as the screen's aspect ratio makes it): the list from 518, the
+                    tiles' 6 gap each side, and the Grid's 80 more each side is the list's margin. The extension keeps the
                     list five square cells wide and 3.5 of them tall, the panel putting a quarter cell above the first row.
                 -->
-                <Setter Property="Margin" Value="429,-74,79,0" />
+                <Setter Property="Margin" Value="438,-74,88,0" />
                 <Setter Property="VerticalAlignment" Value="Top" />
             </DataTrigger>
             <!--
@@ -287,7 +287,7 @@
                 first row's focus ring, so they don't butt against the tabs.
             -->
             <DataTrigger Binding="{Binding Content.State.ShowsFullLibrary, ElementName=XboxSeries_MyGames}" Value="True">
-                <Setter Property="Margin" Value="429,46,79,0" />
+                <Setter Property="Margin" Value="438,46,88,0" />
                 <Setter Property="OpacityMask">
                     <Setter.Value>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
