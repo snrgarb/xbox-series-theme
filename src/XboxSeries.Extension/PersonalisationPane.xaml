@@ -36,8 +36,8 @@
 
             <!--
                 A box, as the console's: a dark rectangle, its line icon (Tag) at the left and its name beside it, the name
-                alone, never a second line saying what it's set to. Focused, as the console's, it lightens, its icon's cell
-                a little lighter still, and the accent ring stands 3 off it with the console's faint green glow; the ring
+                alone, never a second line saying what it's set to. Focused, as the console's, it lightens, all of it
+                alike, and the accent ring stands 3 off it with the console's faint green glow; the ring
                 is a Border of its own, so the glow traces only it, and its corners keep the gap even.
             -->
             <Style x:Key="Box" TargetType="Button">
@@ -51,8 +51,7 @@
                         <ControlTemplate TargetType="Button">
                             <Grid>
                                 <Border x:Name="Back" Background="#FF2D2D2D" />
-                                <!-- The icon's cell, as wide as the space before the name, the icon centred in it. -->
-                                <Border x:Name="IconCell" Width="100" HorizontalAlignment="Left" />
+                                <!-- The icon, centred in the space before the name. -->
                                 <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource Icon}" FontSize="34"
                                            Width="100" HorizontalAlignment="Left" />
                                 <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
@@ -62,13 +61,8 @@
                                         Effect="{DynamicResource XboxFocusGlow}" />
                             </Grid>
                             <ControlTemplate.Triggers>
-                                <!-- A profile's box has its picture where the icon would be, and no cell behind it. -->
-                                <Trigger Property="Tag" Value="{x:Null}">
-                                    <Setter TargetName="IconCell" Property="Visibility" Value="Collapsed" />
-                                </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Back" Property="Background" Value="#FF4A4A4A" />
-                                    <Setter TargetName="IconCell" Property="Background" Value="#FF555555" />
                                     <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
