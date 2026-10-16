@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security;
 using Microsoft.Win32;
@@ -36,6 +37,10 @@ namespace XboxSeries.Extension
         private DateTime foldersRead;
         private bool warned;
 
+        // Steam's writes as each running download was first seen, by app id, and the Steam process they are read from.
+        private readonly Dictionary<uint, WriteBaseline> written = new Dictionary<uint, WriteBaseline>();
+        private int? steamProcessId;
+
         public SteamDownloads(IPlayniteAPI api)
         {
             this.api = api;
@@ -58,9 +63,20 @@ namespace XboxSeries.Extension
                     return new DownloadProgress(false, 0, 0);
                 }
 
-                var values = Values(manifest, "StateFlags", "BytesDownloaded", "BytesToDownload");
+                var values = Values(manifest, "StateFlags", "BytesDownloaded", "BytesToDownload", "BytesStaged", "BytesToStage");
                 var active = (Number(values, "StateFlags") & UpdateRunning) != 0 || IsUpdating(appId.Value);
-                return new DownloadProgress(active, Number(values, "BytesDownloaded"), Number(values, "BytesToDownload"));
+                var downloaded = Number(values, "BytesDownloaded");
+                var total = Number(values, "BytesToDownload");
+                if (active)
+                {
+                    downloaded = Math.Max(downloaded, Math.Min(total, DownloadedSoFar(appId.Value, values)));
+                }
+                else
+                {
+                    written.Remove(appId.Value);
+                }
+
+                return new DownloadProgress(active, downloaded, total);
             }
             catch (Exception e) when (IsReadFailure(e))
             {
@@ -69,6 +85,83 @@ namespace XboxSeries.Extension
                 WarnOnce(ref warned, e, $"Couldn't read Steam's progress on app {appId}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// How much of the app Steam has downloaded, from what Steam itself has written since its download began. Steam
+        /// leaves the manifest's byte counts as they were until the download pauses or ends, but stages what it
+        /// downloads to disk as it goes, one app at a time, so its own writes since then are what it has staged since.
+        /// The manifest's own counts are the start; what is staged is turned into what is downloaded by the two
+        /// totals' share, as Steam downloads compressed what it stages whole. Null while Windows won't say.
+        /// </summary>
+        private long DownloadedSoFar(uint appId, Dictionary<string, string> values)
+        {
+            var steam = SteamProcessId();
+            var writes = steam == null ? null : NativeMethods.BytesWrittenBy(steam.Value);
+            if (writes == null)
+            {
+                return 0;
+            }
+
+            if (!written.TryGetValue(appId, out var since) || since.SteamProcessId != steam.Value || writes.Value < since.Writes)
+            {
+                since = written[appId] = new WriteBaseline(steam.Value, writes.Value, Number(values, "BytesStaged"));
+            }
+
+            var staged = since.Staged + (long)(writes.Value - since.Writes);
+            var toStage = Number(values, "BytesToStage");
+            var toDownload = Number(values, "BytesToDownload");
+            return toStage <= 0 ? staged : (long)(Math.Min(staged, toStage) * ((double)toDownload / toStage));
+        }
+
+        /// <summary>The running Steam client's process; null when it isn't running. Remembered until it exits.</summary>
+        private int? SteamProcessId()
+        {
+            if (steamProcessId != null && NativeMethods.BytesWrittenBy(steamProcessId.Value) != null && IsSteam(steamProcessId.Value))
+            {
+                return steamProcessId;
+            }
+
+            steamProcessId = null;
+            var running = Process.GetProcessesByName("steam");
+            foreach (var process in running)
+            {
+                steamProcessId = steamProcessId ?? process.Id;
+                process.Dispose();
+            }
+
+            return steamProcessId;
+        }
+
+        private static bool IsSteam(int processId)
+        {
+            try
+            {
+                using (var process = Process.GetProcessById(processId))
+                {
+                    return string.Equals(process.ProcessName, "steam", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch (ArgumentException)
+            {
+                // Exited.
+                return false;
+            }
+        }
+
+        /// <summary>Steam's writes when the app's download was first seen running, and what the manifest had staged then.</summary>
+        private sealed class WriteBaseline
+        {
+            public WriteBaseline(int steamProcessId, ulong writes, long staged)
+            {
+                SteamProcessId = steamProcessId;
+                Writes = writes;
+                Staged = staged;
+            }
+
+            public int SteamProcessId { get; }
+            public ulong Writes { get; }
+            public long Staged { get; }
         }
 
         /// <summary>The game's Steam app id; null when it isn't from Playnite's Steam library.</summary>
