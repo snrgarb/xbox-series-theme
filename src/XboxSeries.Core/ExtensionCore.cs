@@ -96,9 +96,12 @@ namespace XboxSeries.Core
         /// <summary>
         /// What the Toast showing as the Guide button went down told of, which the tap opens the Guide at: Notifications,
         /// the Discord tab's Answer for a call, or Profile &amp; system for the greeting; a Queued Toast's tap goes to
-        /// Manage Queue instead. Null for no Toast.
+        /// Manage Queue instead, and a Ready to play Toast's starts its game. Null for no Toast.
         /// </summary>
         private ToastKind? toastAtGuidePress;
+
+        /// <summary>The game the Ready to play Toast showing as the Guide button went down tells of; null for any other.</summary>
+        private Guid? toastGameAtGuidePress;
         private Guid? runningGame;
 
         /// <summary>Whether the running game is frozen under the Guide; only <see cref="FreezeRunningGame"/> and <see cref="ThawGame"/> change it.</summary>
@@ -193,6 +196,7 @@ namespace XboxSeries.Core
             var previous = library;
             library = snapshot;
             FollowInstalls(previous);
+            ToastFinishedInstalls(previous);
             RefreshQueue();
             RefreshRecentlyInstalled();
             RefreshHome();
@@ -669,6 +673,7 @@ namespace XboxSeries.Core
                 guideTapTimer = null;
                 guidePressedAt = at;
                 toastAtGuidePress = Toast.IsShown ? Toast.Kind : (ToastKind?)null;
+                toastGameAtGuidePress = Toast.IsShown ? shownToast?.GameId : null;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
                 return;
@@ -723,7 +728,8 @@ namespace XboxSeries.Core
         /// <summary>
         /// A tap opens the Guide at the subject of the Toast showing, as the console does: Notifications for a
         /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting.
-        /// A Queued Toast's subject isn't in the Guide but on Manage Queue, so the tap goes there instead.
+        /// A Queued Toast's subject isn't in the Guide but on Manage Queue, so the tap goes there instead, and a Ready
+        /// to play Toast's tap starts its game.
         /// </summary>
         private void OpenGuideFromTap()
         {
@@ -731,6 +737,12 @@ namespace XboxSeries.Core
             if (toastAtGuidePress == ToastKind.Queued)
             {
                 GoToQueueFromToast();
+                return;
+            }
+
+            if (toastAtGuidePress == ToastKind.Installed && toastGameAtGuidePress != null)
+            {
+                StartFromToast(toastGameAtGuidePress.Value);
                 return;
             }
 
@@ -780,6 +792,23 @@ namespace XboxSeries.Core
 
             playnite.BringToFront(DashboardPage.MyGamesAndApps);
             OpenMyGames(MyGamesItem.ManageQueue);
+        }
+
+        /// <summary>
+        /// A tap during a Ready to play Toast: the Toast goes, as the game starts as Play starts it, and the next waiting
+        /// Toast shows in its turn.
+        /// </summary>
+        private void StartFromToast(Guid gameId)
+        {
+            if (shownToast?.Kind == ToastKind.Installed)
+            {
+                toastTimer?.Dispose();
+                shownToast = null;
+                Toast.IsShown = false;
+                toastTimer = waitingToasts.Count == 0 ? null : clock.After(ToastGap, ShowNextToast);
+            }
+
+            PlayGame(gameId);
         }
 
         /// <summary>
@@ -2125,11 +2154,12 @@ namespace XboxSeries.Core
         /// </summary>
         private sealed class WaitingToast
         {
-            public WaitingToast(string text, ToastKind kind, string image)
+            public WaitingToast(string text, ToastKind kind, string image, Guid? gameId = null)
             {
                 Text = text;
                 Kind = kind;
                 Image = image;
+                GameId = gameId;
             }
 
             public string Text { get; }
@@ -2137,6 +2167,9 @@ namespace XboxSeries.Core
 
             /// <summary>The image the tile shows in place of its kind's own; null for the kind's own.</summary>
             public string Image { get; }
+
+            /// <summary>The game a Ready to play Toast tells of, which its Guide press starts; null for any other.</summary>
+            public Guid? GameId { get; }
         }
     }
 }

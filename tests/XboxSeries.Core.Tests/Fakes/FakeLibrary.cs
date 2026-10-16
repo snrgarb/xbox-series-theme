@@ -33,9 +33,10 @@ namespace XboxSeries.Core.Tests.Fakes
             DateTime? modified = null,
             string sortingName = null,
             string platform = null,
-            bool installing = false) =>
+            bool installing = false,
+            DateTime? installedAt = null) =>
             WithGame(Guid.NewGuid(), name, lastActivity, added, hidden, installed, series, genres, source, installDirectory, backgroundImage, coverImage,
-                favorite, playtime, playCount, releaseDate, modified, sortingName, platform, installing);
+                favorite, playtime, playCount, releaseDate, modified, sortingName, platform, installing, installedAt);
 
         /// <summary>A game with a known id, to stand for the same game in a later snapshot.</summary>
         public FakeLibrary WithGame(
@@ -58,7 +59,8 @@ namespace XboxSeries.Core.Tests.Fakes
             DateTime? modified = null,
             string sortingName = null,
             string platform = null,
-            bool installing = false)
+            bool installing = false,
+            DateTime? installedAt = null)
         {
             games.Add(new LibraryGame(
                 id,
@@ -80,7 +82,8 @@ namespace XboxSeries.Core.Tests.Fakes
                 modified,
                 sortingName,
                 platform,
-                installing));
+                installing,
+                installedAt));
             return this;
         }
 

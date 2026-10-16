@@ -118,6 +118,9 @@
                                             <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Queued}">
                                                 <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Queued}" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Installed}">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Installed}" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </ContentControl.Style>
@@ -159,8 +162,20 @@
                                 <!-- The Guide button. -->
                                 <Path Data="{StaticResource SourceXbox}" Fill="White" Width="32" Height="32" Stretch="Uniform"
                                       Margin="12,2,12,0" VerticalAlignment="Center" />
-                                <TextBlock Text="to view" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
-                                           VerticalAlignment="Center" />
+                                <!-- A Ready to play Toast's press starts its game. -->
+                                <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="to view" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Installed}">
+                                                    <Setter Property="Text" Value="to start" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </Grid>
                     </DockPanel>

@@ -15,8 +15,11 @@ namespace XboxSeries.Core
         private const string Installing = "Installing...";
         private const string Queued = "Queued";
 
+        /// <summary>The Toast's line as a queued game finishes installing.</summary>
+        private const string ReadyToPlay = "Ready to play";
+
         /// <summary>How many covers Manage Queue's Recently installed row holds.</summary>
-        private const int RecentlyInstalledCount = 10;
+        private const int RecentlyInstalledCount = 8;
 
         /// <summary>How often the queue reads its downloads' progress again while anything is installing.</summary>
         private static readonly TimeSpan QueuePoll = TimeSpan.FromSeconds(1);
@@ -44,6 +47,9 @@ namespace XboxSeries.Core
 
         /// <summary>Whether the queue has been built from a library snapshot yet: what it holds then gets no Queued Toast.</summary>
         private bool queueSeen;
+
+        /// <summary>The games the queue has held, whose install finishing shows a Ready to play Toast.</summary>
+        private readonly HashSet<Guid> everQueued = new HashSet<Guid>();
 
         /// <summary>The games seen to finish installing since Playnite started, the latest first.</summary>
         private readonly List<Guid> installedThisSession = new List<Guid>();
@@ -160,6 +166,7 @@ namespace XboxSeries.Core
             installOrder.RemoveAll(id => !installing.ContainsKey(id));
             var joined = installing.Keys.Where(id => !installOrder.Contains(id)).ToList();
             installOrder.AddRange(joined);
+            everQueued.UnionWith(joined);
 
             // Each game joining tells of it, as the console does; those already installing as Playnite started had
             // joined before the extension was there to see it.
@@ -324,6 +331,22 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// Each game the queue held that a snapshot shows installed, as it wasn't in the one before, tells of it with a
+        /// Ready to play Toast, once, however it was installed: by Playnite, or by its client alone, which the next
+        /// snapshot shows once the extension has marked it installed. One the queue let go of uninstalled, as cancelled,
+        /// still tells of it should its client install it later.
+        /// </summary>
+        private void ToastFinishedInstalls(LibrarySnapshot previous)
+        {
+            var wasInstalled = new HashSet<Guid>(previous.Games.Where(g => g.Installed).Select(g => g.Id));
+            foreach (var finished in library.Games.Where(g => g.Installed && !g.Installing && everQueued.Contains(g.Id) && !wasInstalled.Contains(g.Id)).ToList())
+            {
+                everQueued.Remove(finished.Id);
+                EnqueueToast(new WaitingToast(ReadyToPlay, ToastKind.Installed, finished.CoverImage, finished.Id));
+            }
+        }
+
         /// <summary>A game seen to finish installing heads Recently installed, once only, however it was seen to finish.</summary>
         private void HeadRecentlyInstalled(Guid gameId)
         {
@@ -333,14 +356,15 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Manage Queue's Recently installed: games seen to finish installing since Playnite started, the latest first,
-        /// then the rest by when they were added, as the library can't say when a game was installed.
+        /// then the rest by when they were installed, as near as their install folders tell, and by when they were added
+        /// for one whose folder can't say.
         /// </summary>
         private void RefreshRecentlyInstalled()
         {
             var installed = GameListFilter.Installed.Apply(library.Games).ToList();
             var finished = installedThisSession.Select(id => installed.FirstOrDefault(g => g.Id == id)).Where(g => g != null);
             MyGames.RecentlyInstalled = finished
-                .Concat(installed.OrderByDescending(g => g.Added ?? DateTime.MinValue))
+                .Concat(installed.OrderByDescending(g => g.InstalledAt ?? g.Added ?? DateTime.MinValue))
                 .Distinct()
                 .Take(RecentlyInstalledCount)
                 .Select(TileOf)
