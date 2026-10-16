@@ -68,10 +68,11 @@
             </Style>
 
             <!--
-                A button in a category: a dark block, filled with the accent and glowing while focused, as the rail's items,
-                the fill a Border of its own behind the label. One that does nothing now (Tag False, as Connect without a
-                Client ID and Secret) is greyed but keeps its place in the pad's path, so focus never drops off it when it
-                stops applying.
+                A button in a category: a dark block. Focused, as Personalisation's boxes, it lightens and the accent ring
+                stands 3 off it with the console's faint green glow; the ring is a Border of its own, so the glow traces
+                only it, its corners the block's plus the gap and ring, and it is drawn over the buttons round it, so they
+                don't cover the glow. One that does nothing now (Tag False, as Connect without a Client ID and Secret) is
+                greyed but keeps its place in the pad's path, so focus never drops off it when it stops applying.
             -->
             <Style x:Key="PaneButton" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -83,6 +84,10 @@
                             <Grid>
                                 <Border x:Name="Back" Background="#FF333333" CornerRadius="2" />
                                 <ContentPresenter x:Name="Content" Margin="30,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <!-- 3 of gap and 4 of ring out from the block. -->
+                                <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="9"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                        Effect="{DynamicResource XboxFocusGlow}" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Tag">
@@ -92,13 +97,30 @@
                                     <Setter TargetName="Content" Property="Opacity" Value="0.4" />
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
-                                    <Setter TargetName="Back" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
+                                    <Setter TargetName="Back" Property="Background" Value="#FF4A4A4A" />
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--
+                A row holding a button, as Discord's Client ID and Secret: drawn over the rows after it while its button is
+                focused, so their buttons don't cover the ring's glow.
+            -->
+            <Style x:Key="RaisedWhenFocused" TargetType="Grid">
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
@@ -203,7 +225,7 @@
                 </Grid>
 
                 <!-- The application's Client ID, shown, and its Secret, only whether one is saved. -->
-                <Grid Margin="0,0,0,20">
+                <Grid Margin="0,0,0,20" Style="{StaticResource RaisedWhenFocused}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="420" />
                         <ColumnDefinition Width="Auto" />
@@ -216,7 +238,7 @@
                         <TextBlock Text="Paste" Style="{StaticResource Text}" />
                     </Button>
                 </Grid>
-                <Grid Margin="0,0,0,36">
+                <Grid Margin="0,0,0,36" Style="{StaticResource RaisedWhenFocused}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="420" />
                         <ColumnDefinition Width="Auto" />
