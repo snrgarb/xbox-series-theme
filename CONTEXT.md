@@ -103,7 +103,7 @@ _Avoid_: account, user (that is the Windows user), gamer
 _Avoid_: profile select, login, user switcher
 
 **Spinner**:
-The console's loading spinner: a white arc with a green tail that grows clockwise from a dot at the top, its tail chasing its head round, and rests as the dot before the next turn. It turns round the **Profile**'s picture on Signing you in, and in the **Dashboard**'s top bar while Playnite updates the library.
+The console's loading spinner: a white arc with a green tail that grows clockwise from the top, its tail chasing its head round. In the **Dashboard**'s top bar it rests as a dot at the top before each turn; round the **Profile**'s picture and in the **Guide**'s **Flyouts** it turns on without a rest, its ends cut square. It turns round the **Profile**'s picture on Signing you in, and in the **Dashboard**'s top bar while Playnite updates the library, and in a **Flyout** while its entries load.
 _Avoid_: loading ring, progress ring, light
 
 **Discord tab**:
