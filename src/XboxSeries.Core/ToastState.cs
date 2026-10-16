@@ -19,6 +19,9 @@ namespace XboxSeries.Core
 
         /// <summary>"Queued" as a game joins the queue: the game's cover; ⓧ goes to Manage Queue rather than the Guide.</summary>
         Queued,
+
+        /// <summary>"Ready to play" as a queued game finishes installing: the game's cover; ⓧ starts the game.</summary>
+        Installed,
     }
 
     /// <summary>

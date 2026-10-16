@@ -526,7 +526,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Recently_installed_lists_up_to_10_installed_games_newest_added_first_without_hidden_ones()
+        public void Recently_installed_lists_up_to_8_installed_games_newest_added_first_without_hidden_ones()
         {
             var library = new FakeLibrary()
                 .WithGame("Hidden Game", added: new DateTime(2026, 10, 15), hidden: true)
@@ -539,8 +539,21 @@ namespace XboxSeries.Core.Tests
             core.OnLibraryChanged(library.Snapshot());
 
             Assert.Equal(
-                Enumerable.Range(3, 10).Reverse().Select(day => "Game " + day),
+                Enumerable.Range(5, 8).Reverse().Select(day => "Game " + day),
                 core.MyGames.RecentlyInstalled.Select(t => t.Title));
+        }
+
+        [Fact]
+        public void Recently_installed_orders_games_by_when_they_were_installed_before_when_they_were_added()
+        {
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame("Left 4 Dead 2", added: new DateTime(2026, 10, 16), installedAt: new DateTime(2026, 10, 6))
+                .WithGame("Half-Life 2", added: new DateTime(2020, 1, 1), installedAt: new DateTime(2026, 10, 17, 2, 16, 0))
+                .WithGame("Fall Guys", added: new DateTime(2024, 1, 1), installedAt: new DateTime(2026, 10, 17, 2, 1, 0))
+                .WithGame("No Folder", added: new DateTime(2026, 10, 10))
+                .Snapshot());
+
+            Assert.Equal(new[] { "Half-Life 2", "Fall Guys", "No Folder", "Left 4 Dead 2" }, core.MyGames.RecentlyInstalled.Select(t => t.Title));
         }
 
         [Fact]

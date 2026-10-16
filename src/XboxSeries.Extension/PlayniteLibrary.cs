@@ -18,29 +18,7 @@ namespace XboxSeries.Extension
         public static LibrarySnapshot Snapshot(IPlayniteAPI api)
         {
             var database = api.Database;
-            var games = database.Games
-                .Select(g => new LibraryGame(
-                    g.Id,
-                    g.Name,
-                    g.LastActivity,
-                    g.Added,
-                    g.Hidden,
-                    g.IsInstalled,
-                    g.Series?.Select(s => s.Name).ToList() ?? new List<string>(),
-                    g.Genres?.Select(s => s.Name).ToList() ?? new List<string>(),
-                    g.Source?.Name,
-                    string.IsNullOrEmpty(g.InstallDirectory) ? null : api.ExpandGameVariables(g, g.InstallDirectory),
-                    FullPath(database, g.BackgroundImage),
-                    FullPath(database, g.CoverImage),
-                    g.Favorite,
-                    g.Playtime,
-                    g.PlayCount,
-                    g.ReleaseDate?.Date,
-                    g.Modified,
-                    g.SortingName,
-                    g.Platforms?.FirstOrDefault()?.Name,
-                    installing: g.IsInstalling))
-                .ToList();
+            var games = database.Games.Select(g => GameOf(api, g)).ToList();
 
             // In Playnite's own order, each with the games its filter matches, as Playnite's own lists evaluate it.
             var presets = SortedFilterPresets(api)
@@ -54,6 +32,49 @@ namespace XboxSeries.Extension
                 .ToList();
 
             return new LibrarySnapshot(games, presets, Apps(api));
+        }
+
+        private static LibraryGame GameOf(IPlayniteAPI api, Game g)
+        {
+            var directory = string.IsNullOrEmpty(g.InstallDirectory) ? null : api.ExpandGameVariables(g, g.InstallDirectory);
+            return new LibraryGame(
+                g.Id,
+                g.Name,
+                g.LastActivity,
+                g.Added,
+                g.Hidden,
+                g.IsInstalled,
+                g.Series?.Select(s => s.Name).ToList() ?? new List<string>(),
+                g.Genres?.Select(s => s.Name).ToList() ?? new List<string>(),
+                g.Source?.Name,
+                directory,
+                FullPath(api.Database, g.BackgroundImage),
+                FullPath(api.Database, g.CoverImage),
+                g.Favorite,
+                g.Playtime,
+                g.PlayCount,
+                g.ReleaseDate?.Date,
+                g.Modified,
+                g.SortingName,
+                g.Platforms?.FirstOrDefault()?.Name,
+                installing: g.IsInstalling,
+                installedAt: g.IsInstalled ? CreationTimeOf(directory) : null);
+        }
+
+        /// <summary>
+        /// When the folder was made, which for a game's install folder is when its client began installing it: Playnite
+        /// keeps no install date. Null when there's no folder or it can't be read.
+        /// </summary>
+        private static DateTime? CreationTimeOf(string directory)
+        {
+            try
+            {
+                return directory != null && Directory.Exists(directory) ? Directory.GetCreationTime(directory) : (DateTime?)null;
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is ArgumentException || e is NotSupportedException)
+            {
+                return null;
+            }
         }
 
         /// <summary>

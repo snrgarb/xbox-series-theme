@@ -48,7 +48,8 @@ namespace XboxSeries.Core
             DateTime? modified = null,
             string sortingName = null,
             string platform = null,
-            bool installing = false)
+            bool installing = false,
+            DateTime? installedAt = null)
         {
             Id = id;
             Name = name;
@@ -70,6 +71,7 @@ namespace XboxSeries.Core
             SortingName = string.IsNullOrEmpty(sortingName) ? name : sortingName;
             Platform = platform;
             Installing = installing;
+            InstalledAt = installedAt;
         }
 
         public Guid Id { get; }
@@ -112,6 +114,12 @@ namespace XboxSeries.Core
 
         /// <summary>Whether Playnite is installing the game: queued or downloading in its library's client.</summary>
         public bool Installing { get; }
+
+        /// <summary>
+        /// When the game was installed, as near as can be told: when its install folder was made, which its client
+        /// does as the install begins. Null when it isn't installed or the folder can't be read.
+        /// </summary>
+        public DateTime? InstalledAt { get; }
     }
 
     /// <summary>A Playnite filter preset. Snapshots list them in Playnite's own order.</summary>

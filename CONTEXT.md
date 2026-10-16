@@ -91,7 +91,7 @@ A second panel the **Guide** opens beside and over its own when an entry is sele
 _Avoid_: submenu, popup, page
 
 **Toast**:
-A green banner, as the console's, shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next; the third, the Queued Toast, says "Queued" with the game's cover as each game joins the **Queue**, waiting its turn as a notification's does.
+A green banner, as the console's, shown at the bottom of the screen above every window without taking focus, so a running game keeps its input. It is separate from the **Overlay**. The first Toast is a new Playnite notification; an incoming Discord call is the next; the third, the Queued Toast, says "Queued" with the game's cover as each game joins the **Queue**, waiting its turn as a notification's does; the fourth, the Ready to play Toast, says "Ready to play" with the cover as a game the Queue held finishes installing.
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
 **Launch screen**:
@@ -150,7 +150,7 @@ _Avoid_: home button, Xbox button
 - Selecting a game anywhere on the **Dashboard** opens its **Game hub**
 - A game exiting, however it was quit, returns to **Home** from wherever it was launched, the Recent row focused on that game; a game quit from the **Guide** closes the **Guide** as it goes
 - The extension records **Play sessions**; the **Game hub** shows a game's most recent ones
-- A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject; during a Queued Toast it goes to **Manage Queue** instead, as the Queue isn't in the Guide
+- A **Toast** never takes focus; pressing the **Guide button** while one is showing opens the **Guide** at the Toast's subject; during a Queued Toast it goes to **Manage Queue** instead, as the Queue isn't in the Guide, and during a Ready to play Toast, whose prompt reads "Press ⓧ to start", it starts the game
 - A **Launch screen** never takes focus; the **Guide** and **Toasts** show over it
 - The **Guide** has three tabs: landing, the **Discord tab** (once connected, until disconnected), and Profile & system
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
