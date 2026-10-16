@@ -10,7 +10,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The console's change of the content beside a page's nav, as focus moves along it: the old content goes at once,
     /// and the new comes in a short way, up from below as focus moves down the nav or down from above as it moves up,
-    /// fading in as it slows to a stop. Shared by My games &amp; apps and Settings.
+    /// fading in as it slows to a stop. Shared by My games &amp; apps and Settings; Full library's tabs, across the page,
+    /// bring theirs in from the side.
     /// </summary>
     internal static class PaneFlyIn
     {
@@ -32,16 +33,38 @@ namespace XboxSeries.Extension
         /// </summary>
         public static void Follow<T>(ref T shown, T now, Func<T, int> indexOf, bool alongNav, UIElement host, UIElement alongside = null)
         {
-            var from = shown;
-            shown = now;
-            var direction = alongNav ? Math.Sign(indexOf(now) - indexOf(from)) : 0;
+            var direction = Direction(ref shown, now, indexOf, alongNav);
             if (direction == 0)
             {
                 Stop(host, alongside);
                 return;
             }
 
-            new Slide(host).Start(direction * Travel, host, alongside);
+            new Slide(host).Start(new Vector(0, direction * Travel), host, alongside);
+        }
+
+        /// <summary>
+        /// As <see cref="Follow{T}"/>, for tabs across the page: <paramref name="pane"/> comes in from the right for a move
+        /// right along them or from the left for one left. It is drawn as it moves, not as a picture: it's Playnite's main list.
+        /// </summary>
+        public static void FollowAcross<T>(ref T shown, T now, Func<T, int> indexOf, bool alongTabs, UIElement pane)
+        {
+            var direction = Direction(ref shown, now, indexOf, alongTabs);
+            if (direction == 0)
+            {
+                Stop(pane);
+                return;
+            }
+
+            new Slide(null).Start(new Vector(direction * Travel, 0), pane);
+        }
+
+        /// <summary>Which way along the nav or tabs <paramref name="now"/> is from what was shown, 0 if not reached along them.</summary>
+        private static int Direction<T>(ref T shown, T now, Func<T, int> indexOf, bool along)
+        {
+            var from = shown;
+            shown = now;
+            return along ? Math.Sign(indexOf(now) - indexOf(from)) : 0;
         }
 
         /// <summary>Puts <paramref name="panes"/> where they settle at once, as when the page opens, closes or goes.</summary>
@@ -83,11 +106,11 @@ namespace XboxSeries.Extension
             public readonly TranslateTransform Shift;
             private readonly object ownTransform;
 
-            public Moving(UIElement pane, double from)
+            public Moving(UIElement pane, Vector from)
             {
                 Pane = pane;
                 ownTransform = pane.ReadLocalValue(UIElement.RenderTransformProperty);
-                Shift = new TranslateTransform(0, from);
+                Shift = new TranslateTransform(from.X, from.Y);
                 var own = pane.RenderTransform;
                 pane.RenderTransform = own == null || own == Transform.Identity
                     ? (Transform)Shift
@@ -116,13 +139,13 @@ namespace XboxSeries.Extension
             private readonly List<Moving> moving = new List<Moving>();
             private EventHandler pendingStart;
 
-            /// <summary>A slide that draws <paramref name="cached"/>, the page's own content, into a picture as it moves.</summary>
+            /// <summary>A slide that draws <paramref name="cached"/>, the page's own content, if any, into a picture as it moves.</summary>
             public Slide(UIElement cached)
             {
                 this.cached = cached;
             }
 
-            public void Start(double from, params UIElement[] panes)
+            public void Start(Vector from, params UIElement[] panes)
             {
                 foreach (var pane in panes)
                 {
@@ -177,7 +200,7 @@ namespace XboxSeries.Extension
                     var fade = new DoubleAnimation(1, SlideDuration) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
                     var settling = held;
                     fade.Completed += (_, __) => Settle(settling);
-                    held.Shift.BeginAnimation(TranslateTransform.YProperty, settle);
+                    held.Shift.BeginAnimation(held.Shift.X != 0 ? TranslateTransform.XProperty : TranslateTransform.YProperty, settle);
                     held.Pane.BeginAnimation(UIElement.OpacityProperty, fade);
                 }
             }
