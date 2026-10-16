@@ -27,6 +27,18 @@ _Avoid_: library page, collection
 Playnite's Software tools, shown under **My games & apps**. They are not games.
 _Avoid_: tools, programs
 
+**Queue**:
+Every game Playnite is installing, as **My games & apps** shows it: the current download first, then those next up. Steam's own queue order can't be read, so next up is the order they started installing. A queued game's tiles read *Queued*, then *Installing...* once its download starts.
+_Avoid_: downloads, download list
+
+**Manage**:
+The page under **My games & apps**' nav line. Its Queue box opens **Manage Queue**.
+_Avoid_: Manage game (that is Playnite's own game menu)
+
+**Manage Queue**:
+The page listing the **Queue**, each download with its speed, amount and share, below a row of recently installed games. B goes back to **Manage**.
+_Avoid_: download manager
+
 **Group**:
 A row on **Home** below the **Recent row**, showing the games of one Playnite filter preset. Users don't create Groups in the **Bundle**; they flag filter presets in Playnite.
 _Avoid_: pin, collection, category
