@@ -115,7 +115,7 @@ namespace XboxSeries.Core.Tests
         public void Unbroken_it_never_stops_nor_jumps()
         {
             var last = Spinner.Unbroken(TimeSpan.Zero);
-            for (var ms = 1; ms <= 2400; ms++)
+            for (var ms = 1; ms <= 3000; ms++)
             {
                 var arcs = Spinner.Unbroken(TimeSpan.FromMilliseconds(ms));
 
@@ -133,7 +133,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void Unbroken_each_turn_repeats_the_last()
         {
-            for (var ms = 0; ms < 800; ms += 7)
+            for (var ms = 0; ms < 1000; ms += 7)
             {
                 var first = Spinner.Unbroken(TimeSpan.FromMilliseconds(ms));
                 var later = Spinner.Unbroken(TimeSpan.FromMilliseconds(ms) + Spinner.UnbrokenPeriod + Spinner.UnbrokenPeriod);
@@ -141,6 +141,21 @@ namespace XboxSeries.Core.Tests
                 AssertSameAngle(first.Head, later.Head);
                 AssertSameAngle(first.WhiteTail, later.WhiteTail);
                 AssertSameAngle(first.GreenTail, later.GreenTail);
+            }
+        }
+
+        [Fact]
+        public void Unbroken_it_turns_a_quarter_slower_than_with_its_rest()
+        {
+            Assert.Equal(TimeSpan.FromSeconds(1), Spinner.UnbrokenPeriod);
+            for (var ms = 150; ms < 800; ms += 10)
+            {
+                var unbroken = Spinner.Unbroken(TimeSpan.FromTicks(TimeSpan.TicksPerMillisecond * ms * 5 / 4));
+                var rested = Spinner.At(TimeSpan.FromMilliseconds(ms));
+
+                Assert.Equal(rested.Head, unbroken.Head, 6);
+                Assert.Equal(rested.WhiteTail, unbroken.WhiteTail, 6);
+                Assert.Equal(rested.GreenTail, unbroken.GreenTail, 6);
             }
         }
 

@@ -18,9 +18,13 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// One turn after another with no rest between them, the Guide's flyouts' spinner: each turn's head sets off as
-        /// the last's reaches the top, while that turn's tail is still catching it up.
+        /// the last's reaches the top, while that turn's tail is still catching it up; a little slower than a turn of
+        /// <see cref="At"/>.
         /// </summary>
-        public static readonly TimeSpan UnbrokenPeriod = TimeSpan.FromSeconds(HeadEnd);
+        public static readonly TimeSpan UnbrokenPeriod = TimeSpan.FromSeconds(HeadEnd * UnbrokenSlowing);
+
+        /// <summary>How many times longer the unbroken spinning takes over each part of a turn.</summary>
+        private const double UnbrokenSlowing = 1.25;
 
         /// <summary>When in a turn the head is back at the top.</summary>
         private const double HeadEnd = 0.80;
@@ -34,7 +38,7 @@ namespace XboxSeries.Core
         /// </summary>
         public static SpinnerArcs Unbroken(TimeSpan elapsed)
         {
-            var seconds = Within(elapsed, UnbrokenPeriod);
+            var seconds = Within(elapsed, UnbrokenPeriod) / UnbrokenSlowing;
             var turn = Turn(seconds);
             var last = Turn(seconds + HeadEnd);
             return turn.WhiteTail > 0
