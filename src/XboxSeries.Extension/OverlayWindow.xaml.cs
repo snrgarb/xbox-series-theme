@@ -21,7 +21,7 @@ namespace XboxSeries.Extension
     {
         private static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(120);
         private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
-        private static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(50);
         private static readonly ILogger logger = LogManager.GetLogger();
 
         private readonly ExtensionCore core;
