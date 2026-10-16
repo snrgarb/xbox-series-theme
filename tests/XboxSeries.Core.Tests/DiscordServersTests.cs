@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -59,6 +60,61 @@ namespace XboxSeries.Core.Tests
 
             Assert.False(showing.IsLoading);
             Assert.Equal(new[] { "The Lads", "Wine club" }, showing.Items.Select(i => i.Title));
+        }
+
+        [Fact]
+        public void Servers_answered_quickly_wait_for_the_spinner_to_have_shown_a_second()
+        {
+            OpenServersNow();
+            clock.Advance(TimeSpan.FromMilliseconds(300));
+
+            ReplyGuilds();
+            Assert.True(Guide.Flyout.IsLoading);
+
+            clock.Advance(TimeSpan.FromMilliseconds(699));
+            Assert.True(Guide.Flyout.IsLoading);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.False(Guide.Flyout.IsLoading);
+            Assert.Equal(new[] { "The Lads", "Wine club" }, Guide.Flyout.Items.Select(i => i.Title));
+            Assert.Same(Guide.Flyout.Items[0], Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void Servers_answered_after_a_second_show_at_once()
+        {
+            OpenServersNow();
+            clock.Advance(TimeSpan.FromSeconds(1.5));
+
+            ReplyGuilds();
+
+            Assert.False(Guide.Flyout.IsLoading);
+        }
+
+        [Fact]
+        public void A_servers_channels_answered_quickly_wait_for_the_spinner_too()
+        {
+            OpenServers();
+            ReplyGuilds();
+            Tap(ControllerButton.A);
+
+            ReplyChannels();
+            Assert.True(Guide.Flyout.IsLoading);
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.Equal(new[] { "Late night", "Raid" }, Guide.Flyout.Items.Select(i => i.Title));
+        }
+
+        [Fact]
+        public void Servers_held_for_the_spinner_never_show_once_the_flyout_has_closed()
+        {
+            OpenServersNow();
+            ReplyGuilds();
+
+            Tap(ControllerButton.B);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Null(Guide.Flyout);
         }
 
         [Fact]
@@ -327,8 +383,10 @@ namespace XboxSeries.Core.Tests
             }
 
             Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
             ReplyGuilds();
             Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
             ReplyChannels();
             Tap(ControllerButton.DPadDown);
 
@@ -608,12 +666,21 @@ namespace XboxSeries.Core.Tests
             }
 
             Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
             ReplyThreeGuilds();
 
             Assert.Equal(new[] { "Wine club", "The Lads", "art", "beta", "Zeta" }, Guide.Flyout.Items.Select(i => i.Title));
         }
 
+        /// <summary>A on Servers, the spinner then shown its second, so Discord's answer shows when it comes.</summary>
         private void OpenServers()
+        {
+            OpenServersNow();
+            clock.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        /// <summary>A on Servers, the spinner just shown.</summary>
+        private void OpenServersNow()
         {
             NotInCall();
             OpenDiscordTab();
@@ -621,7 +688,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.A);
         }
 
-        /// <summary>A on Servers, signed in already, whatever the Discord tab shows above it.</summary>
+        /// <summary>A on Servers, signed in already, whatever the Discord tab shows above it, the spinner then shown its second.</summary>
         private void OpenServersFlyout()
         {
             OpenDiscordTab();
@@ -631,6 +698,7 @@ namespace XboxSeries.Core.Tests
             }
 
             Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
         }
 
         /// <summary>The Lads and Wine club among three servers never joined, named in mixed case, in no order of Discord's.</summary>
@@ -649,6 +717,7 @@ namespace XboxSeries.Core.Tests
             OpenServers();
             ReplyGuilds();
             Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
         }
 
         private void ReplyGuilds() => Reply("GET_GUILDS", new JObject
