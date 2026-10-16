@@ -148,7 +148,7 @@
                     <!--
                         Signing you in: the chosen profile's picture alone, centred, the loading spinner turning round it 5
                         out from the picture, where the ring is on Who's playing today?, with no ring under it, its
-                        gamertag and "Signing you in" under it. The spinner turns only while this shows.
+                        gamertag and "Signing you in" under it. The spinner, square-ended, turns on without a rest, and only while this shows.
                     -->
                     <StackPanel VerticalAlignment="Top" Margin="0,340,0,0" HorizontalAlignment="Center">
                         <StackPanel.Style>
@@ -164,7 +164,7 @@
                         <Grid Width="410" Height="410" Margin="-5">
                             <ContentPresenter Content="{Binding SigningIn}" ContentTemplate="{StaticResource ProfilePicture}"
                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            <local:LoadingSpinner Width="404" Height="404" StrokeThickness="7" />
+                            <local:LoadingSpinner Width="404" Height="404" StrokeThickness="7" LineCap="Flat" Unbroken="True" />
                         </Grid>
                         <TextBlock Text="{Binding SigningIn.Gamertag}" Style="{StaticResource StartupText}" FontSize="30"
                                    FontWeight="SemiBold" Margin="10,6,10,0" />
