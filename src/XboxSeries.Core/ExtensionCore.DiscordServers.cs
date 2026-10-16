@@ -68,20 +68,22 @@ namespace XboxSeries.Core
                 .ToList();
 
         /// <summary>
-        /// A on Servers: asks Discord for the user's servers, showing those it answered before at once, focus on the
-        /// first, or else a flyout that shows they're coming.
+        /// A on Servers: shows the servers Discord answered before at once, focus on the first, or else a flyout that
+        /// shows they're coming; then asks Discord for them.
         /// </summary>
         private void OpenServers()
         {
-            flyoutRequest = SendCommand("GET_GUILDS", new JObject());
             if (serverItems != null)
             {
                 ShowServers(null);
-                return;
+            }
+            else
+            {
+                Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServers, "Servers", new GuideItem[0], isLoading: true);
+                Guide.FocusedItem = null;
             }
 
-            Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServers, "Servers", new GuideItem[0], isLoading: true);
-            Guide.FocusedItem = null;
+            flyoutRequest = SendCommand("GET_GUILDS", new JObject());
         }
 
         /// <summary>The Servers flyout with the servers already fetched, focus on <paramref name="focused"/>, else the first.</summary>
@@ -93,22 +95,24 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A on a server: asks Discord for its channels, in a flyout under its name showing those it answered before at
-        /// once, focus on the first, or else that they're coming.
+        /// A on a server: a flyout under its name showing the channels Discord answered before at once, focus on the
+        /// first, or else that they're coming; then asks Discord for them.
         /// </summary>
         private void OpenServer(GuideItem server)
         {
             openServerId = server.GuildId;
-            flyoutRequest = SendCommand("GET_CHANNELS", new JObject { ["guild_id"] = server.GuildId });
             if (channelItems.TryGetValue(server.GuildId, out var channels))
             {
                 Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServer, server.Title, channels);
                 Guide.FocusedItem = channels.FirstOrDefault();
-                return;
+            }
+            else
+            {
+                Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServer, server.Title, new GuideItem[0], isLoading: true);
+                Guide.FocusedItem = null;
             }
 
-            Guide.Flyout = new GuideFlyout(GuideItemKind.DiscordServer, server.Title, new GuideItem[0], isLoading: true);
-            Guide.FocusedItem = null;
+            flyoutRequest = SendCommand("GET_CHANNELS", new JObject { ["guild_id"] = server.GuildId });
         }
 
         /// <summary>B in a server's flyout: back to the servers, focus on the one it was.</summary>
