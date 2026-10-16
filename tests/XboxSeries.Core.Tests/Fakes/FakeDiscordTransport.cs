@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -28,11 +29,18 @@ namespace XboxSeries.Core.Tests.Fakes
             return IsOpen;
         }
 
+        /// <summary>Called with each Frame payload as it is sent, to see what the core shows at that moment.</summary>
+        public Action<JObject> Sending { get; set; }
+
         public void Send(DiscordOpcode opcode, string json)
         {
             if (IsOpen)
             {
                 Sent.Add((opcode, json));
+                if (opcode == DiscordOpcode.Frame)
+                {
+                    Sending?.Invoke(JObject.Parse(json));
+                }
             }
         }
 

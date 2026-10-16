@@ -23,6 +23,45 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_loading_flyout_shows_before_the_servers_are_asked_for()
+        {
+            GuideFlyout showing = null;
+            transport.Sending = c => { if ((string)c["cmd"] == "GET_GUILDS") showing = Guide.Flyout; };
+
+            OpenServers();
+
+            Assert.Equal(GuideItemKind.DiscordServers, showing?.Kind);
+            Assert.True(showing.IsLoading);
+        }
+
+        [Fact]
+        public void The_loading_flyout_shows_before_a_servers_channels_are_asked_for()
+        {
+            GuideFlyout showing = null;
+            transport.Sending = c => { if ((string)c["cmd"] == "GET_CHANNELS") showing = Guide.Flyout; };
+
+            OpenLads();
+
+            Assert.Equal(GuideItemKind.DiscordServer, showing?.Kind);
+            Assert.True(showing.IsLoading);
+        }
+
+        [Fact]
+        public void Reopened_the_servers_already_fetched_show_before_they_are_asked_for_again()
+        {
+            OpenServers();
+            ReplyGuilds();
+            Tap(ControllerButton.B);
+            GuideFlyout showing = null;
+            transport.Sending = c => { if ((string)c["cmd"] == "GET_GUILDS") showing = Guide.Flyout; };
+
+            Tap(ControllerButton.A);
+
+            Assert.False(showing.IsLoading);
+            Assert.Equal(new[] { "The Lads", "Wine club" }, showing.Items.Select(i => i.Title));
+        }
+
+        [Fact]
         public void The_servers_arrive_one_entry_each_with_its_icon_alphabetically_focus_on_the_first()
         {
             OpenServers();
