@@ -75,6 +75,12 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <!-- Focused, drawn over the boxes round it, so their backs don't cover its ring's glow. -->
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <!--
@@ -106,6 +112,18 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <!--
+                The holder of a box or row in a list: drawn over its neighbours while what it holds is focused, so their
+                backs don't cover the ring's glow, the 8 or 18 between them being less than the ring and glow stand out.
+            -->
+            <Style x:Key="RaisedWhenFocused" TargetType="ContentPresenter">
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <!-- A ChoiceRow in a Row: its tick while it's the one set, then its name. -->
@@ -192,14 +210,16 @@
         <StackPanel x:Name="BootVideoPage" Visibility="Collapsed">
             <TextBlock Text="Plays as Playnite starts in Fullscreen. Any button skips it."
                        Style="{StaticResource MutedText}" Margin="0,0,0,26" />
-            <ItemsControl x:Name="BootVideoRows" Focusable="False" ItemTemplate="{StaticResource ChoiceRow}" />
+            <ItemsControl x:Name="BootVideoRows" Focusable="False" ItemTemplate="{StaticResource ChoiceRow}"
+                          ItemContainerStyle="{StaticResource RaisedWhenFocused}" />
         </StackPanel>
 
         <!-- Who's playing today?: whether it asks on every start and on waking from sleep, the one set ticked. -->
         <StackPanel x:Name="WhosPlayingPage" Visibility="Collapsed">
             <TextBlock Text="Choose who's playing as Playnite starts in Fullscreen and wakes from sleep."
                        Style="{StaticResource MutedText}" Margin="0,0,0,26" />
-            <ItemsControl x:Name="WhosPlayingRows" Focusable="False" ItemTemplate="{StaticResource ChoiceRow}" />
+            <ItemsControl x:Name="WhosPlayingRows" Focusable="False" ItemTemplate="{StaticResource ChoiceRow}"
+                          ItemContainerStyle="{StaticResource RaisedWhenFocused}" />
         </StackPanel>
 
         <!--
@@ -208,7 +228,8 @@
         -->
         <ScrollViewer x:Name="ProfilesPage" Visibility="Collapsed" Focusable="False" Margin="-26,-26,0,0"
                       VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl x:Name="ProfileBoxes" Focusable="False" HorizontalAlignment="Left" Margin="26,26,0,0">
+            <ItemsControl x:Name="ProfileBoxes" Focusable="False" HorizontalAlignment="Left" Margin="26,26,0,0"
+                          ItemContainerStyle="{StaticResource RaisedWhenFocused}">
                 <ItemsControl.Resources>
                     <DataTemplate DataType="{x:Type core:Profile}">
                         <Button Style="{StaticResource Box}" Padding="30,0,24,0" Click="OnProfileBoxClick">

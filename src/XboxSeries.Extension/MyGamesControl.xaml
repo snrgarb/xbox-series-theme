@@ -136,6 +136,12 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <!-- Focused, drawn over the rows after it, so their backs don't cover its glow. -->
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <!--
@@ -170,6 +176,12 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+                <!-- Focused, drawn over the tiles round it, so their fill doesn't cover its glow. -->
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
             </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>

@@ -849,6 +849,16 @@
                                     <StackPanel Orientation="Horizontal" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
+                            <!-- Focused, a square is drawn over the one after it, so that one's back doesn't cover its glow. -->
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                            <Setter Property="Panel.ZIndex" Value="1" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Width="87" Height="87" Margin="0,0,18,0" Background="Transparent"
@@ -906,9 +916,10 @@
                             The tab's entries. They wrap, so that the Discord tab's shortcuts, a third of the panel wide, sit
                             three to a row as the core moves between them, while every other entry is the panel's full
                             width and so a row of its own. The tiles of a row stand on its bottom, so the first one's
-                            divider, above it, leaves them level.
+                            divider, above it, leaves them level. They sit 18 in from the scroller's top and sides, which its
+                            margin cancels, so a focused entry's glow isn't cut off there.
                         -->
-                        <ScrollViewer x:Name="EntriesScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
+                        <ScrollViewer x:Name="EntriesScroller" VerticalScrollBarVisibility="Hidden" Focusable="False" Margin="-18,-18,-18,0">
                         <ItemsControl x:Name="Entries" ItemsSource="{Binding Items}" ItemTemplate="{StaticResource GuideEntry}" Focusable="False">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -916,9 +927,13 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemContainerStyle>
+                                <!-- Focused, an entry is drawn over the ones after it, so their art doesn't cover its glow. -->
                                 <Style TargetType="ContentPresenter">
                                     <Setter Property="Width" Value="536" />
                                     <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                            <Setter Property="Panel.ZIndex" Value="1" />
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Kind}" Value="DiscordShortcut">
                                             <Setter Property="Width" Value="178" />
                                             <Setter Property="VerticalAlignment" Value="Bottom" />
@@ -928,10 +943,11 @@
                             </ItemsControl.ItemContainerStyle>
                             <ItemsControl.Style>
                                 <Style TargetType="ItemsControl">
+                                    <Setter Property="Margin" Value="18,18,18,0" />
                                     <Style.Triggers>
                                         <!-- The landing tab's Home sits a little lower, where the other tab has its heading. -->
                                         <DataTrigger Binding="{Binding Tab}" Value="Landing">
-                                            <Setter Property="Margin" Value="0,18,0,0" />
+                                            <Setter Property="Margin" Value="18,36,18,0" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -1033,16 +1049,26 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <!-- Its entries, the focused one scrolled into view when a long list of notifications runs past the bottom. -->
-                        <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
+                        <!--
+                            Its entries, the focused one scrolled into view when a long list of notifications runs past the
+                            bottom. They sit 18 down from the scroller's top, which its margin cancels, so the first one's glow
+                            isn't cut off there; at the sides the flyout's own rounded edge is where the glow stops.
+                        -->
+                        <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False" Margin="0,-18,0,0">
                             <ItemsControl x:Name="FlyoutEntries" ItemsSource="{Binding Flyout.Items}" ItemTemplate="{StaticResource GuideEntry}"
-                                          Focusable="False" Margin="0,0,0,24">
-                                <!-- A dropdown with its list open is drawn over the entries after it, which its list covers. -->
+                                          Focusable="False" Margin="0,18,0,24">
+                                <!--
+                                    A focused entry is drawn over the ones after it, so their art doesn't cover its glow; a
+                                    dropdown with its list open, over every other entry, as its list covers those after it.
+                                -->
                                 <ItemsControl.ItemContainerStyle>
                                     <Style TargetType="ContentPresenter">
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                            <DataTrigger Binding="{Binding IsFocused}" Value="True">
                                                 <Setter Property="Panel.ZIndex" Value="1" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="2" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
