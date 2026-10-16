@@ -43,6 +43,7 @@ namespace XboxSeries.Core.Tests
                           from element in XDocument.Load(file).Descendants()
                           from attribute in element.Attributes()
                           where attribute.Value.Contains("XboxFocusGlow")
+                                && attribute.Name != X + "Key"
                                 && !(attribute.Name.LocalName == "Style" && element.Name.LocalName == "Border")
                           select $"{Relative(file)}: <{element.Name.LocalName} {attribute.Name.LocalName}=...>";
 
