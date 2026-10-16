@@ -32,7 +32,8 @@
 
             <!--
                 A rail item, edge to edge across the rail, as My games & apps' nav items. The category showing (Tag
-                "Selected") is lit and marked by an accent bar on its right edge; the focused item fills with the accent.
+                "Selected") is lit and marked by an accent bar on its right edge; the focused item fills with the accent and
+                wears the console's faint green glow. The fill is a Border of its own behind the name, so the glow traces only it.
             -->
             <Style x:Key="RailItem" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -41,7 +42,8 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="Back" Background="Transparent">
+                            <Grid Background="Transparent">
+                                <Border x:Name="Back" />
                                 <ContentPresenter Margin="75,0,43,0" VerticalAlignment="Center" />
                                 <Border x:Name="Bar" Width="6" HorizontalAlignment="Right"
                                         Background="{DynamicResource GlyphBrush}" Visibility="Collapsed" />
@@ -53,6 +55,7 @@
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                    <Setter TargetName="Back" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -65,9 +68,10 @@
             </Style>
 
             <!--
-                A button in a category: a dark block, filled with the accent while focused, as the rail's items. One that
-                does nothing now (Tag False, as Connect without a Client ID and Secret) is greyed but keeps its place in
-                the pad's path, so focus never drops off it when it stops applying.
+                A button in a category: a dark block, filled with the accent and glowing while focused, as the rail's items,
+                the fill a Border of its own behind the label. One that does nothing now (Tag False, as Connect without a
+                Client ID and Secret) is greyed but keeps its place in the pad's path, so focus never drops off it when it
+                stops applying.
             -->
             <Style x:Key="PaneButton" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -76,9 +80,10 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Back" Background="#FF333333" CornerRadius="2" Padding="30,0">
-                                <ContentPresenter x:Name="Content" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
+                            <Grid>
+                                <Border x:Name="Back" Background="#FF333333" CornerRadius="2" />
+                                <ContentPresenter x:Name="Content" Margin="30,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="Tag">
                                     <Trigger.Value>
@@ -88,6 +93,7 @@
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                    <Setter TargetName="Back" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
