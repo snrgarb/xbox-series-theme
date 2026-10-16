@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -122,9 +123,19 @@ namespace XboxSeries.Extension
         /// </summary>
         public static IntPtr FindTopLevelWindow(Func<string, bool> matches)
         {
+            var found = TopLevelWindows(matches, firstOnly: true);
+            return found.Count == 0 ? IntPtr.Zero : found[0];
+        }
+
+        /// <summary>
+        /// Every visible, unowned, non-tool top-level window whose program's path satisfies <paramref name="matches"/>.
+        /// Programs whose path can't be read (elevated ones) are skipped.
+        /// </summary>
+        public static List<IntPtr> TopLevelWindows(Func<string, bool> matches, bool firstOnly = false)
+        {
             const uint GW_OWNER = 4;
             const int WS_EX_TOOLWINDOW = 0x80;
-            var found = IntPtr.Zero;
+            var found = new List<IntPtr>();
             EnumWindows((hWnd, _) =>
             {
                 if (!IsWindowVisible(hWnd)
@@ -138,8 +149,8 @@ namespace XboxSeries.Extension
                 var path = ProgramPathOf(processId);
                 if (path != null && matches(path))
                 {
-                    found = hWnd;
-                    return false;
+                    found.Add(hWnd);
+                    return !firstOnly;
                 }
 
                 return true;

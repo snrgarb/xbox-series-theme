@@ -42,6 +42,11 @@ namespace XboxSeries.Extension
         private static readonly TimeSpan KeepInFrontFor = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan KeepInFrontEvery = TimeSpan.FromMilliseconds(200);
 
+        // How long the install waits for Steam's open windows to go to the tray before asking anyway, and how often
+        // it looks: Steam hides its window within a moment of being asked to close it.
+        private static readonly TimeSpan TrayWaitFor = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan TrayWaitEvery = TimeSpan.FromMilliseconds(50);
+
         // How long the app id to game map stands without a library change: a backstop for a change Playnite didn't
         // announce, cheap at this rate however large the library.
         private static readonly TimeSpan MapLifetime = TimeSpan.FromSeconds(5);
@@ -72,19 +77,72 @@ namespace XboxSeries.Extension
         /// to its default library with no window. Not waited for: Steam is followed from its manifests instead. When
         /// Steam isn't running this starts it, and <c>-silent</c> keeps its main window down as it does, though its
         /// sign-in or update windows can still show.
+        /// <para>
+        /// The running client brings its window to the front as it takes a command when that window is open, but
+        /// stays in the tray when it's there, so Steam's open windows are sent to the tray first, and the command
+        /// goes once they've gone, or after <see cref="TrayWaitFor"/> regardless.
+        /// </para>
         /// </summary>
         public void Install(Guid gameId)
         {
+            string exe;
+            uint? appId;
             try
             {
-                var appId = AppIdOf(gameId);
-                var exe = appId == null ? null : SteamExe();
-                if (exe == null)
+                appId = AppIdOf(gameId);
+                exe = appId == null ? null : SteamExe();
+            }
+            catch (Exception e) when (IsReadFailure(e))
+            {
+                WarnOnce(ref installWarned, e, $"Couldn't find Steam to install game {gameId} with");
+                return;
+            }
+
+            if (exe == null)
+            {
+                return;
+            }
+
+            if (!IsSteamRunning())
+            {
+                AskSteamToInstall(exe, appId.Value, gameId);
+                return;
+            }
+
+            var open = SteamWindows();
+            if (open.Count == 0)
+            {
+                AskSteamToInstall(exe, appId.Value, gameId);
+                KeepPlayniteInFront();
+                return;
+            }
+
+            logger.Info($"Sending Steam's {open.Count} open window(s) to the tray before asking it to install app {appId}");
+            foreach (var window in open)
+            {
+                NativeMethods.PostMessage(window, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            }
+
+            var until = DateTime.UtcNow + TrayWaitFor;
+            var timer = new DispatcherTimer { Interval = TrayWaitEvery };
+            timer.Tick += (_, __) =>
+            {
+                if (SteamWindows().Count > 0 && DateTime.UtcNow < until)
                 {
                     return;
                 }
 
-                var steamWasRunning = IsSteamRunning();
+                timer.Stop();
+                AskSteamToInstall(exe, appId.Value, gameId);
+                KeepPlayniteInFront();
+            };
+            timer.Start();
+        }
+
+        private void AskSteamToInstall(string exe, uint appId, Guid gameId)
+        {
+            try
+            {
                 using (Process.Start(new ProcessStartInfo(exe, $"-silent +app_install {appId}")
                 {
                     UseShellExecute = false,
@@ -93,16 +151,21 @@ namespace XboxSeries.Extension
                 }))
                 {
                 }
-
-                if (steamWasRunning)
-                {
-                    KeepPlayniteInFront();
-                }
             }
             catch (Exception e) when (IsReadFailure(e) || e is Win32Exception || e is InvalidOperationException)
             {
                 WarnOnce(ref installWarned, e, $"Couldn't ask Steam to install game {gameId}");
             }
+        }
+
+        /// <summary>Steam's visible windows: the client's own, and its web helper's, which draws the main window.</summary>
+        private static List<IntPtr> SteamWindows() => NativeMethods.TopLevelWindows(IsSteamProgram);
+
+        private static bool IsSteamProgram(string path)
+        {
+            var name = Path.GetFileName(path);
+            return string.Equals(name, "steam.exe", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(name, "steamwebhelper.exe", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsSteamRunning()
@@ -118,7 +181,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The running client brings its own window to the front as it takes a command, whatever <c>-silent</c> says,
-        /// when that window is open rather than in the tray. For a while after asking, any Steam window in front is
+        /// when that window is open rather than in the tray. Should it come forward even so, from the tray or from a
+        /// window that wouldn't close in time, then for a while after asking, any Steam window in front is
         /// closed, which sends Steam's to the tray as its own close button does, and Playnite takes the foreground back.
         /// Only when Steam was running already, so its sign-in window, which a Steam just started may need, is left.
         /// </summary>
@@ -157,17 +221,8 @@ namespace XboxSeries.Extension
         /// <summary>Whether the window is Steam's: the client's own, or its web helper's, which draws the main window.</summary>
         private static bool IsSteamWindow(IntPtr window)
         {
-            try
-            {
-                using (var process = Process.GetProcessById(NativeMethods.ProcessIdOf(window)))
-                {
-                    return new[] { "steam", "steamwebhelper" }.Contains(process.ProcessName, StringComparer.OrdinalIgnoreCase);
-                }
-            }
-            catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is Win32Exception)
-            {
-                return false;
-            }
+            var path = NativeMethods.ProgramPathOf((uint)NativeMethods.ProcessIdOf(window));
+            return path != null && IsSteamProgram(path);
         }
 
         /// <summary>
