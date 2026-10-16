@@ -1,0 +1,16 @@
+<controls:PluginUserControl x:Class="XboxSeries.Extension.InstallActionControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+             Focusable="False" Visibility="Collapsed">
+    <!--
+        The Game hub's Install for a game the extension installs silently, placed by the Dashboard beside Playnite's own
+        main action, which it hides while this shows. Drawn by the theme's own resources, so it is that action exactly:
+        its style and its Install content, the game's source under the label. Collapsed, and so never in the way, for any
+        other game (InstallActionControl.xaml.cs).
+    -->
+    <Button x:Name="InstallButton" Content="Install"
+            Style="{DynamicResource XboxHubDefaultAction}"
+            ContentTemplate="{DynamicResource XboxHubMainActionContent}"
+            Click="OnClick" PreviewKeyDown="OnPreviewKeyDown" />
+</controls:PluginUserControl>
