@@ -93,8 +93,8 @@
                             <Grid>
                                 <Border x:Name="Back" Background="#FF333333" CornerRadius="2" />
                                 <ContentPresenter x:Name="Content" Margin="30,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <!-- 3 of gap and 4 of ring out from the block. -->
-                                <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="9"
+                                <!-- 4 of gap and 4 of ring out from the block, as Home's tiles. -->
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="10"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                     <Border Style="{DynamicResource XboxFocusGlow}" />
                                 </Border>

@@ -178,7 +178,8 @@
                                 </Image.Clip>
                             </Image>
                             <!-- A round Border, not an Ellipse, so the ring can carry the glow band, centred on its 3 px stroke. -->
-                            <Border x:Name="Ring" Margin="-4" BorderThickness="3" CornerRadius="999"
+                            <!-- 4 px off the picture, as Home's tiles' ring. -->
+                            <Border x:Name="Ring" Margin="-7" BorderThickness="3" CornerRadius="999"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                 <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-7" />
                             </Border>

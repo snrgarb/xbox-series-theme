@@ -23,9 +23,10 @@
     <UserControl.Resources>
         <!-- The tiles' green ring; each use carries the console's glow as a blurred band, its child. -->
         <Style x:Key="Ring" TargetType="Border">
-            <Setter Property="Margin" Value="-1" />
+            <!-- As Home's tiles: standing 4 px off the option, its corners following the option's (2 + 4 + 4). -->
+            <Setter Property="Margin" Value="-8" />
             <Setter Property="BorderThickness" Value="4" />
-            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="CornerRadius" Value="10" />
             <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
             <Setter Property="Visibility" Value="Collapsed" />
         </Style>

@@ -55,8 +55,8 @@
                                 <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource Icon}" FontSize="34"
                                            Width="100" HorizontalAlignment="Left" />
                                 <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
-                                <!-- 3 of gap and 4 of ring out from the box. -->
-                                <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="7"
+                                <!-- 4 of gap and 4 of ring out from the box, as Home's tiles. -->
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                     <Border Style="{DynamicResource XboxFocusGlow}" />
                                 </Border>
@@ -94,7 +94,7 @@
                             <Grid>
                                 <Border x:Name="Back" Background="#FF2D2D2D" />
                                 <ContentPresenter VerticalAlignment="Center" />
-                                <Border x:Name="FocusRing" Margin="-7" BorderThickness="4" CornerRadius="7"
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                     <Border Style="{DynamicResource XboxFocusGlow}" />
                                 </Border>
