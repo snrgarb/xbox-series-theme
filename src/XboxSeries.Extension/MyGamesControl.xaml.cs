@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Markup;
@@ -47,6 +48,7 @@ namespace XboxSeries.Extension
         private FrameworkElement viewHost;
         private ListBox mainList;
         private FrameworkElement gameDetails;
+        private ItemsControl libraryTabs;
 
         /// <summary>The Play history game that last had focus, to put focus back on after a rebuild or its Game hub.</summary>
         private Guid? lastFocusedGame;
@@ -62,6 +64,9 @@ namespace XboxSeries.Extension
 
         /// <summary>The nav item last shown, for which way along the nav focus moved to the next.</summary>
         private MyGamesItem shownItem;
+
+        /// <summary>Full library's tab last lit, for which way along the tabs the user switched to the next; -1 for none.</summary>
+        private int shownTab = -1;
 
         internal MyGamesControl(ExtensionCore core)
         {
@@ -112,6 +117,12 @@ namespace XboxSeries.Extension
             {
                 gameDetails.IsVisibleChanged += OnGameDetailsVisibleChanged;
             }
+
+            // Full library's tabs: Playnite lights the preset it applies, from LB/RB or from the page giving the user's back.
+            var tabSelector = HomeRows.FindPart(this, "PART_FilterPresetSelector") as Control;
+            tabSelector?.ApplyTemplate();
+            libraryTabs = tabSelector?.Template?.FindName("PART_ItemsFilterPresets", tabSelector) as ItemsControl;
+            libraryTabs?.AddHandler(ToggleButton.CheckedEvent, (RoutedEventHandler)OnLibraryTabChecked);
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -131,6 +142,13 @@ namespace XboxSeries.Extension
             {
                 gameDetails.IsVisibleChanged -= OnGameDetailsVisibleChanged;
                 gameDetails = null;
+            }
+
+            if (libraryTabs != null)
+            {
+                libraryTabs.RemoveHandler(ToggleButton.CheckedEvent, (RoutedEventHandler)OnLibraryTabChecked);
+                libraryTabs = null;
+                shownTab = -1;
             }
 
             if (mainList != null)
@@ -224,6 +242,34 @@ namespace XboxSeries.Extension
                 ref shownItem, item, shown => Nav.Children.IndexOf(NavItemOf(shown)),
                 itemChanged && core.MyGames.IsShown && Nav.IsKeyboardFocusWithin,
                 ItemHost, item == MyGamesItem.Games || item == MyGamesItem.FullLibrary ? mainList : null);
+        }
+
+        /// <summary>
+        /// Switching Full library's tabs, its games come in from the right for a tab to the right, or from the left for one
+        /// to the left, as the nav's do from below or above. A tab lit any other way, as the page applying the user's
+        /// preset on its way to Full library (before it shows it), just lights.
+        /// </summary>
+        private void OnLibraryTabChecked(object sender, RoutedEventArgs e)
+        {
+            if (!(e.OriginalSource is FrameworkElement tab) || mainList == null)
+            {
+                return;
+            }
+
+            var index = libraryTabs.Items.IndexOf(tab);
+            if (index < 0)
+            {
+                index = libraryTabs.Items.IndexOf(tab.DataContext);
+            }
+
+            // Off Full library the list isn't the tabs' to move, so a slide it may be in along the nav is left alone.
+            if (!core.MyGames.IsShown || core.MyGames.Item != MyGamesItem.FullLibrary || shownItem != MyGamesItem.FullLibrary)
+            {
+                shownTab = index;
+                return;
+            }
+
+            PaneFlyIn.FollowAcross(ref shownTab, index, i => i, shownTab >= 0 && index >= 0, mainList);
         }
 
         /// <summary>The storage ring, filled round as far as the drive is used; hidden without a drive to show.</summary>
