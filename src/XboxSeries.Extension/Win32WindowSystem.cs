@@ -97,5 +97,13 @@ namespace XboxSeries.Extension
                 logger.Warn(e, $"Couldn't force-kill the program of window {window}");
             }
         }
+
+        public void FreezeGame(string directory, IntPtr window)
+        {
+        }
+
+        public void ThawGame()
+        {
+        }
     }
 }

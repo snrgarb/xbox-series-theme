@@ -23,6 +23,15 @@ namespace XboxSeries.Core.Tests.Fakes
         /// <summary>Every window whose program was force-killed, in order.</summary>
         public List<IntPtr> Killed { get; } = new List<IntPtr>();
 
+        /// <summary>Every freeze, as its install directory and game window, in order.</summary>
+        public List<(string Directory, IntPtr Window)> Freezes { get; } = new List<(string, IntPtr)>();
+
+        /// <summary>How many times the core thawed the game.</summary>
+        public int Thaws { get; private set; }
+
+        /// <summary>Whether the game is frozen now: frozen since the last thaw.</summary>
+        public bool IsFrozen { get; private set; }
+
         /// <summary>When true, Windows refuses to hand the Overlay the foreground.</summary>
         public bool RefusesForeground { get; set; }
 
@@ -75,5 +84,17 @@ namespace XboxSeries.Core.Tests.Fakes
 
         /// <summary>Records the kill. Like the real thing, Playnite's game stopped event is left to the test.</summary>
         public void ForceKill(IntPtr window) => Killed.Add(window);
+
+        public void FreezeGame(string directory, IntPtr window)
+        {
+            Freezes.Add((directory, window));
+            IsFrozen = true;
+        }
+
+        public void ThawGame()
+        {
+            Thaws++;
+            IsFrozen = false;
+        }
     }
 }
