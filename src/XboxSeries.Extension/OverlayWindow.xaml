@@ -980,54 +980,72 @@
                         </Style.Triggers>
                     </Style>
                 </Border.Style>
-                <DockPanel local:RoundedClip.Radius="12">
-                    <!-- Its heading, the utility's name. -->
-                    <TextBlock DockPanel.Dock="Top" Text="{Binding Flyout.Title}" Style="{StaticResource GuideText}" FontSize="33" Margin="28,36,0,24" />
-                    <!--
-                        Notifications with none to show; the Servers flyout, or a server's voice channels, once Discord has
-                        answered with none.
-                    -->
-                    <TextBlock DockPanel.Dock="Top" FontSize="24" Foreground="#B3FFFFFF" Margin="28,0,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding Flyout.Kind}" Value="Notifications" />
-                                            <Condition Binding="{Binding Flyout.Items.Count}" Value="0" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Text" Value="No new notifications" />
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
-                                    <!-- An empty flyout's entries may be an array, which has no Count to bind to, so these ask the list itself. -->
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding Flyout.Kind}" Value="DiscordServers" />
-                                            <Condition Binding="{Binding HasItems, ElementName=FlyoutEntries}" Value="False" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Text" Value="No servers" />
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding Flyout.Kind}" Value="DiscordServer" />
-                                            <Condition Binding="{Binding HasItems, ElementName=FlyoutEntries}" Value="False" />
-                                        </MultiDataTrigger.Conditions>
-                                        <Setter Property="Text" Value="No voice channels" />
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
-                                    <!-- Last, so the spinner below shows alone, not the empty messages, while the entries are on their way. -->
-                                    <DataTrigger Binding="{Binding Flyout.IsLoading}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <!-- The console's spinner, centred under the heading, while Discord is being asked for the entries. -->
-                    <local:LoadingSpinner DockPanel.Dock="Top" Width="56" Height="56" StrokeThickness="4" Margin="0,24,0,0"
-                                          HorizontalAlignment="Center">
+                <Grid>
+                    <DockPanel local:RoundedClip.Radius="12">
+                        <!-- Its heading, the utility's name. -->
+                        <TextBlock DockPanel.Dock="Top" Text="{Binding Flyout.Title}" Style="{StaticResource GuideText}" FontSize="33" Margin="28,36,0,24" />
+                        <!--
+                            Notifications with none to show; the Servers flyout, or a server's voice channels, once Discord has
+                            answered with none.
+                        -->
+                        <TextBlock DockPanel.Dock="Top" FontSize="24" Foreground="#B3FFFFFF" Margin="28,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Flyout.Kind}" Value="Notifications" />
+                                                <Condition Binding="{Binding Flyout.Items.Count}" Value="0" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Text" Value="No new notifications" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                        <!-- An empty flyout's entries may be an array, which has no Count to bind to, so these ask the list itself. -->
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Flyout.Kind}" Value="DiscordServers" />
+                                                <Condition Binding="{Binding HasItems, ElementName=FlyoutEntries}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Text" Value="No servers" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Flyout.Kind}" Value="DiscordServer" />
+                                                <Condition Binding="{Binding HasItems, ElementName=FlyoutEntries}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Text" Value="No voice channels" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                        <!-- Last, so the spinner shows alone, not the empty messages, while the entries are on their way. -->
+                                        <DataTrigger Binding="{Binding Flyout.IsLoading}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <!-- Its entries, the focused one scrolled into view when a long list of notifications runs past the bottom. -->
+                        <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
+                            <ItemsControl x:Name="FlyoutEntries" ItemsSource="{Binding Flyout.Items}" ItemTemplate="{StaticResource GuideEntry}"
+                                          Focusable="False" Margin="0,0,0,24">
+                                <!-- A dropdown with its list open is drawn over the entries after it, which its list covers. -->
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="1" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                    <!-- The console's spinner, big in the middle of the flyout, turning on without a rest, while Discord is being asked for the entries. -->
+                    <local:LoadingSpinner Width="128" Height="128" StrokeThickness="8" LineCap="Flat" Unbroken="True"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center">
                         <local:LoadingSpinner.Style>
                             <Style TargetType="local:LoadingSpinner">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -1039,23 +1057,7 @@
                             </Style>
                         </local:LoadingSpinner.Style>
                     </local:LoadingSpinner>
-                    <!-- Its entries, the focused one scrolled into view when a long list of notifications runs past the bottom. -->
-                    <ScrollViewer x:Name="FlyoutScroller" VerticalScrollBarVisibility="Hidden" Focusable="False">
-                        <ItemsControl x:Name="FlyoutEntries" ItemsSource="{Binding Flyout.Items}" ItemTemplate="{StaticResource GuideEntry}"
-                                      Focusable="False" Margin="0,0,0,24">
-                            <!-- A dropdown with its list open is drawn over the entries after it, which its list covers. -->
-                            <ItemsControl.ItemContainerStyle>
-                                <Style TargetType="ContentPresenter">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-                                            <Setter Property="Panel.ZIndex" Value="1" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ItemsControl.ItemContainerStyle>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </DockPanel>
+                </Grid>
             </Border>
             </Grid>
             <!-- The status area, top right, the clock large under the battery, as on the console. Only with the panel: Power on its own has none. -->

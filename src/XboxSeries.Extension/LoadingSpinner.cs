@@ -8,8 +8,8 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// The console's loading spinner, as the core's <see cref="Spinner"/> shapes it: a white arc with a green tail chasing
-    /// round a ring that fills the control, its stroke inside the control's bounds, with round ends and no track ring
-    /// under it. It turns only while it is visible, starting each time it shows and stopping once it is hidden or
+    /// round a ring that fills the control, its stroke inside the control's bounds, with round ends unless set and no
+    /// track ring under it; resting at the top between turns unless <see cref="Unbroken"/>. It turns only while it is visible, starting each time it shows and stopping once it is hidden or
     /// unloaded, so it never keeps WPF rendering behind Playnite.
     /// </summary>
     public sealed class LoadingSpinner : FrameworkElement
@@ -28,7 +28,17 @@ namespace XboxSeries.Extension
             nameof(TailBrush), typeof(Brush), typeof(LoadingSpinner),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender, OnPenChanged));
 
-        /// <summary>Seconds into the spinning, run from 0 to one <see cref="Spinner.Period"/> over and over while visible.</summary>
+        /// <summary>How the arcs' ends are drawn. Round unless set.</summary>
+        public static readonly DependencyProperty LineCapProperty = DependencyProperty.Register(
+            nameof(LineCap), typeof(PenLineCap), typeof(LoadingSpinner),
+            new FrameworkPropertyMetadata(PenLineCap.Round, FrameworkPropertyMetadataOptions.AffectsRender, OnPenChanged));
+
+        /// <summary>Whether it turns on without resting, as <see cref="Spinner.Unbroken"/>. False unless set.</summary>
+        public static readonly DependencyProperty UnbrokenProperty = DependencyProperty.Register(
+            nameof(Unbroken), typeof(bool), typeof(LoadingSpinner),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender, OnUnbrokenChanged));
+
+        /// <summary>Seconds into the spinning, run from 0 to one turn over and over while visible.</summary>
         private static readonly DependencyProperty ElapsedProperty = DependencyProperty.Register(
             "Elapsed", typeof(double), typeof(LoadingSpinner),
             new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
@@ -66,6 +76,31 @@ namespace XboxSeries.Extension
             set => SetValue(TailBrushProperty, value);
         }
 
+        public PenLineCap LineCap
+        {
+            get => (PenLineCap)GetValue(LineCapProperty);
+            set => SetValue(LineCapProperty, value);
+        }
+
+        public bool Unbroken
+        {
+            get => (bool)GetValue(UnbrokenProperty);
+            set => SetValue(UnbrokenProperty, value);
+        }
+
+        /// <summary>The time one turn takes, its rest included unless it is unbroken.</summary>
+        private TimeSpan Period => Unbroken ? Spinner.UnbrokenPeriod : Spinner.Period;
+
+        /// <summary>Turning, it starts its turns again at the new length.</summary>
+        private static void OnUnbrokenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var spinner = (LoadingSpinner)d;
+            if (spinner.spinning)
+            {
+                spinner.Spin();
+            }
+        }
+
         private static void OnPenChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var spinner = (LoadingSpinner)d;
@@ -85,16 +120,21 @@ namespace XboxSeries.Extension
             spinning = shouldSpin;
             if (spinning)
             {
-                var period = Spinner.Period.TotalSeconds;
-                BeginAnimation(ElapsedProperty, new DoubleAnimation(0, period, new Duration(Spinner.Period))
-                {
-                    RepeatBehavior = RepeatBehavior.Forever,
-                });
+                Spin();
             }
             else
             {
                 BeginAnimation(ElapsedProperty, null);
             }
+        }
+
+        /// <summary>Turns from the start of a turn, over and over.</summary>
+        private void Spin()
+        {
+            BeginAnimation(ElapsedProperty, new DoubleAnimation(0, Period.TotalSeconds, new Duration(Period))
+            {
+                RepeatBehavior = RepeatBehavior.Forever,
+            });
         }
 
         protected override void OnRender(DrawingContext drawingContext)
@@ -107,24 +147,26 @@ namespace XboxSeries.Extension
             }
 
             var centre = new Point(RenderSize.Width / 2, RenderSize.Height / 2);
-            var arcs = Spinner.At(TimeSpan.FromSeconds((double)GetValue(ElapsedProperty)));
+            var elapsed = TimeSpan.FromSeconds((double)GetValue(ElapsedProperty));
+            var arcs = Unbroken ? Spinner.Unbroken(elapsed) : Spinner.At(elapsed);
 
             if (TailBrush != null)
             {
-                tailPen = tailPen ?? MakePen(TailBrush, thickness);
-                DrawArc(drawingContext, tailPen, centre, radius, arcs.GreenTail, arcs.WhiteTail);
+                tailPen = tailPen ?? MakePen(TailBrush, thickness, LineCap);
+                // A degree on under the white, so no seam shows where square ends meet.
+                DrawArc(drawingContext, tailPen, centre, radius, arcs.GreenTail, Math.Min(arcs.WhiteTail + 1, arcs.Head));
             }
 
             if (HeadBrush != null)
             {
-                headPen = headPen ?? MakePen(HeadBrush, thickness);
+                headPen = headPen ?? MakePen(HeadBrush, thickness, LineCap);
                 DrawArc(drawingContext, headPen, centre, radius, arcs.WhiteTail, arcs.Head);
             }
         }
 
-        private static Pen MakePen(Brush brush, double thickness)
+        private static Pen MakePen(Brush brush, double thickness, PenLineCap cap)
         {
-            var pen = new Pen(brush, thickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            var pen = new Pen(brush, thickness) { StartLineCap = cap, EndLineCap = cap };
             if (pen.CanFreeze)
             {
                 pen.Freeze();

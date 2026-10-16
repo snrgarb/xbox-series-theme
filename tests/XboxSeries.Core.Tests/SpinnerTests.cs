@@ -111,6 +111,42 @@ namespace XboxSeries.Core.Tests
             }
         }
 
+        [Fact]
+        public void Unbroken_it_never_stops_nor_jumps()
+        {
+            var last = Spinner.Unbroken(TimeSpan.Zero);
+            for (var ms = 1; ms <= 2400; ms++)
+            {
+                var arcs = Spinner.Unbroken(TimeSpan.FromMilliseconds(ms));
+
+                var headMoved = Turned(last.Head, arcs.Head);
+                Assert.True(headMoved > 0 && headMoved < 10, $"head moved {headMoved} at {ms} ms");
+                Assert.True(Turned(last.WhiteTail, arcs.WhiteTail) < 10, $"white tail jumped at {ms} ms");
+                Assert.True(Turned(last.GreenTail, arcs.GreenTail) < 10, $"green tail jumped at {ms} ms");
+                Assert.True(arcs.GreenTail <= arcs.WhiteTail, $"green passed white at {ms} ms");
+                Assert.True(arcs.WhiteTail <= arcs.Head - Spinner.Dot + 1e-9, $"white came within a dot of the head at {ms} ms");
+                Assert.True(arcs.Head - arcs.GreenTail < 360, $"the arc closed into a ring at {ms} ms");
+                last = arcs;
+            }
+        }
+
+        [Fact]
+        public void Unbroken_each_turn_repeats_the_last()
+        {
+            for (var ms = 0; ms < 800; ms += 7)
+            {
+                var first = Spinner.Unbroken(TimeSpan.FromMilliseconds(ms));
+                var later = Spinner.Unbroken(TimeSpan.FromMilliseconds(ms) + Spinner.UnbrokenPeriod + Spinner.UnbrokenPeriod);
+
+                AssertSameAngle(first.Head, later.Head);
+                AssertSameAngle(first.WhiteTail, later.WhiteTail);
+                AssertSameAngle(first.GreenTail, later.GreenTail);
+            }
+        }
+
+        /// <summary>How far clockwise <paramref name="to"/> is from <paramref name="from"/>, either turned or not.</summary>
+        private static double Turned(double from, double to) => ((to - from) % 360 + 360) % 360;
+
         private static void AssertSameAngle(double expected, double actual)
         {
             var difference = ((expected - actual) % 360 + 360) % 360;
