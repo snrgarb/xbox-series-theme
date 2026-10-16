@@ -45,8 +45,12 @@ namespace XboxSeries.Core.Tests
         public void Every_view_that_shows_focus_glows_with_the_shared_glow()
         {
             string[] focusTriggers = { "IsFocused", "IsKeyboardFocused", "IsKeyboardFocusWithin", "IsMouseOver" };
+            // Views that watch focus without drawing it: a library tile's content only hides its source icon on focus;
+            // the tile's ring is its container's, in ListGameItemStyle.
+            string[] drawNoFocus = { Path.Combine("DerivedStyles", "ListGameItemTemplate.xaml") };
 
             var unglowing = ThemeAndExtensionXaml()
+                .Where(file => !drawNoFocus.Any(file.EndsWith))
                 .Where(file =>
                 {
                     var xaml = File.ReadAllText(file);
