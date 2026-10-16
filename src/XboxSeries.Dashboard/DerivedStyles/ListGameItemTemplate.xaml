@@ -13,12 +13,23 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type GameListItem}">
-                    <Grid Background="#FF1A1A1A">
-                        <Image x:Name="PART_ImageCover"
+                    <!--
+                        Rounded corners, as Home's tiles: Playnite loads the cover into its Image, which is hidden, and the
+                        tile paints it as a rounded border's fill, cheaper than clipping the tile to a rounded shape.
+                    -->
+                    <Grid>
+                        <Image x:Name="PART_ImageCover" Visibility="Hidden"
                                RenderOptions.BitmapScalingMode="Fant" StretchDirection="Both"
                                VerticalAlignment="Center" HorizontalAlignment="Center"
                                Stretch="{Settings CoverArtStretch}" />
-                        <Border Background="#AA000000" x:Name="BorderDarken" Visibility="Collapsed" />
+                        <Border CornerRadius="6" Background="#FF1A1A1A" />
+                        <Border CornerRadius="6" RenderOptions.BitmapScalingMode="Fant">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding Source, ElementName=PART_ImageCover}"
+                                            Stretch="{Binding Stretch, ElementName=PART_ImageCover}" />
+                            </Border.Background>
+                        </Border>
+                        <Border Background="#AA000000" CornerRadius="6" x:Name="BorderDarken" Visibility="Collapsed" />
 
                         <Path x:Name="SourceIcon" Width="20" Height="20" Margin="10" Stretch="Uniform"
                               HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">

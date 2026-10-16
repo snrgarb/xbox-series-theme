@@ -47,8 +47,11 @@
                                              To="0" Duration="0:0:0.1" />
                         </Storyboard>
                     </ControlTemplate.Resources>
-                    <!-- A fixed gap, as on the console, rather than Playnite's item spacing, so My games & apps' grid can line up. -->
-                    <Grid Margin="8"
+                    <!--
+                        A fixed gap, as on the console, rather than Playnite's item spacing, so My games & apps' grid can line
+                        up: 30 between tiles, as Home's Recent row has.
+                    -->
+                    <Grid Margin="15"
                           RenderTransformOrigin="0.5,0.5"
                           d:DataContext="{x:Static DesignMainViewModel.DesignSelectedGameIntance}">
                         <Grid.RenderTransform>
@@ -57,7 +60,7 @@
 
                         <ContentPresenter />
 
-                        <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False">
+                        <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False" CornerRadius="0,0,6,6">
                             <Border.Background>
                                 <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
                                     <GradientStop Color="#00000000" Offset="0" />
@@ -70,7 +73,8 @@
                                        Foreground="{DynamicResource XboxTextBrush}" />
                         </Border>
 
-                        <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="6" Margin="-4"
+                        <!-- As Home's Recent row: standing 4 px off the tile, its corners following the tile's (6 + 4 + 4). -->
+                        <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="14" Margin="-8"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                             <Border Style="{DynamicResource XboxFocusGlow}" />
                         </Border>
