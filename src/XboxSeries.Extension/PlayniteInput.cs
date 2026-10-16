@@ -26,6 +26,12 @@ namespace XboxSeries.Extension
                 case ControllerInput.DPadDown: return ControllerButton.DPadDown;
                 case ControllerInput.DPadLeft: return ControllerButton.DPadLeft;
                 case ControllerInput.DPadRight: return ControllerButton.DPadRight;
+
+                // The left stick moves as the D-pad does, as on the console: Playnite reports each way it is pushed as a button.
+                case ControllerInput.LeftStickUp: return ControllerButton.DPadUp;
+                case ControllerInput.LeftStickDown: return ControllerButton.DPadDown;
+                case ControllerInput.LeftStickLeft: return ControllerButton.DPadLeft;
+                case ControllerInput.LeftStickRight: return ControllerButton.DPadRight;
                 default: return null;
             }
         }
