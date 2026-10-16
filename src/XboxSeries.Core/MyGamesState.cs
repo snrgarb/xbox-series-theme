@@ -144,7 +144,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The queue: every game Playnite is installing, the current download first, then those next up in the order
-        /// they'll download. Empty when nothing is installing.
+        /// they started installing. Empty when nothing is installing.
         /// </summary>
         public IReadOnlyList<QueueEntry> Queue
         {
@@ -293,7 +293,7 @@ namespace XboxSeries.Core
         Manage,
 
         /// <summary>Manage Queue, opened from Manage's Queue box: Recently installed, then the queue's rows.</summary>
-        Queue,
+        ManageQueue,
     }
 
     /// <summary>One section of Play history: Today, Yesterday, This week and so on.</summary>

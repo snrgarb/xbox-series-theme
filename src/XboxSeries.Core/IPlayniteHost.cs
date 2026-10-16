@@ -20,8 +20,8 @@ namespace XboxSeries.Core
         /// <summary>Opens the game's Game hub (Playnite's Game details) on the Dashboard, with focus on Play.</summary>
         void OpenGameHub(Guid gameId);
 
-        /// <summary>Closes the Game hub, if one is open, back to the page it was opened from.</summary>
-        void CloseGameHub();
+        /// <summary>Closes <paramref name="gameId"/>'s Game hub, if it is the one open, back to the page it was opened from.</summary>
+        void CloseGameHub(Guid gameId);
 
         /// <summary>Opens Playnite's own game menu for the game: Manage game.</summary>
         void OpenGameMenu(Guid gameId);

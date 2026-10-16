@@ -116,6 +116,61 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_game_queued_with_some_of_it_already_down_still_reads_0_percent_with_an_empty_bar()
+        {
+            var library = new FakeLibrary()
+                .WithGame("1000xRESIST", installed: false, installing: true)
+                .WithGame("33 Immortals", installed: false, installing: true);
+            downloads
+                .With(library.Id("1000xRESIST"), isActive: true, 530 * MB, 8 * GB)
+                .With(library.Id("33 Immortals"), isActive: false, 1 * GB, 4 * GB);
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            var next = core.MyGames.Queue[1];
+            Assert.Equal("Queued", next.State);
+            Assert.Equal($"{Num(0, "0.0")}%", next.Percent);
+            Assert.Equal(0, next.Fraction);
+        }
+
+        [Fact]
+        public void A_Steam_download_is_the_current_one_ahead_of_a_game_whose_library_cant_say_how_far_it_has_got()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Forza Horizon 5", source: "Xbox", installed: false, installing: true);
+            core.OnLibraryChanged(library.Snapshot());
+            library
+                .WithGame("33 Immortals", installed: false, installing: true)
+                .WithGame("Hades", installed: false, installing: true);
+            downloads
+                .With(library.Id("33 Immortals"), isActive: false, 0, 3 * GB)
+                .With(library.Id("Hades"), isActive: true, 1 * GB, 2 * GB);
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Equal(new[] { "Hades", "Forza Horizon 5", "33 Immortals" }, QueueTitles());
+            Assert.Equal("Hades", core.MyGames.CurrentDownload.Tile.Title);
+        }
+
+        [Fact]
+        public void Starting_an_install_closes_only_that_games_Game_hub()
+        {
+            var halo = Guid.NewGuid();
+            var hades = Guid.NewGuid();
+            var library = new FakeLibrary()
+                .WithGame(halo, "Halo Infinite", installed: false)
+                .WithGame(hades, "Hades", installed: false);
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.OnLibraryChanged(new FakeLibrary()
+                .WithGame(halo, "Halo Infinite", installed: false)
+                .WithGame(hades, "Hades", installed: false, installing: true)
+                .Snapshot());
+
+            Assert.Equal(new[] { hades }, playnite.ClosedGameHubs);
+        }
+
+        [Fact]
         public void A_game_whose_library_cant_say_how_far_it_has_got_shows_Installing_without_numbers()
         {
             core.OnLibraryChanged(new FakeLibrary().WithGame("Forza Horizon 5", source: "Xbox", installed: false, installing: true).Snapshot());
@@ -402,7 +457,7 @@ namespace XboxSeries.Core.Tests
             core.OnLibraryChanged(new FakeLibrary().WithGame(id, "33 Immortals", installed: false, installing: true).Snapshot());
             core.OnLibraryChanged(new FakeLibrary().WithGame(id, "33 Immortals", installed: false, installing: true).Snapshot());
 
-            Assert.Equal(1, playnite.ClosedGameHubs);
+            Assert.Equal(new[] { id }, playnite.ClosedGameHubs);
         }
 
         [Fact]
@@ -410,7 +465,7 @@ namespace XboxSeries.Core.Tests
         {
             core.OnLibraryChanged(new FakeLibrary().WithGame("33 Immortals", installed: false, installing: true).Snapshot());
 
-            Assert.Equal(0, playnite.ClosedGameHubs);
+            Assert.Empty(playnite.ClosedGameHubs);
         }
 
         [Fact]
@@ -424,8 +479,8 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(MyGamesItem.Manage, core.MyGames.Item);
             Assert.False(core.MyGames.ShowsGameGrid);
 
-            core.OpenMyGames(MyGamesItem.Queue);
-            Assert.Equal(MyGamesItem.Queue, core.MyGames.Item);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
+            Assert.Equal(MyGamesItem.ManageQueue, core.MyGames.Item);
             Assert.False(core.MyGames.ShowsGameGrid);
             Assert.Same(gamesList, playnite.MainListFilter);
         }
@@ -434,7 +489,7 @@ namespace XboxSeries.Core.Tests
         public void Manage_and_Manage_Queue_opened_first_take_no_hold_of_the_main_list()
         {
             core.OpenMyGames(MyGamesItem.Manage);
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
             Assert.True(playnite.ShowsUsersOwnFilter);
 
             core.LeaveMyGames();
@@ -449,10 +504,10 @@ namespace XboxSeries.Core.Tests
         {
             core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite").Snapshot());
 
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
 
             Assert.True(core.MyGames.IsShown);
-            Assert.Equal(MyGamesItem.Queue, core.MyGames.Item);
+            Assert.Equal(MyGamesItem.ManageQueue, core.MyGames.Item);
             Assert.False(core.MyGames.HasQueue);
         }
 
@@ -460,7 +515,7 @@ namespace XboxSeries.Core.Tests
         public void B_on_Manage_Queue_goes_back_to_Manage_and_B_on_Manage_leaves_the_page()
         {
             core.OpenMyGames(MyGamesItem.Manage);
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
 
             core.LeaveMyGames();
             Assert.True(core.MyGames.IsShown);
@@ -520,7 +575,7 @@ namespace XboxSeries.Core.Tests
         {
             var library = new FakeLibrary().WithGame("33 Immortals", installed: false, installing: true);
             core.OnLibraryChanged(library.Snapshot());
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
             core.FocusHomeTile(core.MyGames.Queue.Single().Tile);
 
             Tap(ControllerButton.Back);
@@ -533,7 +588,7 @@ namespace XboxSeries.Core.Tests
         {
             var library = new FakeLibrary().WithGame("Halo Infinite");
             core.OnLibraryChanged(library.Snapshot());
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
             core.FocusHomeTile(core.MyGames.RecentlyInstalled.Single());
 
             Tap(ControllerButton.Back);
@@ -557,7 +612,7 @@ namespace XboxSeries.Core.Tests
         {
             var library = new FakeLibrary().WithGame("33 Immortals", installed: false, installing: true);
             core.OnLibraryChanged(library.Snapshot());
-            core.OpenMyGames(MyGamesItem.Queue);
+            core.OpenMyGames(MyGamesItem.ManageQueue);
             core.FocusHomeTile(core.MyGames.Queue.Single().Tile);
 
             Tap(ControllerButton.Start);

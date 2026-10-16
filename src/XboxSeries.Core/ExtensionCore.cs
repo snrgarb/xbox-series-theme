@@ -611,7 +611,7 @@ namespace XboxSeries.Core
                 ShowTileMenu(focusedTile);
             }
             else if (button == ControllerButton.Back && dialog == null && focusedTile != null && !Guide.IsOverlayShown
-                && MyGames.IsShown && MyGames.Item == MyGamesItem.Queue)
+                && MyGames.IsShown && MyGames.Item == MyGamesItem.ManageQueue)
             {
                 // Manage Queue's hint bar offers View for Manage game, on its rows and Recently installed covers alike.
                 playnite.OpenGameMenu(focusedTile.GameId);
@@ -1276,7 +1276,7 @@ namespace XboxSeries.Core
         {
             if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
             {
-                if (MyGames.Item == MyGamesItem.Queue)
+                if (MyGames.Item == MyGamesItem.ManageQueue)
                 {
                     MyGames.Item = MyGamesItem.Manage;
                 }
