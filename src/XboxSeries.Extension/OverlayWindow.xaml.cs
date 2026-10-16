@@ -22,7 +22,7 @@ namespace XboxSeries.Extension
         internal static readonly Duration OpenDuration = TimeSpan.FromMilliseconds(120);
         private static readonly Duration CloseDuration = TimeSpan.FromMilliseconds(150);
         // How far behind its background a sliding panel's contents come in, as on the console: the Guide's, and Power's.
-        internal static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(35);
+        internal static readonly TimeSpan ContentLag = TimeSpan.FromMilliseconds(50);
         private static readonly ILogger logger = LogManager.GetLogger();
 
         private readonly ExtensionCore core;
