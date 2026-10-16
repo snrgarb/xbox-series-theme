@@ -85,17 +85,20 @@ namespace XboxSeries.Core
 
         /// <summary>The ids of the notifications last seen, so only new ones get a Toast; null until the first are seen.</summary>
         private HashSet<string> seenNotifications;
-        private readonly Queue<Notification> waitingToasts = new Queue<Notification>();
+
+        /// <summary>The Toasts waiting their turn: new Playnite notifications' and games joining the queue's.</summary>
+        private readonly Queue<WaitingToast> waitingToasts = new Queue<WaitingToast>();
         private IDisposable toastTimer;
 
-        /// <summary>The notification whose Toast is showing, which the call's Toast puts back in line; null for none.</summary>
-        private Notification shownNotification;
+        /// <summary>The waiting Toast showing, which the call's Toast puts back in line; null for none.</summary>
+        private WaitingToast shownToast;
 
         /// <summary>
         /// What the Toast showing as the Guide button went down told of, which the tap opens the Guide at: Notifications,
-        /// the Discord tab's Answer for a call, or Profile &amp; system for the greeting; null for no Toast.
+        /// the Discord tab's Answer for a call, or Profile &amp; system for the greeting; a Queued Toast's tap goes to
+        /// Manage Queue instead. Null for no Toast.
         /// </summary>
-        private GuideItemKind? toastAtGuidePress;
+        private ToastKind? toastAtGuidePress;
         private Guid? runningGame;
 
         /// <summary>Whether the running game is frozen under the Guide; only <see cref="FreezeRunningGame"/> and <see cref="ThawGame"/> change it.</summary>
@@ -224,7 +227,7 @@ namespace XboxSeries.Core
 
             foreach (var notification in fresh)
             {
-                waitingToasts.Enqueue(notification);
+                waitingToasts.Enqueue(new WaitingToast(notification.Text, notification.Kind, null));
             }
 
             if (toastTimer == null)
@@ -234,7 +237,20 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The next notification's Toast, with the notification sound, unless the call's or the greeting is showing, which
+        /// A Toast joins those waiting, to show in its turn as a notification's does, behind any showing; with none
+        /// showing or waiting, it shows at once.
+        /// </summary>
+        private void EnqueueToast(WaitingToast toast)
+        {
+            waitingToasts.Enqueue(toast);
+            if (toastTimer == null)
+            {
+                ShowNextToast();
+            }
+        }
+
+        /// <summary>
+        /// The next waiting Toast, with the notification sound, unless the call's or the greeting is showing, which
         /// they wait behind, or Start-up covers the screen, which they wait for.
         /// </summary>
         private void ShowNextToast()
@@ -245,15 +261,15 @@ namespace XboxSeries.Core
                 return;
             }
 
-            shownNotification = waitingToasts.Dequeue();
-            Toast.Text = shownNotification.Text;
-            Toast.Kind = shownNotification.Kind;
-            Toast.Image = null;
+            shownToast = waitingToasts.Dequeue();
+            Toast.Text = shownToast.Text;
+            Toast.Kind = shownToast.Kind;
+            Toast.Image = shownToast.Image;
             Toast.IsShown = true;
             sounds.Play(UiSound.Notification);
             toastTimer = clock.After(ToastDuration, () =>
             {
-                shownNotification = null;
+                shownToast = null;
                 Toast.IsShown = false;
                 toastTimer = waitingToasts.Count == 0 ? null : clock.After(ToastGap, ShowNextToast);
             });
@@ -269,16 +285,16 @@ namespace XboxSeries.Core
             waitingRingToast = null;
             greetingTimer?.Dispose();
             greetingTimer = null;
-            shownNotification = null;
+            shownToast = null;
             waitingToasts.Clear();
             Toast.IsShown = false;
         }
 
         /// <summary>
-        /// A notification's Toast showing, or the gap after one, is cut short: the notification goes back to the front of
-        /// those waiting, to show again in its turn.
+        /// A waiting Toast showing, or the gap after one, is cut short: it goes back to the front of those waiting, to
+        /// show again in its turn.
         /// </summary>
-        private void PutBackShownNotification()
+        private void PutBackShownToast()
         {
             if (toastTimer == null)
             {
@@ -287,18 +303,18 @@ namespace XboxSeries.Core
 
             toastTimer.Dispose();
             toastTimer = null;
-            if (Toast.IsShown && Toast.Kind != ToastKind.Call && shownNotification != null)
+            if (Toast.IsShown && Toast.Kind != ToastKind.Call && shownToast != null)
             {
                 var waiting = waitingToasts.ToList();
                 waitingToasts.Clear();
-                waitingToasts.Enqueue(shownNotification);
-                foreach (var notification in waiting)
+                waitingToasts.Enqueue(shownToast);
+                foreach (var toast in waiting)
                 {
-                    waitingToasts.Enqueue(notification);
+                    waitingToasts.Enqueue(toast);
                 }
             }
 
-            shownNotification = null;
+            shownToast = null;
         }
 
         /// <summary>The status area's clock and battery, read afresh and again on the next minute.</summary>
@@ -652,10 +668,7 @@ namespace XboxSeries.Core
                 guideTapTimer?.Dispose();
                 guideTapTimer = null;
                 guidePressedAt = at;
-                toastAtGuidePress = !Toast.IsShown ? (GuideItemKind?)null
-                    : Toast.Kind == ToastKind.Call ? GuideItemKind.DiscordIncomingCall
-                    : Toast.Kind == ToastKind.Greeting ? GuideItemKind.Profile
-                    : GuideItemKind.Notifications;
+                toastAtGuidePress = Toast.IsShown ? Toast.Kind : (ToastKind?)null;
                 var left = HoldForPower - (clock.Now - at);
                 holdTimer = clock.After(left > TimeSpan.Zero ? left : TimeSpan.Zero, OpenPowerFromHold);
                 return;
@@ -672,7 +685,7 @@ namespace XboxSeries.Core
             {
                 OpenPowerFromHold();
             }
-            else if (Guide.IsOpen && toastAtGuidePress == GuideItemKind.DiscordIncomingCall && ringingChannelId != null && Settings.Discord.HasDiscordTab)
+            else if (Guide.IsOpen && toastAtGuidePress == ToastKind.Call && ringingChannelId != null && Settings.Discord.HasDiscordTab)
             {
                 GoToAnswer();
             }
@@ -710,24 +723,63 @@ namespace XboxSeries.Core
         /// <summary>
         /// A tap opens the Guide at the subject of the Toast showing, as the console does: Notifications for a
         /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting.
+        /// A Queued Toast's subject isn't in the Guide but on Manage Queue, so the tap goes there instead.
         /// </summary>
         private void OpenGuideFromTap()
         {
             guideTapTimer = null;
+            if (toastAtGuidePress == ToastKind.Queued)
+            {
+                GoToQueueFromToast();
+                return;
+            }
+
             sounds.Play(UiSound.OpenMenu);
             OpenGuide();
-            if (toastAtGuidePress == GuideItemKind.Notifications)
+            if (toastAtGuidePress == ToastKind.Notification || toastAtGuidePress == ToastKind.Screenshot)
             {
                 OpenFlyout(GuideItemKind.Notifications);
             }
-            else if (toastAtGuidePress == GuideItemKind.DiscordIncomingCall && Settings.Discord.HasDiscordTab)
+            else if (toastAtGuidePress == ToastKind.Call && Settings.Discord.HasDiscordTab)
             {
                 ShowTab(GuideTabKind.Discord);
             }
-            else if (toastAtGuidePress == GuideItemKind.Profile)
+            else if (toastAtGuidePress == ToastKind.Greeting)
             {
                 ShowTab(GuideTabKind.ProfileAndSystem);
             }
+        }
+
+        /// <summary>
+        /// A tap during a Queued Toast: My games &amp; apps on Manage Queue, as the Guide's My games &amp; apps entry
+        /// brings it up, with the Toast going. Other games' Queued Toasts still waiting go too, as Manage Queue now
+        /// shows them; the rest still show in their turn.
+        /// </summary>
+        private void GoToQueueFromToast()
+        {
+            sounds.Play(UiSound.Enter);
+            if (shownToast?.Kind == ToastKind.Queued)
+            {
+                toastTimer?.Dispose();
+                shownToast = null;
+                Toast.IsShown = false;
+                toastTimer = null;
+            }
+
+            var rest = waitingToasts.Where(t => t.Kind != ToastKind.Queued).ToList();
+            waitingToasts.Clear();
+            foreach (var toast in rest)
+            {
+                waitingToasts.Enqueue(toast);
+            }
+
+            if (toastTimer == null && waitingToasts.Count > 0)
+            {
+                toastTimer = clock.After(ToastGap, ShowNextToast);
+            }
+
+            playnite.BringToFront(DashboardPage.MyGamesAndApps);
+            OpenMyGames(MyGamesItem.ManageQueue);
         }
 
         /// <summary>
@@ -2065,6 +2117,26 @@ namespace XboxSeries.Core
             pendingHandBack = null;
             releaseFallback?.Dispose();
             releaseFallback = null;
+        }
+
+        /// <summary>
+        /// A Toast waiting its turn: a Playnite notification's, or a game joining the queue's, which isn't one of
+        /// Playnite's and so has no notification to stand for it.
+        /// </summary>
+        private sealed class WaitingToast
+        {
+            public WaitingToast(string text, ToastKind kind, string image)
+            {
+                Text = text;
+                Kind = kind;
+                Image = image;
+            }
+
+            public string Text { get; }
+            public ToastKind Kind { get; }
+
+            /// <summary>The image the tile shows in place of its kind's own; null for the kind's own.</summary>
+            public string Image { get; }
         }
     }
 }

@@ -188,7 +188,7 @@ namespace XboxSeries.Core
                 DismissAtOnce(ReturnToRecordedWindow);
             }
 
-            PutBackShownNotification();
+            PutBackShownToast();
             ringToastTimer?.Dispose();
             ringToastTimer = null;
             greetingTimer?.Dispose();
