@@ -31,7 +31,24 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <!-- A round top-bar icon: a glowing ring and its label (from Tag) appear under it when focused, without moving its neighbours. -->
+    <!--
+        The Settings icon: the gear, solid while its button has focus, as the console fills a focused icon. Segoe Fluent
+        Icons and MDL2 Assets both have the solid gear; the theme's other top-bar glyphs (Library, Search, Download,
+        ActionCenter) have no solid counterpart in either font, so they keep their outline.
+    -->
+    <Style x:Key="XboxSettingsIcon" TargetType="TextBlock" BasedOn="{StaticResource XboxIcon}">
+        <Setter Property="Text" Value="&#xE713;" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                <Setter Property="Text" Value="&#xF8B0;" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!--
+        A round top-bar icon: a glowing ring and its label (from Tag) appear under it when focused, without moving its
+        neighbours, and the icon grows by a fifth inside the ring, as on the console, without changing its layout size.
+    -->
     <Style x:Key="XboxTopBarButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -47,7 +64,11 @@
                         <Ellipse x:Name="Ring" Fill="#33FFFFFF" StrokeThickness="3"
                                  Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
                                  Effect="{DynamicResource XboxFocusGlow}" />
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                            <ContentPresenter.RenderTransform>
+                                <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1" />
+                            </ContentPresenter.RenderTransform>
+                        </ContentPresenter>
                         <TextBlock x:Name="Label" Style="{StaticResource XboxText}" FontSize="18"
                                    Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
                                    TextAlignment="Center" VerticalAlignment="Top"
@@ -57,6 +78,34 @@
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
                             <Setter TargetName="Label" Property="Visibility" Value="Visible" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1.2" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1.2" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -336,7 +385,7 @@
                                     -->
                                     <Grid Style="{StaticResource XboxThemeOnly}">
                                         <ButtonEx x:Name="PART_ButtonMainMenu" Tag="Settings" Style="{StaticResource XboxTopBarButton}">
-                                            <TextBlock Text="&#xE713;" Style="{StaticResource XboxIcon}" />
+                                            <TextBlock Style="{StaticResource XboxSettingsIcon}" />
                                         </ButtonEx>
                                     </Grid>
                                     <ButtonEx x:Name="XboxTopBarSettings" Tag="Settings"
@@ -350,7 +399,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </ButtonEx.Style>
-                                        <TextBlock Text="&#xE713;" Style="{StaticResource XboxIcon}" />
+                                        <TextBlock Style="{StaticResource XboxSettingsIcon}" />
                                     </ButtonEx>
                                 </StackPanel>
 
