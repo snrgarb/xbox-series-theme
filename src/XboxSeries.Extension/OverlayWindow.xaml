@@ -254,8 +254,8 @@
                             <TextBlock x:Name="TileDetail" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="17"
                                        Foreground="#B3FFFFFF" TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                        <!-- The tiles' ring, 1 px past the entry as theirs is past their art, carrying the console's glow as a blurred band. -->
-                        <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
+                        <!-- As Home's tiles: standing 4 px off the entry, its corners following the entry's (4 + 4 + 4), carrying the glow band. -->
+                        <Border x:Name="Ring" Margin="-8" BorderThickness="4" CornerRadius="12"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                             <Border Style="{DynamicResource XboxFocusGlow}" />
                         </Border>
@@ -876,8 +876,8 @@
                                             <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
                                                        Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
                                         </Border>
-                                        <!-- The entries' ring, carrying the glow as a blurred band. -->
-                                        <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
+                                        <!-- The entries' ring, 4 px off the square, carrying the glow as a blurred band. -->
+                                        <Border x:Name="Ring" Margin="-8" BorderThickness="4" CornerRadius="12"
                                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                             <Border Style="{DynamicResource XboxFocusGlow}" />
                                         </Border>

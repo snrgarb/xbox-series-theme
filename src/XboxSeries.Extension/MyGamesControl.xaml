@@ -136,7 +136,8 @@
                                 <Border Margin="4" Background="{StaticResource RowBrush}">
                                     <ContentPresenter />
                                 </Border>
-                                <Border x:Name="FocusRing" CornerRadius="4" BorderThickness="4"
+                                <!-- As Home's tiles: standing 4 px off the row, inset 4 in the item, its corners 0 + 4 + 4. -->
+                                <Border x:Name="FocusRing" Margin="-4" CornerRadius="8" BorderThickness="4"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
                                     <Border Style="{DynamicResource XboxFocusGlow}" />
                                 </Border>
