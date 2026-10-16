@@ -71,12 +71,8 @@
                         </Border>
 
                         <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="6" Margin="-4"
-                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                            <Border.Effect>
-                                <DropShadowEffect ShadowDepth="0" Opacity="0.9" BlurRadius="24"
-                                                  Color="{DynamicResource GlyphColor}" RenderingBias="Quality" />
-                            </Border.Effect>
-                        </Border>
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                Effect="{DynamicResource XboxFocusGlow}" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsFocused" Value="True">

@@ -17,13 +17,17 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBoxEx">
-                    <Border x:Name="Tab" Background="{TemplateBinding Background}" Height="56" Padding="22,0,22,0" CornerRadius="2">
-                        <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource XboxFont}" FontSize="24"
+                    <!-- The tab's shape apart from its name, so the active tab's glow traces the tab and not the text. -->
+                    <Grid Height="56">
+                        <Border x:Name="Tab" Background="{TemplateBinding Background}" CornerRadius="2" />
+                        <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource XboxFont}" FontSize="24" Margin="22,0,22,0"
                                    Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
-                    </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
+                        <!-- The active tab is lit as the console lights focus: filled green, with its glow. -->
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Tab" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                            <Setter TargetName="Tab" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -46,11 +50,12 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.Template>
                             <ControlTemplate>
-                                <ScrollViewer Focusable="False"
+                                <!-- 20 of room all round, taken back by the presenter, so the scroller doesn't clip the active tab's glow. -->
+                                <ScrollViewer Focusable="False" Margin="-20"
                                               HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollBarVisibility="Disabled"
                                               CanContentScroll="True">
-                                    <ItemsPresenter />
+                                    <ItemsPresenter Margin="20" />
                                 </ScrollViewer>
                             </ControlTemplate>
                         </ItemsControl.Template>

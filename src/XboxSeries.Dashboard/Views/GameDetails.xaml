@@ -57,7 +57,7 @@
         <Setter Property="Margin" Value="8,0,8,0" />
     </Style>
 
-    <!-- The green ring, with its glow, that the console draws around whatever has focus; the same as Home's tiles. -->
+    <!-- The green ring, with the console's focus glow, that it draws around whatever has focus; the same as Home's tiles. -->
     <Style x:Key="XboxHubFocusRing" TargetType="Border">
         <Setter Property="BorderThickness" Value="4" />
         <Setter Property="CornerRadius" Value="6" />
@@ -65,12 +65,7 @@
         <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
         <Setter Property="Visibility" Value="Collapsed" />
         <Setter Property="IsHitTestVisible" Value="False" />
-        <Setter Property="Effect">
-            <Setter.Value>
-                <DropShadowEffect ShadowDepth="0" Opacity="0.9" BlurRadius="24"
-                                  Color="{DynamicResource GlyphColor}" RenderingBias="Quality" />
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
     </Style>
 
     <!-- An action: a flat translucent slab that fills green and takes the ring when focused. -->

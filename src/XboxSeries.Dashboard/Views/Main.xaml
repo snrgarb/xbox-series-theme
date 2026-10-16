@@ -31,7 +31,7 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <!-- A round top-bar icon: a ring and its label (from Tag) appear under it when focused, without moving its neighbours. -->
+    <!-- A round top-bar icon: a glowing ring and its label (from Tag) appear under it when focused, without moving its neighbours. -->
     <Style x:Key="XboxTopBarButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -45,7 +45,8 @@
                 <ControlTemplate TargetType="Button">
                     <Grid Background="Transparent">
                         <Ellipse x:Name="Ring" Fill="#33FFFFFF" StrokeThickness="3"
-                                 Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                 Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                 Effect="{DynamicResource XboxFocusGlow}" />
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         <TextBlock x:Name="Label" Style="{StaticResource XboxText}" FontSize="18"
                                    Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
@@ -90,7 +91,8 @@
                                 </Image.Clip>
                             </Image>
                             <Ellipse x:Name="Ring" Margin="-4" StrokeThickness="3"
-                                     Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                     Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                     Effect="{DynamicResource XboxFocusGlow}" />
                         </Grid>
                         <Grid VerticalAlignment="Center" Margin="16,0,0,0">
                             <TextBlock x:Name="Gamertag" Text="{Binding Tag.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
