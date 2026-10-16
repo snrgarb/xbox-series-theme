@@ -105,9 +105,9 @@ namespace XboxSeries.Extension
             }
             else if (e.PropertyName == nameof(GuideState.Tab))
             {
-                // Switched with the panel in, the tabs and the new tab's content come in from the side it was switched
-                // towards; opening on a tab, they are just there.
-                PaneFlyIn.FollowAcross(ref shownTab, guide.Tab, tab => (int)tab, guide.IsOpen && guide.ShowsPanel, TabContent, TabBar, asPicture: true);
+                // Switched with the panel in, the new tab's content comes in from the side it was switched towards;
+                // opening on a tab, it is just there.
+                PaneFlyIn.FollowAcross(ref shownTab, guide.Tab, tab => (int)tab, guide.IsOpen && guide.ShowsPanel, TabContent, asPicture: true);
             }
             else if (e.PropertyName == nameof(GuideState.IsOverlayShown))
             {
