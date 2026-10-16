@@ -20,7 +20,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The games the client is installing, waiting or downloading, that Playnite lists as not installed: those
-        /// <see cref="Install"/> started, or the user started in the client itself.
+        /// <see cref="Install"/> or Playnite started, or the user started in the client itself.
         /// </summary>
         IReadOnlyList<Guid> Installing();
 
@@ -29,6 +29,13 @@ namespace XboxSeries.Core
         /// own install would have; does nothing while it hasn't (the install was cancelled, or is still going).
         /// </summary>
         void MarkInstalled(Guid gameId);
+
+        /// <summary>
+        /// Once the client has nothing of an install Playnite started (it was cancelled, or never begun), marks the game
+        /// no longer installing in Playnite, whose own watch on the install only ends with the game installed; does
+        /// nothing while the client has any of it.
+        /// </summary>
+        void MarkCancelled(Guid gameId);
     }
 
     /// <summary>One game's download, as its library's client last wrote it.</summary>

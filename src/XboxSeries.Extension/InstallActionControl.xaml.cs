@@ -206,10 +206,11 @@ namespace XboxSeries.Extension
         /// </summary>
         private void Defer(Action action) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, action);
 
-        // The keyboard's Enter and the mouse; the pad's A arrives as OnPreviewKeyDown.
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnKeyDown.
         private void OnClick(object sender, RoutedEventArgs e) => Install();
 
-        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+        // Playnite raises the pad's buttons as KeyDown alone, never PreviewKeyDown, and a plain Button ignores them.
+        private void OnKeyDown(object sender, KeyEventArgs e)
         {
             if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
             {

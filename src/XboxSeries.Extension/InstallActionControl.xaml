@@ -13,5 +13,5 @@
     <Button x:Name="InstallButton"
             Style="{DynamicResource XboxHubDefaultAction}"
             ContentTemplate="{DynamicResource XboxHubMainActionContent}"
-            Click="OnClick" PreviewKeyDown="OnPreviewKeyDown" />
+            Click="OnClick" KeyDown="OnKeyDown" />
 </controls:PluginUserControl>

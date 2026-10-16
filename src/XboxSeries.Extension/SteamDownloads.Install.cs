@@ -92,8 +92,7 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Asked once a second on the UI thread, so it lists each library's steamapps once and reads only the
-        /// manifests of Steam games Playnite has as neither installed nor installing, which are few; the rest are
-        /// known by name alone.
+        /// manifests of Steam games Playnite has as not installed, which are few; the rest are known by name alone.
         /// </summary>
         public IReadOnlyList<Guid> Installing()
         {
@@ -123,7 +122,7 @@ namespace XboxSeries.Extension
                         }
 
                         var game = api.Database.Games.Get(gameId);
-                        if (game == null || game.IsInstalled || game.IsInstalling || installing.Contains(gameId))
+                        if (game == null || game.IsInstalled || installing.Contains(gameId))
                         {
                             continue;
                         }
@@ -191,6 +190,31 @@ namespace XboxSeries.Extension
             catch (Exception e) when (IsReadFailure(e))
             {
                 WarnOnce(ref markWarned, e, $"Couldn't mark game {gameId} installed from Steam's manifest");
+            }
+        }
+
+        /// <summary>
+        /// Ends Playnite's install as Playnite's own "stop watching" would, leaving its watch on Steam running: should
+        /// Steam install the game after all, that watch still marks it installed. Only while Steam has no manifest for
+        /// the game, as it has none for one never begun or cancelled.
+        /// </summary>
+        public void MarkCancelled(Guid gameId)
+        {
+            try
+            {
+                var appId = AppIdOf(gameId);
+                var game = api.Database.Games.Get(gameId);
+                if (appId == null || game == null || !game.IsInstalling || ManifestOf(appId.Value) != null)
+                {
+                    return;
+                }
+
+                game.IsInstalling = false;
+                api.Database.Games.Update(game);
+            }
+            catch (Exception e) when (IsReadFailure(e))
+            {
+                WarnOnce(ref markWarned, e, $"Couldn't mark game {gameId} no longer installing");
             }
         }
 
