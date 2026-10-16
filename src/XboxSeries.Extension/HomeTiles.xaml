@@ -54,9 +54,12 @@
                         <!--
                             Outside the clip and 1 px past it, so it covers the art's anti-aliased rounded edge; on the same
                             curve, bright art showed through at the corners. 1 px leaves the next tile 29 px away, clear of it.
+                            It wears the console's faint green glow; on the ring rather than the growing cover, so the glow
+                            traces only the ring.
                         -->
                         <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="7" Margin="-1"
-                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                Effect="{DynamicResource XboxFocusGlow}" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
