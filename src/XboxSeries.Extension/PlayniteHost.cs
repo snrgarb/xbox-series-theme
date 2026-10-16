@@ -41,13 +41,8 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            var handle = new WindowInteropHelper(main).Handle;
-            if (NativeMethods.IsIconic(handle))
-            {
-                NativeMethods.ShowWindow(handle, NativeMethods.SW_RESTORE);
-            }
-
-            NativeMethods.BringToForeground(handle);
+            // Restored first if it's minimised.
+            NativeMethods.BringToForeground(new WindowInteropHelper(main).Handle);
         }
 
         public void BringToFront(DashboardPage page)
