@@ -19,10 +19,16 @@ namespace XboxSeries.Extension
         // a fresh install's manifest lacks it until Steam commits the last of the download.
         private const long FullyInstalled = 4;
 
+        // StateFlags' UpdatePaused bit: set while the user has the app's download paused.
+        private const long UpdatePaused = 512;
+
+        // StateFlags' UpdateStarted bit: set from the moment Steam queues the app's download until it's done.
+        private const long UpdateStarted = 1024;
+
         // The bits Steam sets while it has an update of the app under way: UpdateRunning while it works on it,
         // UpdatePaused while it's paused, and UpdateStarted from the moment it's queued. UpdateRequired alone isn't
         // among them: an installed game waiting on an update it hasn't been asked for is still installed.
-        private const long UpdateUnderWay = UpdateRunning | 512 | 1024;
+        private const long UpdateUnderWay = UpdateRunning | UpdateStarted | UpdatePaused;
 
         // StateFlags' Uninstalling bit: a manifest on its way out is no install, whatever else it says.
         private const long Uninstalling = 2048;
@@ -122,7 +128,19 @@ namespace XboxSeries.Extension
                             continue;
                         }
 
-                        var flags = Number(Values(manifest, "StateFlags"), "StateFlags");
+                        // Each manifest is read on its own: Steam rewriting one mustn't drop the games after it
+                        // from this read, which the core would take for installs that have finished.
+                        long flags;
+                        try
+                        {
+                            flags = Number(Values(manifest, "StateFlags"), "StateFlags");
+                        }
+                        catch (Exception e) when (IsReadFailure(e))
+                        {
+                            WarnOnce(ref installingWarned, e, $"Couldn't read Steam's manifest {manifest}");
+                            continue;
+                        }
+
                         if (!IsInstalled(flags) && (flags & Uninstalling) == 0)
                         {
                             installing.Add(gameId);
@@ -176,15 +194,13 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Whether a manifest's StateFlags say Steam has the app's files all on disk, with no update going.</summary>
-        private static bool IsInstalled(long flags) => (flags & FullyInstalled) != 0 && (flags & UpdateUnderWay) == 0;
-
-        /// <summary>The game's Steam app id; null when it isn't from Playnite's Steam library.</summary>
-        private uint? AppIdOf(Guid gameId)
-        {
-            var game = api.Database.Games.Get(gameId);
-            return game != null && game.PluginId == SteamLibraryId && uint.TryParse(game.GameId, out var appId) ? appId : (uint?)null;
-        }
+        /// <summary>
+        /// Whether a manifest's StateFlags say Steam has the app's files all on disk, with no update going and no
+        /// uninstall under way: one rule for both <see cref="Installing"/> and <see cref="MarkInstalled"/>, so a game
+        /// Steam is uninstalling is never marked installed.
+        /// </summary>
+        private static bool IsInstalled(long flags) =>
+            (flags & FullyInstalled) != 0 && (flags & UpdateUnderWay) == 0 && (flags & Uninstalling) == 0;
 
         /// <summary>Steam's exe, as it records it for the user it runs as, or else in its folder; null when neither is on disk.</summary>
         private static string SteamExe()
@@ -227,29 +243,16 @@ namespace XboxSeries.Extension
             var games = new Dictionary<uint, Guid>();
             foreach (var game in api.Database.Games)
             {
-                if (game.PluginId == SteamLibraryId && uint.TryParse(game.GameId, out var appId))
+                var appId = SteamAppId(game);
+                if (appId != null)
                 {
-                    games[appId] = game.Id;
+                    games[appId.Value] = game.Id;
                 }
             }
 
             steamGames = games;
             steamGamesRead = DateTime.UtcNow;
             return games;
-        }
-
-        private static bool IsReadFailure(Exception e)
-        {
-            return e is IOException || e is UnauthorizedAccessException || e is SecurityException || e is ArgumentException || e is NotSupportedException;
-        }
-
-        private static void WarnOnce(ref bool warned, Exception e, string message)
-        {
-            if (!warned)
-            {
-                warned = true;
-                logger.Warn(e, message);
-            }
         }
     }
 }
