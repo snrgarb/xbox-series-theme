@@ -289,7 +289,8 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" VerticalAlignment="Top" />
+            <!-- Semilight (350), lighter than the page's other text, as the console's headings are: regular reads heavy at this size. -->
+            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
             <TextBlock x:Name="Count" Text="{Binding GameCount, StringFormat='{}{0} games'}" Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
             <!-- Full library's count: the games Playnite's main list shows under the user's filter. -->
