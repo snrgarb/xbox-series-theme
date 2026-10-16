@@ -39,12 +39,11 @@
                             <ContentPresenter />
 
                             <!--
-                                A solid black band behind the title, as on the console, so it reads over any art. It shows only
-                                with the focus ring, so it sits inside the ring, rounded to the ring's inner corners (7 - 4),
-                                where nothing dark can show past the ring's edge.
+                                A solid black band behind the title, as on the console, so it reads over any art. It fills the
+                                tile's bottom edge, rounded by the tile's own clip.
                             -->
                             <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
-                                    Background="#E6000000" Margin="3,0,3,3" CornerRadius="0,0,3,3">
+                                    Background="#E6000000">
                                 <TextBlock Text="{TemplateBinding Tag}" Margin="8"
                                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
                                            FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
@@ -52,14 +51,15 @@
                         </Grid>
 
                         <!--
-                            Outside the clip and 1 px past it, so it covers the art's anti-aliased rounded edge; on the same
-                            curve, bright art showed through at the corners. 1 px leaves the next tile 29 px away, clear of it.
-                            It wears the console's faint green glow; on the ring rather than the growing cover, so the glow
-                            traces only the ring.
+                            Outside the clip, standing 2 px off the tile as on the console, its corners following the tile's
+                            (6 + 2 + 4). It leaves the next tile 24 px away, clear of it. It carries the console's green glow
+                            as a blurred band centred on it, on the ring rather than the growing cover, so the glow traces only
+                            the ring.
                         -->
-                        <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="7" Margin="-1"
-                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                Effect="{DynamicResource XboxFocusGlow}" />
+                        <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="12" Margin="-6"
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                            <Border Style="{DynamicResource XboxFocusGlow}" />
+                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
