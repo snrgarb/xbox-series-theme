@@ -48,7 +48,8 @@
 
             <!--
                 A nav item, edge to edge across the nav: its icon, name and any count. The item showing (Tag "Selected")
-                is lit and marked by an accent bar on its right edge; the focused one fills with the accent.
+                is lit and marked by an accent bar on its right edge; the focused one fills with the accent and wears the
+                console's faint green glow. The fill is a Border of its own behind the content, so the glow traces only it.
             -->
             <Style x:Key="NavItem" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -57,7 +58,8 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="Back" Background="Transparent">
+                            <Grid Background="Transparent">
+                                <Border x:Name="Back" />
                                 <ContentPresenter Margin="93,0,43,0" />
                                 <Border x:Name="Bar" Width="6" HorizontalAlignment="Right"
                                         Background="{DynamicResource GlyphBrush}" Visibility="Collapsed" />
@@ -69,6 +71,7 @@
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                    <Setter TargetName="Back" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -76,19 +79,24 @@
                 </Setter>
             </Style>
 
-            <!-- The console's flat grey button, filled with the accent when focused. -->
+            <!--
+                The console's flat grey button, filled with the accent and glowing faintly green when focused. The fill is
+                a Border of its own behind the label, so the glow traces only it.
+            -->
             <Style x:Key="FooterButton" TargetType="Button">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Height" Value="52" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Back" Background="#FF333333" Padding="26,0,26,0" CornerRadius="2">
-                                <ContentPresenter VerticalAlignment="Center" />
-                            </Border>
+                            <Grid>
+                                <Border x:Name="Back" Background="#FF333333" CornerRadius="2" />
+                                <ContentPresenter Margin="26,0,26,0" VerticalAlignment="Center" />
+                            </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                    <Setter TargetName="Back" Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -98,7 +106,8 @@
 
             <!--
                 A Play history row: the game's square art, its title, and when it was last played and on what. The focus
-                ring sits in the row's own 4 px edge, round the row, so the list's scrolling never clips it.
+                ring sits in the row's own 4 px edge, round the row, so the list's scrolling never clips it, and wears the
+                console's faint green glow, which the list's own edges make room for.
             -->
             <Style x:Key="HistoryRow" TargetType="ListBoxItem">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -116,7 +125,8 @@
                                     <ContentPresenter />
                                 </Border>
                                 <Border x:Name="FocusRing" CornerRadius="4" BorderThickness="4"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                        Effect="{DynamicResource XboxFocusGlow}" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
@@ -131,7 +141,8 @@
             <!--
                 An App's tile, after the console's app tiles: square, filled with the accent, the App's icon centred and its
                 name at the bottom left. Square from its width, which the grid sets to a fifth of the row. As on a Play
-                history row, the focus ring sits in the tile's own 4 px edge, so the list's scrolling never clips it.
+                history row, the focus ring sits in the tile's own 4 px edge, so the list's scrolling never clips it, and it
+                glows as a row's does.
             -->
             <Style x:Key="AppTile" TargetType="ListBoxItem">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -148,7 +159,8 @@
                                     <ContentPresenter />
                                 </Border>
                                 <Border x:Name="FocusRing" CornerRadius="6" BorderThickness="4"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                        Effect="{DynamicResource XboxFocusGlow}" />
                             </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
@@ -260,7 +272,7 @@
                 Play history, in its sections. Virtualized: only the rows on screen are built, and their art read, so a long
                 history opens at once. Elsewhere this space is Playnite's main list, placed by the Dashboard.
             -->
-            <ListBox x:Name="History" Grid.Row="1" ItemContainerStyle="{StaticResource HistoryRow}"
+            <ListBox x:Name="History" Grid.Row="1" ItemContainerStyle="{StaticResource HistoryRow}" Margin="-18,0"
                      Background="Transparent" BorderThickness="0" Padding="0,0,0,80"
                      ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
@@ -269,8 +281,9 @@
                      PreviewKeyDown="OnHistoryKeyDown">
                 <ListBox.Template>
                     <ControlTemplate TargetType="ListBox">
+                        <!-- The rows sit 18 in from the list's sides, which its margin cancels, so their glow isn't cut off there. -->
                         <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
-                            <ItemsPresenter />
+                            <ItemsPresenter Margin="18,0" />
                         </ScrollViewer>
                     </ControlTemplate>
                 </ListBox.Template>
@@ -319,13 +332,14 @@
                 icons are read small.
             -->
             <ListBox x:Name="AppsList" Grid.Row="1" ItemsSource="{Binding Apps}" ItemContainerStyle="{StaticResource AppTile}"
-                     Background="Transparent" BorderThickness="0" Padding="0,0,0,80"
+                     Margin="-18,-18,-18,0" Background="Transparent" BorderThickness="0" Padding="0,0,0,80"
                      ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      KeyboardNavigation.DirectionalNavigation="Contained" PreviewKeyDown="OnAppsKeyDown">
                 <ListBox.Template>
                     <ControlTemplate TargetType="ListBox">
+                        <!-- The tiles sit 18 in from the list's top and sides, which its margin cancels, so their glow isn't cut off there. -->
                         <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
-                            <ItemsPresenter />
+                            <ItemsPresenter Margin="18,18,18,0" />
                         </ScrollViewer>
                     </ControlTemplate>
                 </ListBox.Template>
