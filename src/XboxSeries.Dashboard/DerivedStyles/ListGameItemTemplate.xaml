@@ -1,6 +1,8 @@
 <!--
     The tile itself: cover art and its badges, as on Home's tiles: the library source at bottom left (the title replaces it
     on focus, from ListGameItemStyle), and at top left a play mark while the game runs or a download mark while it isn't installed.
+    While Playnite installs the game the foot reads Installing... in their place, as the console's tile does. Playnite has
+    only the one flag for it, so a game waiting its turn reads Installing... too: loose XAML can't tell the console's Queued.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -38,6 +40,19 @@
                             </Path.Effect>
                         </Path>
 
+                        <!-- Hidden on focus, where ListGameItemStyle's title band puts it under the title instead. -->
+                        <Border x:Name="InstallingBand" VerticalAlignment="Bottom" CornerRadius="0,0,6,6" Visibility="Collapsed">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Color="#00000000" Offset="0" />
+                                    <GradientStop Color="#E6000000" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <TextBlock Text="Installing..." Margin="12,28,12,10" TextTrimming="CharacterEllipsis"
+                                       FontFamily="{DynamicResource XboxFont}" FontSize="20"
+                                       Foreground="{DynamicResource XboxTextBrush}" />
+                        </Border>
+
                         <Border x:Name="StateBadge" Background="#E62B2B2B" CornerRadius="3" Width="24" Height="24"
                                 HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Visibility="Collapsed">
                             <Grid>
@@ -66,10 +81,17 @@
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
                             <Setter TargetName="SourceIcon" Property="Opacity" Value="0" />
+                            <Setter TargetName="InstallingBand" Property="Opacity" Value="0" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsInstalled}" Value="False">
                             <Setter TargetName="StateBadge" Property="Visibility" Value="Visible" />
                             <Setter TargetName="DownloadMark" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <!-- After the not-installed trigger, so an installing game's download mark gives way to the caption. -->
+                        <DataTrigger Binding="{Binding IsInstalling}" Value="True">
+                            <Setter TargetName="InstallingBand" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="SourceIcon" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="StateBadge" Property="Visibility" Value="Collapsed" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
                             <Setter TargetName="StateBadge" Property="Visibility" Value="Visible" />
