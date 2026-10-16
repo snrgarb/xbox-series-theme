@@ -14,7 +14,7 @@ namespace XboxSeries.Extension
     /// one registry value; Steam's library folders are remembered between calls. A game from another library, or one
     /// Steam can't be read for, has no progress.
     /// </summary>
-    internal sealed class SteamDownloads : IDownloads
+    internal sealed partial class SteamDownloads : IDownloads
     {
         private static readonly ILogger logger = LogManager.GetLogger();
 

@@ -49,6 +49,20 @@ namespace XboxSeries.Core
         private IDisposable queueTimer;
 
         /// <summary>
+        /// Whether the Game hub's Install installs the game through its client without the client's own windows (a Steam
+        /// game not installed, installing or queued), in place of Playnite's own Install.
+        /// </summary>
+        public bool CanInstallSilently(Guid gameId) => false;
+
+        /// <summary>
+        /// The Game hub's Install, for a game <see cref="CanInstallSilently"/>: asks its client to install it, puts it in
+        /// the queue as Queued, and goes back from the hub to where it was opened from, as the console does.
+        /// </summary>
+        public void InstallGame(Guid gameId)
+        {
+        }
+
+        /// <summary>
         /// Rebuilds the queue from the library and each game's progress now: whatever is downloading first, then the
         /// rest in the order they started installing. While anything is installing, it is read again every second.
         /// Returns whether any game's tile now reads differently ("Queued", "Installing..." or neither).
