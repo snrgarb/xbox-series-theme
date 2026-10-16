@@ -28,5 +28,15 @@ namespace XboxSeries.Core
 
         /// <summary>Kills the program that owns <paramref name="window"/>, losing anything unsaved.</summary>
         void ForceKill(IntPtr window);
+
+        /// <summary>
+        /// Suspends a running game's programs while the Guide is open, so a game that reads the pad in the background
+        /// can't take its input: every program under <paramref name="directory"/>, its install directory, and the one
+        /// that owns <paramref name="window"/>, when there is one. A program Windows won't let us suspend is skipped.
+        /// </summary>
+        void FreezeGame(string directory, IntPtr window);
+
+        /// <summary>Resumes every program <see cref="FreezeGame"/> suspended; nothing when none is.</summary>
+        void ThawGame();
     }
 }
