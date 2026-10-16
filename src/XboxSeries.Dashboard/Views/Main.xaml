@@ -61,9 +61,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid Background="Transparent">
-                        <Ellipse x:Name="Ring" Fill="#33FFFFFF" StrokeThickness="3"
-                                 Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                 Effect="{DynamicResource XboxFocusGlow}" />
+                        <!-- A round Border, not an Ellipse, so the ring can carry the glow band, centred on its 3 px stroke. -->
+                        <Border x:Name="Ring" Background="#33FFFFFF" BorderThickness="3" CornerRadius="999"
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                            <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-9.5" />
+                        </Border>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                             <ContentPresenter.RenderTransform>
                                 <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1" />
@@ -139,9 +141,11 @@
                                     <EllipseGeometry Center="28,28" RadiusX="28" RadiusY="28" />
                                 </Image.Clip>
                             </Image>
-                            <Ellipse x:Name="Ring" Margin="-4" StrokeThickness="3"
-                                     Stroke="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
-                                     Effect="{DynamicResource XboxFocusGlow}" />
+                            <!-- A round Border, not an Ellipse, so the ring can carry the glow band, centred on its 3 px stroke. -->
+                            <Border x:Name="Ring" Margin="-4" BorderThickness="3" CornerRadius="999"
+                                    BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-9.5" />
+                            </Border>
                         </Grid>
                         <Grid VerticalAlignment="Center" Margin="16,0,0,0">
                             <TextBlock x:Name="Gamertag" Text="{Binding Tag.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
