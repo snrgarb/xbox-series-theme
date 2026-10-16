@@ -38,7 +38,8 @@ namespace XboxSeries.Extension
                     g.ReleaseDate?.Date,
                     g.Modified,
                     g.SortingName,
-                    g.Platforms?.FirstOrDefault()?.Name))
+                    g.Platforms?.FirstOrDefault()?.Name,
+                    installing: g.IsInstalling))
                 .ToList();
 
             // In Playnite's own order, each with the games its filter matches, as Playnite's own lists evaluate it.
