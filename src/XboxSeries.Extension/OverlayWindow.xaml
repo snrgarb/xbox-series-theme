@@ -798,7 +798,7 @@
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
-                    <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
+                    <ItemsControl x:Name="TabBar" ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal" />
@@ -838,7 +838,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- The tab's content, which comes in from the side as LB/RB switch tabs (PaneFlyIn). -->
+                    <!-- The tab's content, which comes in from the side with the tabs as LB/RB switch tabs (PaneFlyIn). -->
                     <DockPanel x:Name="TabContent" Grid.Row="1" Margin="0,30,0,0">
                         <!--
                             The landing tab's row of utilities along the bottom, as on the console: small squares from the

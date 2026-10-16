@@ -44,20 +44,21 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// As <see cref="Follow{T}"/>, for tabs across the page: <paramref name="pane"/> comes in from the right for a move
-        /// right along them or from the left for one left. Drawn into a picture as it moves <paramref name="asPicture"/>;
-        /// not Playnite's main list, which would keep redrawing it.
+        /// As <see cref="Follow{T}"/>, for tabs across the page: <paramref name="pane"/>, and any <paramref name="alongside"/>
+        /// it, come in from the right for a move right along them or from the left for one left. The pane is drawn into a
+        /// picture as it moves <paramref name="asPicture"/>; not Playnite's main list, which would keep redrawing it.
         /// </summary>
-        public static void FollowAcross<T>(ref T shown, T now, Func<T, int> indexOf, bool alongTabs, UIElement pane, bool asPicture = false)
+        public static void FollowAcross<T>(ref T shown, T now, Func<T, int> indexOf, bool alongTabs, UIElement pane,
+            UIElement alongside = null, bool asPicture = false)
         {
             var direction = Direction(ref shown, now, indexOf, alongTabs);
             if (direction == 0)
             {
-                Stop(pane);
+                Stop(pane, alongside);
                 return;
             }
 
-            new Slide(asPicture ? pane : null).Start(new Vector(direction * Travel, 0), pane);
+            new Slide(asPicture ? pane : null).Start(new Vector(direction * Travel, 0), pane, alongside);
         }
 
         /// <summary>Which way along the nav or tabs <paramref name="now"/> is from what was shown, 0 if not reached along them.</summary>
