@@ -21,9 +21,8 @@
         </Style>
     </UserControl.Style>
     <UserControl.Resources>
-        <!-- The tiles' green ring, with the console's glow round it. -->
+        <!-- The tiles' green ring; each use carries the console's glow as a blurred band, its child. -->
         <Style x:Key="Ring" TargetType="Border">
-            <Setter Property="Effect" Value="{DynamicResource XboxFocusGlow}" />
             <Setter Property="Margin" Value="-1" />
             <Setter Property="BorderThickness" Value="4" />
             <Setter Property="CornerRadius" Value="5" />
@@ -57,7 +56,9 @@
                                 <TextBlock Text="{Binding Label}" Margin="42,0,0,0" VerticalAlignment="Center"
                                            FontFamily="{DynamicResource XboxFont}" FontSize="25" Foreground="White" />
                             </StackPanel>
-                            <Border x:Name="FocusRing" Style="{StaticResource Ring}" />
+                            <Border x:Name="FocusRing" Style="{StaticResource Ring}">
+                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                            </Border>
                         </Grid>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsFocused}" Value="True">
@@ -108,6 +109,7 @@
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
+                    <Border Style="{DynamicResource XboxFocusGlow}" />
                 </Border>
             </Grid>
         </StackPanel>
