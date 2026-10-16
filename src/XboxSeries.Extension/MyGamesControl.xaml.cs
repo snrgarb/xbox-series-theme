@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
@@ -68,6 +69,21 @@ namespace XboxSeries.Extension
         /// <summary>Full library's tab last lit, for which way along the tabs the user switched to the next; -1 for none.</summary>
         private int shownTab = -1;
 
+        /// <summary>The game whose cover or queue row on Manage Queue last had focus, to put focus back on after its Game hub.</summary>
+        private Guid? lastFocusedQueueGame;
+
+        /// <summary>Recently installed's cover that last had focus, for up from the queue's first row to go back to.</summary>
+        private int lastFocusedCover;
+
+        /// <summary>
+        /// Manage Queue's rows, one for each game in the queue, kept as the queue updates rather than built again: its
+        /// figures change every moment, and a row built again would lose focus and read its cover again each time.
+        /// </summary>
+        private readonly ObservableCollection<QueueRow> queueRows = new ObservableCollection<QueueRow>();
+
+        /// <summary>The queue row with focus, whose game's tile the core was last told of.</summary>
+        private QueueRow focusedQueueRow;
+
         internal MyGamesControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -77,7 +93,9 @@ namespace XboxSeries.Extension
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             shownItem = core.MyGames.Item;
+            QueueRows.ItemsSource = queueRows;
             ShowHistory();
+            ShowQueue();
             ShowItem();
             ShowStorage();
         }
@@ -174,6 +192,8 @@ namespace XboxSeries.Extension
                     {
                         lastFocusedGame = null;
                         lastFocusedApp = null;
+                        lastFocusedQueueGame = null;
+                        lastFocusedCover = 0;
                         FocusContentSoon();
                     }
 
@@ -200,6 +220,16 @@ namespace XboxSeries.Extension
                     }
 
                     break;
+                case nameof(MyGamesState.Queue):
+                    // A row that went, as a download finishing, takes focus with it: put it back on the same game, or the first.
+                    var hadFocus = QueuePage.IsKeyboardFocusWithin;
+                    ShowQueue();
+                    KeepQueueFocusSoon(hadFocus);
+                    break;
+                case nameof(MyGamesState.RecentlyInstalled):
+                    // New covers replace the old, and with them the focused one: put focus back on the same game.
+                    KeepQueueFocusSoon(Covers.IsKeyboardFocusWithin);
+                    break;
             }
         }
 
@@ -214,11 +244,23 @@ namespace XboxSeries.Extension
             var apps = item == MyGamesItem.Apps;
             var history = item == MyGamesItem.PlayHistory;
             var library = item == MyGamesItem.FullLibrary;
-            Header.Text = apps ? "Apps" : history ? "Play history" : library ? "Full library" : "Games";
+            var manage = item == MyGamesItem.Manage;
+            var queue = item == MyGamesItem.Queue;
+            Header.Text = apps ? "Apps" : history ? "Play history" : library ? "Full library" : manage ? "Manage" : "Games";
             GamesItem.Tag = games ? "Selected" : null;
             AppsItem.Tag = apps ? "Selected" : null;
             PlayHistoryItem.Tag = history ? "Selected" : null;
             FullLibraryItem.Tag = library ? "Selected" : null;
+            ManageItem.Tag = manage || queue ? "Selected" : null;
+            QueueBox.Visibility = manage ? Visibility.Visible : Visibility.Collapsed;
+
+            // Manage Queue is a page of its own over the whole of My games & apps, as on the console: the nav goes with it.
+            var navShown = queue ? Visibility.Collapsed : Visibility.Visible;
+            NavPane.Visibility = navShown;
+            NavFoot.Visibility = navShown;
+            NavDivider.Visibility = navShown;
+            ItemHost.Visibility = navShown;
+            QueuePage.Visibility = queue ? Visibility.Visible : Visibility.Collapsed;
             Count.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
             LibraryCount.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
             LookingForMore.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
@@ -309,6 +351,7 @@ namespace XboxSeries.Extension
             item == MyGamesItem.Apps ? AppsItem
             : item == MyGamesItem.PlayHistory ? PlayHistoryItem
             : item == MyGamesItem.FullLibrary ? FullLibraryItem
+            : item == MyGamesItem.Manage || item == MyGamesItem.Queue ? ManageItem
             : GamesItem;
 
         /// <summary>Play history's games, top to bottom, in their sections.</summary>
@@ -441,15 +484,18 @@ namespace XboxSeries.Extension
         {
             if (core.MyGames.IsShown && PlayniteInput.PadButtonOf(e) == ControllerInput.B)
             {
+                // On Manage Queue, B goes back to Manage rather than leaving the page.
+                var item = core.MyGames.Item;
                 core.LeaveMyGames();
-                e.Handled = !core.MyGames.IsShown;
+                e.Handled = !core.MyGames.IsShown || core.MyGames.Item != item;
             }
         }
 
         private void OnGameDetailsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            // Back from a Game hub opened from Play history. Playnite puts focus back on Games' main list itself.
-            if (!(bool)e.NewValue && core.MyGames.IsShown && core.MyGames.Item == MyGamesItem.PlayHistory)
+            // Back from a Game hub opened from Play history or Manage Queue. Playnite puts focus back on Games' main list itself.
+            if (!(bool)e.NewValue && core.MyGames.IsShown
+                && (core.MyGames.Item == MyGamesItem.PlayHistory || core.MyGames.Item == MyGamesItem.Queue))
             {
                 FocusContentSoon();
             }
@@ -613,6 +659,18 @@ namespace XboxSeries.Extension
                     return;
                 }
 
+                if (core.MyGames.Item == MyGamesItem.Manage)
+                {
+                    QueueBox.Focus();
+                    return;
+                }
+
+                if (core.MyGames.Item == MyGamesItem.Queue)
+                {
+                    FocusQueuePage();
+                    return;
+                }
+
                 var entries = History.Items.Cast<PlayHistoryEntry>().ToList();
                 var entry = entries.FirstOrDefault(g => g.Tile.GameId == lastFocusedGame) ?? entries.FirstOrDefault();
                 if (entry == null)
@@ -663,6 +721,238 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
+        /// Manage Queue's rows follow the queue: a game's row stays as its figures change, taking the new ones, and rows
+        /// come, go and move as games do. The row with focus tells the core of its game's new tile.
+        /// </summary>
+        private void ShowQueue()
+        {
+            var queue = core.MyGames.Queue;
+            for (var i = 0; i < queue.Count; i++)
+            {
+                var entry = queue[i];
+                var at = -1;
+                for (var j = i; j < queueRows.Count; j++)
+                {
+                    if (queueRows[j].GameId == entry.Tile.GameId)
+                    {
+                        at = j;
+                        break;
+                    }
+                }
+
+                if (at < 0)
+                {
+                    queueRows.Insert(i, new QueueRow(entry));
+                    continue;
+                }
+
+                if (at != i)
+                {
+                    queueRows.Move(at, i);
+                }
+
+                var row = queueRows[i];
+                var oldTile = row.Entry.Tile;
+                row.Entry = entry;
+                if (row == focusedQueueRow && entry.Tile != oldTile)
+                {
+                    core.FocusHomeTile(entry.Tile);
+                }
+            }
+
+            while (queueRows.Count > queue.Count)
+            {
+                queueRows.RemoveAt(queueRows.Count - 1);
+            }
+        }
+
+        /// <summary>
+        /// Once Manage Queue's covers or rows have changed, focus back on the same game, or the first, if the page had it
+        /// and lost it.
+        /// </summary>
+        private void KeepQueueFocusSoon(bool hadFocus)
+        {
+            if (!hadFocus)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+            {
+                if (core.MyGames.IsShown && core.MyGames.Item == MyGamesItem.Queue && IsVisible
+                    && (!QueuePage.IsKeyboardFocusWithin || QueuePage.IsKeyboardFocused))
+                {
+                    FocusQueuePage();
+                }
+            }));
+        }
+
+        /// <summary>
+        /// Focuses Manage Queue's cover or row of the game that last had focus, else the first cover, else the first row;
+        /// with neither, the page itself, so B still reaches it.
+        /// </summary>
+        private void FocusQueuePage()
+        {
+            QueuePage.UpdateLayout();
+            var rowIndex = queueRows.ToList().FindIndex(r => r.GameId == lastFocusedQueueGame);
+            var coverIndex = core.MyGames.RecentlyInstalled.ToList().FindIndex(t => t.GameId == lastFocusedQueueGame);
+            var target = rowIndex >= 0 ? ButtonIn(QueueRows, rowIndex)
+                : coverIndex >= 0 ? ButtonIn(Covers, coverIndex)
+                : ButtonIn(Covers, 0) ?? ButtonIn(QueueRows, 0);
+            if (target == null || !target.Focus())
+            {
+                QueuePage.Focus();
+            }
+        }
+
+        /// <summary>
+        /// On Manage Queue the D-pad goes along Recently installed's covers, down from them to the queue's rows and down
+        /// those, and back up; up from the first row to the cover last focused. The nav is hidden, so nothing leaves the
+        /// page sideways.
+        /// </summary>
+        private void OnQueuePageKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Left && e.Key != Key.Right && e.Key != Key.Up && e.Key != Key.Down)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            var source = e.OriginalSource as DependencyObject;
+            var cover = IndexIn(Covers, source);
+            var row = IndexIn(QueueRows, source);
+            Button next;
+            if (cover >= 0)
+            {
+                next = e.Key == Key.Left ? ButtonIn(Covers, cover - 1)
+                    : e.Key == Key.Right ? ButtonIn(Covers, cover + 1)
+                    : e.Key == Key.Down ? ButtonIn(QueueRows, 0)
+                    : null;
+            }
+            else if (row >= 0)
+            {
+                next = e.Key == Key.Down ? ButtonIn(QueueRows, row + 1)
+                    : e.Key != Key.Up ? null
+                    : row > 0 ? ButtonIn(QueueRows, row - 1)
+                    : ButtonIn(Covers, lastFocusedCover) ?? ButtonIn(Covers, 0);
+            }
+            else
+            {
+                // On the page itself, having had nothing to focus when it was put up: whatever has come since.
+                next = ButtonIn(Covers, 0) ?? ButtonIn(QueueRows, 0);
+            }
+
+            next?.Focus();
+        }
+
+        /// <summary>The index in <paramref name="list"/> of the item holding <paramref name="element"/>; -1 for none.</summary>
+        private static int IndexIn(ItemsControl list, DependencyObject element)
+        {
+            var container = element == null ? null : ItemsControl.ContainerFromElement(list, element);
+            return container == null ? -1 : list.ItemContainerGenerator.IndexFromContainer(container);
+        }
+
+        /// <summary>The button built for <paramref name="list"/>'s item at <paramref name="index"/>; null for none.</summary>
+        private static Button ButtonIn(ItemsControl list, int index)
+        {
+            if (index < 0 || index >= list.Items.Count
+                || !(list.ItemContainerGenerator.ContainerFromIndex(index) is ContentPresenter container))
+            {
+                return null;
+            }
+
+            container.ApplyTemplate();
+            return VisualTreeHelper.GetChildrenCount(container) > 0 ? VisualTreeHelper.GetChild(container, 0) as Button : null;
+        }
+
+        // Manage's Queue box: the keyboard's Enter and the mouse; the pad's A arrives as OnQueueBoxKeyDown.
+        private void OnQueueBoxClick(object sender, RoutedEventArgs e)
+        {
+            core.OpenMyGames(MyGamesItem.Queue);
+        }
+
+        /// <summary>The pad's A opens Manage Queue; left goes back to the nav. It is Manage's only box, so nothing else moves.</summary>
+        private void OnQueueBoxKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            {
+                e.Handled = true;
+                core.OpenMyGames(MyGamesItem.Queue);
+            }
+            else if (e.Key == Key.Left)
+            {
+                e.Handled = true;
+                ManageItem.Focus();
+            }
+            else if (e.Key == Key.Right || e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+            }
+        }
+
+        // Recently installed's covers and the queue's rows: focus, Menu, View and the pad's A work as on a Home tile, through
+        // the core. The keyboard's Enter and the mouse choose the game here; the pad's A, which has no key, never clicks.
+        private void OnCoverFocused(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                lastFocusedQueueGame = tile.GameId;
+                lastFocusedCover = Math.Max(0, IndexIn(Covers, (DependencyObject)sender));
+
+                // The covers are the page's top: coming up from the rows, the page scrolls back to them.
+                QueueScroll.ScrollToTop();
+                core.FocusHomeTile(tile);
+            }
+        }
+
+        private void OnCoverLeft(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                core.LeaveHomeTile(tile);
+            }
+        }
+
+        private void OnCoverClick(object sender, RoutedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is HomeTile tile)
+            {
+                core.ChooseHomeTile(tile);
+            }
+        }
+
+        private void OnQueueRowFocused(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is QueueRow row)
+            {
+                focusedQueueRow = row;
+                lastFocusedQueueGame = row.GameId;
+                core.FocusHomeTile(row.Entry.Tile);
+            }
+        }
+
+        private void OnQueueRowLeft(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is QueueRow row)
+            {
+                if (focusedQueueRow == row)
+                {
+                    focusedQueueRow = null;
+                }
+
+                core.LeaveHomeTile(row.Entry.Tile);
+            }
+        }
+
+        private void OnQueueRowClick(object sender, RoutedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is QueueRow row)
+            {
+                core.ChooseHomeTile(row.Entry.Tile);
+            }
+        }
+
+        /// <summary>
         /// The row built for <paramref name="entry"/>; null if it isn't on screen. Grouped, the list's own lookup only
         /// knows its sections, so this looks through what's built.
         /// </summary>
@@ -679,6 +969,45 @@ namespace XboxSeries.Extension
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// One of Manage Queue's rows: a game in the queue, kept while it stays there. Its cover changes only with the
+        /// game's, so the row reads it once, not with every new figure.
+        /// </summary>
+        public sealed class QueueRow : INotifyPropertyChanged
+        {
+            private QueueEntry entry;
+            private string cover;
+
+            internal QueueRow(QueueEntry entry)
+            {
+                GameId = entry.Tile.GameId;
+                Entry = entry;
+            }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+
+            public Guid GameId { get; }
+
+            /// <summary>The game's place in the queue now: its state, speed, amount, share and bar.</summary>
+            public QueueEntry Entry
+            {
+                get => entry;
+                internal set
+                {
+                    entry = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Entry)));
+                    if (cover != value.Tile.CoverImage)
+                    {
+                        cover = value.Tile.CoverImage;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Cover)));
+                    }
+                }
+            }
+
+            /// <summary>The full path or URL of the game's cover; null when it has none.</summary>
+            public string Cover => cover;
         }
 
         /// <summary>Puts each Play history game in its section, keeping the sections' order.</summary>

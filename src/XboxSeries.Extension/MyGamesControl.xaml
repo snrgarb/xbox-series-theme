@@ -197,6 +197,86 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+
+            <!--
+                A box, as Settings' and the console's: a dark rectangle, its line icon (Tag) at the left and its name beside
+                it. Focused, it lightens, and the accent ring stands 4 off it carrying the console's green glow as a blurred
+                band; the ring is a Border of its own, so the glow traces only it.
+            -->
+            <Style x:Key="Box" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Width" Value="437" />
+                <Setter Property="Height" Value="131" />
+                <Setter Property="Padding" Value="100,0,30,0" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="VerticalAlignment" Value="Top" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Back" Background="#FF2D2D2D" />
+                                <!-- The icon, centred in the space before the name. -->
+                                <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource NavIcon}" FontSize="34"
+                                           Width="100" TextAlignment="Center" HorizontalAlignment="Left" />
+                                <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                <!-- 4 of gap and 4 of ring out from the box, as Home's tiles. -->
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="#FF4A4A4A" />
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
+                A game in the queue on Manage Queue, as the console's: a wide row, the game's cover at its left. Focused,
+                the accent ring stands 4 off it carrying the console's green glow as a blurred band.
+            -->
+            <Style x:Key="QueueRow" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="250" />
+                <Setter Property="Margin" Value="0,0,0,16" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border Background="#FF2D2D2D">
+                                    <ContentPresenter />
+                                </Border>
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
+                The holder of a cover or queue row: drawn over its neighbours while what it holds is focused, so their backs
+                don't cover the ring's glow band.
+            -->
+            <Style x:Key="RaisedWhenFocused" TargetType="ContentPresenter">
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
@@ -209,7 +289,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- The nav: the profile, then one item per page section. Focusing an item shows it. -->
-        <StackPanel Grid.Column="0" Margin="0,78,0,0">
+        <StackPanel x:Name="NavPane" Grid.Column="0" Margin="0,78,0,0">
             <StackPanel Orientation="Horizontal" Margin="75,0,0,58">
                 <Grid Width="54" Height="54">
                     <Ellipse Fill="{DynamicResource GlyphBrush}" />
@@ -249,36 +329,101 @@
                         <TextBlock Text="Full library" Style="{StaticResource NavText}" />
                     </DockPanel>
                 </Button>
+
+                <!-- The console's line between the nav's lists and Manage. -->
+                <Border Height="2" Margin="36,4,58,32" Background="{StaticResource DividerBrush}" />
+
+                <!--
+                    Manage, as on the console: its briefcase and name, and while anything is queued a second line under the
+                    name, Queue and the queue's count. Lit and barred as one item, both lines.
+                -->
+                <Button x:Name="ManageItem" Style="{StaticResource NavItem}" Height="Auto" MinHeight="58"
+                        GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
+                    <StackPanel>
+                        <DockPanel Height="58">
+                            <TextBlock Text="&#xE821;" Style="{StaticResource NavIcon}" />
+                            <TextBlock Text="Manage" Style="{StaticResource NavText}" />
+                        </DockPanel>
+                        <DockPanel Height="40" Margin="44,0,0,10" Visibility="{Binding HasQueue, Converter={StaticResource Visibility}}">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding QueueCount}" Style="{StaticResource NavText}"
+                                       Foreground="{StaticResource DimBrush}" />
+                            <TextBlock Text="Queue" Style="{StaticResource NavText}" Foreground="{StaticResource DimBrush}" />
+                        </DockPanel>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </StackPanel>
 
         <!--
-            The storage ring, at the foot of the nav, as on the console: All storage and the space free, beside a thin ring
-            filled round from the top by the share used, with that share inside it. Its storage is the drive holding most
-            installed games. The code sets the fill's dashes from Storage.
+            The nav's foot: the current download, then the storage ring, as on the console.
         -->
-        <Grid x:Name="StorageRing" Grid.Column="0" VerticalAlignment="Bottom" Margin="75,0,0,66">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="206" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="All storage" Style="{StaticResource NavText}" />
-                <TextBlock Text="{Binding Storage.Free}" Style="{StaticResource NavText}" Margin="0,3,0,0" />
+        <StackPanel x:Name="NavFoot" Grid.Column="0" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="75,0,0,66">
+            <!--
+                The current download, above All storage, only while one is downloading: its name; its state with the speed
+                right-aligned; then how much is down of the whole and the share, without that line while the library can't
+                say. Small, as the console's.
+            -->
+            <StackPanel x:Name="DownloadBlock" DataContext="{Binding CurrentDownload}" Width="301" Margin="0,0,0,34">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="18" />
+                <DockPanel Margin="0,2,0,0">
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Speed}" Style="{StaticResource Text}" FontSize="18" />
+                    <TextBlock Text="{Binding State}" Style="{StaticResource Text}" FontSize="18" />
+                </DockPanel>
+                <!--
+                    Such as "67.80 MB of 3.55 GB, 1.9%"; without the amount, no line at all; a share the library can't give
+                    drops its ", " with it (a null skips the StringFormat).
+                -->
+                <TextBlock FontSize="18" Margin="0,2,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Amount}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                    <Run Text="{Binding Amount, Mode=OneWay}" /><Run Text="{Binding Percent, Mode=OneWay, StringFormat='{}, {0}'}" />
+                </TextBlock>
             </StackPanel>
-            <Grid Grid.Column="1">
-                <Ellipse Width="95" Height="95" Stroke="{StaticResource SelectedBrush}" StrokeThickness="4" />
-                <Ellipse x:Name="StorageUsed" Width="95" Height="95" Stroke="{DynamicResource GlyphBrush}" StrokeThickness="4"
-                         RenderTransformOrigin="0.5,0.5">
-                    <Ellipse.RenderTransform>
-                        <RotateTransform Angle="-90" />
-                    </Ellipse.RenderTransform>
-                </Ellipse>
-                <TextBlock Text="{Binding Storage.UsedPercent}" Style="{StaticResource NavText}" HorizontalAlignment="Center" />
-            </Grid>
-        </Grid>
 
-        <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
+            <!--
+                The storage ring, at the foot of the nav, as on the console: All storage and the space free, beside a thin ring
+                filled round from the top by the share used, with that share inside it. Its storage is the drive holding most
+                installed games. The code sets the fill's dashes from Storage.
+            -->
+            <Grid x:Name="StorageRing" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="206" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="All storage" Style="{StaticResource NavText}" />
+                    <TextBlock Text="{Binding Storage.Free}" Style="{StaticResource NavText}" Margin="0,3,0,0" />
+                </StackPanel>
+                <Grid Grid.Column="1">
+                    <Ellipse Width="95" Height="95" Stroke="{StaticResource SelectedBrush}" StrokeThickness="4" />
+                    <Ellipse x:Name="StorageUsed" Width="95" Height="95" Stroke="{DynamicResource GlyphBrush}" StrokeThickness="4"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform Angle="-90" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <TextBlock Text="{Binding Storage.UsedPercent}" Style="{StaticResource NavText}" HorizontalAlignment="Center" />
+                </Grid>
+            </Grid>
+        </StackPanel>
+
+        <Border x:Name="NavDivider" Grid.Column="1" Background="{StaticResource DividerBrush}" />
 
         <!--
             What the nav item shows: its header, and Apps or Play history. As focus moves along the nav it comes in a short
@@ -352,6 +497,18 @@
                                     <TextBlock Text="{Binding Platform, StringFormat='{}  •  {0}'}" Style="{StaticResource Text}"
                                                Foreground="{StaticResource DimBrush}" />
                                 </StackPanel>
+                                <!-- A game being installed: Queued or Installing..., as its tile reads on Home. -->
+                                <TextBlock Text="{Binding Tile.Status}" Margin="0,8,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Tile.Status}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </Grid>
                     </DataTemplate>
@@ -421,6 +578,153 @@
                     <TextBlock Text="SEE FULL LIBRARY" Style="{StaticResource Text}" FontSize="22" />
                 </Button>
             </StackPanel>
+
+            <!--
+                Manage: its Queue box, the queue's count at its right while anything is queued. The console's other boxes
+                (updates, storage, its settings) have nothing to stand for here. A opens Manage Queue.
+            -->
+            <Button x:Name="QueueBox" Grid.Row="1" Style="{StaticResource Box}" Tag="&#xE896;" Margin="0,4,0,0"
+                    Click="OnQueueBoxClick" KeyDown="OnQueueBoxKeyDown">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding QueueCount}" Style="{StaticResource Text}" FontSize="24"
+                               Visibility="{Binding HasQueue, Converter={StaticResource Visibility}}" />
+                    <TextBlock Text="Queue" Style="{StaticResource Text}" FontSize="24" />
+                </DockPanel>
+            </Button>
+        </Grid>
+
+        <!--
+            Manage Queue, as on the console: a page of its own over the whole of My games & apps, the nav hidden. Recently
+            installed's covers, then the queue's rows, the current download first; or, with nothing queued, a box saying
+            where they'll show. The console's Pause all and Cancel all aren't here: Steam can't be asked either from outside.
+            Focusable itself only for when it has nothing else to focus, so B still reaches the page.
+        -->
+        <Grid x:Name="QueuePage" Grid.ColumnSpan="3" Background="{StaticResource PageBrush}" Margin="0"
+              Focusable="True" FocusVisualStyle="{x:Null}" Visibility="Collapsed" PreviewKeyDown="OnQueuePageKeyDown">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Manage Queue" Style="{StaticResource Text}" FontSize="42" FontWeight="350"
+                       Margin="96,72,96,0" />
+
+            <!-- The rows sit 24 in from the scroller's edges, which its margin cancels, so their ring and glow band aren't cut off there. -->
+            <ScrollViewer x:Name="QueueScroll" Grid.Row="1" Margin="72,0,72,0" Focusable="False"
+                          VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="24,0,24,80">
+                    <!-- Recently installed: the games' covers, as Home's tiles, the focused one titled at its foot. -->
+                    <StackPanel>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RecentlyInstalled.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock Text="Recently installed" Style="{StaticResource Text}" FontSize="30" Margin="0,14,0,14" />
+                        <ScrollViewer Margin="-24,0" Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="Covers" ItemsSource="{Binding RecentlyInstalled}" Focusable="False" Margin="24"
+                                          ItemContainerStyle="{StaticResource RaisedWhenFocused}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource HomeTile}" Width="200" Height="200" Margin="0,0,16,0"
+                                                Tag="{Binding Title}" Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
+                                                Click="OnCoverClick" GotKeyboardFocus="OnCoverFocused" LostKeyboardFocus="OnCoverLeft" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+
+                    <!-- Installing: one row for each game in the queue, the current download first, then those next up. -->
+                    <StackPanel Visibility="{Binding HasQueue, Converter={StaticResource Visibility}}">
+                        <TextBlock Text="Installing" Style="{StaticResource Text}" FontSize="30" Margin="0,30,0,30" />
+                        <ItemsControl x:Name="QueueRows" Focusable="False" ItemContainerStyle="{StaticResource RaisedWhenFocused}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource QueueRow}" Click="OnQueueRowClick"
+                                            GotKeyboardFocus="OnQueueRowFocused" LostKeyboardFocus="OnQueueRowLeft">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="250" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid Background="#FF1A1A1A">
+                                                <Image Source="{Binding Cover, Converter={StaticResource Image}, ConverterParameter=300}"
+                                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+                                            </Grid>
+                                            <!--
+                                                Its name, bold, and its state; the speed at the right. Then the amount down of
+                                                the whole, the share at the right, over a thin white bar on a dim track filled
+                                                to that share. Queued, only the share and the empty track.
+                                            -->
+                                            <Grid Grid.Column="1" Margin="36,38,40,0">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Text="{Binding Entry.Speed}" Style="{StaticResource Text}" FontSize="24"
+                                                           HorizontalAlignment="Right" />
+                                                <TextBlock Text="{Binding Entry.Tile.Title}" Style="{StaticResource Text}" FontSize="24"
+                                                           FontFamily="{DynamicResource XboxFontSemibold}" FontWeight="Bold"
+                                                           Margin="0,0,160,0" />
+                                                <TextBlock Grid.Row="1" Text="{Binding Entry.State}" Style="{StaticResource Text}" FontSize="24" />
+                                                <DockPanel Grid.Row="2" Margin="0,34,0,0">
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Entry.Percent}" Style="{StaticResource Text}"
+                                                               FontSize="24" />
+                                                    <TextBlock Text="{Binding Entry.Amount, StringFormat='Network: {0}'}" Style="{StaticResource Text}"
+                                                               FontSize="24" />
+                                                </DockPanel>
+                                                <Grid Grid.Row="3" Height="5" Margin="0,12,0,0">
+                                                    <Border Background="#FF4A4A4A" />
+                                                    <Border Background="White" RenderTransformOrigin="0,0.5">
+                                                        <Border.RenderTransform>
+                                                            <ScaleTransform ScaleX="{Binding Entry.Fraction}" />
+                                                        </Border.RenderTransform>
+                                                    </Border>
+                                                </Grid>
+                                            </Grid>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!--
+                        Nothing queued: in place of Installing, a box with a thin light grey outline and no fill, the download
+                        arrow over where the queue will show.
+                    -->
+                    <Border Height="330" Margin="0,40,0,0" BorderThickness="2" BorderBrush="#FF5C5C5C">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasQueue}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE896;" FontFamily="{DynamicResource XboxIconFont}" FontSize="64" Foreground="White"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="When games and apps are installing, you'll see them here" Style="{StaticResource Text}"
+                                       FontSize="30" FontWeight="350" Margin="0,40,0,0" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </controls:PluginUserControl>
