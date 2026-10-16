@@ -75,6 +75,7 @@ namespace XboxSeries.Extension
         [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageName(IntPtr process, uint flags, StringBuilder name, ref int size);
         [DllImport("kernel32.dll")] private static extern bool GetProcessTimes(IntPtr process, out long creation, out long exit, out long kernel, out long user);
+        [DllImport("kernel32.dll")] private static extern bool GetProcessIoCounters(IntPtr process, out IO_COUNTERS counters);
         [DllImport("ntdll.dll")] private static extern int NtSuspendProcess(IntPtr process);
         [DllImport("ntdll.dll")] private static extern int NtResumeProcess(IntPtr process);
         [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
@@ -260,6 +261,37 @@ namespace XboxSeries.Extension
             var info = new MONITORINFO { cbSize = Marshal.SizeOf(typeof(MONITORINFO)) };
             GetMonitorInfo(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), ref info);
             return info.rcMonitor;
+        }
+
+        /// <summary>The bytes the process has written to files since it started; null when Windows won't say.</summary>
+        public static ulong? BytesWrittenBy(int processId)
+        {
+            const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+            var process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)processId);
+            if (process == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            try
+            {
+                return GetProcessIoCounters(process, out var counters) ? counters.WriteTransferCount : (ulong?)null;
+            }
+            finally
+            {
+                CloseHandle(process);
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_COUNTERS
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
         }
     }
 }

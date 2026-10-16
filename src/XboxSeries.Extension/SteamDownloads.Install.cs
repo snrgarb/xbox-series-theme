@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using XboxSeries.Core;
 
@@ -32,6 +36,11 @@ namespace XboxSeries.Extension
 
         // StateFlags' Uninstalling bit: a manifest on its way out is no install, whatever else it says.
         private const long Uninstalling = 2048;
+
+        // How long after asking Steam to install its windows are kept from coming in front of Playnite, and how often
+        // that is checked. Steam takes the command within a second or two.
+        private static readonly TimeSpan KeepInFrontFor = TimeSpan.FromSeconds(15);
+        private static readonly TimeSpan KeepInFrontEvery = TimeSpan.FromMilliseconds(200);
 
         // How long the app id to game map stands without a library change: a backstop for a change Playnite didn't
         // announce, cheap at this rate however large the library.
@@ -75,6 +84,7 @@ namespace XboxSeries.Extension
                     return;
                 }
 
+                var steamWasRunning = IsSteamRunning();
                 using (Process.Start(new ProcessStartInfo(exe, $"-silent +app_install {appId}")
                 {
                     UseShellExecute = false,
@@ -83,10 +93,80 @@ namespace XboxSeries.Extension
                 }))
                 {
                 }
+
+                if (steamWasRunning)
+                {
+                    KeepPlayniteInFront();
+                }
             }
             catch (Exception e) when (IsReadFailure(e) || e is Win32Exception || e is InvalidOperationException)
             {
                 WarnOnce(ref installWarned, e, $"Couldn't ask Steam to install game {gameId}");
+            }
+        }
+
+        private static bool IsSteamRunning()
+        {
+            var steam = Process.GetProcessesByName("steam");
+            foreach (var process in steam)
+            {
+                process.Dispose();
+            }
+
+            return steam.Length > 0;
+        }
+
+        /// <summary>
+        /// The running client brings its own window to the front as it takes a command, whatever <c>-silent</c> says,
+        /// when that window is open rather than in the tray. For a while after asking, any Steam window in front is
+        /// closed, which sends Steam's to the tray as its own close button does, and Playnite takes the foreground back.
+        /// Only when Steam was running already, so its sign-in window, which a Steam just started may need, is left.
+        /// </summary>
+        private static void KeepPlayniteInFront()
+        {
+            var playnite = Application.Current?.MainWindow;
+            if (playnite == null)
+            {
+                return;
+            }
+
+            var playniteWindow = new WindowInteropHelper(playnite).Handle;
+            var until = DateTime.UtcNow + KeepInFrontFor;
+            var timer = new DispatcherTimer { Interval = KeepInFrontEvery };
+            timer.Tick += (_, __) =>
+            {
+                if (DateTime.UtcNow >= until)
+                {
+                    timer.Stop();
+                    return;
+                }
+
+                var front = NativeMethods.GetForegroundWindow();
+                if (front == IntPtr.Zero || front == playniteWindow || !IsSteamWindow(front))
+                {
+                    return;
+                }
+
+                logger.Info("Steam came to the front as it took the install; sending it back to the tray");
+                NativeMethods.PostMessage(front, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                NativeMethods.BringToForeground(playniteWindow);
+            };
+            timer.Start();
+        }
+
+        /// <summary>Whether the window is Steam's: the client's own, or its web helper's, which draws the main window.</summary>
+        private static bool IsSteamWindow(IntPtr window)
+        {
+            try
+            {
+                using (var process = Process.GetProcessById(NativeMethods.ProcessIdOf(window)))
+                {
+                    return new[] { "steam", "steamwebhelper" }.Contains(process.ProcessName, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+            catch (Exception e) when (e is ArgumentException || e is InvalidOperationException || e is Win32Exception)
+            {
+                return false;
             }
         }
 
