@@ -5,7 +5,7 @@ using System.Text;
 
 namespace XboxSeries.Extension
 {
-    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay, the Toast and the Launch screen over a monitor, and the debug hotkey, closing a game, and fading Start-up out.</summary>
+    /// <summary>The user32 calls the extension needs: the foreground window, taking it, placing the Overlay, the Toast and the Launch screen over a monitor, and the debug hotkey, closing a game, freezing one while the Guide is open, and fading Start-up out.</summary>
     internal static class NativeMethods
     {
         public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -74,28 +74,43 @@ namespace XboxSeries.Extension
         [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
         [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageName(IntPtr process, uint flags, StringBuilder name, ref int size);
+        [DllImport("kernel32.dll")] private static extern bool GetProcessTimes(IntPtr process, out long creation, out long exit, out long kernel, out long user);
+        [DllImport("ntdll.dll")] private static extern int NtSuspendProcess(IntPtr process);
+        [DllImport("ntdll.dll")] private static extern int NtResumeProcess(IntPtr process);
         [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
         [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
 
         /// <summary>
-        /// Hands <paramref name="window"/> the foreground. Returns whether it is now in front.
-        /// When Windows refuses (we're in the background), a synthetic Alt tap lets us win <c>SetForegroundWindow</c>
-        /// (validated by the #8 spike). The tap is a last resort: it lands on whichever window ends up focused, and a
-        /// lone Alt puts a window such as Playnite's into menu mode, where it swallows the next keys.
+        /// Hands <paramref name="window"/> the foreground, restoring it first if it's minimised. Returns whether Windows
+        /// accepted: another process's window only comes to the front once its own thread handles the activation, so
+        /// checking <c>GetForegroundWindow</c> straight away would report a false failure.
+        /// When Windows refuses (we're in the background) and <paramref name="altTap"/>, a synthetic Alt tap lets us win
+        /// <c>SetForegroundWindow</c> (validated by the #8 spike). The tap is a last resort, never made while Playnite
+        /// already holds the foreground: it lands on whichever window is focused, a game's or, alone, Playnite's, which
+        /// it puts into menu mode, where it swallows the next keys.
         /// </summary>
-        public static bool BringToForeground(IntPtr window)
+        public static bool BringToForeground(IntPtr window, bool altTap = true)
         {
-            if (SetForegroundWindow(window) && GetForegroundWindow() == window)
+            if (IsIconic(window))
+            {
+                ShowWindow(window, SW_RESTORE);
+            }
+
+            if (SetForegroundWindow(window))
             {
                 return true;
+            }
+
+            if (!altTap || IsOfThisProcess(GetForegroundWindow()))
+            {
+                return false;
             }
 
             const byte VK_MENU = 0x12;
             const uint KEYEVENTF_KEYUP = 0x0002;
             keybd_event(VK_MENU, 0, 0, UIntPtr.Zero);
             keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-            SetForegroundWindow(window);
-            return GetForegroundWindow() == window;
+            return SetForegroundWindow(window);
         }
 
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
@@ -192,7 +207,8 @@ namespace XboxSeries.Extension
             }
         }
 
-        private static string ProgramPathOf(uint processId)
+        /// <summary>The full path of the program process <paramref name="processId"/> runs, or null when it can't be read (elevated, or gone).</summary>
+        public static string ProgramPathOf(uint processId)
         {
             const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
             var process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
@@ -212,6 +228,30 @@ namespace XboxSeries.Extension
                 CloseHandle(process);
             }
         }
+
+        /// <summary>
+        /// Opens process <paramref name="processId"/> to suspend or resume it and read its start time, or returns
+        /// <see cref="IntPtr.Zero"/> when Windows won't let us (an elevated or protected process, or one gone). Close
+        /// the handle with <see cref="CloseProcess"/>.
+        /// </summary>
+        public static IntPtr OpenToSuspend(int processId)
+        {
+            const uint PROCESS_SUSPEND_RESUME = 0x0800;
+            const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+            return OpenProcess(PROCESS_SUSPEND_RESUME | PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)processId);
+        }
+
+        public static void CloseProcess(IntPtr process) => CloseHandle(process);
+
+        /// <summary>When <paramref name="process"/> started, as a FILETIME, telling it from a later one given the same id; 0 when unknown.</summary>
+        public static long StartTimeOf(IntPtr process) =>
+            GetProcessTimes(process, out var creation, out _, out _, out _) ? creation : 0;
+
+        /// <summary>Suspends every thread of <paramref name="process"/>, adding one to each one's count; returns the NTSTATUS, 0 on success.</summary>
+        public static int SuspendProcess(IntPtr process) => NtSuspendProcess(process);
+
+        /// <summary>Takes one from the suspend count of every thread of <paramref name="process"/>; returns the NTSTATUS, 0 on success.</summary>
+        public static int ResumeProcess(IntPtr process) => NtResumeProcess(process);
 
         /// <summary>The bounds, in physical pixels, of the monitor <paramref name="window"/> is mostly on.</summary>
         public static RECT MonitorBoundsOf(IntPtr window)

@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using Playnite.SDK;
 using XboxSeries.Core;
 
@@ -11,6 +12,17 @@ namespace XboxSeries.Extension
     internal sealed class Win32WindowSystem : IWindowSystem
     {
         private static readonly ILogger logger = LogManager.GetLogger();
+
+        /// <summary>How long after handing a window the foreground to look whether it's in front: another process's window only comes once its thread handles the activation.</summary>
+        private static readonly TimeSpan ForegroundSettle = TimeSpan.FromMilliseconds(250);
+
+        private readonly GameFreezer freezer;
+
+        /// <param name="dataDirectory">The extension's data folder, where the record of a frozen game is kept.</param>
+        public Win32WindowSystem(string dataDirectory)
+        {
+            freezer = new GameFreezer(dataDirectory);
+        }
 
         /// <summary>Set once the Overlay exists; until then the foreground can't be taken.</summary>
         public OverlayWindow Overlay { get; set; }
@@ -36,7 +48,10 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            if (!NativeMethods.BringToForeground(new WindowInteropHelper(Overlay).Handle))
+            // Diagnostic: the window the Guide opened over, a game's when one is running.
+            var before = NativeMethods.GetForegroundWindow();
+            var overlay = new WindowInteropHelper(Overlay).Handle;
+            if (!NativeMethods.BringToForeground(overlay, altTap: true))
             {
                 logger.Warn("Windows refused the Overlay the foreground; the Guide shows Topmost and follows the controller callback");
             }
@@ -45,7 +60,7 @@ namespace XboxSeries.Extension
             Overlay.Focus();
 
             // Diagnostic: if the game still reacts to the pad while Playnite is in front, the game reads the pad in the background.
-            logger.Info($"Guide opened; the foreground belongs to {ProcessNameOf(NativeMethods.GetForegroundWindow())}");
+            logger.Info($"Guide opened over {ProcessNameOf(before)}; the foreground belongs to {ProcessNameOf(NativeMethods.GetForegroundWindow())}");
         }
 
         private static string ProcessNameOf(IntPtr window)
@@ -65,10 +80,26 @@ namespace XboxSeries.Extension
 
         public void SetForeground(IntPtr window)
         {
-            if (!NativeMethods.BringToForeground(window))
+            // No Alt tap: Playnite holds the foreground as the Guide closes, so Windows lets it give it away, and when it
+            // doesn't, the tap would land in whichever window is in front.
+            if (!NativeMethods.BringToForeground(window, altTap: false))
             {
-                logger.Warn($"Couldn't hand the foreground back to window {window}");
+                logger.Warn($"Windows refused to hand the foreground back to window {window}; {ProcessNameOf(NativeMethods.GetForegroundWindow())} is in front");
+                return;
             }
+
+            // Accepted; look again once the game's thread has had time to handle the activation.
+            var check = new DispatcherTimer { Interval = ForegroundSettle };
+            check.Tick += (_, __) =>
+            {
+                check.Stop();
+                var front = NativeMethods.GetForegroundWindow();
+                if (front != window && NativeMethods.IsWindow(window) && NativeMethods.ProcessIdOf(front) != NativeMethods.ProcessIdOf(window))
+                {
+                    logger.Warn($"Handed the foreground back to window {window} ({ProcessNameOf(window)}), but {ProcessNameOf(front)} is in front");
+                }
+            };
+            check.Start();
         }
 
         public void CloseGracefully(IntPtr window)
@@ -98,12 +129,11 @@ namespace XboxSeries.Extension
             }
         }
 
-        public void FreezeGame(string directory, IntPtr window)
-        {
-        }
+        public void FreezeGame(string directory, IntPtr window) => freezer.Freeze(directory, window);
 
-        public void ThawGame()
-        {
-        }
+        public void ThawGame() => freezer.Thaw();
+
+        /// <summary>Resumes the programs of a game a Playnite that stopped without thawing it left frozen.</summary>
+        public void ThawLeftoverGame() => freezer.ThawLeftovers();
     }
 }

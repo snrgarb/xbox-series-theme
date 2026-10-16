@@ -16,7 +16,7 @@ namespace XboxSeries.Extension
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
-        private readonly Win32WindowSystem windows = new Win32WindowSystem();
+        private readonly Win32WindowSystem windows;
         private readonly HomeScreen homeScreen = new HomeScreen();
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
@@ -39,6 +39,12 @@ namespace XboxSeries.Extension
         public XboxSeriesPlugin(IPlayniteAPI api) : base(api)
         {
             Properties = new GenericPluginProperties { HasSettings = false };
+
+            // First, so a game a crashed Playnite left frozen runs again, and so a crash from here on doesn't leave one frozen.
+            windows = new Win32WindowSystem(GetPluginUserDataPath());
+            windows.ThawLeftoverGame();
+            AppDomain.CurrentDomain.UnhandledException += (_, __) => windows.ThawGame();
+            AppDomain.CurrentDomain.ProcessExit += (_, __) => windows.ThawGame();
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
@@ -81,6 +87,9 @@ namespace XboxSeries.Extension
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
+            // Thawed as the exception passes, left for Playnite to handle or crash on.
+            PlayniteApi.MainView.UIDispatcher.UnhandledException += (_, __) => windows.ThawGame();
+
             // Created here, on the UI thread, which owns the Overlay and runs the core. The Toast's may be already, for
             // the Start-up sequence's greeting.
             var overlay = new OverlayWindow(core);
@@ -154,6 +163,9 @@ namespace XboxSeries.Extension
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
             PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
+
+            // The core thaws a frozen game as it stops; this is in case it couldn't. Does nothing when none is frozen.
+            windows.ThawGame();
 
             // Playnite releases its audio engine only after this returns, so the sound gets to finish.
             sounds.PlayToEnd(UiSound.PowerOff);
