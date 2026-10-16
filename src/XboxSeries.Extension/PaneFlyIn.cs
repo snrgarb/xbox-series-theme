@@ -15,7 +15,7 @@ namespace XboxSeries.Extension
     internal static class PaneFlyIn
     {
         /// <summary>How far from where it settles the new content starts, at 1080p.</summary>
-        public const double Travel = 50;
+        private const double Travel = 50;
 
         /// <summary>How long it takes to settle, as on the console.</summary>
         private static readonly Duration SlideDuration = TimeSpan.FromMilliseconds(230);
@@ -24,50 +24,36 @@ namespace XboxSeries.Extension
         private static readonly ConditionalWeakTable<UIElement, Slide> slides = new ConditionalWeakTable<UIElement, Slide>();
 
         /// <summary>
-        /// Brings <paramref name="panes"/> in, from below for a <paramref name="direction"/> down the nav (positive) or
-        /// from above for one up it (negative), starting over from wherever any slide before it had got to.
+        /// Shows <paramref name="now"/> in place of what <paramref name="shown"/> held, and keeps it there. Reached by
+        /// focus moving <paramref name="alongNav"/>, <paramref name="host"/>, the page's own content, and any
+        /// <paramref name="alongside"/> it come in from below for a move down the nav or from above for one up it, by
+        /// where <paramref name="indexOf"/> puts each on the nav; reached any other way, as the page opening, they are
+        /// just there.
         /// </summary>
-        public static void Play(int direction, params UIElement[] panes)
+        public static void Follow<T>(ref T shown, T now, Func<T, int> indexOf, bool alongNav, UIElement host, UIElement alongside = null)
         {
+            var from = shown;
+            shown = now;
+            var direction = alongNav ? Math.Sign(indexOf(now) - indexOf(from)) : 0;
             if (direction == 0)
             {
-                Stop(panes);
+                Stop(host, alongside);
                 return;
             }
 
-            new Slide(panes).Start(Math.Sign(direction) * Travel);
+            new Slide(host).Start(direction * Travel, host, alongside);
         }
 
-        /// <summary>Puts <paramref name="panes"/> where they settle at once, as when the page opens or closes.</summary>
+        /// <summary>Puts <paramref name="panes"/> where they settle at once, as when the page opens, closes or goes.</summary>
         public static void Stop(params UIElement[] panes)
         {
             foreach (var pane in panes)
             {
-                if (pane == null)
-                {
-                    continue;
-                }
-
-                if (slides.TryGetValue(pane, out var slide))
+                if (pane != null && slides.TryGetValue(pane, out var slide))
                 {
                     slide.Cancel();
                 }
-
-                AtRest(pane);
             }
-        }
-
-        private static void AtRest(UIElement pane)
-        {
-            pane.BeginAnimation(UIElement.OpacityProperty, null);
-            pane.Opacity = 1;
-            if (pane.RenderTransform is TranslateTransform shift)
-            {
-                shift.BeginAnimation(TranslateTransform.YProperty, null);
-                shift.Y = 0;
-            }
-
-            pane.CacheMode = null;
         }
 
         /// <summary>
@@ -87,26 +73,64 @@ namespace XboxSeries.Extension
             return unit.Length * source.CompositionTarget.TransformToDevice.M22;
         }
 
-        private sealed class Slide
+        /// <summary>
+        /// One element on the move: shifted by a translate of its own, after any transform it already had, which is put
+        /// back as it was when it settles.
+        /// </summary>
+        private sealed class Moving
         {
-            private readonly List<UIElement> panes = new List<UIElement>();
-            private EventHandler pendingStart;
+            public readonly UIElement Pane;
+            public readonly TranslateTransform Shift;
+            private readonly object ownTransform;
 
-            public Slide(IEnumerable<UIElement> panes)
+            public Moving(UIElement pane, double from)
             {
-                foreach (var pane in panes)
-                {
-                    if (pane != null)
-                    {
-                        this.panes.Add(pane);
-                    }
-                }
+                Pane = pane;
+                ownTransform = pane.ReadLocalValue(UIElement.RenderTransformProperty);
+                Shift = new TranslateTransform(0, from);
+                var own = pane.RenderTransform;
+                pane.RenderTransform = own == null || own == Transform.Identity
+                    ? (Transform)Shift
+                    : new TransformGroup { Children = { own, Shift } };
             }
 
-            public void Start(double from)
+            public void Rest()
+            {
+                Pane.BeginAnimation(UIElement.OpacityProperty, null);
+                Pane.Opacity = 1;
+                Pane.CacheMode = null;
+                if (ownTransform == DependencyProperty.UnsetValue)
+                {
+                    Pane.ClearValue(UIElement.RenderTransformProperty);
+                }
+                else
+                {
+                    Pane.SetValue(UIElement.RenderTransformProperty, ownTransform);
+                }
+            }
+        }
+
+        private sealed class Slide
+        {
+            private readonly UIElement cached;
+            private readonly List<Moving> moving = new List<Moving>();
+            private EventHandler pendingStart;
+
+            /// <summary>A slide that draws <paramref name="cached"/>, the page's own content, into a picture as it moves.</summary>
+            public Slide(UIElement cached)
+            {
+                this.cached = cached;
+            }
+
+            public void Start(double from, params UIElement[] panes)
             {
                 foreach (var pane in panes)
                 {
+                    if (pane == null)
+                    {
+                        continue;
+                    }
+
                     if (slides.TryGetValue(pane, out var older))
                     {
                         older.Cancel();
@@ -114,21 +138,18 @@ namespace XboxSeries.Extension
 
                     slides.Add(pane, this);
 
-                    if (!(pane.RenderTransform is TranslateTransform) || pane.RenderTransform.IsFrozen)
-                    {
-                        pane.RenderTransform = new TranslateTransform();
-                    }
-
                     // Hidden where it starts at once, so the old content goes at once, whatever an older slide had got to.
+                    moving.Add(new Moving(pane, from));
                     pane.BeginAnimation(UIElement.OpacityProperty, null);
                     pane.Opacity = 0;
-                    var shift = (TranslateTransform)pane.RenderTransform;
-                    shift.BeginAnimation(TranslateTransform.YProperty, null);
-                    shift.Y = from;
 
-                    // While it slides, it is drawn once into a picture at the screen's own resolution, so sharp, and the
-                    // graphics card moves that picture rather than redrawing the content every frame.
-                    pane.CacheMode = new BitmapCache(PixelsPerUnit(pane)) { SnapsToDevicePixels = true };
+                    // While it slides, the page's own content is drawn once into a picture at the screen's own resolution,
+                    // so sharp, and the graphics card moves that picture rather than redrawing it every frame. Playnite's
+                    // main list isn't: virtualised, its covers loading and its size changing, it would keep redrawing it.
+                    if (pane == cached)
+                    {
+                        pane.CacheMode = new BitmapCache(PixelsPerUnit(pane)) { SnapsToDevicePixels = true };
+                    }
                 }
 
                 // As the Guide's wide dialog does, the slide starts once the new content's first frame has been drawn, so
@@ -150,21 +171,24 @@ namespace XboxSeries.Extension
 
             private void Run()
             {
-                foreach (var pane in panes)
+                foreach (var held in moving)
                 {
                     var settle = new DoubleAnimation(0, SlideDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
                     var fade = new DoubleAnimation(1, SlideDuration) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
-                    var settling = pane;
-                    fade.Completed += (_, __) =>
-                    {
-                        if (slides.TryGetValue(settling, out var current) && current == this)
-                        {
-                            slides.Remove(settling);
-                            AtRest(settling);
-                        }
-                    };
-                    ((TranslateTransform)pane.RenderTransform).BeginAnimation(TranslateTransform.YProperty, settle);
-                    pane.BeginAnimation(UIElement.OpacityProperty, fade);
+                    var settling = held;
+                    fade.Completed += (_, __) => Settle(settling);
+                    held.Shift.BeginAnimation(TranslateTransform.YProperty, settle);
+                    held.Pane.BeginAnimation(UIElement.OpacityProperty, fade);
+                }
+            }
+
+            /// <summary>Puts <paramref name="held"/> where it settles, unless a newer slide has taken it over.</summary>
+            private void Settle(Moving held)
+            {
+                if (slides.TryGetValue(held.Pane, out var current) && current == this)
+                {
+                    slides.Remove(held.Pane);
+                    held.Rest();
                 }
             }
 
@@ -180,13 +204,9 @@ namespace XboxSeries.Extension
                     pendingStart = null;
                 }
 
-                foreach (var pane in panes)
+                foreach (var held in moving)
                 {
-                    if (slides.TryGetValue(pane, out var current) && current == this)
-                    {
-                        slides.Remove(pane);
-                        AtRest(pane);
-                    }
+                    Settle(held);
                 }
             }
         }
