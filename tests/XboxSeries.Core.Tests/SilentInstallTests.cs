@@ -117,6 +117,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void An_install_Steam_has_written_nothing_for_leaves_the_queue_after_a_minute()
+        {
+            // Steam's adapter reports a game it has no manifest for as waiting, with nothing down of nothing.
+            var library = SteamGame("Hades");
+            downloads.With(library.Id("Hades"), isActive: false, 0, 0);
+            core.InstallGame(library.Id("Hades"));
+
+            clock.Advance(TimeSpan.FromSeconds(60));
+
+            Assert.Empty(core.MyGames.Queue);
+        }
+
+        [Fact]
         public void An_install_Steam_reports_progress_for_stays_in_the_queue_past_a_minute()
         {
             var library = SteamGame("Hades");
