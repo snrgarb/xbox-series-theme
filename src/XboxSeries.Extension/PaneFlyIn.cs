@@ -10,8 +10,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The console's change of the content beside a page's nav, as focus moves along it: the old content goes at once,
     /// and the new comes in a short way, up from below as focus moves down the nav or down from above as it moves up,
-    /// fading in as it slows to a stop. Shared by My games &amp; apps and Settings; Full library's tabs, across the page,
-    /// bring theirs in from the side.
+    /// fading in as it slows to a stop. Shared by My games &amp; apps and Settings; Full library's and the Guide's tabs,
+    /// across the page, bring theirs in from the side.
     /// </summary>
     internal static class PaneFlyIn
     {
@@ -45,9 +45,10 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// As <see cref="Follow{T}"/>, for tabs across the page: <paramref name="pane"/> comes in from the right for a move
-        /// right along them or from the left for one left. It is drawn as it moves, not as a picture: it's Playnite's main list.
+        /// right along them or from the left for one left. Drawn into a picture as it moves <paramref name="asPicture"/>;
+        /// not Playnite's main list, which would keep redrawing it.
         /// </summary>
-        public static void FollowAcross<T>(ref T shown, T now, Func<T, int> indexOf, bool alongTabs, UIElement pane)
+        public static void FollowAcross<T>(ref T shown, T now, Func<T, int> indexOf, bool alongTabs, UIElement pane, bool asPicture = false)
         {
             var direction = Direction(ref shown, now, indexOf, alongTabs);
             if (direction == 0)
@@ -56,7 +57,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            new Slide(null).Start(new Vector(direction * Travel, 0), pane);
+            new Slide(asPicture ? pane : null).Start(new Vector(direction * Travel, 0), pane);
         }
 
         /// <summary>Which way along the nav or tabs <paramref name="now"/> is from what was shown, 0 if not reached along them.</summary>

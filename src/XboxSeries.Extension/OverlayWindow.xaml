@@ -838,7 +838,8 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <DockPanel Grid.Row="1" Margin="0,30,0,0">
+                    <!-- The tab's content, which comes in from the side as LB/RB switch tabs (PaneFlyIn). -->
+                    <DockPanel x:Name="TabContent" Grid.Row="1" Margin="0,30,0,0">
                         <!--
                             The landing tab's row of utilities along the bottom, as on the console: small squares from the
                             left, Notifications, with how many there are, and Audio, each opening its flyout. Empty, and so
