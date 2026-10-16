@@ -71,6 +71,13 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
+        /// What the extension's own main action on the game's Game hub reads: "Install" while <see cref="CanInstallSilently"/>;
+        /// "Queued" or "Installing..." while the queue holds an install Playnite didn't start, which Playnite's own action
+        /// would offer to start again; null where Playnite's own action stands (any other game).
+        /// </summary>
+        public string InstallActionLabel(Guid gameId) => CanInstallSilently(gameId) ? "Install" : null;
+
+        /// <summary>
         /// The Game hub's Install, for a game <see cref="CanInstallSilently"/>: asks its client to install it, puts it in
         /// the queue as Queued, and goes back from the hub to where it was opened from, as the console does.
         /// </summary>
