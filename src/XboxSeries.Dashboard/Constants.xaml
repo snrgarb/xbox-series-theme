@@ -10,20 +10,20 @@
     <SolidColorBrush x:Key="GlyphLightBrush" Color="#FF2CA243" />
     <!--
         The faint green glow the console gives whatever has focus: a blurred band, the child of the Border that draws the
-        focus shape (a ring, slab or bar), so it shows and hides with it. From a 4 px ring's inside, -10 centres its 16 on
-        the ring. A ring's own drop shadow is too thin to show; this matches the console's recording. A round ring sets
-        CornerRadius 999 on its band, as on itself.
+        focus shape (a ring, slab or bar), so it shows and hides with it. From a 4 px ring's inside, -7.5 centres its 11 on
+        the ring. A ring's own drop shadow is too thin to show; this is matched to the console's recording, drawn 30%
+        tighter. A round ring sets CornerRadius 999 on its band, as on itself.
     -->
     <Style x:Key="XboxFocusGlow" TargetType="Border">
-        <Setter Property="BorderThickness" Value="16" />
-        <Setter Property="Margin" Value="-10" />
+        <Setter Property="BorderThickness" Value="11" />
+        <Setter Property="Margin" Value="-7.5" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Opacity" Value="0.5" />
         <Setter Property="IsHitTestVisible" Value="False" />
         <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
         <Setter Property="Effect">
             <Setter.Value>
-                <BlurEffect Radius="24" />
+                <BlurEffect Radius="17" />
             </Setter.Value>
         </Setter>
     </Style>

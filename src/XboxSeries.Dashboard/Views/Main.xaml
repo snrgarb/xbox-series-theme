@@ -64,7 +64,7 @@
                         <!-- A round Border, not an Ellipse, so the ring can carry the glow band, centred on its 3 px stroke. -->
                         <Border x:Name="Ring" Background="#33FFFFFF" BorderThickness="3" CornerRadius="999"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                            <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-9.5" />
+                            <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-7" />
                         </Border>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                             <ContentPresenter.RenderTransform>
@@ -144,7 +144,7 @@
                             <!-- A round Border, not an Ellipse, so the ring can carry the glow band, centred on its 3 px stroke. -->
                             <Border x:Name="Ring" Margin="-4" BorderThickness="3" CornerRadius="999"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                                <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-9.5" />
+                                <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-7" />
                             </Border>
                         </Grid>
                         <Grid VerticalAlignment="Center" Margin="16,0,0,0">
