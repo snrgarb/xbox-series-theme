@@ -42,6 +42,9 @@ namespace XboxSeries.Core
         /// <summary>Whether a library snapshot has come in yet: the first one starts no install.</summary>
         private bool librarySeen;
 
+        /// <summary>Whether the queue has been built from a library snapshot yet: what it holds then gets no Queued Toast.</summary>
+        private bool queueSeen;
+
         /// <summary>The games seen to finish installing since Playnite started, the latest first.</summary>
         private readonly List<Guid> installedThisSession = new List<Guid>();
 
@@ -75,7 +78,16 @@ namespace XboxSeries.Core
         /// "Queued" or "Installing..." while the queue holds an install Playnite didn't start, which Playnite's own action
         /// would offer to start again; null where Playnite's own action stands (any other game).
         /// </summary>
-        public string InstallActionLabel(Guid gameId) => CanInstallSilently(gameId) ? "Install" : null;
+        public string InstallActionLabel(Guid gameId)
+        {
+            if (CanInstallSilently(gameId))
+            {
+                return "Install";
+            }
+
+            var game = library.Games.FirstOrDefault(g => g.Id == gameId);
+            return game != null && !game.Installing && installOrder.Contains(gameId) ? StatusOf(gameId) : null;
+        }
 
         /// <summary>
         /// The Game hub's Install, for a game <see cref="CanInstallSilently"/>: asks its client to install it, puts it in
@@ -117,8 +129,7 @@ namespace XboxSeries.Core
             foreach (var installed in library.Games.Where(g => g.Installed && installsAsked.ContainsKey(g.Id)))
             {
                 installsAsked.Remove(installed.Id);
-                installedThisSession.Remove(installed.Id);
-                installedThisSession.Insert(0, installed.Id);
+                HeadRecentlyInstalled(installed.Id);
             }
 
             // One the client says nothing of a minute on, not even its progress, it won't install (it isn't owned, or
@@ -134,7 +145,20 @@ namespace XboxSeries.Core
                 .ToDictionary(g => g.Id);
             FollowClientInstalls(installing, clientInstalling);
             installOrder.RemoveAll(id => !installing.ContainsKey(id));
-            installOrder.AddRange(installing.Keys.Where(id => !installOrder.Contains(id)).ToList());
+            var joined = installing.Keys.Where(id => !installOrder.Contains(id)).ToList();
+            installOrder.AddRange(joined);
+
+            // Each game joining tells of it, as the console does; those already installing as Playnite started had
+            // joined before the extension was there to see it.
+            if (queueSeen)
+            {
+                foreach (var id in joined)
+                {
+                    EnqueueToast(new WaitingToast(Queued, ToastKind.Queued, installing[id].CoverImage));
+                }
+            }
+
+            queueSeen = true;
 
             // A game the client was asked to install that it says nothing of yet is waiting its turn: queued.
             var progress = installOrder.ToDictionary(
@@ -183,8 +207,7 @@ namespace XboxSeries.Core
             {
                 clientReported.Remove(finished);
                 downloads.MarkInstalled(finished);
-                installedThisSession.Remove(finished);
-                installedThisSession.Insert(0, finished);
+                HeadRecentlyInstalled(finished);
             }
 
             clientReported.UnionWith(clientInstalling.Where(id => queued.TryGetValue(id, out var game) && !game.Installing));
@@ -237,9 +260,15 @@ namespace XboxSeries.Core
             librarySeen = true;
             foreach (var finished in library.Games.Where(g => g.Installed && !g.Installing && wasInstalling.Contains(g.Id)))
             {
-                installedThisSession.Remove(finished.Id);
-                installedThisSession.Insert(0, finished.Id);
+                HeadRecentlyInstalled(finished.Id);
             }
+        }
+
+        /// <summary>A game seen to finish installing heads Recently installed, once only, however it was seen to finish.</summary>
+        private void HeadRecentlyInstalled(Guid gameId)
+        {
+            installedThisSession.Remove(gameId);
+            installedThisSession.Insert(0, gameId);
         }
 
         /// <summary>

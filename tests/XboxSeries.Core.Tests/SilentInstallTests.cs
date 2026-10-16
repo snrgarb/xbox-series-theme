@@ -238,6 +238,78 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(new[] { library.Id("Hades") }, playnite.ClosedGameHubs);
         }
 
+        [Fact]
+        public void The_hubs_own_action_reads_Install_for_a_game_that_installs_silently_and_nothing_for_any_other()
+        {
+            var library = SteamGame("Hades");
+            library.WithGame("Forza Horizon 5", source: "Xbox", installed: false).WithGame("Halo Infinite", source: "Steam", installed: true);
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Equal("Install", core.InstallActionLabel(library.Id("Hades")));
+            Assert.Null(core.InstallActionLabel(library.Id("Forza Horizon 5")));
+            Assert.Null(core.InstallActionLabel(library.Id("Halo Infinite")));
+        }
+
+        [Fact]
+        public void The_hubs_own_action_reads_the_queues_state_for_a_game_the_extension_is_installing()
+        {
+            var library = SteamGame("Hades");
+            core.InstallGame(library.Id("Hades"));
+            Assert.Equal("Queued", core.InstallActionLabel(library.Id("Hades")));
+
+            downloads.ClientInstalls.Add(library.Id("Hades"));
+            downloads.With(library.Id("Hades"), isActive: true, 1 * GB, 4 * GB);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal("Installing...", core.InstallActionLabel(library.Id("Hades")));
+        }
+
+        [Fact]
+        public void The_hubs_own_action_reads_the_queues_state_for_an_install_started_in_Steam_itself()
+        {
+            var library = SteamGame("Hades");
+            downloads.ClientInstalls.Add(library.Id("Hades"));
+            downloads.With(library.Id("Hades"), isActive: false, 0, 4 * GB);
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Equal("Queued", core.InstallActionLabel(library.Id("Hades")));
+        }
+
+        [Fact]
+        public void A_game_Playnite_is_installing_keeps_Playnites_own_action()
+        {
+            var library = new FakeLibrary().WithGame("Hades", source: "Steam", installed: false, installing: true);
+            downloads.Installable.Add(library.Id("Hades"));
+            downloads.ClientInstalls.Add(library.Id("Hades"));
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.Null(core.InstallActionLabel(library.Id("Hades")));
+        }
+
+        [Fact]
+        public void Install_on_a_game_already_queued_asks_Steam_nothing_more()
+        {
+            var library = SteamGame("Hades");
+            core.InstallGame(library.Id("Hades"));
+
+            core.InstallGame(library.Id("Hades"));
+
+            Assert.Single(downloads.InstallsAsked);
+        }
+
+        [Fact]
+        public void A_game_the_queue_gives_up_on_reads_Install_again()
+        {
+            var library = SteamGame("Hades");
+            core.InstallGame(library.Id("Hades"));
+
+            clock.Advance(TimeSpan.FromSeconds(60));
+
+            Assert.Equal("Install", core.InstallActionLabel(library.Id("Hades")));
+        }
+
         /// <summary>A library of not-installed Steam games, as the core has it.</summary>
         private FakeLibrary SteamGame(params string[] names)
         {

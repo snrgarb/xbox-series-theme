@@ -264,7 +264,7 @@ namespace XboxSeries.Core
                 return;
             }
 
-            PutBackShownNotification();
+            PutBackShownToast();
 
             ringToastTimer?.Dispose();
             Toast.Text = caller + " is calling";
