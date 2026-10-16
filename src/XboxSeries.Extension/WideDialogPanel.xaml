@@ -30,10 +30,10 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- As it shows, the band is there at once and its contents slide in from the left a moment after, as on the console. -->
+    <!-- As it shows, the band is there at once and its contents slide in a short way from the left a moment after. -->
     <Border Height="808" Margin="0,134,0,0" Background="#FF2D2D2D">
         <!-- The console's margins: tiles three to a row span all but the right 245, narrowing on a narrower screen. -->
-        <StackPanel Margin="132,78,229,0">
+        <StackPanel x:Name="Contents" Margin="132,78,229,0">
             <StackPanel.RenderTransform>
                 <TranslateTransform x:Name="ContentSlide" />
             </StackPanel.RenderTransform>
