@@ -424,9 +424,44 @@
                                         </Style>
                                     </ButtonEx.Style>
                                 </ButtonEx>
+                                <!--
+                                    Install, for a game that isn't installed, carries the console's subtitle under it: there
+                                    "Included with Game Pass", here the library it installs from, such as Steam; none when the
+                                    game has no source. While the game installs Playnite labels the action Installing... and A
+                                    only offers to stop watching the install, so it never starts a second one; that is near
+                                    enough the console's, which leaves the install to the queue, and it carries no subtitle.
+                                -->
                                 <ButtonEx x:Name="PART_ButtonContext">
                                     <ButtonEx.Style>
                                         <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxHubDefaultAction}">
+                                            <Setter Property="ContentTemplate">
+                                                <Setter.Value>
+                                                    <DataTemplate>
+                                                        <StackPanel HorizontalAlignment="Left">
+                                                            <TextBlock Text="{Binding Converter={StaticResource StringToUpperCaseConverter}}" />
+                                                            <!-- The content is Playnite's label, so the source comes from the button's game. -->
+                                                            <TextBlock x:Name="Subtitle" Style="{StaticResource XboxHubDimText}" Visibility="Collapsed"
+                                                                       Text="{Binding DataContext.Source.Name, RelativeSource={RelativeSource AncestorType=ButtonEx}}" />
+                                                        </StackPanel>
+                                                        <DataTemplate.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding DataContext.IsInstalled, RelativeSource={RelativeSource AncestorType=ButtonEx}}" Value="False" />
+                                                                    <Condition Binding="{Binding DataContext.IsInstalling, RelativeSource={RelativeSource AncestorType=ButtonEx}}" Value="False" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter TargetName="Subtitle" Property="Visibility" Value="Visible" />
+                                                            </MultiDataTrigger>
+                                                            <!--
+                                                                After the one above, so a game with no source shows Install alone: Playnite
+                                                                gives such a game an empty source rather than none, as the badge's trigger knows.
+                                                            -->
+                                                            <DataTrigger Binding="{Binding DataContext.SourceId, RelativeSource={RelativeSource AncestorType=ButtonEx}}" Value="{x:Static sys:Guid.Empty}">
+                                                                <Setter TargetName="Subtitle" Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </DataTemplate.Triggers>
+                                                    </DataTemplate>
+                                                </Setter.Value>
+                                            </Setter>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsRunning}" Value="True">
                                                     <Setter Property="Visibility" Value="Collapsed" />
