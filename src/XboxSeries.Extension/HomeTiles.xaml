@@ -4,6 +4,7 @@
                     xmlns:local="clr-namespace:XboxSeries.Extension">
     <!-- Home's game tiles, shared by the Recent row and the Groups so that every tile on Home looks the same. -->
     <local:DecodedImageConverter x:Key="Image" />
+    <local:TileStatusConverter x:Key="StatusOf" />
 
     <!--
         Library source icons, as vector paths so they stay sharp however the row is scaled. Path data from
@@ -39,14 +40,31 @@
                             <ContentPresenter />
 
                             <!--
+                                A game being installed, as on the console: its state, Queued or Installing..., as the caption at
+                                the tile's foot. Focused, the title band shows it under the title instead.
+                            -->
+                            <Border x:Name="StatusBand" VerticalAlignment="Bottom" IsHitTestVisible="False" Background="#E6000000"
+                                    Visibility="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StatusOf}, ConverterParameter=Visibility}">
+                                <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StatusOf}}"
+                                           Margin="8" TextTrimming="CharacterEllipsis"
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
+                            </Border>
+
+                            <!--
                                 A solid black band behind the title, as on the console, so it reads over any art. It fills the
                                 tile's bottom edge, rounded by the tile's own clip.
                             -->
                             <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False"
                                     Background="#E6000000">
-                                <TextBlock Text="{TemplateBinding Tag}" Margin="8"
-                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
-                                           FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
+                                <StackPanel Margin="8">
+                                    <TextBlock Text="{TemplateBinding Tag}"
+                                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
+                                               FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
+                                    <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StatusOf}}"
+                                               Visibility="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StatusOf}, ConverterParameter=Visibility}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
+                                </StackPanel>
                             </Border>
                         </Grid>
 
@@ -64,6 +82,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="StatusBand" Property="Opacity" Value="0" />
                             <Trigger.EnterActions>
                                 <BeginStoryboard Storyboard="{StaticResource FocusedOn}" />
                             </Trigger.EnterActions>
