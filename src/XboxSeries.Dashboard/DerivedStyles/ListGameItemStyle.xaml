@@ -49,9 +49,9 @@
                     </ControlTemplate.Resources>
                     <!--
                         A fixed gap, as on the console, rather than Playnite's item spacing, so My games & apps' grid can line
-                        up: 12 between tiles, as tight as the console's grid; a focused tile's ring, 8 out, still clears the next.
+                        up: 15 between tiles, near the console's grid, as Apps' are; a focused tile's ring, 8 out, clears the next.
                     -->
-                    <Grid Margin="6"
+                    <Grid Margin="7.5"
                           RenderTransformOrigin="0.5,0.5"
                           d:DataContext="{x:Static DesignMainViewModel.DesignSelectedGameIntance}">
                         <Grid.RenderTransform>
