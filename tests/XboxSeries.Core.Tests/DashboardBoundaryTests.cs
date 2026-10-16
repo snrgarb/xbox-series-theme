@@ -28,6 +28,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Dashboard_xaml_uses_nothing_only_compiled_xaml_allows()
+        {
+            // Playnite reads the theme as loose XAML, which refuses x:Shared and so fails the whole theme.
+            XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+            foreach (var file in DashboardXaml())
+            {
+                var compiledOnly = XDocument.Load(file).Descendants().Attributes().Where(a => a.Name == x + "Shared");
+
+                Assert.Empty(compiledOnly);
+            }
+        }
+
+        [Fact]
         public void Dashboard_never_references_extension_types()
         {
             foreach (var file in DashboardXaml())
