@@ -144,8 +144,11 @@
 
         <Border Grid.Column="1" Background="{StaticResource DividerBrush}" />
 
-        <!-- The category showing: its name, over its options. -->
-        <Grid Grid.Column="2" Margin="77,72,170,0">
+        <!--
+            The category showing: its name, over its options. As focus moves along the rail it comes in a short way from
+            below or above, as on the console (PaneFlyIn).
+        -->
+        <Grid x:Name="CategoryHost" Grid.Column="2" Margin="77,72,170,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="118" />
                 <RowDefinition Height="*" />
