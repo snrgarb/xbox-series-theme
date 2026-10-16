@@ -144,16 +144,18 @@
                             <!--
                                 Audio's Output and Input dropdowns, as the console's Settings ones: a box under the title naming
                                 the device set, a long name cut short, with a chevron at its end, pointing up while the list is open.
+                                Open, the accent's edge and its glow are a border of their own over the box's, so the glow
+                                traces the box and not the name in it.
                             -->
-                            <Border x:Name="DropBox" Height="48" Margin="0,10,0,0" CornerRadius="4" BorderThickness="2"
-                                    BorderBrush="#80FFFFFF" Background="#14FFFFFF" Visibility="Collapsed">
-                                <Grid>
-                                    <TextBlock Text="{Binding Selection}" Style="{StaticResource GuideText}" FontSize="22" Margin="14,0,46,0"
-                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock x:Name="Chevron" Text="&#xE70D;" Style="{StaticResource GuideIcon}" FontSize="16"
-                                               HorizontalAlignment="Right" Margin="0,0,16,0" />
-                                </Grid>
-                            </Border>
+                            <Grid x:Name="DropBox" Height="48" Margin="0,10,0,0" Visibility="Collapsed">
+                                <Border CornerRadius="4" BorderThickness="2" BorderBrush="#80FFFFFF" Background="#14FFFFFF" />
+                                <TextBlock Text="{Binding Selection}" Style="{StaticResource GuideText}" FontSize="22" Margin="14,0,46,0"
+                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="Chevron" Text="&#xE70D;" Style="{StaticResource GuideIcon}" FontSize="16"
+                                           HorizontalAlignment="Right" Margin="0,0,16,0" />
+                                <Border x:Name="DropRing" CornerRadius="4" BorderThickness="2" BorderBrush="{DynamicResource GlyphLightBrush}"
+                                        Visibility="Collapsed" Effect="{DynamicResource XboxFocusGlow}" />
+                            </Grid>
                             <!-- Audio's volume slider: a track filled to the level, in the accent. -->
                             <ProgressBar x:Name="Slider" Minimum="0" Maximum="100" Value="{Binding Level, Mode=OneWay}"
                                          Height="6" Margin="0,12,56,0" Visibility="Collapsed" Focusable="False">
@@ -249,9 +251,10 @@
                             <TextBlock x:Name="TileDetail" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="17"
                                        Foreground="#B3FFFFFF" TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
-                        <!-- The tiles' ring, 1 px past the entry as theirs is past their art. -->
+                        <!-- The tiles' ring, 1 px past the entry as theirs is past their art, with the console's glow round it. -->
                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
-                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                Effect="{DynamicResource XboxFocusGlow}" />
                     </Grid>
                     <!--
                         An Output or Input dropdown's open list, under its box and as wide, laid over the entries below
@@ -410,7 +413,7 @@
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                         <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
-                        <Setter TargetName="DropBox" Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
+                        <Setter TargetName="DropRing" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="AudioDevice">
@@ -809,8 +812,10 @@
                                             </Ellipse.Fill>
                                         </Ellipse>
                                     </Grid>
+                                    <!-- The showing tab's underline, glowing as the console's does. -->
                                     <Border x:Name="Underline" Height="6" VerticalAlignment="Bottom" Margin="0,0,0,-4" CornerRadius="2"
-                                            Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden" />
+                                            Background="{DynamicResource GlyphLightBrush}" Visibility="Hidden"
+                                            Effect="{DynamicResource XboxFocusGlow}" />
                                 </Grid>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding Kind}" Value="Discord">
@@ -857,8 +862,10 @@
                                             <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
                                                        Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
                                         </Border>
+                                        <!-- The entries' ring and glow. -->
                                         <Border x:Name="Ring" Margin="-1" BorderThickness="4" CornerRadius="7"
-                                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed" />
+                                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
+                                                Effect="{DynamicResource XboxFocusGlow}" />
                                     </Grid>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding Kind}" Value="Notifications">
