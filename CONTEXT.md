@@ -102,6 +102,10 @@ _Avoid_: account, user (that is the Windows user), gamer
 **Start-up**'s profile picker: the **Profiles** in a row, focus on the one signed in last, and A signs the focused one in. It asks on every start and on waking from sleep, unless turned off on **Settings**, when the last Profile signs in by itself.
 _Avoid_: profile select, login, user switcher
 
+**Spinner**:
+The console's loading spinner: a white arc with a green tail that grows clockwise from a dot at the top, its tail chasing its head round, and rests as the dot before the next turn. It turns round the **Profile**'s picture on Signing you in, and in the **Dashboard**'s top bar while Playnite updates the library.
+_Avoid_: loading ring, progress ring, light
+
 **Discord tab**:
 The Guide tab, in the console's Parties & chats slot, that shows the user's Discord voice activity. It appears once the user has connected their own Discord application and stays until they disconnect it: while it can't show Discord it says only why: "Connecting to Discord" while a connect is under way, and "Discord isn't running" while Discord can't be reached and the extension keeps trying it, backing off, until it can sign in again by itself; once nothing is trying Discord, as when it no longer can sign in by itself, it says "Reconnect Discord in settings".
 _Avoid_: party, chats

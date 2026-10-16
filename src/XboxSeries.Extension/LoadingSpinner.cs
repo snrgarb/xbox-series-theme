@@ -42,7 +42,9 @@ namespace XboxSeries.Extension
             Focusable = false;
             IsHitTestVisible = false;
             SetResourceReference(TailBrushProperty, "GlyphLightBrush");
+            // Shown before it is loaded, it starts once loaded; loaded again while still shown, it starts again.
             IsVisibleChanged += (_, __) => UpdateSpinning();
+            Loaded += (_, __) => UpdateSpinning();
             Unloaded += (_, __) => UpdateSpinning();
         }
 
@@ -110,13 +112,13 @@ namespace XboxSeries.Extension
             if (TailBrush != null)
             {
                 tailPen = tailPen ?? MakePen(TailBrush, thickness);
-                DrawArc(drawingContext, tailPen, centre, radius, arcs.GreenTail, arcs.WhiteTail, false);
+                DrawArc(drawingContext, tailPen, centre, radius, arcs.GreenTail, arcs.WhiteTail);
             }
 
             if (HeadBrush != null)
             {
                 headPen = headPen ?? MakePen(HeadBrush, thickness);
-                DrawArc(drawingContext, headPen, centre, radius, arcs.WhiteTail, arcs.Head, true);
+                DrawArc(drawingContext, headPen, centre, radius, arcs.WhiteTail, arcs.Head);
             }
         }
 
@@ -132,26 +134,15 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The arc clockwise from <paramref name="from"/> to <paramref name="to"/>, in degrees from the top. One of no
-        /// length is a dot, if <paramref name="dotWhenEmpty"/>, or nothing; a whole turn or more is the whole ring.
+        /// The arc clockwise from <paramref name="from"/> to <paramref name="to"/>, in degrees from the top; one of no
+        /// length, as the green tail is at the start and end of a turn, is nothing. The white arc is never shorter than
+        /// the spinner's dot, nor either arc a whole turn.
         /// </summary>
-        private static void DrawArc(DrawingContext dc, Pen pen, Point centre, double radius, double from, double to, bool dotWhenEmpty)
+        private static void DrawArc(DrawingContext dc, Pen pen, Point centre, double radius, double from, double to)
         {
             var sweep = to - from;
             if (sweep <= 0.01)
             {
-                if (dotWhenEmpty)
-                {
-                    var dot = pen.Thickness / 2;
-                    dc.DrawEllipse(pen.Brush, null, PointAt(centre, radius, to), dot, dot);
-                }
-
-                return;
-            }
-
-            if (sweep >= 359.99)
-            {
-                dc.DrawEllipse(null, pen, centre, radius, radius);
                 return;
             }
 

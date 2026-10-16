@@ -7,9 +7,9 @@
         as Signing you in turns it round the profile's picture. A white arc with a green tail chases round a ring with
         round ends and no track ring under it, growing clockwise from a dot at the top and resting as the dot again
         before the next turn. The ring fills the control with its stroke inside it, thicker for its size than the one
-        round the picture so it still reads at the top bar's 26 px, about 2 px there. Its keyframes are the extension's
-        own spinner sampled 100 times a second; the Dashboard can't use the extension, so DashboardSpinnerTests keeps
-        them matching it and prints new ones when they don't. It turns only while it is visible: Playnite collapses it
+        round the picture so it still reads at the top bar's 26 px, about 2 px there. Its keyframes are the core's Spinner
+        sampled 100 times a second, those where a point stands still left out; the Dashboard can't use the extension or
+        the core, so DashboardSpinnerTests keeps them matching it and prints new ones when they don't. It turns only while it is visible: Playnite collapses it
         when the library is idle, and it stops then rather than turning unseen.
     -->
     <Style x:Key="ProgressIndicator" TargetType="ContentControl">
