@@ -47,6 +47,12 @@ namespace XboxSeries.Extension
             /// <summary>Over CEF debugging: <c>SteamClient.Downloads.QueueAppUpdate</c>, with no wizard at all.</summary>
             CefQueue,
 
+            /// <summary>
+            /// Over CEF debugging: <c>app_install</c> typed into the client's own console, as its Console tab would,
+            /// so no steam.exe is started to hand the command over.
+            /// </summary>
+            CefConsole,
+
             /// <summary>A manifest stub saying the app needs an update, then <c>QueueAppUpdate</c> over CEF debugging.</summary>
             StubCefQueue,
 
@@ -145,6 +151,9 @@ namespace XboxSeries.Extension
                         break;
                     case Trial.CefQueue:
                         watch.Note(await EvaluateInSteam(CefQueueScript(appId)));
+                        break;
+                    case Trial.CefConsole:
+                        watch.Note(await EvaluateInSteam(CefConsoleScript(appId)));
                         break;
                     case Trial.StubCefQueue:
                         if (TryWriteStub(appId, target.Value, watch))
@@ -267,44 +276,74 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Opens the client's install wizard for the app from its own script, as its Install button does, waits for the
-        /// wizard to reach the page that asks where to install (or the licence agreements), and continues it there,
-        /// as pressing Install would. Reports the wizard's states (Steam's EInstallMgrState) on the way.
+        /// wizard to reach the page that asks where to install (or the licence agreements), and continues it there
+        /// into the first library, as pressing Install would. The wizard's states (Steam's EInstallMgrState) come from
+        /// its ShowInstallWizard event as well as from asking, as GetInstallManagerInfo stayed at 0 when only asked.
         /// </summary>
         private static string CefWizardScript(uint appId) => @"(async () => {
   const installs = SteamClient.Installs;
   const states = [];
-  installs.OpenInstallWizard([" + appId + @"]);
-  for (let i = 0; i < 100; i++) {
-    const info = await installs.GetInstallManagerInfo();
-    if (states[states.length - 1] !== info.eInstallState) states.push(info.eInstallState);
-    if (info.eInstallState === 7 || info.eInstallState === 8) {
-      installs.ContinueInstall();
-      await new Promise(r => setTimeout(r, 1000));
-      const after = await installs.GetInstallManagerInfo();
-      states.push(after.eInstallState);
-      return 'wizard ' + states.join('>') + ', folder ' + info.iInstallFolder + ', error ' + after.eAppError;
+  let shown = null;
+  const reg = installs.RegisterForShowInstallWizard(info => { shown = info; });
+  try {
+    installs.OpenInstallWizard([" + appId + @"]);
+    for (let i = 0; i < 100; i++) {
+      const info = shown || await installs.GetInstallManagerInfo();
+      shown = null;
+      if (states[states.length - 1] !== info.eInstallState) states.push(info.eInstallState);
+      if (info.eInstallState === 7 || info.eInstallState === 8) {
+        installs.SetInstallFolder(0);
+        installs.ContinueInstall();
+        await new Promise(r => setTimeout(r, 1000));
+        const after = await installs.GetInstallManagerInfo();
+        states.push(after.eInstallState);
+        return 'wizard ' + states.join('>') + ', apps ' + JSON.stringify(info.rgApps.map(a => a.nAppID)) + ', error ' + after.eAppError;
+      }
+      if (info.eInstallState >= 14) break;
+      await new Promise(r => setTimeout(r, 100));
     }
-    if (info.eInstallState >= 14) break;
-    await new Promise(r => setTimeout(r, 100));
+    return 'wizard ' + states.join('>') + ', never asked where';
+  } finally {
+    reg.unregister();
   }
-  return 'wizard ' + states.join('>') + ', never asked where';
 })()";
 
         /// <summary>Has the client queue the app's update, as the Downloads page's play button does, then lists its download queue.</summary>
         private static string CefQueueScript(uint appId) => @"(async () => {
   SteamClient.Downloads.QueueAppUpdate(" + appId + @");
   await new Promise(r => setTimeout(r, 1000));
-  return await new Promise(resolve => {
+  return 'queue ' + await " + DownloadQueueScript + @";
+})()";
+
+        /// <summary>
+        /// Types <c>app_install</c> into the client's console, as its Console tab would, then reports what the console
+        /// wrote back over the next three seconds and the download queue.
+        /// </summary>
+        private static string CefConsoleScript(uint appId) => @"(async () => {
+  const said = [];
+  const reg = SteamClient.Console.RegisterForSpewOutput(s => { if (s.spew_type !== 'input') said.push(s.spew.trim()); });
+  try {
+    SteamClient.Console.ExecCommand('app_install " + appId + @"');
+    await new Promise(r => setTimeout(r, 3000));
+  } finally {
+    reg.unregister();
+  }
+  return 'console said ' + JSON.stringify(said.filter(s => s).join(' / ').slice(0, 200)) + '; queue ' + await " + DownloadQueueScript + @";
+})()";
+
+        // The client's download queue, as its Downloads page has it: each app id, starred if downloading. The event
+        // hands (downloading, [{ remote_client_id, item_data: [...] }]), one entry per PC, this one's id "0".
+        private const string DownloadQueueScript = @"new Promise(resolve => {
     let done = false;
-    const reg = SteamClient.Downloads.RegisterForDownloadItems((downloading, items) => {
+    const reg = SteamClient.Downloads.RegisterForDownloadItems((downloading, clients) => {
       if (done) return;
       done = true;
       reg.unregister();
-      resolve('queue ' + items.map(i => i.appid + (i.active ? '*' : '')).join(','));
+      const items = [].concat(...clients.map(c => c.item_data || []));
+      resolve(items.length ? items.map(i => i.appid + (i.active ? '*' : '')).join(',') : 'empty');
     });
-    setTimeout(() => { if (!done) { done = true; reg.unregister(); resolve('asked; Steam listed no download queue within 3 s'); } }, 3000);
-  });
-})()";
+    setTimeout(() => { if (!done) { done = true; reg.unregister(); resolve('not listed within 3 s'); } }, 3000);
+  })";
 
         /// <summary>
         /// Runs <paramref name="expression"/> in the client's SharedJSContext, its script that runs without a window,
@@ -396,7 +435,7 @@ namespace XboxSeries.Extension
             var owner = MostRecentSteamId(steam);
             if (owner == null)
             {
-                watch.Note("no stub: no account marked most recent in loginusers.vdf");
+                watch.Note("no stub: Steam isn't signed in, nor marks an account most recent in loginusers.vdf");
                 return false;
             }
 
@@ -441,9 +480,22 @@ namespace XboxSeries.Extension
             return true;
         }
 
-        /// <summary>The SteamID64 of the account Steam last signed in, from config\loginusers.vdf; null when none is marked.</summary>
+        /// <summary>
+        /// The SteamID64 of the account Steam is signed in to, from the account id it keeps in the registry while it
+        /// runs, or else the one config\loginusers.vdf marks most recent, which today's clients no longer mark; null
+        /// when neither says.
+        /// </summary>
         private static string MostRecentSteamId(string steam)
         {
+            using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam\ActiveProcess"))
+            {
+                if (key?.GetValue("ActiveUser") is int account && account != 0)
+                {
+                    // An individual account's SteamID64 is its account id over this base.
+                    return (76561197960265728UL + (uint)account).ToString();
+                }
+            }
+
             var file = Path.Combine(steam, "config", "loginusers.vdf");
             if (!File.Exists(file))
             {

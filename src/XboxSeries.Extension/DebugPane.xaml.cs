@@ -57,10 +57,11 @@ namespace XboxSeries.Extension
                 Trial("steam://install", "", SteamDownloads.Trial.InstallUrl),
             });
 
-            var cefInstalls = new DebugPage("CEF installs", "Each runs Steam's own script over its CEF debugger, which must be on.", new[]
+            var cefInstalls = new DebugPage("CEF installs", "Each runs Steam's own script over its CEF debugger, which must be on; the last types into its console.", new[]
             {
                 Trial("Wizard, continued", "", SteamDownloads.Trial.CefWizard),
                 Trial("QueueAppUpdate", "", SteamDownloads.Trial.CefQueue),
+                Trial("Console app_install", "", SteamDownloads.Trial.CefConsole),
             });
 
             var stubInstalls = new DebugPage("Stub installs", "Each writes an appmanifest stub saying the target needs downloading, then:", new[]
