@@ -4,7 +4,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Security;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -14,8 +16,9 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Installing Steam games through Steam's own command line, which the running client takes without a window, and
-    /// following the installs Steam runs that Playnite didn't start, from the manifests Steam writes for them.
+    /// Installing Steam games through the running client's own console, over its CEF debugger when the user has that
+    /// on, or else through Steam's command line, and following the installs Steam runs that Playnite didn't start,
+    /// from the manifests Steam writes for them.
     /// </summary>
     internal sealed partial class SteamDownloads
     {
@@ -73,14 +76,20 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Hands <c>+app_install</c> to steam.exe, which passes it to the running client and exits; the client installs
-        /// to its default library with no window. Not waited for: Steam is followed from its manifests instead. When
-        /// Steam isn't running this starts it, and <c>-silent</c> keeps its main window down as it does, though its
-        /// sign-in or update windows can still show.
+        /// Asks Steam to install the game to its default library. Not waited for: Steam is followed from its manifests
+        /// instead.
         /// <para>
-        /// The running client brings its window to the front as it takes a command when that window is open, but
-        /// stays in the tray when it's there, so Steam's open windows are sent to the tray first, and the command
-        /// goes once they've gone, or after <see cref="TrayWaitFor"/> regardless.
+        /// When Steam is running and the user has its CEF debugger on, <c>app_install</c> is typed into the client's
+        /// own console over that debugger, which starts the download with no Steam window and without Steam taking
+        /// the foreground. Every route through steam.exe raises a window of some kind, so that one is only the
+        /// fallback: when the debugger is off or can't be reached, or Steam isn't running.
+        /// </para>
+        /// <para>
+        /// The fallback hands <c>+app_install</c> to steam.exe, which passes it to the running client and exits. When
+        /// Steam isn't running this starts it, and <c>-silent</c> keeps its main window down as it does, though its
+        /// sign-in or update windows can still show. The running client brings its window to the front as it takes a
+        /// command when that window is open, but stays in the tray when it's there, so Steam's open windows are sent
+        /// to the tray first, and the command goes once they've gone, or after <see cref="TrayWaitFor"/> regardless.
         /// </para>
         /// </summary>
         public void Install(Guid gameId)
@@ -104,8 +113,79 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary><see cref="Install"/> for an app id, which <paramref name="what"/> names in the log.</summary>
-        private void InstallApp(string exe, uint appId, string what)
+        /// <summary>
+        /// <see cref="Install"/> for an app id, which <paramref name="what"/> names in the log: the console over CEF
+        /// first, then steam.exe should that not take. Returns at the first await, called on the UI thread, and carries
+        /// on there, as the fallback's timers need; nothing it does is let out of it, as nothing could catch it.
+        /// </summary>
+        private async void InstallApp(string exe, uint appId, string what)
+        {
+            try
+            {
+                if (await AskSteamConsole(appId, what))
+                {
+                    return;
+                }
+
+                InstallThroughSteamExe(exe, appId, what);
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, $"Couldn't ask Steam to install app {appId} for {what}");
+            }
+        }
+
+        /// <summary>
+        /// Types <c>app_install</c> into the running client's console over its CEF debugger; whether the command
+        /// reached it, as the console says nothing back worth reading. False, with the reason in the log, when Steam
+        /// isn't running, the user hasn't its debugger on, or the debugger couldn't be reached or answered otherwise,
+        /// so the install goes through steam.exe instead; true, too, when the connection was lost once the command
+        /// was sent, as it may already have taken.
+        /// </summary>
+        private async Task<bool> AskSteamConsole(uint appId, string what)
+        {
+            if (!IsSteamRunning())
+            {
+                logger.Info($"Steam isn't running, so app {appId} for {what} goes through steam.exe");
+                return false;
+            }
+
+            if (!IsCefDebuggingOn)
+            {
+                logger.Info($"Steam's CEF debugger is off, so app {appId} for {what} goes through steam.exe");
+                return false;
+            }
+
+            string answer;
+            try
+            {
+                answer = await EvaluateInSteam("SteamClient.Console.ExecCommand('app_install " + appId + "'); 'asked'");
+            }
+            catch (Exception e) when (e is WebSocketException || e is OperationCanceledException)
+            {
+                // The command was sent, so Steam may well be installing already: asking again through steam.exe would
+                // raise the window this route exists to avoid, for an install that's likely under way.
+                logger.Warn(e, $"Lost Steam's console over CEF after asking it to install app {appId} for {what}; not asking again through steam.exe");
+                return true;
+            }
+
+            if (answer == "asked")
+            {
+                logger.Info($"Asked Steam to install app {appId} for {what} through its console over CEF");
+                return true;
+            }
+
+            logger.Info(answer == null
+                ? $"Steam's CEF debugger couldn't be reached for app {appId} for {what}, so it goes through steam.exe"
+                : $"Steam's console over CEF answered '{answer}' for app {appId} for {what}, so it goes through steam.exe");
+            return false;
+        }
+
+        /// <summary>
+        /// <see cref="InstallApp"/>'s fallback: <c>-silent +app_install</c> handed to steam.exe, after Steam's open
+        /// windows have gone to the tray, and Playnite kept in front for a while after.
+        /// </summary>
+        private void InstallThroughSteamExe(string exe, uint appId, string what)
         {
             if (!IsSteamRunning())
             {
