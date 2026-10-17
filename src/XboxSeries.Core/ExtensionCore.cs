@@ -1506,6 +1506,7 @@ namespace XboxSeries.Core
         {
             ThawGame();
             GiveBackMainList();
+            playnite.ReleaseUserFilter();
         }
 
         private void CloseMyGames()
@@ -1513,6 +1514,7 @@ namespace XboxSeries.Core
             CancelNavSettle();
             MyGames.IsShown = false;
             GiveBackMainList();
+            playnite.ReleaseUserFilter();
         }
 
         private void GiveBackMainList()

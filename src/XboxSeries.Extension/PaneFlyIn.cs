@@ -11,7 +11,7 @@ namespace XboxSeries.Extension
     /// The console's change of the content beside a page's nav, as focus moves along it: the old content goes at once,
     /// and the new comes in a short way, up from below as focus moves down the nav or down from above as it moves up,
     /// fading in as it slows to a stop. Shared by My games &amp; apps and Settings; Full library's and the Guide's tabs,
-    /// across the page, bring theirs in from the side.
+    /// across the page, bring theirs in from the side. Playnite's main list only slides, without the fade.
     /// </summary>
     internal static class PaneFlyIn
     {
@@ -45,8 +45,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// As <see cref="Follow{T}"/>, for tabs across the page: <paramref name="pane"/> comes in from the right for a move
-        /// right along them or from the left for one left. Drawn into a picture as it moves <paramref name="asPicture"/>;
-        /// not Playnite's main list, which would keep redrawing it.
+        /// right along them or from the left for one left. Drawn into a picture as it moves, and fading in, <paramref
+        /// name="asPicture"/>; not Playnite's main list, which would keep redrawing the picture, and so only slides.
         /// </summary>
         public static void FollowAcross<T>(ref T shown, T now, Func<T, int> indexOf, bool alongTabs, UIElement pane, bool asPicture = false)
         {
@@ -107,9 +107,13 @@ namespace XboxSeries.Extension
             public readonly TranslateTransform Shift;
             private readonly object ownTransform;
 
-            public Moving(UIElement pane, Vector from)
+            /// <summary>Whether it fades in as it slides: only content drawn into a picture as it moves.</summary>
+            public readonly bool Fades;
+
+            public Moving(UIElement pane, Vector from, bool fades)
             {
                 Pane = pane;
+                Fades = fades;
                 ownTransform = pane.ReadLocalValue(UIElement.RenderTransformProperty);
                 Shift = new TranslateTransform(from.X, from.Y);
                 var own = pane.RenderTransform;
@@ -163,13 +167,16 @@ namespace XboxSeries.Extension
                     slides.Add(pane, this);
 
                     // Hidden where it starts at once, so the old content goes at once, whatever an older slide had got to.
-                    moving.Add(new Moving(pane, from));
+                    moving.Add(new Moving(pane, from, fades: pane == cached));
                     pane.BeginAnimation(UIElement.OpacityProperty, null);
                     pane.Opacity = 0;
 
                     // While it slides, the page's own content is drawn once into a picture at the screen's own resolution,
-                    // so sharp, and the graphics card moves that picture rather than redrawing it every frame. Playnite's
-                    // main list isn't: virtualised, its covers loading and its size changing, it would keep redrawing it.
+                    // so sharp, and the graphics card moves and fades that picture rather than redrawing it every frame.
+                    // Playnite's main list isn't: virtualised, its covers loading and its size changing, it would keep
+                    // redrawing it. Nor does the list fade: part see-through, the whole 4K list, its covers' shadows and
+                    // all, would be drawn into a layer of its own every frame of the fade, while Playnite is still
+                    // making its covers. It shows as it starts to slide instead.
                     if (pane == cached)
                     {
                         pane.CacheMode = new BitmapCache(PixelsPerUnit(pane)) { SnapsToDevicePixels = true };
@@ -198,11 +205,19 @@ namespace XboxSeries.Extension
                 foreach (var held in moving)
                 {
                     var settle = new DoubleAnimation(0, SlideDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
-                    var fade = new DoubleAnimation(1, SlideDuration) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
                     var settling = held;
-                    fade.Completed += (_, __) => Settle(settling);
+                    settle.Completed += (_, __) => Settle(settling);
                     held.Shift.BeginAnimation(held.Shift.X != 0 ? TranslateTransform.XProperty : TranslateTransform.YProperty, settle);
-                    held.Pane.BeginAnimation(UIElement.OpacityProperty, fade);
+                    if (held.Fades)
+                    {
+                        held.Pane.BeginAnimation(
+                            UIElement.OpacityProperty,
+                            new DoubleAnimation(1, SlideDuration) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } });
+                    }
+                    else
+                    {
+                        held.Pane.Opacity = 1;
+                    }
                 }
             }
 
