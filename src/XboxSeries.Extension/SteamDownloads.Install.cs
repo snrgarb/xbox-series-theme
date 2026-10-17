@@ -98,21 +98,25 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            if (exe == null)
+            if (exe != null)
             {
-                return;
+                InstallApp(exe, appId.Value, $"game {gameId}");
             }
+        }
 
+        /// <summary><see cref="Install"/> for an app id, which <paramref name="what"/> names in the log.</summary>
+        private void InstallApp(string exe, uint appId, string what)
+        {
             if (!IsSteamRunning())
             {
-                AskSteamToInstall(exe, appId.Value, gameId);
+                AskSteam(exe, $"-silent +app_install {appId}", what, ref installWarned);
                 return;
             }
 
             var open = SteamWindows();
             if (open.Count == 0)
             {
-                AskSteamToInstall(exe, appId.Value, gameId);
+                AskSteam(exe, $"-silent +app_install {appId}", what, ref installWarned);
                 KeepPlayniteInFront();
                 return;
             }
@@ -133,17 +137,21 @@ namespace XboxSeries.Extension
                 }
 
                 timer.Stop();
-                AskSteamToInstall(exe, appId.Value, gameId);
+                AskSteam(exe, $"-silent +app_install {appId}", what, ref installWarned);
                 KeepPlayniteInFront();
             };
             timer.Start();
         }
 
-        private void AskSteamToInstall(string exe, uint appId, Guid gameId)
+        /// <summary>
+        /// Runs steam.exe with <paramref name="arguments"/>, which a running client takes over; for <paramref name="what"/>,
+        /// in the log, where a failure is warned of once for each <paramref name="warned"/>.
+        /// </summary>
+        private static void AskSteam(string exe, string arguments, string what, ref bool warned)
         {
             try
             {
-                using (Process.Start(new ProcessStartInfo(exe, $"-silent +app_install {appId}")
+                using (Process.Start(new ProcessStartInfo(exe, arguments)
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true,
@@ -154,7 +162,7 @@ namespace XboxSeries.Extension
             }
             catch (Exception e) when (IsReadFailure(e) || e is Win32Exception || e is InvalidOperationException)
             {
-                WarnOnce(ref installWarned, e, $"Couldn't ask Steam to install game {gameId}");
+                WarnOnce(ref warned, e, $"Couldn't ask Steam '{arguments}' for {what}");
             }
         }
 

@@ -233,7 +233,7 @@ namespace XboxSeries.Extension
             else if (e.OriginalSource == DebugItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
                 e.Handled = true;
-                DebugButtons[0].Focus();
+                DebugColumns[0][0].Focus();
             }
 #endif
             else if (pad == ControllerInput.A)
@@ -328,11 +328,58 @@ namespace XboxSeries.Extension
         }
 
 #if DEBUG
-        /// <summary>The Debug menu's buttons, top to bottom, each with the Toast it puts up.</summary>
-        private Button[] DebugButtons => new[]
+        private SteamDownloads steamTrials;
+
+        /// <summary>Debug builds only: the Steam adapter whose install trials the Debug menu runs.</summary>
+        internal SteamDownloads SteamTrials
         {
-            DebugNotificationButton, DebugScreenshotButton, DebugLongButton, DebugThreeButton,
-            DebugCallButton, DebugCallAvatarButton, DebugCallAvatarFailsButton,
+            get => steamTrials;
+            set
+            {
+                steamTrials = value;
+                ShowCefDebugging();
+            }
+        }
+
+        /// <summary>The CEF debugging button, reading whether it's on now, as it stays on across restarts until turned off.</summary>
+        private void ShowCefDebugging()
+        {
+            DebugSteamCefText.Text = $"Steam: CEF debugging {(steamTrials?.IsCefDebuggingOn == true ? "on" : "off")}";
+        }
+
+        /// <summary>
+        /// The Debug menu's buttons, column by column, top to bottom: the Toasts and the Steam trials' tools, then the
+        /// Steam trials.
+        /// </summary>
+        private Button[][] DebugColumns => new[]
+        {
+            new[]
+            {
+                DebugNotificationButton, DebugScreenshotButton, DebugLongButton, DebugThreeButton,
+                DebugCallButton, DebugCallAvatarButton, DebugCallAvatarFailsButton,
+                DebugSteamTargetButton, DebugSteamLicenceButton, DebugSteamUninstallButton, DebugSteamCefButton,
+            },
+            new[]
+            {
+                DebugSteamConsoleButton, DebugSteamConsoleSilentButton, DebugSteamLibrary0Button, DebugSteamHubButton,
+                DebugSteamUrlButton, DebugSteamCefWizardButton, DebugSteamCefQueueButton, DebugSteamStubCefButton,
+                DebugSteamStubFlagButton, DebugSteamStubRestartButton,
+            },
+        };
+
+        /// <summary>The Steam trial each of the right column's buttons runs.</summary>
+        private Dictionary<Button, SteamDownloads.Trial> SteamTrialButtons => new Dictionary<Button, SteamDownloads.Trial>
+        {
+            [DebugSteamConsoleButton] = SteamDownloads.Trial.Console,
+            [DebugSteamConsoleSilentButton] = SteamDownloads.Trial.ConsoleSilent,
+            [DebugSteamLibrary0Button] = SteamDownloads.Trial.ConsoleLibrary0,
+            [DebugSteamHubButton] = SteamDownloads.Trial.Hub,
+            [DebugSteamUrlButton] = SteamDownloads.Trial.InstallUrl,
+            [DebugSteamCefWizardButton] = SteamDownloads.Trial.CefWizard,
+            [DebugSteamCefQueueButton] = SteamDownloads.Trial.CefQueue,
+            [DebugSteamStubCefButton] = SteamDownloads.Trial.StubCefQueue,
+            [DebugSteamStubFlagButton] = SteamDownloads.Trial.StubUpdateFlag,
+            [DebugSteamStubRestartButton] = SteamDownloads.Trial.StubRestart,
         };
 
         /// <summary>
@@ -346,40 +393,47 @@ namespace XboxSeries.Extension
             DebugItem.GotKeyboardFocus += OnCategoryFocused;
             categoryItems[SettingsCategory.Debug] = DebugItem;
             DebugPane.KeyDown += OnDebugPaneKeyDown;
-            foreach (var button in DebugButtons)
+            foreach (var button in DebugColumns.SelectMany(column => column))
             {
                 button.Click += OnDebugButtonClick;
             }
         }
 
         /// <summary>
-        /// The pad in the Debug menu: up and down between its buttons, Left or B back to the rail's Debug menu, and A
-        /// presses the button focused.
+        /// The pad in the Debug menu: up and down within a column, right and left between them, Left from the first
+        /// column or B back to the rail's Debug menu, and A presses the button focused.
         /// </summary>
         private void OnDebugPaneKeyDown(object sender, KeyEventArgs e)
         {
-            var buttons = DebugButtons;
-            var here = Array.IndexOf(buttons, e.OriginalSource as Button);
-            if (here < 0)
+            var columns = DebugColumns;
+            var column = Array.FindIndex(columns, c => c.Contains(e.OriginalSource as Button));
+            if (column < 0)
             {
                 return;
             }
 
+            var buttons = columns[column];
+            var here = Array.IndexOf(buttons, (Button)e.OriginalSource);
             var pad = PlayniteInput.PadButtonOf(e);
             if (pad == ControllerInput.A)
             {
                 e.Handled = true;
                 PressDebugButton(e.OriginalSource);
             }
-            else if (pad == ControllerInput.B || e.Key == Key.Left)
+            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0))
             {
                 // Handled here, before the page's B takes it back to where Settings was opened from.
                 e.Handled = true;
                 DebugItem.Focus();
             }
-            else if (e.Key == Key.Right)
+            else if (e.Key == Key.Left || e.Key == Key.Right)
             {
                 e.Handled = true;
+                var next = column + (e.Key == Key.Left ? -1 : 1);
+                if (next < columns.Length)
+                {
+                    columns[next][Math.Min(here, columns[next].Length - 1)].Focus();
+                }
             }
             else if (e.Key == Key.Up || e.Key == Key.Down)
             {
@@ -426,6 +480,32 @@ namespace XboxSeries.Extension
             else if (button == DebugCallAvatarFailsButton)
             {
                 core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/does-not-exist.png");
+            }
+            else if (SteamTrials == null)
+            {
+                return;
+            }
+            else if (button == DebugSteamTargetButton)
+            {
+                SteamTrials.NextTrialTarget();
+                DebugSteamTargetText.Text = $"Steam target: {SteamTrials.TrialTargetName}";
+            }
+            else if (button == DebugSteamLicenceButton)
+            {
+                SteamTrials.RequestTrialLicence(core.DebugNotify);
+            }
+            else if (button == DebugSteamUninstallButton)
+            {
+                SteamTrials.UninstallTrialTarget(core.DebugNotify);
+            }
+            else if (button == DebugSteamCefButton)
+            {
+                SteamTrials.ToggleCefDebugging(core.DebugNotify);
+                ShowCefDebugging();
+            }
+            else if (button is Button trialButton && SteamTrialButtons.TryGetValue(trialButton, out var trial))
+            {
+                SteamTrials.RunTrial(trial, core.DebugNotify);
             }
         }
 #endif
