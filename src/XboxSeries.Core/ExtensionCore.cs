@@ -41,6 +41,13 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan HeroLeave = TimeSpan.FromMilliseconds(100);
 
+        /// <summary>
+        /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it. Opening one has
+        /// Playnite refilter its list and the page lay its content out again, a frame or more each, so focus passing down
+        /// the nav (a held d-pad repeats faster than this) opens only the item it stops on.
+        /// </summary>
+        private static readonly TimeSpan NavSettle = TimeSpan.FromMilliseconds(150);
+
         // How long after a game quit from the Guide exits the Guide closes: Playnite is still bringing its window back
         // as it says the game stopped, and closing the Guide then left Playnite without the pad until Alt+Tab.
         private static readonly TimeSpan CloseAfterQuit = TimeSpan.FromMilliseconds(500);
@@ -141,8 +148,14 @@ namespace XboxSeries.Core
         /// <summary>Whether A, still held, answered the tile menu: Playnite's own Enter for it must not choose the tile.</summary>
         private bool tileMenuHoldsA;
 
-        /// <summary>Whether My games &amp; apps has put its own filter on the main list, with the user's kept to give back.</summary>
-        private bool ownsMainList;
+        /// <summary>
+        /// The filter and sort My games &amp; apps last put on the main list, with the user's own kept to give back; null
+        /// while the list is under the user's own.
+        /// </summary>
+        private GameListFilter mainListFilter;
+
+        /// <summary>The open waiting for focus to stay on a nav item of My games &amp; apps; null with none.</summary>
+        private IDisposable navTimer;
 
         public ExtensionCore(
             IClock clock,
@@ -1122,7 +1135,11 @@ namespace XboxSeries.Core
             var favourite = game.Favorite
                 ? new DialogOption("Remove from Favourites", DialogIcon.Unfavourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, false)))
                 : new DialogOption("Add to Favourites", DialogIcon.Favourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, true)));
-            var manage = new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() => playnite.OpenGameMenu(gameId)));
+            var manage = new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() =>
+            {
+                ListPlayHistoryInMainList();
+                playnite.OpenGameMenu(gameId);
+            }));
 
             // A pending A on the tile would otherwise open its Game hub under the menu.
             CancelTap();
@@ -1169,6 +1186,7 @@ namespace XboxSeries.Core
             tapTimer = clock.After(DoubleTapWindow, () =>
             {
                 CancelTap();
+                ListPlayHistoryInMainList();
                 playnite.OpenGameHub(gameId);
             });
         }
@@ -1261,15 +1279,18 @@ namespace XboxSeries.Core
             new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame, StatusOf(game.Id));
 
         /// <summary>
-        /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings if that is up, or moves it there. Full
-        /// library is the main list under the user's own filter and sort. Games and Play history take the main list over,
-        /// keeping the user's filter and sort first (as Full library last left them), to give back on Full library or when
-        /// the page goes. Apps shows its own tiles and leaves the main list as it is, hidden behind them; with no Apps to
-        /// show (Software tools couldn't be read), it opens nothing. Manage and Manage Queue show their own content too,
-        /// Manage Queue even with nothing queued, as the console's shows its empty box.
+        /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings if that is up, or moves it there, at
+        /// once: an open still waiting on the nav (<see cref="FocusMyGamesNav"/>) goes. Full library is the main list
+        /// under the user's own filter and sort. Games takes the main list over, keeping the user's filter and sort first
+        /// (as Full library last left them), to give back on Full library or when the page goes. Play history shows its
+        /// own list and leaves the main list as it is, hidden behind it, until one of its games opens
+        /// (<see cref="ListPlayHistoryInMainList"/>). Apps shows its own tiles and leaves the main list alone too; with no
+        /// Apps to show (Software tools couldn't be read), it opens nothing. Manage and Manage Queue show their own
+        /// content too, Manage Queue even with nothing queued, as the console's shows its empty box.
         /// </summary>
         public void OpenMyGames(MyGamesItem item)
         {
+            CancelNavSettle();
             if (item == MyGamesItem.Apps)
             {
                 if (!MyGames.HasApps)
@@ -1281,18 +1302,9 @@ namespace XboxSeries.Core
             {
                 GiveBackMainList();
             }
-            else if (item == MyGamesItem.Games || item == MyGamesItem.PlayHistory)
+            else if (item == MyGamesItem.Games)
             {
-                if (!ownsMainList)
-                {
-                    playnite.SaveUserFilter();
-                    ownsMainList = true;
-                }
-
-                if (!MyGames.IsShown || MyGames.Item != item)
-                {
-                    playnite.ShowInMainList(item == MyGamesItem.Games ? GameListFilter.Installed : GameListFilter.LastPlayed);
-                }
+                ShowInMainList(GameListFilter.Installed);
             }
 
             // On opening, for today's sections, the drive's space now, and a Full library count Playnite couldn't give
@@ -1308,6 +1320,63 @@ namespace XboxSeries.Core
             CloseSettings();
             MyGames.Item = item;
             MyGames.IsShown = true;
+        }
+
+        /// <summary>
+        /// Focus moved along My games &amp; apps' nav to <paramref name="item"/>: the page opens it once focus has stayed
+        /// there for <see cref="NavSettle"/>, so focus passing down the nav doesn't open every item on its way. Back on the
+        /// item showing, nothing opens. A or Right on the item opens it at once (<see cref="OpenMyGames"/>), so they never
+        /// go into the content of the item before. With the page not up, it opens at once.
+        /// </summary>
+        public void FocusMyGamesNav(MyGamesItem item)
+        {
+            CancelNavSettle();
+            if (!MyGames.IsShown)
+            {
+                OpenMyGames(item);
+            }
+            else if (MyGames.Item != item)
+            {
+                navTimer = clock.After(NavSettle, () => OpenMyGames(item));
+            }
+        }
+
+        /// <summary>Focus left My games &amp; apps' nav other than into an item's content: an item still waiting to open doesn't.</summary>
+        public void LeaveMyGamesNav() => CancelNavSettle();
+
+        private void CancelNavSettle()
+        {
+            navTimer?.Dispose();
+            navTimer = null;
+        }
+
+        /// <summary>Puts <paramref name="filter"/> on the main list, keeping the user's own first to give back; Playnite refilters only for a change.</summary>
+        private void ShowInMainList(GameListFilter filter)
+        {
+            if (mainListFilter == null)
+            {
+                playnite.SaveUserFilter();
+            }
+
+            if (mainListFilter != filter)
+            {
+                mainListFilter = filter;
+                playnite.ShowInMainList(filter);
+            }
+        }
+
+        /// <summary>
+        /// The Game hub and Playnite's game menu are for the main list's selected game, so a Play history game opening
+        /// either has to be in the list, which Games' filter or the user's own can leave it out of, uninstalled say. The
+        /// main list, hidden behind Play history's own, takes every game Play history lists only now, as one opens, not on
+        /// every visit to Play history, which had Playnite refilter and sort it for nothing.
+        /// </summary>
+        private void ListPlayHistoryInMainList()
+        {
+            if (MyGames.IsShown && MyGames.Item == MyGamesItem.PlayHistory)
+            {
+                ShowInMainList(GameListFilter.LastPlayed);
+            }
         }
 
         /// <summary>
@@ -1441,15 +1510,16 @@ namespace XboxSeries.Core
 
         private void CloseMyGames()
         {
+            CancelNavSettle();
             MyGames.IsShown = false;
             GiveBackMainList();
         }
 
         private void GiveBackMainList()
         {
-            if (ownsMainList)
+            if (mainListFilter != null)
             {
-                ownsMainList = false;
+                mainListFilter = null;
                 playnite.RestoreUserFilter();
             }
         }
