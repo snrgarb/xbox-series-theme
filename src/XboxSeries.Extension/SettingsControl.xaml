@@ -165,7 +165,7 @@
                 <Button x:Name="MorePlayniteOptionsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
                     <TextBlock Text="More Playnite options" Style="{StaticResource RailText}" />
                 </Button>
-                <!-- Debug builds only, shown by the code-behind: under a second divider, the Debug menu, to try Toasts. -->
+                <!-- Debug builds only, shown by the code-behind: under a second divider, the Debug menu, to try Toasts and Steam installs. -->
                 <Border x:Name="DebugDivider" Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}"
                         Visibility="Collapsed" />
                 <Button x:Name="DebugItem" Style="{StaticResource RailItem}" Visibility="Collapsed">
@@ -289,91 +289,8 @@
             </StackPanel>
 
             <!--
-                Debug builds only: on the left, buttons that put up Toasts, then the Steam trials' target and tools; on the
-                right, the ways of asking Steam to install that the trials try (#59), each reported as a Toast once Steam has
-                had 20 seconds. Right or A on the rail's Debug menu comes in; Left from the left column or B goes back to it.
-                The code-behind wires them; in a Release build the pane stays collapsed and out of reach.
+                Debug builds only: the Debug menu (DebugPane), made by the code-behind and placed here, in the options' row.
             -->
-            <Grid x:Name="DebugPane" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Left">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.ColumnSpan="3" MaxWidth="900" HorizontalAlignment="Left" Text="Try the Toasts, and the ways of installing from Steam. Each Steam try reports what Steam showed."
-                           Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,30" />
-                <StackPanel Grid.Row="1" Grid.Column="0">
-                    <Button x:Name="DebugNotificationButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Notification" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugScreenshotButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Screenshot notification" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugLongButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Long notification" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugThreeButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Three notifications" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugCallButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Call" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugCallAvatarButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Call with avatar" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugCallAvatarFailsButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Call, avatar fails" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamTargetButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock x:Name="DebugSteamTargetText" Text="Steam target: Spacewar (480)" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamLicenceButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Steam: request licence" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamUninstallButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Steam: uninstall target" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamCefButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock x:Name="DebugSteamCefText" Text="Steam: CEF debugging" Style="{StaticResource Text}" />
-                    </Button>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="2">
-                    <Button x:Name="DebugSteamConsoleButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="+app_install" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamConsoleSilentButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="-silent +app_install" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamLibrary0Button" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="+app_install, library 0" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamHubButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="The hub's install" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamUrlButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="steam://install" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamCefWizardButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="CEF: wizard, continued" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamCefQueueButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="CEF: QueueAppUpdate" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamStubCefButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Stub + CEF QueueAppUpdate" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamStubFlagButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Stub + app_set_update_flag" Style="{StaticResource Text}" />
-                    </Button>
-                    <Button x:Name="DebugSteamStubRestartButton" Style="{StaticResource PaneButton}" Margin="0,0,0,14" HorizontalAlignment="Stretch">
-                        <TextBlock Text="Stub + restart Steam" Style="{StaticResource Text}" />
-                    </Button>
-                </StackPanel>
-            </Grid>
         </Grid>
     </Grid>
 </controls:PluginUserControl>

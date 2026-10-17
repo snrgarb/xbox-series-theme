@@ -173,12 +173,18 @@ namespace XboxSeries.Extension
             PersonalisationPane.Visibility = category == SettingsCategory.Personalisation ? Visibility.Visible : Visibility.Collapsed;
             DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
 #if DEBUG
-            if (category == SettingsCategory.Debug)
+            // As Personalisation's, the Debug menu's pages each have their own header and start again on its boxes.
+            if (category != SettingsCategory.Debug || !core.Settings.IsShown)
             {
-                Header.Text = "Debug menu";
+                debugPane.Reset();
             }
 
-            DebugPane.Visibility = category == SettingsCategory.Debug ? Visibility.Visible : Visibility.Collapsed;
+            if (category == SettingsCategory.Debug)
+            {
+                Header.Text = debugPane.Title;
+            }
+
+            debugPane.Visibility = category == SettingsCategory.Debug ? Visibility.Visible : Visibility.Collapsed;
 #endif
             foreach (var item in categoryItems)
             {
@@ -233,7 +239,7 @@ namespace XboxSeries.Extension
             else if (e.OriginalSource == DebugItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
                 e.Handled = true;
-                DebugColumns[0][0].Focus();
+                debugPane.FocusFirst();
             }
 #endif
             else if (pad == ControllerInput.A)
@@ -328,63 +334,18 @@ namespace XboxSeries.Extension
         }
 
 #if DEBUG
-        private SteamDownloads steamTrials;
+        /// <summary>Debug builds only: the Debug menu, beside the rail while it's the category.</summary>
+        private DebugPane debugPane;
 
         /// <summary>Debug builds only: the Steam adapter whose install trials the Debug menu runs.</summary>
         internal SteamDownloads SteamTrials
         {
-            get => steamTrials;
-            set
-            {
-                steamTrials = value;
-                ShowCefDebugging();
-            }
+            set => debugPane.SteamTrials = value;
         }
-
-        /// <summary>The CEF debugging button, reading whether it's on now, as it stays on across restarts until turned off.</summary>
-        private void ShowCefDebugging()
-        {
-            DebugSteamCefText.Text = $"Steam: CEF debugging {(steamTrials?.IsCefDebuggingOn == true ? "on" : "off")}";
-        }
-
-        /// <summary>
-        /// The Debug menu's buttons, column by column, top to bottom: the Toasts and the Steam trials' tools, then the
-        /// Steam trials.
-        /// </summary>
-        private Button[][] DebugColumns => new[]
-        {
-            new[]
-            {
-                DebugNotificationButton, DebugScreenshotButton, DebugLongButton, DebugThreeButton,
-                DebugCallButton, DebugCallAvatarButton, DebugCallAvatarFailsButton,
-                DebugSteamTargetButton, DebugSteamLicenceButton, DebugSteamUninstallButton, DebugSteamCefButton,
-            },
-            new[]
-            {
-                DebugSteamConsoleButton, DebugSteamConsoleSilentButton, DebugSteamLibrary0Button, DebugSteamHubButton,
-                DebugSteamUrlButton, DebugSteamCefWizardButton, DebugSteamCefQueueButton, DebugSteamStubCefButton,
-                DebugSteamStubFlagButton, DebugSteamStubRestartButton,
-            },
-        };
-
-        /// <summary>The Steam trial each of the right column's buttons runs.</summary>
-        private Dictionary<Button, SteamDownloads.Trial> SteamTrialButtons => new Dictionary<Button, SteamDownloads.Trial>
-        {
-            [DebugSteamConsoleButton] = SteamDownloads.Trial.Console,
-            [DebugSteamConsoleSilentButton] = SteamDownloads.Trial.ConsoleSilent,
-            [DebugSteamLibrary0Button] = SteamDownloads.Trial.ConsoleLibrary0,
-            [DebugSteamHubButton] = SteamDownloads.Trial.Hub,
-            [DebugSteamUrlButton] = SteamDownloads.Trial.InstallUrl,
-            [DebugSteamCefWizardButton] = SteamDownloads.Trial.CefWizard,
-            [DebugSteamCefQueueButton] = SteamDownloads.Trial.CefQueue,
-            [DebugSteamStubCefButton] = SteamDownloads.Trial.StubCefQueue,
-            [DebugSteamStubFlagButton] = SteamDownloads.Trial.StubUpdateFlag,
-            [DebugSteamStubRestartButton] = SteamDownloads.Trial.StubRestart,
-        };
 
         /// <summary>
         /// Debug builds only: the second divider and the Debug menu under Playnite's entries, a category like the others,
-        /// and its pane's buttons. In a Release build all of it stays collapsed in the XAML and nothing reaches it.
+        /// and its pane in the options' row. In a Release build the divider and item stay collapsed in the XAML.
         /// </summary>
         private void ShowDebugMenu()
         {
@@ -392,121 +353,11 @@ namespace XboxSeries.Extension
             DebugItem.Visibility = Visibility.Visible;
             DebugItem.GotKeyboardFocus += OnCategoryFocused;
             categoryItems[SettingsCategory.Debug] = DebugItem;
-            DebugPane.KeyDown += OnDebugPaneKeyDown;
-            foreach (var button in DebugColumns.SelectMany(column => column))
-            {
-                button.Click += OnDebugButtonClick;
-            }
-        }
-
-        /// <summary>
-        /// The pad in the Debug menu: up and down within a column, right and left between them, Left from the first
-        /// column or B back to the rail's Debug menu, and A presses the button focused.
-        /// </summary>
-        private void OnDebugPaneKeyDown(object sender, KeyEventArgs e)
-        {
-            var columns = DebugColumns;
-            var column = Array.FindIndex(columns, c => c.Contains(e.OriginalSource as Button));
-            if (column < 0)
-            {
-                return;
-            }
-
-            var buttons = columns[column];
-            var here = Array.IndexOf(buttons, (Button)e.OriginalSource);
-            var pad = PlayniteInput.PadButtonOf(e);
-            if (pad == ControllerInput.A)
-            {
-                e.Handled = true;
-                PressDebugButton(e.OriginalSource);
-            }
-            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0))
-            {
-                // Handled here, before the page's B takes it back to where Settings was opened from.
-                e.Handled = true;
-                DebugItem.Focus();
-            }
-            else if (e.Key == Key.Left || e.Key == Key.Right)
-            {
-                e.Handled = true;
-                var next = column + (e.Key == Key.Left ? -1 : 1);
-                if (next < columns.Length)
-                {
-                    columns[next][Math.Min(here, columns[next].Length - 1)].Focus();
-                }
-            }
-            else if (e.Key == Key.Up || e.Key == Key.Down)
-            {
-                e.Handled = true;
-                buttons[Math.Max(0, Math.Min(buttons.Length - 1, here + (e.Key == Key.Up ? -1 : 1)))].Focus();
-            }
-        }
-
-        // The keyboard's Enter and the mouse; the pad's A arrives as OnDebugPaneKeyDown.
-        private void OnDebugButtonClick(object sender, RoutedEventArgs e)
-        {
-            PressDebugButton(sender);
-        }
-
-        private void PressDebugButton(object button)
-        {
-            if (button == DebugNotificationButton)
-            {
-                core.DebugNotify("Library updated");
-            }
-            else if (button == DebugScreenshotButton)
-            {
-                core.DebugNotify("Screenshot failed 0x82323018");
-            }
-            else if (button == DebugLongButton)
-            {
-                core.DebugNotify("Library updated: 14 games added, 3 games given new covers and descriptions, and 2 games "
-                    + "removed because their install folders could no longer be found on this PC or any of its drives");
-            }
-            else if (button == DebugThreeButton)
-            {
-                core.DebugNotify("Library updated");
-                core.DebugNotify("Screenshot failed 0x82323018");
-                core.DebugNotify("Achievement unlocked");
-            }
-            else if (button == DebugCallButton)
-            {
-                core.DebugRing("Jakob", null);
-            }
-            else if (button == DebugCallAvatarButton)
-            {
-                core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/0.png");
-            }
-            else if (button == DebugCallAvatarFailsButton)
-            {
-                core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/does-not-exist.png");
-            }
-            else if (SteamTrials == null)
-            {
-                return;
-            }
-            else if (button == DebugSteamTargetButton)
-            {
-                SteamTrials.NextTrialTarget();
-                DebugSteamTargetText.Text = $"Steam target: {SteamTrials.TrialTargetName}";
-            }
-            else if (button == DebugSteamLicenceButton)
-            {
-                SteamTrials.RequestTrialLicence(core.DebugNotify);
-            }
-            else if (button == DebugSteamUninstallButton)
-            {
-                SteamTrials.UninstallTrialTarget(core.DebugNotify);
-            }
-            else if (button == DebugSteamCefButton)
-            {
-                SteamTrials.ToggleCefDebugging(core.DebugNotify);
-                ShowCefDebugging();
-            }
-            else if (button is Button trialButton && SteamTrialButtons.TryGetValue(trialButton, out var trial))
-            {
-                SteamTrials.RunTrial(trial, core.DebugNotify);
-            }
+            debugPane = new DebugPane(core) { Visibility = Visibility.Collapsed };
+            Grid.SetRow(debugPane, 1);
+            CategoryHost.Children.Add(debugPane);
+            debugPane.BackToRail += (s, e) => DebugItem.Focus();
+            debugPane.TitleChanged += (s, e) => ShowCategory();
         }
 #endif
 
