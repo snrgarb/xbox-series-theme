@@ -4,15 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.WebSockets;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Microsoft.Win32;
-using Playnite.SDK.Data;
 
 namespace XboxSeries.Extension
 {
@@ -77,8 +72,9 @@ namespace XboxSeries.Extension
         // whose update is wanted and none of whose files are on disk, so Steam fetches the whole app.
         private const long StubStateFlags = 1026;
 
-        // The empty file in Steam's folder that has the client open its CEF debugger on 127.0.0.1 at each start.
-        private const string CefDebuggingFile = ".cef-enable-remote-debugging";
+        // What a CEF trial notes when Steam's debugger can't be reached, or has no SharedJSContext yet: the one is
+        // usually the other just after a restart, and the menu's toggle is the way out of both.
+        private const string CefUnreachable = "CEF debugging is off, or Steam has no SharedJSContext yet: turn it on in this menu, or try again in a moment";
 
         private List<KeyValuePair<uint, string>> trialTargets;
         private int trialTarget;
@@ -147,18 +143,18 @@ namespace XboxSeries.Extension
                         Process.Start($"steam://install/{appId}")?.Dispose();
                         break;
                     case Trial.CefWizard:
-                        watch.Note(await EvaluateInSteam(CefWizardScript(appId)));
+                        watch.Note(await EvaluateInSteam(CefWizardScript(appId)) ?? CefUnreachable);
                         break;
                     case Trial.CefQueue:
-                        watch.Note(await EvaluateInSteam(CefQueueScript(appId)));
+                        watch.Note(await EvaluateInSteam(CefQueueScript(appId)) ?? CefUnreachable);
                         break;
                     case Trial.CefConsole:
-                        watch.Note(await EvaluateInSteam(CefConsoleScript(appId)));
+                        watch.Note(await EvaluateInSteam(CefConsoleScript(appId)) ?? CefUnreachable);
                         break;
                     case Trial.StubCefQueue:
                         if (TryWriteStub(appId, target.Value, watch))
                         {
-                            watch.Note(await EvaluateInSteam(CefQueueScript(appId)));
+                            watch.Note(await EvaluateInSteam(CefQueueScript(appId)) ?? CefUnreachable);
                         }
 
                         break;
@@ -216,16 +212,6 @@ namespace XboxSeries.Extension
             var warned = false;
             WatchSteam($"{trial} {target.Value}", target.Key, report).EndIn(TrialWatchFor);
             AskSteam(exe, $"{command} {target.Key}", trial, ref warned);
-        }
-
-        /// <summary>Whether the client opens its CEF debugger as it starts, as <see cref="ToggleCefDebugging"/> last left it.</summary>
-        public bool IsCefDebuggingOn
-        {
-            get
-            {
-                var steam = SteamPath();
-                return steam != null && File.Exists(Path.Combine(steam, CefDebuggingFile));
-            }
         }
 
         /// <summary>
@@ -344,77 +330,6 @@ namespace XboxSeries.Extension
     });
     setTimeout(() => { if (!done) { done = true; reg.unregister(); resolve('not listed within 3 s'); } }, 3000);
   })";
-
-        /// <summary>
-        /// Runs <paramref name="expression"/> in the client's SharedJSContext, its script that runs without a window,
-        /// through its CEF debugger, and returns what it came to, or why it couldn't.
-        /// </summary>
-        private static async Task<string> EvaluateInSteam(string expression)
-        {
-            string targets = null;
-            foreach (var port in new[] { 8080, 8081 })
-            {
-                try
-                {
-                    using (var web = new WebClient())
-                    {
-                        targets = await web.DownloadStringTaskAsync($"http://127.0.0.1:{port}/json");
-                        break;
-                    }
-                }
-                catch (WebException)
-                {
-                }
-            }
-
-            if (targets == null)
-            {
-                return "CEF debugging is off: turn it on in this menu first";
-            }
-
-            var shared = Serialization.FromJson<List<CefTarget>>(targets).FirstOrDefault(t => t.Title == "SharedJSContext");
-            if (shared?.WebSocketDebuggerUrl == null)
-            {
-                return "CEF debugging is on, but Steam has no SharedJSContext yet";
-            }
-
-            using (var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
-            using (var socket = new ClientWebSocket())
-            {
-                await socket.ConnectAsync(new Uri(shared.WebSocketDebuggerUrl), cancel.Token);
-                var request = Serialization.ToJson(new Dictionary<string, object>
-                {
-                    ["id"] = 1,
-                    ["method"] = "Runtime.evaluate",
-                    ["params"] = new Dictionary<string, object> { ["expression"] = expression, ["awaitPromise"] = true, ["returnByValue"] = true },
-                });
-                await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(request)), WebSocketMessageType.Text, true, cancel.Token);
-
-                var buffer = new byte[16384];
-                while (true)
-                {
-                    var message = new StringBuilder();
-                    WebSocketReceiveResult received;
-                    do
-                    {
-                        received = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancel.Token);
-                        message.Append(Encoding.UTF8.GetString(buffer, 0, received.Count));
-                    }
-                    while (!received.EndOfMessage);
-
-                    var reply = Serialization.FromJson<CefReply>(message.ToString());
-                    if (reply?.Id != 1)
-                    {
-                        continue;
-                    }
-
-                    var thrown = reply.Result?.ExceptionDetails;
-                    return thrown != null
-                        ? $"script threw {thrown.Exception?.Description ?? thrown.Text}"
-                        : reply.Result?.Result?.Value?.ToString() ?? "script returned nothing";
-                }
-            }
-        }
 
         /// <summary>
         /// Writes a manifest into Steam's own library saying the app is wanted but none of it is on disk, as the
@@ -653,41 +568,6 @@ namespace XboxSeries.Extension
                 notes.Add(note);
                 logger.Info($"Steam trial {name}: {note}");
             }
-        }
-
-        private sealed class CefTarget
-        {
-            public string Title { get; set; }
-
-            public string WebSocketDebuggerUrl { get; set; }
-        }
-
-        private sealed class CefReply
-        {
-            public int? Id { get; set; }
-
-            public CefEvaluation Result { get; set; }
-        }
-
-        private sealed class CefEvaluation
-        {
-            public CefObject Result { get; set; }
-
-            public CefException ExceptionDetails { get; set; }
-        }
-
-        private sealed class CefObject
-        {
-            public object Value { get; set; }
-
-            public string Description { get; set; }
-        }
-
-        private sealed class CefException
-        {
-            public string Text { get; set; }
-
-            public CefObject Exception { get; set; }
         }
     }
 }
