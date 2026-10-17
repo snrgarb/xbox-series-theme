@@ -136,6 +136,50 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Full_library_fades_its_list_under_the_pages_colour_rather_than_masking_the_list()
+        {
+            // An OpacityMask draws the whole list into a picture of its own, at the 4K screen's size, every frame it changes.
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            Assert.DoesNotContain(main.Descendants(), e => (string)e.Attribute("Property") == "OpacityMask"
+                || e.Name.LocalName.EndsWith(".OpacityMask"));
+
+            var fade = main.Descendants().Single(e => (string)e.Attribute(x + "Name") == "XboxFullLibraryFade");
+            var list = fade.Parent.Elements().Single(e => (string)e.Attribute(x + "Name") == "PART_ListGameItems");
+            Assert.Equal("False", (string)fade.Attribute("IsHitTestVisible"));
+            Assert.Equal((string)list.Attribute("Margin"), (string)fade.Attribute("Margin"));
+            Assert.True(fade.IsAfter(list), "the fade is drawn over the list");
+
+            // The page under the list is My games & apps' flat colour, which the fade starts in and clears to.
+            var myGames = XDocument.Load(Path.Combine(RepoRoot, "src", "XboxSeries.Extension", "MyGamesControl.xaml"));
+            var page = ((string)myGames.Descendants().Single(e => (string)e.Attribute(x + "Key") == "PageBrush").Attribute("Color")).Substring(3);
+            var stops = fade.Descendants().Where(e => e.Name.LocalName == "GradientStop").Select(e => (string)e.Attribute("Color")).ToArray();
+            Assert.Equal(new[] { "#FF" + page, "#00" + page }, stops);
+            Assert.Contains(fade.Descendants(), e => e.Name.LocalName == "DataTrigger"
+                && ((string)e.Attribute("Binding")).Contains("Content.State.ShowsFullLibrary"));
+        }
+
+        [Fact]
+        public void Library_tiles_draw_their_shadow_and_glow_once_into_a_cached_picture()
+        {
+            // As Home's tiles: an effect left uncached is drawn again for every tile on every frame the list scrolls.
+            var tile = XDocument.Load(Path.Combine(DashboardDir, "DerivedStyles", "ListGameItemTemplate.xaml"));
+            var container = XDocument.Load(Path.Combine(DashboardDir, "DerivedStyles", "ListGameItemStyle.xaml"));
+            var effected = tile.Descendants().Concat(container.Descendants())
+                .Where(e => e.Elements().Any(c => c.Name.LocalName.EndsWith(".Effect"))
+                            || ((string)e.Attribute("Style") ?? "").Contains("XboxFocusGlow"))
+                .ToList();
+
+            Assert.Equal(2, effected.Count);
+            Assert.All(effected, e =>
+            {
+                var cache = e.Elements().Single(c => c.Name.LocalName.EndsWith(".CacheMode")).Elements().Single();
+                Assert.Equal("BitmapCache", cache.Name.LocalName);
+                Assert.Equal("2", (string)cache.Attribute("RenderAtScale"));
+            });
+        }
+
+        [Fact]
         public void Every_plugin_hook_names_the_extension_by_its_id()
         {
             var plugins = DashboardXaml()

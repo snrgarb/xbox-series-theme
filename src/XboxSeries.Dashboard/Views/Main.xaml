@@ -285,18 +285,10 @@
                 Full library: under its filter preset tabs, from their bottom (y 246, so 46 into this row), as the list clips
                 its tiles to its own top as they scroll up and would otherwise draw over the tabs. Scrolled tiles fade out
                 over the quarter cell the panel leaves above the first row (0.25 of the list's 3.5 cells), short of the
-                first row's focus ring, so they don't butt against the tabs.
+                first row's focus ring, so they don't butt against the tabs: XboxFullLibraryFade, over the list.
             -->
             <DataTrigger Binding="{Binding Content.State.ShowsFullLibrary, ElementName=XboxSeries_MyGames}" Value="True">
                 <Setter Property="Margin" Value="436.5,46,86.5,0" />
-                <Setter Property="OpacityMask">
-                    <Setter.Value>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="Transparent" Offset="0.01" />
-                            <GradientStop Color="Black" Offset="0.06" />
-                        </LinearGradientBrush>
-                    </Setter.Value>
-                </Setter>
             </DataTrigger>
             <!-- Never over Settings. -->
             <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Settings}" Value="True">
@@ -572,6 +564,32 @@
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
+
+                                        <!--
+                                            Full library: scrolled tiles fade out at the list's top (XboxMainList). Painted over the
+                                            list in My games & apps' flat page colour (its PageBrush, #FF1F1F1F), solid to 1% of the
+                                            list's height and clear by 6%, rather than an OpacityMask on the list, which draws the
+                                            whole list into a picture of its own, at the 4K screen's size, every frame it changes.
+                                            Over the list's own width only, so it doesn't cover the nav's divider in its margin.
+                                        -->
+                                        <Rectangle x:Name="XboxFullLibraryFade" Margin="80,0,80,0" IsHitTestVisible="False">
+                                            <Rectangle.Fill>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#FF1F1F1F" Offset="0.01" />
+                                                    <GradientStop Color="#001F1F1F" Offset="0.06" />
+                                                </LinearGradientBrush>
+                                            </Rectangle.Fill>
+                                            <Rectangle.Style>
+                                                <Style TargetType="Rectangle">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Content.State.ShowsFullLibrary, ElementName=XboxSeries_MyGames}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Rectangle.Style>
+                                        </Rectangle>
                                     </Grid>
 
                                     <!--
