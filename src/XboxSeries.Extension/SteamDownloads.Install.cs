@@ -363,7 +363,10 @@ namespace XboxSeries.Extension
                             continue;
                         }
 
-                        if (!IsInstalled(flags) && (flags & Uninstalling) == 0)
+                        // Only while Steam has the download queued or running: a download cancelled by uninstalling
+                        // can leave its manifest behind at UpdateRequired | UpdatePaused, with neither bit, for an
+                        // app Steam has dropped from its queue and calls uninstalled.
+                        if (!IsInstalled(flags) && (flags & Uninstalling) == 0 && (flags & (UpdateStarted | UpdateRunning)) != 0)
                         {
                             installing.Add(gameId);
                         }
