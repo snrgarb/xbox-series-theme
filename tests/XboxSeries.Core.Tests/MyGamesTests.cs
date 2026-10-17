@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using XboxSeries.Core.Tests.Fakes;
@@ -197,16 +198,191 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Play_history_puts_every_game_it_lists_in_the_main_list_so_A_can_open_its_hub()
+        public void A_on_a_Play_history_entry_puts_every_game_it_lists_in_the_main_list_for_its_hub()
         {
             var library = new FakeLibrary()
                 .WithGame("Not Installed", lastActivity: new DateTime(2026, 10, 12), installed: false)
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13));
             core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Not Installed"));
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { library.Id("Not Installed") }, playnite.OpenedHubs);
+            Assert.Equal(new[] { "Halo Infinite", "Not Installed" }, MainList(library));
+        }
+
+        [Fact]
+        public void Manage_game_on_a_Play_history_entry_puts_every_game_it_lists_in_the_main_list_for_its_menu()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Not Installed", lastActivity: new DateTime(2026, 10, 12), installed: false)
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Not Installed"));
+            Tap(ControllerButton.Start);
+            while (core.Home.TileMenu.FocusedOption.Label != "Manage game")
+            {
+                Tap(ControllerButton.DPadDown);
+            }
+
+            Tap(ControllerButton.A);
+
+            Assert.Equal(new[] { library.Id("Not Installed") }, playnite.OpenedGameMenus);
+            Assert.Equal(new[] { "Halo Infinite", "Not Installed" }, MainList(library));
+        }
+
+        [Fact]
+        public void Play_history_leaves_the_main_list_as_it_was_until_one_of_its_games_opens()
+        {
+            var library = new FakeLibrary()
+                .WithGame("Not Installed", lastActivity: new DateTime(2026, 10, 12), installed: false)
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+            var shows = playnite.MainListShows;
 
             core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.OpenMyGames(MyGamesItem.Games);
 
-            Assert.Equal(new[] { "Halo Infinite", "Not Installed" }, MainList(library));
+            Assert.Equal(shows, playnite.MainListShows);
+            Assert.Equal(new[] { "Halo Infinite" }, MainList(library));
+        }
+
+        [Fact]
+        public void Play_history_opened_from_Home_takes_no_hold_of_the_main_list()
+        {
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13)).Snapshot());
+
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.LeaveMyGames();
+
+            Assert.True(playnite.ShowsUsersOwnFilter);
+            Assert.Equal(0, playnite.MainListShows);
+            Assert.Equal(0, playnite.UserFilterRestores);
+        }
+
+        [Fact]
+        public void The_users_filter_comes_back_after_a_Play_history_game_opened_from_Home_held_the_main_list()
+        {
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13)).Snapshot());
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Halo Infinite"));
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            core.LeaveMyGames();
+
+            Assert.True(playnite.ShowsUsersOwnFilter);
+            Assert.Equal(1, playnite.UserFilterRestores);
+        }
+
+        [Fact]
+        public void Focus_moving_along_the_nav_opens_an_item_once_it_has_stayed_there()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+            clock.Advance(TimeSpan.FromMilliseconds(149));
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(MyGamesItem.FullLibrary, core.MyGames.Item);
+            Assert.True(playnite.ShowsUsersOwnFilter);
+        }
+
+        [Fact]
+        public void Focus_passing_through_the_nav_opens_only_the_item_it_stops_on()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 13));
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+            var opened = new List<MyGamesItem>();
+            core.MyGames.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(MyGamesState.Item))
+                {
+                    opened.Add(core.MyGames.Item);
+                }
+            };
+
+            core.FocusMyGamesNav(MyGamesItem.PlayHistory);
+            clock.Advance(TimeSpan.FromMilliseconds(100));
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+            clock.Advance(TimeSpan.FromMilliseconds(100));
+            core.FocusMyGamesNav(MyGamesItem.Manage);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { MyGamesItem.Manage }, opened);
+            Assert.Equal(new[] { "Halo Infinite" }, MainList(library));
+            Assert.Equal(0, playnite.UserFilterRestores);
+        }
+
+        [Fact]
+        public void Focus_back_on_the_item_showing_drops_the_one_it_passed()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+            core.FocusMyGamesNav(MyGamesItem.Games);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+            Assert.Equal(0, playnite.UserFilterRestores);
+        }
+
+        [Fact]
+        public void A_or_Right_on_the_nav_opens_the_focused_item_at_once_and_only_once()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            Assert.Equal(MyGamesItem.FullLibrary, core.MyGames.Item);
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+            core.OpenMyGames(MyGamesItem.Games);
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+        }
+
+        [Fact]
+        public void B_while_focus_settles_on_the_nav_leaves_the_page_without_opening_the_item()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.PlayHistory);
+
+            core.LeaveMyGames();
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.False(core.MyGames.IsShown);
+            Assert.True(playnite.ShowsUsersOwnFilter);
+        }
+
+        [Fact]
+        public void Focus_leaving_the_nav_before_it_settles_leaves_the_item_showing()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+
+            core.LeaveMyGamesNav();
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+        }
+
+        [Fact]
+        public void The_nav_taking_focus_with_the_page_down_opens_it_at_once()
+        {
+            core.FocusMyGamesNav(MyGamesItem.Games);
+
+            Assert.True(core.MyGames.IsShown);
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
         }
 
         [Fact]
@@ -412,6 +588,10 @@ namespace XboxSeries.Core.Tests
             Assert.True(core.MyGames.IsShown);
             Assert.Null(core.Home.TileMenu);
         }
+
+        /// <summary>The Play history entry's tile of the game named <paramref name="name"/>.</summary>
+        private HomeTile EntryOf(string name) =>
+            core.MyGames.PlayHistory.SelectMany(s => s.Entries).Single(e => e.Tile.Title == name).Tile;
 
         /// <summary>The games Playnite's main list shows under the filter the core last applied.</summary>
         private string[] MainList(FakeLibrary library) =>
