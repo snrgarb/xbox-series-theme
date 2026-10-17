@@ -77,7 +77,14 @@ namespace XboxSeries.Core.Tests.Fakes
             UserFilterRestores++;
         }
 
-        public void ShowInMainList(GameListFilter filter) => MainListFilter = filter;
+        /// <summary>How many times the core put a filter and sort of its own on the main list, each a refilter for Playnite.</summary>
+        public int MainListShows { get; private set; }
+
+        public void ShowInMainList(GameListFilter filter)
+        {
+            MainListFilter = filter;
+            MainListShows++;
+        }
 
         /// <summary>How many games the user's own filter shows; null when Playnite can't say.</summary>
         public int? UserFilterGameCount { get; set; }
