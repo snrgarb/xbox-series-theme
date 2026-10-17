@@ -30,13 +30,22 @@ namespace XboxSeries.Core
         void SetFavourite(Guid gameId, bool favourite);
 
         /// <summary>
-        /// Keeps the user's own Fullscreen filter and sort, before the Dashboard first puts its own on the main list.
-        /// They are saved settings, so they are kept until <see cref="RestoreUserFilter"/>, even across a crash.
+        /// Keeps the user's own Fullscreen filter and sort, before the Dashboard puts its own on the main list. They are
+        /// kept until <see cref="ReleaseUserFilter"/>, even across a crash.
         /// </summary>
         void SaveUserFilter();
 
-        /// <summary>Puts the filter and sort kept by <see cref="SaveUserFilter"/> back on the main list.</summary>
+        /// <summary>
+        /// Puts the filter and sort kept by <see cref="SaveUserFilter"/> back on the main list, still keeping them while
+        /// My games &amp; apps is up, as Full library has them.
+        /// </summary>
         void RestoreUserFilter();
+
+        /// <summary>
+        /// My games &amp; apps is done with the main list, closing or Playnite stopping, with the user's own filter and
+        /// sort back on it: they go into Playnite's saved settings, and the copy kept for a crash goes.
+        /// </summary>
+        void ReleaseUserFilter();
 
         /// <summary>Shows <paramref name="filter"/>'s games in the main list, in its order, as a filter preset the extension builds.</summary>
         void ShowInMainList(GameListFilter filter);

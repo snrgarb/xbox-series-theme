@@ -1437,12 +1437,14 @@ namespace XboxSeries.Core
         {
             ThawGame();
             GiveBackMainList();
+            playnite.ReleaseUserFilter();
         }
 
         private void CloseMyGames()
         {
             MyGames.IsShown = false;
             GiveBackMainList();
+            playnite.ReleaseUserFilter();
         }
 
         private void GiveBackMainList()
