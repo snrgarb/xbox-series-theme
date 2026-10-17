@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -19,11 +20,35 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly IPlayniteAPI api;
 
-        /// <summary>The user's own filter and sort while My games &amp; apps has its own on the main list; there is none otherwise.</summary>
+        /// <summary>
+        /// The user's own filter and sort while My games &amp; apps keeps them, so a session that closes or crashes before
+        /// they are back in Playnite's saved settings gives them back at the next start; there is none otherwise.
+        /// </summary>
         private readonly string userFilterFile;
 
-        /// <summary>The user's own filter while My games &amp; apps has its own on the main list; null otherwise.</summary>
-        private FilterPresetSettings savedSettings;
+        /// <summary>The user's own filter and sort while My games &amp; apps is up and has kept them; null otherwise.</summary>
+        private UserFilter kept;
+
+        /// <summary>What <see cref="userFilterFile"/> holds, as this session last wrote or read it; null with no file.</summary>
+        private string keptOnDisk;
+
+        /// <summary>Whether My games &amp; apps' own filter is on the main list, in place of <see cref="kept"/>.</summary>
+        private bool dashboardFilterShown;
+
+        /// <summary>
+        /// Bumped by every change to the library's games, on whatever thread Playnite raises it, so a count made before
+        /// it isn't used after it.
+        /// </summary>
+        private int libraryVersion;
+
+        private bool followingLibrary;
+
+        /// <summary>The filter last counted, as JSON, the library as it was then, and how many games it showed.</summary>
+        private string countedSettings;
+
+        private int countedVersion;
+
+        private int countedGames;
 
         public PlayniteHost(IPlayniteAPI api, string dataDirectory)
         {
@@ -251,47 +276,58 @@ namespace XboxSeries.Extension
 
         public void SaveUserFilter()
         {
-            // A copy left by the last session was given back at start (RestoreLeftUserFilter), so what shows now is the user's.
+            // A copy left by the last session was given back at start (RestoreLeftUserFilter), so what shows now is the
+            // user's, as Full library left it if they were there.
             var view = api.MainView;
-            var saved = new UserFilter
+            kept = new UserFilter
             {
                 Preset = view.GetActiveFilterPreset(),
                 Settings = view.GetCurrentFilterSettings(),
                 Sort = view.SortOrder,
                 Direction = view.SortOrderDirection,
             };
-            Directory.CreateDirectory(Path.GetDirectoryName(userFilterFile));
-            File.WriteAllText(userFilterFile, Serialization.ToJson(saved));
-            savedSettings = saved.Settings;
+            dashboardFilterShown = true;
+
+            // Written the first time, and again only when Full library has changed it since: each move along the nav from
+            // Full library to Games or Play history otherwise leaves the file as it is.
+            var json = Serialization.ToJson(kept);
+            if (json != keptOnDisk)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(userFilterFile));
+                File.WriteAllText(userFilterFile, json);
+                keptOnDisk = json;
+            }
         }
 
         public void RestoreUserFilter()
         {
-            if (!File.Exists(userFilterFile))
+            if (kept == null)
             {
                 logger.Warn("Can't give the user's filter back: it was never saved");
                 return;
             }
 
-            var saved = Serialization.FromJsonFile<UserFilter>(userFilterFile);
-            savedSettings = null;
+            // Only onto the main list, as each move onto Full library asks: the file stays, and Playnite's settings
+            // aren't saved, until the page is done with the main list (ReleaseUserFilter). Should Playnite crash
+            // meanwhile, the file gives the next start the same filter back.
+            Apply(kept);
+            dashboardFilterShown = false;
+        }
 
-            // As the user's preset, so Playnite keeps it selected, with the settings and sort they had, edits and all.
-            api.MainView.ApplyFilterPreset(new Playnite.SDK.Models.FilterPreset
+        public void ReleaseUserFilter()
+        {
+            if (kept == null)
             {
-                Id = saved.Preset,
-                Name = api.Database.FilterPresets.Get(saved.Preset)?.Name,
-                Settings = saved.Settings,
-                SortingOrder = saved.Sort,
-                SortingOrderDirection = saved.Direction,
-            });
-
-            // Playnite saves its settings before extensions hear that it's closing. Until the user's filter is saved
-            // again the copy stays, and the next Fullscreen start gives it back (RestoreLeftUserFilter).
-            if (SavePlayniteSettings())
-            {
-                File.Delete(userFilterFile);
+                return;
             }
+
+            if (dashboardFilterShown)
+            {
+                RestoreUserFilter();
+            }
+
+            kept = null;
+            ForgetFileOnceSaved();
         }
 
         /// <summary>
@@ -300,11 +336,45 @@ namespace XboxSeries.Extension
         /// </summary>
         public void RestoreLeftUserFilter()
         {
-            if (File.Exists(userFilterFile))
+            if (!File.Exists(userFilterFile))
             {
-                logger.Info("Giving back the user's filter, left by the last session");
-                RestoreUserFilter();
+                return;
             }
+
+            logger.Info("Giving back the user's filter, left by the last session");
+            keptOnDisk = File.ReadAllText(userFilterFile);
+            Apply(Serialization.FromJson<UserFilter>(keptOnDisk));
+            ForgetFileOnceSaved();
+        }
+
+        /// <summary>Puts <paramref name="filter"/>, the user's, on the main list.</summary>
+        private void Apply(UserFilter filter)
+        {
+            // As the user's preset, so Playnite keeps it selected, with the settings and sort they had, edits and all.
+            api.MainView.ApplyFilterPreset(new Playnite.SDK.Models.FilterPreset
+            {
+                Id = filter.Preset,
+                Name = api.Database.FilterPresets.Get(filter.Preset)?.Name,
+                Settings = filter.Settings,
+                SortingOrder = filter.Sort,
+                SortingOrderDirection = filter.Direction,
+            });
+        }
+
+        /// <summary>
+        /// With the user's filter back on the main list, saves Playnite's settings, and deletes the file once they hold
+        /// it. Playnite saves its settings before extensions hear that it's closing: until they are saved again the copy
+        /// stays, and the next Fullscreen start gives it back (RestoreLeftUserFilter).
+        /// </summary>
+        private void ForgetFileOnceSaved()
+        {
+            if (keptOnDisk == null || !SavePlayniteSettings())
+            {
+                return;
+            }
+
+            File.Delete(userFilterFile);
+            keptOnDisk = null;
         }
 
         /// <summary>Not in the SDK: Playnite's own settings save. False, and logged, on a build where it can't be found.</summary>
@@ -351,8 +421,22 @@ namespace XboxSeries.Extension
         {
             try
             {
-                // As Playnite's own lists evaluate a filter, as the preset Groups are.
-                return api.Database.GetFilteredGames(savedSettings ?? api.MainView.GetCurrentFilterSettings()).Count();
+                FollowLibrary();
+
+                // As Playnite's own lists evaluate a filter, as the preset Groups are. That runs over the whole library,
+                // so not again for the same filter over the same games: each move onto Full library asks, as does every
+                // library push.
+                var settings = dashboardFilterShown ? kept.Settings : api.MainView.GetCurrentFilterSettings();
+                var key = Serialization.ToJson(settings);
+                var version = Volatile.Read(ref libraryVersion);
+                if (key != countedSettings || version != countedVersion)
+                {
+                    countedGames = api.Database.GetFilteredGames(settings).Count();
+                    countedSettings = key;
+                    countedVersion = version;
+                }
+
+                return countedGames;
             }
             catch (Exception e)
             {
@@ -360,6 +444,23 @@ namespace XboxSeries.Extension
                 logger.Warn(e, "Couldn't count the games under the user's filter");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Keeps <see cref="libraryVersion"/> up with the library's games, from the first count, when the database is
+        /// open. Bumped as Playnite raises the change, before the library push the extension queues for it on the UI
+        /// thread, so a count that push asks for is made afresh.
+        /// </summary>
+        private void FollowLibrary()
+        {
+            if (followingLibrary)
+            {
+                return;
+            }
+
+            api.Database.Games.ItemCollectionChanged += (_, __) => Interlocked.Increment(ref libraryVersion);
+            api.Database.Games.ItemUpdated += (_, __) => Interlocked.Increment(ref libraryVersion);
+            followingLibrary = true;
         }
 
         private static SortOrder ToSortOrder(GameSort sort)
