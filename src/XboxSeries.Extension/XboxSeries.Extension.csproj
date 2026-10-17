@@ -28,6 +28,11 @@
     <Resource Include="DiscordPortalQr.png" />
     <AssemblyMetadata Include="PluginGuid" Value="$(PluginGuid)" />
   </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <!-- The Debug menu's pane, for Debug builds alone. -->
+    <Page Remove="DebugPane.xaml" />
+    <Compile Remove="DebugPane.xaml.cs" />
+  </ItemGroup>
   <!--
     The Windows SDK contracts bring .NET Standard facades into the build, which the XAML compiler needs. They aren't
     copied out: .NET Framework 4.7.2 and later, which Playnite runs on, have them built in.

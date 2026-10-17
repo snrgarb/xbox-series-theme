@@ -11,72 +11,11 @@
     -->
     <UserControl.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <local:SettingsBoxes />
+            </ResourceDictionary.MergedDictionaries>
             <local:DecodedImageConverter x:Key="Image" />
             <BooleanToVisibilityConverter x:Key="Visibility" />
-
-            <Style x:Key="Text" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
-                <Setter Property="Foreground" Value="White" />
-                <Setter Property="FontSize" Value="24" />
-                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-            </Style>
-
-            <Style x:Key="MutedText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
-                <Setter Property="Foreground" Value="#B3FFFFFF" />
-                <Setter Property="FontSize" Value="19" />
-            </Style>
-
-            <!-- Segoe Fluent Icons / MDL2 Assets glyphs. -->
-            <Style x:Key="Icon" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
-                <Setter Property="Foreground" Value="White" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="TextAlignment" Value="Center" />
-            </Style>
-
-            <!--
-                A box, as the console's: a dark rectangle, its line icon (Tag) at the left and its name beside it, the name
-                alone, never a second line saying what it's set to. Focused, as the console's, it lightens, all of it
-                alike, and the accent ring stands 3 off it carrying the console's green glow as a blurred band; the ring
-                is a Border of its own, so the glow traces only it, and its corners keep the gap even.
-            -->
-            <Style x:Key="Box" TargetType="Button">
-                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                <Setter Property="Width" Value="437" />
-                <Setter Property="Height" Value="131" />
-                <Setter Property="Margin" Value="0,0,18,18" />
-                <Setter Property="Padding" Value="100,0,24,0" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Grid>
-                                <Border x:Name="Back" Background="#FF2D2D2D" />
-                                <!-- The icon, centred in the space before the name. -->
-                                <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource Icon}" FontSize="34"
-                                           Width="100" HorizontalAlignment="Left" />
-                                <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
-                                <!-- 4 of gap and 4 of ring out from the box, as Home's tiles. -->
-                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                                    <Border Style="{DynamicResource XboxFocusGlow}" />
-                                </Border>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="Back" Property="Background" Value="#FF4A4A4A" />
-                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-                <!-- Focused, drawn over the boxes round it, so their backs don't cover its ring's glow band. -->
-                <Style.Triggers>
-                    <Trigger Property="IsKeyboardFocused" Value="True">
-                        <Setter Property="Panel.ZIndex" Value="1" />
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
 
             <!--
                 A choice in a list, as Boot video's: the width of two boxes, marked with a tick while it's the one set, and
@@ -108,18 +47,6 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
-            </Style>
-
-            <!--
-                The holder of a box or row in a list: drawn over its neighbours while what it holds is focused, so their
-                backs don't cover the ring's glow band, the 8 or 18 between them being less than the ring and band stand out.
-            -->
-            <Style x:Key="RaisedWhenFocused" TargetType="ContentPresenter">
-                <Style.Triggers>
-                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                        <Setter Property="Panel.ZIndex" Value="1" />
-                    </Trigger>
-                </Style.Triggers>
             </Style>
 
             <!-- A ChoiceRow in a Row: its tick while it's the one set, then its name. -->

@@ -1,0 +1,39 @@
+<UserControl x:Class="XboxSeries.Extension.DebugPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:XboxSeries.Extension"
+             Focusable="False" KeyDown="OnPaneKeyDown">
+    <!--
+        Debug builds only (the csproj leaves it out of others): Settings' Debug menu, laid out as Personalisation, a grid
+        of boxes two wide, each opening a page of its own in their place or doing what it says. Over a page's boxes, a
+        line on what they do, and for Steam's, the target and whether CEF debugging is on. The page showing and its header
+        follow the code-behind.
+    -->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <local:SettingsBoxes />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel Margin="0,20,0,0">
+        <TextBlock x:Name="Hint" Style="{StaticResource MutedText}" TextWrapping="Wrap" MaxWidth="892"
+                   HorizontalAlignment="Left" Margin="0,0,0,26" />
+        <ItemsControl x:Name="Boxes" Focusable="False" HorizontalAlignment="Left"
+                      ItemContainerStyle="{StaticResource RaisedWhenFocused}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Style="{StaticResource Box}" Tag="{Binding Icon}" Click="OnBoxClick">
+                        <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" />
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="2" VerticalAlignment="Top" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>
