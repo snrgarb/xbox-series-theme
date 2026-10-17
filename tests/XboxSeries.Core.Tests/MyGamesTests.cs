@@ -560,6 +560,34 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Moving_between_Games_and_Full_library_keeps_hold_of_the_users_filter_until_the_page_goes()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            Assert.Equal(0, playnite.UserFilterReleases);
+
+            core.LeaveMyGames();
+
+            Assert.True(playnite.UserFilterReleases > 0);
+            Assert.False(playnite.ReleasedUnderOwnFilter);
+            Assert.True(playnite.ShowsUsersOwnFilter);
+        }
+
+        [Fact]
+        public void Playnite_stopping_on_Full_library_lets_go_of_the_users_filter()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+
+            core.OnApplicationStopped();
+
+            Assert.True(playnite.UserFilterReleases > 0);
+            Assert.False(playnite.ReleasedUnderOwnFilter);
+        }
+
+        [Fact]
         public void The_Guides_Home_entry_leaves_the_page()
         {
             core.OpenMyGames(MyGamesItem.Games);

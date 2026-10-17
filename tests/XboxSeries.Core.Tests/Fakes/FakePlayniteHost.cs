@@ -86,6 +86,18 @@ namespace XboxSeries.Core.Tests.Fakes
             MainListShows++;
         }
 
+        /// <summary>How many times the user's own filter was let go of, into Playnite's saved settings.</summary>
+        public int UserFilterReleases { get; private set; }
+
+        /// <summary>Whether the user's filter was ever let go of while the core's own was still on the main list.</summary>
+        public bool ReleasedUnderOwnFilter { get; private set; }
+
+        public void ReleaseUserFilter()
+        {
+            UserFilterReleases++;
+            ReleasedUnderOwnFilter |= !ShowsUsersOwnFilter;
+        }
+
         /// <summary>How many games the user's own filter shows; null when Playnite can't say.</summary>
         public int? UserFilterGameCount { get; set; }
 
