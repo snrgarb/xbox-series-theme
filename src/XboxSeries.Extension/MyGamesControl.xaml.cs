@@ -92,6 +92,7 @@ namespace XboxSeries.Extension
             OpenGamesCommand = new RelayCommand(() => core.OpenMyGames(MyGamesItem.Games));
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            Nav.IsKeyboardFocusWithinChanged += OnNavFocusWithinChanged;
             shownItem = core.MyGames.Item;
             QueueRows.ItemsSource = queueRows;
             ShowHistory();
@@ -450,8 +451,9 @@ namespace XboxSeries.Extension
         // The keyboard's Enter and the mouse; the pad's A arrives as OnSeeFullLibraryKeyDown.
         private void OnSeeFullLibrary(object sender, RoutedEventArgs e)
         {
-            // The nav item shows Full library as it takes focus; focus then goes on to its first game.
+            // Focus goes by the nav item on to Full library's first game, which opens at once rather than as focus settles there.
             FullLibraryItem.Focus();
+            core.OpenMyGames(MyGamesItem.FullLibrary);
             FocusContentSoon();
         }
 
@@ -501,14 +503,25 @@ namespace XboxSeries.Extension
             }
         }
 
+        // The highlight and its sound follow focus at once; the item's content waits for focus to settle on it.
         private void OnNavFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.OpenMyGames(Enum.GetValues(typeof(MyGamesItem)).Cast<MyGamesItem>().First(item => NavItemOf(item) == sender));
+            core.FocusMyGamesNav(ItemOfNav(sender).Value);
+        }
+
+        // Out of the nav other than into the content, as with Playnite leaving the foreground: an item waiting to open doesn't.
+        private void OnNavFocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (!(bool)e.NewValue)
+            {
+                core.LeaveMyGamesNav();
+            }
         }
 
         // The keyboard's Enter and the mouse; the pad's A arrives as OnNavKeyDown.
         private void OnNavClick(object sender, RoutedEventArgs e)
         {
+            OpenNavItemNow(sender);
             FocusContentSoon();
         }
 
@@ -518,6 +531,7 @@ namespace XboxSeries.Extension
             if (e.Key == Key.Right || PlayniteInput.PadButtonOf(e) == ControllerInput.A)
             {
                 e.Handled = true;
+                OpenNavItemNow(e.OriginalSource);
                 FocusContentSoon();
             }
             else if (e.Key == Key.Up || e.Key == Key.Down)
@@ -529,6 +543,22 @@ namespace XboxSeries.Extension
                 e.Handled = true;
             }
         }
+
+        /// <summary>
+        /// Going into a nav item's content opens the item first if it is still waiting for focus to settle, so focus
+        /// never lands in the content of the item before.
+        /// </summary>
+        private void OpenNavItemNow(object navItem)
+        {
+            if (ItemOfNav(navItem) is MyGamesItem item)
+            {
+                core.OpenMyGames(item);
+            }
+        }
+
+        /// <summary>What the nav item opens; null for anything else.</summary>
+        private MyGamesItem? ItemOfNav(object navItem) =>
+            Enum.GetValues(typeof(MyGamesItem)).Cast<MyGamesItem?>().FirstOrDefault(item => NavItemOf(item.Value) == navItem);
 
         /// <summary>Left goes back to the nav. The list itself moves up and down, building rows as they come on screen.</summary>
         private void OnHistoryKeyDown(object sender, KeyEventArgs e)
