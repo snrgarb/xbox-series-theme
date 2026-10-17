@@ -170,6 +170,39 @@ namespace XboxSeries.Extension
             SetWindowLong(window, GWL_EXSTYLE, GetWindowLong(window, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
         }
 
+#if DEBUG
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int max);
+        [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+        /// <summary>
+        /// Debug builds only: every visible top-level window, owned or not, at least 50 pixels each way, whose program's
+        /// path satisfies <paramref name="matches"/>, with its title: what a program put on screen, dialogs included.
+        /// </summary>
+        public static List<KeyValuePair<IntPtr, string>> VisibleWindowsWithTitles(Func<string, bool> matches)
+        {
+            var found = new List<KeyValuePair<IntPtr, string>>();
+            EnumWindows((hWnd, _) =>
+            {
+                if (!IsWindowVisible(hWnd) || !GetWindowRect(hWnd, out var rect) || rect.Right - rect.Left < 50 || rect.Bottom - rect.Top < 50)
+                {
+                    return true;
+                }
+
+                GetWindowThreadProcessId(hWnd, out var processId);
+                var path = ProgramPathOf(processId);
+                if (path != null && matches(path))
+                {
+                    var title = new StringBuilder(256);
+                    GetWindowText(hWnd, title, title.Capacity);
+                    found.Add(new KeyValuePair<IntPtr, string>(hWnd, title.ToString()));
+                }
+
+                return true;
+            }, IntPtr.Zero);
+            return found;
+        }
+#endif
+
         /// <summary>The id of the process that owns <paramref name="window"/>.</summary>
         public static int ProcessIdOf(IntPtr window)
         {

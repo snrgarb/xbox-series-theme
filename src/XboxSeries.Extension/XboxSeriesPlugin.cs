@@ -30,6 +30,7 @@ namespace XboxSeries.Extension
         private StartupWindow startupWindow;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
+        private SteamDownloads steamDownloads;
 #endif
 
         // Set once, as PluginGuid in the csproj, which also builds the manifest Id from it.
@@ -47,8 +48,12 @@ namespace XboxSeries.Extension
             AppDomain.CurrentDomain.ProcessExit += (_, __) => windows.ThawGame();
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
+            var downloads = new SteamDownloads(api);
+#if DEBUG
+            steamDownloads = downloads;
+#endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
-                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), new SteamDownloads(api));
+                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads);
 
             // Home's elements, its top bar's status area, My games & apps, Settings and the Game hub's Install, placed by
             // the Dashboard as ContentControls named XboxSeries_<element>.
@@ -80,7 +85,12 @@ namespace XboxSeries.Extension
                 case "Groups": return new GroupsControl(core, homeScreen);
                 case "TileMenu": return new TileMenuControl(core);
                 case "MyGames": return new MyGamesControl(core);
-                case "Settings": return new SettingsControl(core);
+                case "Settings":
+                    var settings = new SettingsControl(core);
+#if DEBUG
+                    settings.SteamTrials = steamDownloads;
+#endif
+                    return settings;
                 case "Status": return new StatusControl(core);
                 case "InstallAction": return new InstallActionControl(core);
                 default: return null;
