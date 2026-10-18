@@ -50,6 +50,7 @@ namespace XboxSeries.Extension
         {
             core.TextEntry.PropertyChanged += OnStateChanged;
             core.TextEntry.Keyboard.PropertyChanged += OnKeyboardChanged;
+            InputManager.Current.PreProcessInput += OnPreProcessInput;
             ShowText();
 
             // Put up before the element was loaded.
@@ -63,6 +64,37 @@ namespace XboxSeries.Extension
         {
             core.TextEntry.PropertyChanged -= OnStateChanged;
             core.TextEntry.Keyboard.PropertyChanged -= OnKeyboardChanged;
+            InputManager.Current.PreProcessInput -= OnPreProcessInput;
+        }
+
+        /// <summary>
+        /// A key or pad button on its way to the page under text entry, focus having slipped off the keys onto it, as
+        /// Full library's grid takes it while narrowing: it never gets there, where Playnite's LB/RB would switch the
+        /// filter presets, Y open its own search, or A start a game. Focus goes back to the keys, and a pad button does
+        /// what it would have done there. Not for the Guide, in a window of its own, nor Playnite's dialogs.
+        /// </summary>
+        private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
+        {
+            if (!core.TextEntry.IsShown || !(e.StagingItem.Input is KeyEventArgs key)
+                || !(Keyboard.FocusedElement is DependencyObject focused) || IsInside(focused)
+                || Window.GetWindow(focused) != Window.GetWindow(this))
+            {
+                return;
+            }
+
+            // A real key's PreviewKeyDown, before the page's handlers; a pad button only ever comes as KeyDown.
+            var pad = PlayniteInput.PadButtonOf(key);
+            if (pad == null ? key.RoutedEvent != Keyboard.PreviewKeyDownEvent : key.RoutedEvent != Keyboard.KeyDownEvent)
+            {
+                return;
+            }
+
+            e.Cancel();
+            ConsoleKeys.FocusKey();
+            if (pad != null)
+            {
+                PressPad(pad.Value);
+            }
         }
 
         private void OnStateChanged(object sender, PropertyChangedEventArgs e)
@@ -225,7 +257,13 @@ namespace XboxSeries.Extension
             }
 
             e.Handled = true;
-            switch (pad.Value)
+            PressPad(pad.Value);
+        }
+
+        /// <summary>A pad button while text entry is up: the keyboard's shortcuts and B; any other does nothing.</summary>
+        private void PressPad(ControllerInput pad)
+        {
+            switch (pad)
             {
                 case ControllerInput.X:
                 case ControllerInput.Y:
@@ -233,7 +271,7 @@ namespace XboxSeries.Extension
                 case ControllerInput.RightShoulder:
                 case ControllerInput.LeftStick:
                 case ControllerInput.Start:
-                    if (PlayniteInput.ToButton(pad.Value) is ControllerButton button)
+                    if (PlayniteInput.ToButton(pad) is ControllerButton button)
                     {
                         core.PressKeyboardShortcut(button);
                     }
