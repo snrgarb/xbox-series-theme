@@ -37,7 +37,7 @@
     </Style>
 
     <Style x:Key="XboxHubCardTitle" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
-        <Setter Property="FontFamily" Value="{DynamicResource XboxFontSemibold}" />
+        <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFontSemibold}" />
         <Setter Property="FontSize" Value="19" />
         <Setter Property="Margin" Value="0,0,0,16" />
     </Style>
@@ -530,7 +530,7 @@
                             <!-- Header: title, then Publisher • Release year • Install size • Platform • Source beside it. -->
                             <DockPanel Grid.Row="0">
                                 <TextBlock Text="{Binding DisplayName}" Style="{StaticResource XboxHubText}" MaxWidth="1100"
-                                           FontFamily="{DynamicResource XboxFontSemibold}" FontSize="52" />
+                                           FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="52" />
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="20,0,0,11">
                                     <TextBlock x:Name="HeaderPublisher"
                                                Text="{Binding Publishers, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}">

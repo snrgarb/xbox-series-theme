@@ -540,7 +540,7 @@
                                     <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Bottom" Margin="105,0,105,8"
                                                 Style="{StaticResource XboxThemeOnly}">
                                         <TextBlock Text="{Binding ActiveFilterPreset.Name}" Style="{StaticResource XboxText}"
-                                                   FontFamily="{DynamicResource XboxFontSemibold}" Margin="0,0,24,0" />
+                                                   FontFamily="{DynamicResource XboxHeaderFontSemibold}" Margin="0,0,24,0" />
                                         <StackPanel x:Name="PART_ElemSearchActive" Orientation="Horizontal">
                                             <TextBlock Text="&#xE721;" Style="{StaticResource XboxIcon}" FontSize="18" Margin="0,0,10,0" />
                                             <TextBlock Text="{Binding AppSettings.Fullscreen.FilterSettings.Name}" Style="{StaticResource XboxText}" />
