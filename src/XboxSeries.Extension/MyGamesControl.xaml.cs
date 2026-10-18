@@ -57,6 +57,14 @@ namespace XboxSeries.Extension
         /// <summary>The App that last had focus, to put focus back on after Apps change or coming back from the nav.</summary>
         private Guid? lastFocusedApp;
 
+        /// <summary>
+        /// The grid's game focus last left for the nav, Playnite's own entry in its main list, for right from the nav to
+        /// go back to rather than to the first game: normally still the main list's selected game, so going back changes
+        /// nothing Playnite has to build again. Only for the nav item and Full library tab it was in, so null once either
+        /// changes.
+        /// </summary>
+        private object lastFocusedGridGame;
+
         /// <summary>The Games grid game focus left for "See full library", to go back up to.</summary>
         private int gameAboveFooter;
 
@@ -185,6 +193,8 @@ namespace XboxSeries.Extension
             {
                 case nameof(MyGamesState.IsShown):
                 case nameof(MyGamesState.Item):
+                    // Another item's games, or the page opened afresh: right from the nav starts again at the first.
+                    lastFocusedGridGame = null;
                     ShowItem();
                     FlyInItem(e.PropertyName == nameof(MyGamesState.Item));
 
@@ -303,6 +313,12 @@ namespace XboxSeries.Extension
             if (index < 0)
             {
                 index = libraryTabs.Items.IndexOf(tab.DataContext);
+            }
+
+            // Another tab's games: right from the nav starts again at the first.
+            if (index != shownTab)
+            {
+                lastFocusedGridGame = null;
             }
 
             // Off Full library the list isn't the tabs' to move, so a slide it may be in along the nav is left alone.
@@ -437,6 +453,7 @@ namespace XboxSeries.Extension
             if (e.Key == Key.Left && row.All(c => c.TranslatePoint(new Point(), panel).X >= game.TranslatePoint(new Point(), panel).X))
             {
                 e.Handled = true;
+                lastFocusedGridGame = mainList.ItemContainerGenerator.ItemFromContainer(game);
                 NavItemOf(core.MyGames.Item).Focus();
             }
             else if (e.Key == Key.Down && core.MyGames.Item == MyGamesItem.Games
@@ -473,6 +490,11 @@ namespace XboxSeries.Extension
             else if (e.Key == Key.Left)
             {
                 e.Handled = true;
+                if (mainList != null && gameAboveFooter < mainList.Items.Count)
+                {
+                    lastFocusedGridGame = mainList.Items[gameAboveFooter];
+                }
+
                 GamesItem.Focus();
             }
             else if (e.Key == Key.Right || e.Key == Key.Down)
@@ -664,8 +686,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Focuses the item's first tile once it is laid out: Games' first game in Playnite's main list, or the App or
-        /// Play history game that last had focus, else its first. With none, focus stays on the nav.
+        /// Focuses the item's tile once it is laid out: the grid's game, App or Play history game that last had focus,
+        /// else its first. With none, focus stays on the nav.
         /// </summary>
         private void FocusContentSoon()
         {
@@ -685,7 +707,9 @@ namespace XboxSeries.Extension
 
                 if (core.MyGames.ShowsGameGrid)
                 {
-                    FocusGame(0);
+                    // Gone from the list, as a game uninstalled off Games, it is -1, so the first.
+                    var last = lastFocusedGridGame == null || mainList == null ? -1 : mainList.Items.IndexOf(lastFocusedGridGame);
+                    FocusGame(Math.Max(last, 0));
                     return;
                 }
 
@@ -730,7 +754,11 @@ namespace XboxSeries.Extension
             ((UIElement)AppsList.ItemContainerGenerator.ContainerFromItem(app) ?? AppsItem).Focus();
         }
 
-        /// <summary>Focuses and selects the grid's game at <paramref name="index"/>; with no games, the nav item.</summary>
+        /// <summary>
+        /// Focuses and selects the grid's game at <paramref name="index"/>; with no games, the nav item. A game whose tile
+        /// is already built, as the one focus just left for the nav, is focused as it is: scrolling to it and laying the
+        /// whole list out again is only for one that isn't.
+        /// </summary>
         private void FocusGame(int index)
         {
             if (mainList == null || mainList.Items.Count == 0)
@@ -742,8 +770,12 @@ namespace XboxSeries.Extension
             // Selected too: the Game hub, opened by A, shows the main list's selected game.
             index = Math.Min(index, mainList.Items.Count - 1);
             mainList.SelectedIndex = index;
-            mainList.ScrollIntoView(mainList.Items[index]);
-            mainList.UpdateLayout();
+            if (mainList.ItemContainerGenerator.ContainerFromIndex(index) == null)
+            {
+                mainList.ScrollIntoView(mainList.Items[index]);
+                mainList.UpdateLayout();
+            }
+
             if (mainList.ItemContainerGenerator.ContainerFromIndex(index) is UIElement game)
             {
                 game.Focus();
