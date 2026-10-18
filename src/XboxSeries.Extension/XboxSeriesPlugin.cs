@@ -56,12 +56,12 @@ namespace XboxSeries.Extension
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions);
 
-            // Home's elements, its top bar's status area, My games & apps, Settings, the Game hub's Install and the hint bar, placed by
+            // Home's elements, its top bar's status area, My games & apps, Settings, the Game hub's Install, Search and the hint bar, placed by
             // the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "Hints" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "Search", "Hints" },
             });
         }
 
@@ -95,6 +95,7 @@ namespace XboxSeries.Extension
                 case "Status": return new StatusControl(core);
                 case "InstallAction": return new InstallActionControl(core);
                 case "Hints": return new HintBarControl(core);
+                case "Search": return new SearchControl(core);
                 default: return null;
             }
         }
