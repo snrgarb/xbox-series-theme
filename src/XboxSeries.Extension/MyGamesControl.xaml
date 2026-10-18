@@ -352,9 +352,13 @@
 
             <!--
                 Full library's name box: Playnite's own name filter of the grid, typed into with a keyboard or, from the
-                pad's A, Playnite's on-screen keyboard. A dark box with the search glyph, reading "Filter by name" while
-                empty; focused, the accent ring stands 4 off it carrying the console's green glow as a blurred band, the
-                box staying dark so the name stays legible.
+                pad's A, Playnite's on-screen keyboard. A dark box as the Sort dropdown beside it, reading "Filter by name"
+                from its left while empty, left aligned whatever the page round it inherits, and the search glyph in a
+                column of its own at its right, as the dropdown's chevron, so the name never runs under it. Focused, the
+                accent ring lies on the box's own edge carrying the console's green glow as a blurred band, the box
+                staying dark so the name stays legible: Full library's grid, and its fade painted in the page's colour,
+                start only 4 under the row and draw over it, so a ring standing out of the box had its bottom edge painted
+                over.
             -->
             <Style x:Key="NameBox" TargetType="TextBox">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -363,21 +367,28 @@
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="FontSize" Value="22" />
                 <Setter Property="Foreground" Value="White" />
+                <Setter Property="TextAlignment" Value="Left" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="CaretBrush" Value="White" />
                 <Setter Property="SelectionBrush" Value="{DynamicResource GlyphBrush}" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TextBox">
                             <Grid>
-                                <Border Background="#FF333333" CornerRadius="2" />
-                                <TextBlock Text="&#xE721;" Style="{StaticResource NavIcon}" FontSize="20" Margin="20,0,0,0" />
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.ColumnSpan="2" Background="#FF333333" CornerRadius="2" />
                                 <TextBlock x:Name="Placeholder" Text="Filter by name" Style="{StaticResource Text}"
-                                           Foreground="{StaticResource DimBrush}" Margin="62,0,20,0" VerticalAlignment="Center"
-                                           IsHitTestVisible="False" Visibility="Hidden" />
-                                <ScrollViewer x:Name="PART_ContentHost" Margin="58,0,20,0" VerticalAlignment="Center"
+                                           Foreground="{StaticResource DimBrush}" TextAlignment="Left" Margin="22,0,14,0"
+                                           VerticalAlignment="Center" IsHitTestVisible="False" Visibility="Hidden" />
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="20,0,14,0" VerticalAlignment="Center"
                                               Focusable="False" HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollBarVisibility="Hidden" />
-                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
+                                <TextBlock x:Name="Icon" Grid.Column="1" Text="&#xE721;" Style="{StaticResource NavIcon}"
+                                           FontSize="20" Width="Auto" Margin="0,0,22,0" />
+                                <Border x:Name="FocusRing" Grid.ColumnSpan="2" BorderThickness="4" CornerRadius="2"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                                     <Border Style="{DynamicResource XboxFocusGlowCache}">
                                         <Border Style="{DynamicResource XboxFocusGlow}" />
