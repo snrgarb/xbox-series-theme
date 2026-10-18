@@ -917,7 +917,8 @@
                     <DockPanel x:Name="TabContent" Grid.Row="1" Margin="0,30,0,0">
                         <!--
                             The landing tab's row of utilities along the bottom, as on the console: small squares from the
-                            left, Notifications, with how many there are, and Audio, each opening its flyout. Empty, and so
+                            left, Notifications, with how many there are, and Audio, each opening its flyout, then Search,
+                            bringing Playnite to the front on the Search page. Empty, and so
                             gone, on the other tabs. The squares are the console's: 87 across with 18 between, darker than the
                             panel behind them.
                         -->
@@ -943,7 +944,7 @@
                                     <Grid Width="87" Height="87" Margin="0,0,18,0" Background="Transparent"
                                           MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
                                         <Border x:Name="Fill" CornerRadius="4" Background="#73000000" />
-                                        <!-- Segoe Fluent Icons / MDL2 Assets glyphs: the bell Home's top bar uses, and the speaker. -->
+                                        <!-- Segoe Fluent Icons / MDL2 Assets glyphs: the bell Home's top bar uses, the speaker, and the magnifier. -->
                                         <TextBlock x:Name="Glyph" Text="&#xE767;" Style="{StaticResource GuideIcon}" FontSize="33" HorizontalAlignment="Center" />
                                         <Border x:Name="Badge" MinWidth="24" Height="24" CornerRadius="12" Padding="6,0"
                                                 Background="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
@@ -970,6 +971,10 @@
                                         <DataTrigger Binding="{Binding IsFocused}" Value="True">
                                             <Setter TargetName="Fill" Property="Background" Value="#26FFFFFF" />
                                             <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <!-- Search: the magnifier, as Home's top bar's Search. -->
+                                        <DataTrigger Binding="{Binding Kind}" Value="Search">
+                                            <Setter TargetName="Glyph" Property="Text" Value="&#xE721;" />
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
