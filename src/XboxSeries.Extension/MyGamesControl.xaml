@@ -363,8 +363,9 @@
             </Style>
 
             <!--
-                Full library's name box: Playnite's own name filter of the grid, typed into with a keyboard or, from the
-                pad's A, Playnite's on-screen keyboard. A dark box as the Sort dropdown beside it, reading "Filter by name"
+                Full library's name box: Playnite's own name filter of the grid, shown, never typed into itself: A, Y, Enter,
+                a click or a letter typed there types it over the page, on the Console keyboard (TextEntryState), the grid
+                narrowing as it is typed. A dark box as the Sort dropdown beside it, reading "Filter by name"
                 from its left while empty, left aligned whatever the page round it inherits, and the search glyph in a
                 column of its own at its right, as the dropdown's chevron, so the name never runs under it. Focused, the
                 accent ring lies on the box's own edge carrying the console's green glow as a blurred band, the box
@@ -374,6 +375,9 @@
             -->
             <Style x:Key="NameBox" TargetType="TextBox">
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="IsUndoEnabled" Value="False" />
+                <Setter Property="Cursor" Value="Arrow" />
                 <Setter Property="Width" Value="400" />
                 <Setter Property="Height" Value="60" />
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
@@ -624,8 +628,9 @@
                     </DockPanel>
                 </Button>
                 <TextBox x:Name="NameBox" DockPanel.Dock="Left" Style="{StaticResource NameBox}" Margin="24,0,0,0"
-                         Visibility="Collapsed" TextChanged="OnNameTyped" GotKeyboardFocus="OnNameBoxFocused"
-                         LostKeyboardFocus="OnNameBoxLeft" PreviewKeyDown="OnNameBoxPreviewKeyDown" />
+                         Visibility="Collapsed" GotKeyboardFocus="OnNameBoxFocused" LostKeyboardFocus="OnNameBoxLeft"
+                         PreviewKeyDown="OnNameBoxPreviewKeyDown" PreviewTextInput="OnNameBoxTextInput"
+                         PreviewMouseLeftButtonDown="OnNameBoxMouseDown" />
                 <Button x:Name="FilterButton" DockPanel.Dock="Right" Style="{StaticResource FooterButton}" Height="60"
                         Click="OnFilterClick">
                     <StackPanel Orientation="Horizontal">

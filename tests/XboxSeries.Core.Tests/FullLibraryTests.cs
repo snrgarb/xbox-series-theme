@@ -370,6 +370,20 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_name_box_shows_the_name_and_is_typed_over_the_page_never_into_itself()
+        {
+            var style = MyGames().Descendants().Single(e => (string)e.Attribute(X + "Key") == "NameBox");
+            string Setter(string property) => (string)style.Elements().SingleOrDefault(s => (string)s.Attribute("Property") == property)?.Attribute("Value");
+            var box = Named(MyGames(), "NameBox");
+
+            // Text entry over the page types the name: a key, a letter or a click in the box opens it.
+            Assert.Equal("True", Setter("IsReadOnly"));
+            Assert.Null(box.Attribute("TextChanged"));
+            Assert.NotNull(box.Attribute("PreviewTextInput"));
+            Assert.NotNull(box.Attribute("PreviewMouseLeftButtonDown"));
+        }
+
+        [Fact]
         public void The_name_box_focus_ring_stays_clear_of_the_grid_drawn_over_the_row_below_it()
         {
             var myGames = MyGames();
