@@ -56,7 +56,7 @@ The **Game hub**'s view of one game's achievements, opened from the hub and show
 _Avoid_: achievements window, trophies
 
 **Search**:
-The Dashboard's page for finding games and **Apps** by name, typed on the **Console keyboard**. Empty, it shows the games most recently added; typing shows a Games row and an Apps row, each only with something found, never hidden games. A on a game opens its **Game hub**; A on an App starts it. Home's top bar and the **Guide**'s Search **Utility** open it. B puts the keyboard away first, then leaves the page. It exists only when the extension is installed.
+The Dashboard's page for finding games and **Apps** by name, typed on the **Console keyboard**. Empty, it shows the games most recently added; typing shows a Games row and an Apps row, each only with something found, never hidden games. A on a game opens its **Game hub**; A on an App starts it. Home's top bar, the **Guide**'s Search **Utility** and Y on My games & apps' Games open it. B puts the keyboard away first, then leaves the page, back to Games on the game Y was pressed on when opened from there. It exists only when the extension is installed.
 _Avoid_: filter (narrowing the list currently shown by name is Playnite's own filter, not Search)
 
 **Console keyboard**:

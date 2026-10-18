@@ -113,5 +113,8 @@ namespace XboxSeries.Core
 
         /// <summary>The Guide's Search utility: B goes to Home.</summary>
         Guide,
+
+        /// <summary>Y on My games &amp; apps' Games: B goes back to Games, focus on the game it was on.</summary>
+        MyGames,
     }
 }

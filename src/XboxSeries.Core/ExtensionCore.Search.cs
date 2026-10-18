@@ -44,6 +44,23 @@ namespace XboxSeries.Core
             RefreshSearch();
         }
 
+        /// <summary>
+        /// Y on My games &amp; apps' Games: Search in the page's place, empty, the keyboard up; B goes back to Games, focus
+        /// on <paramref name="game"/>, the game Y was pressed on. Elsewhere on the page Y opens nothing, nor with a menu,
+        /// text entry or the Guide over it.
+        /// </summary>
+        public void SearchFromMyGames(Guid? game)
+        {
+            if (MyGames.IsShown && MyGames.Item == MyGamesItem.Games && !TextEntry.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            {
+                searchReturnGame = game;
+                ShowSearch(SearchOrigin.MyGames);
+            }
+        }
+
+        /// <summary>The game on Games that Y opened Search from, which B goes back to.</summary>
+        private Guid? searchReturnGame;
+
         /// <summary>A on the page's search box: the keyboard comes up again, the text as it was.</summary>
         public void ShowSearchKeyboard()
         {
@@ -173,7 +190,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// B on the page: puts the keyboard away first, focus going to the results, then goes back to where the page was
-        /// opened from (<see cref="SearchState.OpenedFrom"/>): Home, focus on the top bar's Search from there. A menu,
+        /// opened from (<see cref="SearchState.OpenedFrom"/>): Home, focus on the top bar's Search from there, or Games. A menu,
         /// prompt or the Guide still showing over the page answers the B instead.
         /// </summary>
         public void LeaveSearch()
@@ -186,6 +203,11 @@ namespace XboxSeries.Core
             if (Search.IsKeyboardShown)
             {
                 Search.IsKeyboardShown = false;
+            }
+            else if (Search.OpenedFrom == SearchOrigin.MyGames)
+            {
+                // Games comes back in the page's place, which it takes away, on the game Y was pressed on.
+                OpenMyGames(MyGamesItem.Games, searchReturnGame);
             }
             else
             {

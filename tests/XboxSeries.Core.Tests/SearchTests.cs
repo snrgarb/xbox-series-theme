@@ -605,6 +605,67 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Y_on_My_games_and_apps_Games_opens_the_page_in_its_place_empty_with_the_keyboard_up()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite");
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+
+            core.SearchFromMyGames(library.Id("Halo Infinite"));
+
+            Assert.True(core.Search.IsShown);
+            Assert.False(core.MyGames.IsShown);
+            Assert.Equal(SearchOrigin.MyGames, core.Search.OpenedFrom);
+            Assert.True(core.Search.IsKeyboardShown);
+            Assert.Equal(string.Empty, Keyboard.Text);
+        }
+
+        [Fact]
+        public void B_on_the_page_opened_from_Games_puts_the_keyboard_away_then_goes_back_to_Games_and_its_game()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite");
+            core.OnLibraryChanged(library.Snapshot());
+            core.OpenMyGames(MyGamesItem.Games);
+            core.SearchFromMyGames(library.Id("Halo Infinite"));
+
+            core.LeaveSearch();
+
+            Assert.True(core.Search.IsShown);
+
+            core.LeaveSearch();
+
+            Assert.False(core.Search.IsShown);
+            Assert.True(core.MyGames.IsShown);
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+            Assert.Equal(library.Id("Halo Infinite"), core.MyGames.ReturnsToGame);
+        }
+
+        [Theory]
+        [InlineData(MyGamesItem.FullLibrary)]
+        [InlineData(MyGamesItem.PlayHistory)]
+        public void Y_elsewhere_on_My_games_and_apps_opens_nothing(MyGamesItem item)
+        {
+            core.OpenMyGames(item);
+
+            core.SearchFromMyGames(null);
+
+            Assert.False(core.Search.IsShown);
+            Assert.True(core.MyGames.IsShown);
+        }
+
+        [Fact]
+        public void Y_on_Games_with_text_entry_or_the_Guide_up_opens_nothing()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            Tap(ControllerButton.Guide);
+
+            core.SearchFromMyGames(null);
+
+            Assert.False(core.Search.IsShown);
+            Assert.True(core.MyGames.IsShown);
+        }
+
+        [Fact]
         public void B_on_the_page_opened_from_the_Guide_goes_to_Home()
         {
             FocusGuideSearch();
