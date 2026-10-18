@@ -135,6 +135,7 @@ namespace XboxSeries.Extension
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             Nav.IsKeyboardFocusWithinChanged += OnNavFocusWithinChanged;
+            KeyDown += OnPageKeyDown;
 
             // Handled ones too: a TextBox marks every KeyDown it is sent handled, the pad's buttons too, which Playnite
             // sends as KeyDown with no key, before the box's own handlers hear of them.
@@ -166,7 +167,6 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown += OnViewHostKeyDown;
-                viewHost.PreviewKeyDown += OnViewHostPreviewKeyDown;
             }
 
             mainList = HomeRows.FindPart(this, "PART_ListGameItems") as ListBox;
@@ -208,7 +208,6 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
-                viewHost.PreviewKeyDown -= OnViewHostPreviewKeyDown;
                 viewHost = null;
             }
 
@@ -513,14 +512,19 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Playnite's LB/RB switch the user's filter presets, which only Full library shows; elsewhere on the page they
-        /// would swap the grid's games for a preset's, so they do nothing.
+        /// Whether a pad button is one of Playnite's own on its view host, which the page hands no further: Y opens
+        /// Playnite's keyboard to filter by name and RS its filters; LB/RB switch the user's filter presets, which only
+        /// Full library shows as its tabs, so elsewhere they would swap the grid's games for a preset's. They are bound
+        /// on the view host itself, which hears them before any handler of its own, so they are stopped on the way up.
         /// </summary>
-        private void OnViewHostPreviewKeyDown(object sender, KeyEventArgs e)
+        private bool IsPlaynitesOwn(ControllerInput? button) =>
+            button == ControllerInput.Y || button == ControllerInput.RightStick
+            || (!core.MyGames.ShowsFullLibrary && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder));
+
+        /// <summary>Playnite's own buttons on the page, those the page's parts don't answer themselves, do nothing.</summary>
+        private void OnPageKeyDown(object sender, KeyEventArgs e)
         {
-            var button = PlayniteInput.PadButtonOf(e);
-            if (core.MyGames.IsShown && !core.MyGames.ShowsFullLibrary
-                && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder))
+            if (core.MyGames.IsShown && IsPlaynitesOwn(PlayniteInput.PadButtonOf(e)))
             {
                 e.Handled = true;
             }
@@ -570,12 +574,21 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Y on Full library's grid opens its name box, rather than Playnite's own name entry.</summary>
+        /// <summary>
+        /// Y on Full library's grid opens its name box, rather than Playnite's own keyboard; on the page's other grids it,
+        /// and Playnite's other own buttons, do nothing.
+        /// </summary>
         private void OnMainListKeyDown(object sender, KeyEventArgs e)
         {
-            if (core.MyGames.ShowsFullLibrary && PlayniteInput.PadButtonOf(e) == ControllerInput.Y)
+            var button = PlayniteInput.PadButtonOf(e);
+            if (!core.MyGames.IsShown || !IsPlaynitesOwn(button))
             {
-                e.Handled = true;
+                return;
+            }
+
+            e.Handled = true;
+            if (core.MyGames.ShowsFullLibrary && button == ControllerInput.Y)
+            {
                 OpenNameBox();
             }
         }

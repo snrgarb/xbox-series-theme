@@ -52,6 +52,7 @@ namespace XboxSeries.Extension
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+            KeyDown += OnPageKeyDown;
             shownCategory = core.Settings.Category;
             ShowCategory();
         }
@@ -99,7 +100,6 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown += OnViewHostKeyDown;
-                viewHost.PreviewKeyDown += OnViewHostPreviewKeyDown;
             }
         }
 
@@ -112,7 +112,6 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
-                viewHost.PreviewKeyDown -= OnViewHostPreviewKeyDown;
                 viewHost = null;
             }
         }
@@ -396,13 +395,14 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Playnite's LB/RB switch the user's filter presets, Y filters by name and RS opens the filters, all on the main
-        /// list Home hides behind the page; here they do nothing.
+        /// Playnite's LB/RB switch the user's filter presets, Y opens its keyboard to filter by name and RS its filters,
+        /// all on the main list Home hides behind the page; here they do nothing. They are bound on the view host itself,
+        /// which hears them before any handler of its own, so they are stopped on the way up to it.
         /// </summary>
-        private void OnViewHostPreviewKeyDown(object sender, KeyEventArgs e)
+        private void OnPageKeyDown(object sender, KeyEventArgs e)
         {
             var button = PlayniteInput.PadButtonOf(e);
-            if (core.Settings.IsShown && !core.TextEntry.IsShown
+            if (core.Settings.IsShown
                 && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder
                     || button == ControllerInput.Y || button == ControllerInput.RightStick))
             {
