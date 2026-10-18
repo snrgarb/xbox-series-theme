@@ -10,7 +10,8 @@
     way while its State.IsShown is true, and the top bar's Settings button opens it; theme-only, that button is Playnite's
     own, which opens Playnite's main menu. Its Search page (XboxSeries_Search) replaces Home the same way again, and the top
     bar's Search button opens it; theme-only, that button is Playnite's name filter of the main list. The three pages are
-    never up together.
+    never up together. Its text entry (XboxSeries_TextEntry), the Console keyboard under a caption and its field, comes up
+    over all of it, dimming it, wherever the extension asks for text; it is last in the main host so nothing covers it.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -657,6 +658,13 @@
 
                         <GameStatus x:Name="PART_ElemGameStatus"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+                        <!--
+                            With the extension, text entry: the Console keyboard docked at the foot, under a caption and its field,
+                            over everything else here, the pages, the top bar, the Game hub, the hint bar and the tile menu, dimming
+                            them. Last, so nothing draws over it. Empty without it.
+                        -->
+                        <ContentControl x:Name="XboxSeries_TextEntry" Focusable="False" IsTabStop="False" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

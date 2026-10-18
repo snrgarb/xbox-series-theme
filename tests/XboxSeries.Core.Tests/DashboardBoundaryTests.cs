@@ -61,7 +61,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Home_hosts_the_extensions_hero_Recent_row_Groups_tile_menu_My_games_Settings_Search_status_area_and_hint_bar_as_custom_elements()
+        public void Home_hosts_the_extensions_hero_Recent_row_Groups_tile_menu_My_games_Settings_Search_status_area_hint_bar_and_text_entry_as_custom_elements()
         {
             var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
             var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
@@ -70,7 +70,7 @@ namespace XboxSeries.Core.Tests
                 .Select(e => (string)e.Attribute(x + "Name"))
                 .Where(name => name != null && name.StartsWith("XboxSeries_"));
 
-            Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_Hints", "XboxSeries_MyGames", "XboxSeries_RecentRow", "XboxSeries_Search", "XboxSeries_Settings", "XboxSeries_Status", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
+            Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_Hints", "XboxSeries_MyGames", "XboxSeries_RecentRow", "XboxSeries_Search", "XboxSeries_Settings", "XboxSeries_Status", "XboxSeries_TextEntry", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
         }
 
         [Fact]

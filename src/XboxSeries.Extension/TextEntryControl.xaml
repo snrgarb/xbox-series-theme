@@ -1,0 +1,82 @@
+<controls:PluginUserControl x:Class="XboxSeries.Extension.TextEntryControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+             xmlns:local="clr-namespace:XboxSeries.Extension"
+             Focusable="False">
+    <!--
+        Text entry, placed by the Dashboard over everything: the page dims, and over it the caption, the field it types
+        into, and the Console keyboard docked at the foot, centred, where Search has it. The field is Search's pill, the
+        keyboard's width, the text in it either side of the caret at the keyboard's cursor, or a dot for each character
+        while it is secret. Its DataContext is the core's TextEntryState; collapsed, and so never in the way, while it is
+        down.
+    -->
+    <controls:PluginUserControl.Resources>
+        <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="Visibility" />
+
+            <!-- Search's box colour, so the field reads as the same box. -->
+            <SolidColorBrush x:Key="BoxBrush" Color="#FF2E3136" />
+
+            <Style x:Key="Text" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- The caption, a heading in the header font's SemiLight (#77), as Search's rows have theirs. -->
+            <Style x:Key="CaptionText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+                <Setter Property="FontSize" Value="30" />
+                <Setter Property="FontWeight" Value="350" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+        </ResourceDictionary>
+    </controls:PluginUserControl.Resources>
+
+    <!--
+        The root takes the pad's buttons, the keyboard's typing and Escape (TextEntryControl.xaml.cs). Focus is kept on
+        the keys: neither Tab nor the arrows leave it.
+    -->
+    <Grid x:Name="Root" Visibility="{Binding IsShown, Converter={StaticResource Visibility}}"
+          KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Contained"
+          KeyboardNavigation.ControlTabNavigation="Contained"
+          PreviewKeyDown="OnRootPreviewKeyDown" KeyDown="OnRootKeyDown" TextInput="OnRootTextInput">
+        <!--
+            The dim, lighter than the tile menu's over the top of the page, so Full library is seen narrowing behind it as
+            the name is typed, and darkening down to where the caption, the field and the keyboard sit, so they read as
+            clearly as on a dark page. A click on it cancels, as the tile menu's dim closes the menu.
+        -->
+        <Border x:Name="Dim" MouseLeftButtonDown="OnDimClick">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#59000000" Offset="0" />
+                    <GradientStop Color="#59000000" Offset="0.4" />
+                    <GradientStop Color="#C8000000" Offset="0.62" />
+                    <GradientStop Color="#C8000000" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <!-- The caption over the field, over the keyboard: all the keyboard's 928 across, centred, the keyboard 110 off the foot as on Search. -->
+        <StackPanel Width="928" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,110">
+            <TextBlock x:Name="Caption" Text="{Binding Caption}" Style="{StaticResource CaptionText}" Margin="28,0,28,14" />
+
+            <!-- The field: Search's pill, the text either side of the caret, which is always shown as the keyboard is always up. -->
+            <Grid x:Name="Field" Height="54">
+                <Border Background="{StaticResource BoxBrush}" CornerRadius="27" />
+                <Grid Margin="28,0" ClipToBounds="True">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <TextBlock x:Name="BeforeCaret" Style="{StaticResource Text}" />
+                        <Rectangle x:Name="Caret" Width="2" Height="30" Fill="White" Margin="1,0" VerticalAlignment="Center" />
+                        <TextBlock x:Name="AfterCaret" Style="{StaticResource Text}" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <local:ConsoleKeyboardControl x:Name="ConsoleKeys" HorizontalAlignment="Center" Margin="0,36,0,0"
+                                          KeyChosen="OnKeyChosen" />
+        </StackPanel>
+    </Grid>
+</controls:PluginUserControl>
