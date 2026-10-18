@@ -25,11 +25,11 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_landing_tab_has_the_Notifications_and_Audio_utilities_and_Profile_and_system_has_none()
+        public void The_landing_tab_has_the_Notifications_Audio_and_Search_utilities_and_Profile_and_system_has_none()
         {
             Tap(ControllerButton.Guide);
 
-            Assert.Equal(new[] { GuideItemKind.Notifications, GuideItemKind.Audio }, core.Guide.Utilities.Select(u => u.Kind));
+            Assert.Equal(new[] { GuideItemKind.Notifications, GuideItemKind.Audio, GuideItemKind.Search }, core.Guide.Utilities.Select(u => u.Kind));
 
             Tap(ControllerButton.RightShoulder);
 
@@ -55,7 +55,10 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(GuideItemKind.Audio, core.Guide.FocusedItem.Kind);
 
             Tap(ControllerButton.DPadRight);
-            Assert.Equal(GuideItemKind.Audio, core.Guide.FocusedItem.Kind);
+            Assert.Equal(GuideItemKind.Search, core.Guide.FocusedItem.Kind);
+
+            Tap(ControllerButton.DPadRight);
+            Assert.Equal(GuideItemKind.Search, core.Guide.FocusedItem.Kind);
 
             Tap(ControllerButton.DPadUp);
             Assert.Equal("Halo Infinite", core.Guide.FocusedItem.Title);
@@ -87,7 +90,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal(GuideTabKind.Landing, core.Guide.Tab);
             Assert.Equal("Home", core.Guide.Items[0].Title);
-            Assert.Equal(new[] { GuideItemKind.Notifications, GuideItemKind.Audio }, core.Guide.Utilities.Select(u => u.Kind));
+            Assert.Equal(new[] { GuideItemKind.Notifications, GuideItemKind.Audio, GuideItemKind.Search }, core.Guide.Utilities.Select(u => u.Kind));
             Assert.DoesNotContain(core.Guide.FocusedItem, core.Guide.Items);
             Assert.DoesNotContain(core.Guide.FocusedItem, core.Guide.Utilities);
         }
