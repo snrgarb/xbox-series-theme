@@ -66,7 +66,10 @@ namespace XboxSeries.Extension
         private Control libraryTabSelector;
         private ItemsControl libraryTabs;
 
-        /// <summary>The Play history game that last had focus, to put focus back on after a rebuild or its Game hub.</summary>
+        /// <summary>
+        /// The Play history game that last had focus, to put focus back on after a rebuild or its Game hub; or the game to
+        /// go back to on reopening, on the grid too, as B from Search opened by Y on Games.
+        /// </summary>
         private Guid? lastFocusedGame;
 
         /// <summary>The App that last had focus, to put focus back on after Apps change or coming back from the nav.</summary>
@@ -575,8 +578,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Y on Full library's grid opens its name box, rather than Playnite's own keyboard; on the page's other grids it,
-        /// and Playnite's other own buttons, do nothing.
+        /// Y on Full library's grid opens its name box, and on Games opens Search, rather than Playnite's own keyboard;
+        /// on Play history's grid it, and Playnite's other own buttons, do nothing.
         /// </summary>
         private void OnMainListKeyDown(object sender, KeyEventArgs e)
         {
@@ -587,11 +590,29 @@ namespace XboxSeries.Extension
             }
 
             e.Handled = true;
-            if (core.MyGames.ShowsFullLibrary && button == ControllerInput.Y)
+            if (button != ControllerInput.Y)
+            {
+                return;
+            }
+
+            if (core.MyGames.ShowsFullLibrary)
             {
                 OpenNameBox();
             }
+            else if (core.MyGames.Item == MyGamesItem.Games)
+            {
+                var game = ItemsControl.ContainerFromElement(mainList, e.OriginalSource as DependencyObject) is ListBoxItem tile
+                    ? GameIdOf(mainList.ItemContainerGenerator.ItemFromContainer(tile))
+                    : null;
+                core.SearchFromMyGames(game);
+            }
         }
+
+        /// <summary>
+        /// The id of a game in Playnite's main list; null for anything else. Its entries' type isn't in the SDK, so the
+        /// id is read by name.
+        /// </summary>
+        private static Guid? GameIdOf(object entry) => entry?.GetType().GetProperty("Id")?.GetValue(entry) as Guid?;
 
         /// <summary>Focuses what in Full library's Sort and Filter row last had focus, else its Sort dropdown.</summary>
         private void FocusRow()
@@ -1339,8 +1360,13 @@ namespace XboxSeries.Extension
 
                 if (core.MyGames.ShowsGameGrid)
                 {
-                    // Gone from the list, as a game uninstalled off Games, it is -1, so the first.
+                    // Gone from the list, as a game uninstalled off Games, it is -1, so the first. Opened again by B from
+                    // Search, which Y on Games opened, the game Y was pressed on.
                     var last = lastFocusedGridGame == null || mainList == null ? -1 : mainList.Items.IndexOf(lastFocusedGridGame);
+                    if (last < 0 && lastFocusedGame != null && mainList != null)
+                    {
+                        last = mainList.Items.Cast<object>().ToList().FindIndex(g => GameIdOf(g) == lastFocusedGame);
+                    }
                     FocusGame(Math.Max(last, 0));
                     return;
                 }
