@@ -460,14 +460,6 @@ namespace XboxSeries.Extension
             nameProperty.SetValue(settings, string.IsNullOrEmpty(name) ? null : name);
         }
 
-        public string TypeMainListName()
-        {
-            // Y's own entry: its on-screen keyboard narrows the list as the user types, and puts the name back if cancelled.
-            // Modal, so the name is the main list's once it returns.
-            FullscreenCommand("OpenSearchCommand")?.Execute(null);
-            return api.MainView.GetCurrentFilterSettings()?.Name ?? string.Empty;
-        }
-
         /// <summary>Not in the SDK: Fullscreen's live filter settings, AppSettings.Fullscreen.FilterSettings; null if not found.</summary>
         private static object FullscreenFilterSettings()
         {

@@ -124,20 +124,6 @@ namespace XboxSeries.Core.Tests.Fakes
             MainListName = name ?? string.Empty;
         }
 
-        /// <summary>What the user types on Playnite's on-screen keyboard, the next time it opens; null to cancel it.</summary>
-        public string NameToType { get; set; }
-
-        public string TypeMainListName()
-        {
-            RequireUsersOwnFilter();
-            if (NameToType != null)
-            {
-                MainListName = NameToType;
-            }
-
-            return MainListName;
-        }
-
         /// <summary>
         /// The user switching Full library's tab to a preset with a sort of its own, as Playnite applies it; null for a
         /// preset without one. Playnite's name filter is the main list's, so it stays.
