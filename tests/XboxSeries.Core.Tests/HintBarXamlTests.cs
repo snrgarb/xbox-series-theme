@@ -28,12 +28,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_extension_offers_the_bar_as_a_custom_element()
+        public void The_extension_keeps_the_bars_custom_element_but_offers_nothing_in_it_while_the_bar_is_off()
         {
             var plugin = File.ReadAllText(Path.Combine(ExtensionDir, "XboxSeriesPlugin.cs"));
 
             Assert.Contains("\"Hints\" }", plugin);
-            Assert.Contains("case \"Hints\": return new HintBarControl(core);", plugin);
+            Assert.Contains("case \"Hints\": return null;", plugin);
         }
 
         [Fact]
