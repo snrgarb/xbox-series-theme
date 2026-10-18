@@ -251,14 +251,14 @@ namespace XboxSeries.Extension
             if (e.Key == Key.Space)
             {
                 e.Handled = true;
-                core.TypeSearchText(" ");
+                core.TypeText(" ");
                 return;
             }
 
             if (e.Key == Key.Back)
             {
                 e.Handled = true;
-                core.DeleteSearchText();
+                core.DeleteText();
                 return;
             }
 
@@ -364,7 +364,7 @@ namespace XboxSeries.Extension
             }
 
             e.Handled = true;
-            core.TypeSearchText(e.Text);
+            core.TypeText(e.Text);
         }
 
         /// <summary>As Settings: Playnite's LB/RB, Y and RS act on the main list hidden behind the page, so here they do nothing.</summary>
