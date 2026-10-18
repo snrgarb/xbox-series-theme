@@ -133,6 +133,41 @@
                                 </Border.Background>
                             </Border>
                         </Grid>
+                        <!--
+                            Now Playing's card, as Windows' media flyout shows the media: the album art on a rounded square,
+                            over a grey one with a note for none (or art that won't load), beside the track, the artist
+                            in grey, and the app playing it after the play or pause mark. The art comes decoded and
+                            frozen from the extension, so it is bound as it is.
+                        -->
+                        <Grid x:Name="Media" Margin="18,0,16,0" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="120" Height="120" VerticalAlignment="Center">
+                                <Border CornerRadius="4" Background="#FF4A4A4A">
+                                    <TextBlock Text="&#xE8D6;" Style="{StaticResource GuideIcon}" FontSize="44" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
+                                </Border>
+                                <Border CornerRadius="4">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="{Binding Art}" Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                            <StackPanel Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
+                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22" Foreground="#B3FFFFFF"
+                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <!-- Segoe Fluent Icons / MDL2 Assets: play while it plays, pause while it is paused. -->
+                                    <TextBlock x:Name="PlayState" Text="&#xE769;" Style="{StaticResource GuideIcon}" FontSize="16"
+                                               Foreground="#B3FFFFFF" Width="20" />
+                                    <TextBlock Text="{Binding App}" Style="{StaticResource GuideText}" FontSize="20" Foreground="#B3FFFFFF"
+                                               Margin="8,0,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
                         <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
                             <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
@@ -465,6 +500,26 @@
                     -->
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordUnavailable">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE7BA;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="#B3FFFFFF" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
+                    </DataTrigger>
+                    <!-- Now Playing: the card for what plays, or, with nothing, a line as quiet as the Discord tab's about voice. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="NowPlaying">
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Media" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="150" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                        <Setter TargetName="PlayState" Property="Text" Value="&#xE768;" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Kind}" Value="NothingPlaying">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE8D6;" />
                         <Setter TargetName="Glyph" Property="Foreground" Value="#B3FFFFFF" />
                         <Setter TargetName="Entry" Property="Height" Value="75" />
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
@@ -812,6 +867,9 @@
                             <DataTemplate>
                                 <Grid Width="84" Height="102">
                                     <Path x:Name="Logo" Data="{StaticResource XboxLogo}" Fill="#FF8C8C8C" Width="33" Height="33" Stretch="Uniform" />
+                                    <!-- Now Playing's: Segoe Fluent Icons / MDL2 Assets' note, as its card's. -->
+                                    <TextBlock x:Name="TabGlyph" Text="&#xE8D6;" Style="{StaticResource GuideIcon}" FontSize="32"
+                                               Foreground="#FF8C8C8C" Visibility="Collapsed" />
                                     <Grid x:Name="Picture" Width="54" Height="54" Visibility="Collapsed">
                                         <Ellipse Fill="#FF4A4A4A" />
                                         <Ellipse>
@@ -829,6 +887,10 @@
                                         <Setter TargetName="Logo" Property="Data" Value="{StaticResource DiscordLogo}" />
                                         <Setter TargetName="Logo" Property="Width" Value="36" />
                                     </DataTrigger>
+                                    <DataTrigger Binding="{Binding Kind}" Value="NowPlaying">
+                                        <Setter TargetName="Logo" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="TabGlyph" Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding Kind}" Value="ProfileAndSystem">
                                         <Setter TargetName="Logo" Property="Visibility" Value="Collapsed" />
                                         <Setter TargetName="Picture" Property="Visibility" Value="Visible" />
@@ -836,6 +898,7 @@
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                         <Setter TargetName="Underline" Property="Visibility" Value="Visible" />
                                         <Setter TargetName="Logo" Property="Fill" Value="White" />
+                                        <Setter TargetName="TabGlyph" Property="Foreground" Value="White" />
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
@@ -905,7 +968,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- The heading: Discord's or Profile & system's. The landing tab has none. -->
+                        <!-- The heading: Discord's, Now Playing's or Profile & system's. The landing tab has none. -->
                         <TextBlock DockPanel.Dock="Top" FontSize="33" Margin="28,-4,0,12">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
@@ -913,6 +976,10 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Tab}" Value="Discord">
                                             <Setter Property="Text" Value="Discord" />
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Tab}" Value="NowPlaying">
+                                            <Setter Property="Text" Value="Now Playing" />
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding Tab}" Value="ProfileAndSystem">
