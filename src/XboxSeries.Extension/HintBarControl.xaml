@@ -4,16 +4,18 @@
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False" IsHitTestVisible="False">
     <!--
-        The hint bar, placed by the Dashboard over the whole page, the Game hub included: a dark rounded pill in the
-        bottom-right corner, as the console's, holding the core's hints left to right (HomeState.Hints), each a pad
-        button's glyph and what it does: More options, Menu's three lines in a white ring, while what has focus has a
-        menu. Anchored to the corner rather than placed, as the page is 1080 tall but only as wide as the screen's aspect
-        makes it. No effect on it, and cached, so nothing is drawn again as it fades; it keeps its last hints while
-        hidden, so showing again lays nothing out.
+        The hint bar, placed by the Dashboard over the whole page, the Game hub included: an opaque near-black rectangle
+        with small rounded corners in the bottom-right corner, as the console's, holding the core's hints left to right
+        (HomeState.Hints), each a pad button's glyph in a ring and what it does: More options, Menu's three lines in a
+        white ring, while what has focus has a menu. Sized from the console's My games capture (L1-games, 720 tall) times
+        1.5 for the 1080-tall page: 63 tall, 60 in from the right and 52 up from the bottom, 36 rings and 25 labels.
+        Anchored to the corner rather than placed, as the page is 1080 tall but only as wide as the screen's aspect makes
+        it. No effect on it, and cached, so nothing is drawn again as it fades; it keeps its last hints while hidden, so
+        showing again lays nothing out.
     -->
-    <Border x:Name="Bar" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,64,40"
-            Height="48" Padding="12,0,22,0" CornerRadius="24"
-            Background="{DynamicResource XboxChipBrush}" Opacity="0" Visibility="Hidden">
+    <Border x:Name="Bar" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,60,52"
+            Height="63" Padding="16,0,20,0" CornerRadius="6"
+            Background="#FF030303" Opacity="0" Visibility="Hidden">
         <!--
             Drawn once into a picture, at twice the 1080p size so it stays sharp on the 4K TV, which the fade then only
             makes fainter or stronger, as the focus glow's cache does.
@@ -21,8 +23,8 @@
         <Border.CacheMode>
             <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
         </Border.CacheMode>
-        <!-- Each hint stands 28 from the one before it; the first's gap is taken back. -->
-        <ItemsControl x:Name="Hints" Focusable="False" VerticalAlignment="Center" Margin="-28,0,0,0">
+        <!-- Each hint stands 26 from the one before it; the first's gap is taken back. -->
+        <ItemsControl x:Name="Hints" Focusable="False" VerticalAlignment="Center" Margin="-26,0,0,0">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal" />
@@ -30,18 +32,34 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <StackPanel Orientation="Horizontal" Margin="28,0,0,0">
-                        <!-- Menu, the only button with a hint so far: three lines in a white ring, as beside the Guide. -->
-                        <Grid x:Name="MenuGlyph" Width="27" Height="27" VerticalAlignment="Center">
-                            <Ellipse Stroke="{DynamicResource XboxTextBrush}" StrokeThickness="2" />
-                            <TextBlock Text="&#xE700;" FontFamily="{DynamicResource XboxIconFont}" FontSize="12"
-                                       Foreground="{DynamicResource XboxTextBrush}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Margin="26,0,0,0">
+                        <Grid VerticalAlignment="Center">
+                            <!-- Menu: three lines in a white ring, as beside the Guide. -->
+                            <Grid x:Name="MenuGlyph" Width="36" Height="36">
+                                <Ellipse Stroke="{DynamicResource XboxTextBrush}" StrokeThickness="2" />
+                                <TextBlock Text="&#xE700;" FontFamily="{DynamicResource XboxIconFont}" FontSize="17"
+                                           Foreground="{DynamicResource XboxTextBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                            <!-- Y: the letter in a ring, both in the pad's yellow, as the console draws it. -->
+                            <Grid x:Name="YGlyph" Width="36" Height="36" Visibility="Collapsed">
+                                <Ellipse Stroke="#FFFFB900" StrokeThickness="2" />
+                                <TextBlock Text="Y" FontFamily="{DynamicResource XboxFont}" FontSize="19"
+                                           Foreground="#FFFFB900"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,2" />
+                            </Grid>
                         </Grid>
-                        <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="22"
+                        <!-- Raised a little so the lower case sits centred on the ring, as on the console. -->
+                        <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="25"
                                    Foreground="{DynamicResource XboxTextBrush}" VerticalAlignment="Center"
-                                   Margin="12,0,0,2" />
+                                   Margin="12,0,0,6" />
                     </StackPanel>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Button}" Value="Y">
+                            <Setter TargetName="MenuGlyph" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="YGlyph" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
