@@ -667,14 +667,7 @@ namespace XboxSeries.Core
             else if (button == ControllerButton.A && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
             {
                 // Playnite hands the pad's A to WPF as a key with no Key, which never clicks the tile.
-                if (Search.IsShown)
-                {
-                    ChooseSearchGame(focusedTile.GameId);
-                }
-                else
-                {
-                    ChooseHomeTile(focusedTile);
-                }
+                ChooseHomeTile(focusedTile);
             }
             else if ((button == ControllerButton.LeftShoulder || button == ControllerButton.RightShoulder) && Guide.IsOpen && dialog == null && Guide.Flyout == null)
             {

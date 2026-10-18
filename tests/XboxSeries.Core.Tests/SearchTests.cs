@@ -677,19 +677,44 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_pads_A_on_a_focused_found_game_opens_its_Game_hub_at_once()
+        public void A_Home_tile_focused_as_the_page_opened_takes_neither_the_pads_A_nor_Start()
         {
-            var library = new FakeLibrary().WithGame("Halo Infinite", installed: false);
+            var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 1));
             core.OnLibraryChanged(library.Snapshot());
+            core.FocusHomeTile(core.Home.RecentRow[0]);
             core.OpenSearch();
-            Type("halo");
             core.PressKeyboardShortcut(ControllerButton.Start);
-            core.FocusHomeTile(core.Search.Games[0]);
 
             Tap(ControllerButton.A);
+            Tap(ControllerButton.Start);
+            clock.Advance(TimeSpan.FromSeconds(1));
 
-            Assert.Equal(new[] { library.Id("Halo Infinite") }, playnite.OpenedHubs);
-            Assert.Contains("Halo Infinite", MainList(library));
+            Assert.Empty(playnite.OpenedHubs);
+            Assert.Null(core.Home.TileMenu);
+        }
+
+        [Fact]
+        public void Space_turns_Shift_off_as_any_character_does()
+        {
+            core.OpenSearch();
+
+            core.PressKeyboardShortcut(ControllerButton.Y);
+
+            Assert.False(core.Search.Keyboard.IsShifted);
+        }
+
+        [Fact]
+        public void A_physical_Backspace_deletes_at_the_cursor_with_the_keyboard_up_or_away()
+        {
+            core.OpenSearch();
+            Type("halo");
+
+            core.DeleteSearchText();
+            Assert.Equal("hal", core.Search.Keyboard.Text);
+
+            core.PressKeyboardShortcut(ControllerButton.Start);
+            core.DeleteSearchText();
+            Assert.Equal("ha", core.Search.Keyboard.Text);
         }
 
         [Fact]

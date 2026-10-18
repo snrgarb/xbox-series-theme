@@ -236,10 +236,10 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// A real keyboard, for testing on the desktop: Space types a space and Backspace presses the keyboard's backspace,
-        /// rather than pressing what has focus. The arrows are the D-pad, which Playnite sends as them, and move between
-        /// the page's parts: the search box, each row and the keyboard, which moves along its own keys itself. Along a
-        /// row the list moves itself, focus staying put at its ends.
+        /// A real keyboard, for testing on the desktop: Space types a space and Backspace deletes before the cursor, the
+        /// keyboard up or away, rather than pressing what has focus. The arrows are the D-pad, which Playnite sends as
+        /// them, and move between the page's parts: the search box, each row and the keyboard, which moves along its own
+        /// keys itself. Along a row the list moves itself, focus staying put at its ends.
         /// </summary>
         private void OnPagePreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -258,12 +258,7 @@ namespace XboxSeries.Extension
             if (e.Key == Key.Back)
             {
                 e.Handled = true;
-                var backspace = core.Search.Keyboard.Keys.FirstOrDefault(k => k.Kind == KeyboardKeyKind.Backspace);
-                if (backspace != null)
-                {
-                    core.PressKey(backspace);
-                }
-
+                core.DeleteSearchText();
                 return;
             }
 
