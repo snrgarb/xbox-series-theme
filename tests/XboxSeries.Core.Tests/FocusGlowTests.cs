@@ -36,6 +36,87 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_Dashboard_defines_the_cache_the_glow_is_blurred_once_into()
+        {
+            var constants = XDocument.Load(Path.Combine(RepoRoot, "src", "XboxSeries.Dashboard", "Constants.xaml"));
+
+            var host = constants.Descendants().Single(e => (string)e.Attribute(X + "Key") == "XboxFocusGlowCache");
+
+            Assert.Equal("Border", (string)host.Attribute("TargetType"));
+            var cache = host.Elements().Single(s => (string)s.Attribute("Property") == "CacheMode")
+                .Descendants().Single(e => e.Name.LocalName == "BitmapCache");
+            Assert.Equal("2", (string)cache.Attribute("RenderAtScale"));
+            Assert.Equal("True", (string)cache.Attribute("SnapsToDevicePixels"));
+        }
+
+        [Fact]
+        public void Every_glow_band_is_blurred_once_into_a_cache_that_focus_never_collapses()
+        {
+            // WPF caches an element's content under its own effect, so the cache must be the band's parent for the blur to
+            // be kept; and an element coming back from Collapsed is drawn again, so whatever hides the glow (the cache
+            // itself, or the ring it sits in) does it with Hidden, which only draws it at opacity 0.
+            var faults = new System.Collections.Generic.List<string>();
+            foreach (var file in ThemeAndExtensionXaml())
+            {
+                var doc = XDocument.Load(file);
+                var bands = doc.Descendants().Where(e => e.Name.LocalName == "Border"
+                                                         && (string)e.Attribute("Style") == "{DynamicResource XboxFocusGlow}");
+                foreach (var band in bands)
+                {
+                    var host = band.Parent;
+                    if (host == null || (string)host.Attribute("Style") != "{DynamicResource XboxFocusGlowCache}"
+                        || host.Elements().Count() != 1)
+                    {
+                        faults.Add($"{Relative(file)}: a band not alone under an XboxFocusGlowCache");
+                        continue;
+                    }
+                    foreach (var shown in new[] { host, host.Parent })
+                    {
+                        if (shown != null && IsCollapsed(doc, shown))
+                        {
+                            faults.Add($"{Relative(file)}: <{shown.Name.LocalName} {(string)shown.Attribute(X + "Name")}> hides the glow by Collapsed");
+                        }
+                    }
+                }
+            }
+
+            Assert.Empty(faults);
+        }
+
+        // Collapsed by its own Visibility, by a style of the file's it takes or sets inline, or by a trigger naming it.
+        private static bool IsCollapsed(XDocument doc, XElement element)
+        {
+            if ((string)element.Attribute("Visibility") == "Collapsed")
+            {
+                return true;
+            }
+            var style = (string)element.Attribute("Style") ?? "";
+            if (style.StartsWith("{StaticResource "))
+            {
+                var key = style.Substring("{StaticResource ".Length).TrimEnd('}');
+                var defined = doc.Descendants().FirstOrDefault(e => (string)e.Attribute(X + "Key") == key);
+                if (defined != null && CollapsesItself(defined))
+                {
+                    return true;
+                }
+            }
+            if (element.Elements().Any(e => e.Name.LocalName.EndsWith(".Style") && e.Elements().Any(CollapsesItself)))
+            {
+                return true;
+            }
+            var name = (string)element.Attribute(X + "Name");
+            return name != null && doc.Descendants().Any(e => e.Name.LocalName == "Setter"
+                                                              && (string)e.Attribute("TargetName") == name
+                                                              && (string)e.Attribute("Property") == "Visibility"
+                                                              && (string)e.Attribute("Value") == "Collapsed");
+        }
+
+        private static bool CollapsesItself(XElement style) =>
+            style.Elements().Any(s => s.Name.LocalName == "Setter"
+                                      && (string)s.Attribute("Property") == "Visibility"
+                                      && (string)s.Attribute("Value") == "Collapsed");
+
+        [Fact]
         public void Every_view_wears_the_glow_as_a_band_not_as_an_effect()
         {
             // The glow is a style for a Border; set as anything else it is refused when the view loads.

@@ -167,12 +167,18 @@ namespace XboxSeries.Core.Tests
             var container = XDocument.Load(Path.Combine(DashboardDir, "DerivedStyles", "ListGameItemStyle.xaml"));
             var effected = tile.Descendants().Concat(container.Descendants())
                 .Where(e => e.Elements().Any(c => c.Name.LocalName.EndsWith(".Effect"))
-                            || ((string)e.Attribute("Style") ?? "").Contains("XboxFocusGlow"))
+                            || (string)e.Attribute("Style") == "{DynamicResource XboxFocusGlow}")
                 .ToList();
 
             Assert.Equal(2, effected.Count);
             Assert.All(effected, e =>
             {
+                // The focus glow's band is cached by its parent, as WPF caches an element under its own effect.
+                if ((string)e.Attribute("Style") == "{DynamicResource XboxFocusGlow}")
+                {
+                    Assert.Equal("{DynamicResource XboxFocusGlowCache}", (string)e.Parent.Attribute("Style"));
+                    return;
+                }
                 var cache = e.Elements().Single(c => c.Name.LocalName.EndsWith(".CacheMode")).Elements().Single();
                 Assert.Equal("BitmapCache", cache.Name.LocalName);
                 Assert.Equal("2", (string)cache.Attribute("RenderAtScale"));

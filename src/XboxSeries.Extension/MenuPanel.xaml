@@ -55,8 +55,10 @@
                             </StackPanel>
                             <!-- As Home's tiles: standing 4 px off the row, its corners following the row's (4 + 4 + 4), carrying the glow band. -->
                             <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="12"
-                                    BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
                             </Border>
                         </Grid>
                         <DataTemplate.Triggers>

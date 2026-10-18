@@ -45,7 +45,9 @@
                         <ControlTemplate TargetType="Button">
                             <Grid Background="Transparent">
                                 <Border x:Name="Back">
-                                    <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlow}" Visibility="Collapsed" />
+                                    <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlowCache}" Visibility="Hidden">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
                                 </Border>
                                 <ContentPresenter Margin="75,0,43,0" VerticalAlignment="Center" />
                                 <Border x:Name="Bar" Width="6" HorizontalAlignment="Right"
@@ -95,8 +97,10 @@
                                 <ContentPresenter x:Name="Content" Margin="30,0" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 <!-- 4 of gap and 4 of ring out from the block, as Home's tiles. -->
                                 <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="10"
-                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
                                 </Border>
                             </Grid>
                             <ControlTemplate.Triggers>
