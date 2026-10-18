@@ -417,6 +417,59 @@ namespace XboxSeries.Extension
             });
         }
 
+        public GameSort? MainListSort => PlayniteLibrary.ToGameSort(api.MainView.SortOrder);
+
+        public SortDirection MainListSortDirection =>
+            api.MainView.SortOrderDirection == SortOrderDirection.Descending ? SortDirection.Descending : SortDirection.Ascending;
+
+        public void SortMainList(GameSort sort, SortDirection direction)
+        {
+            // The SDK only reads the sort; Fullscreen's own main view sets it too, as its sort menu does, leaving the
+            // filter and the active preset (its tab) as they are.
+            var view = api.MainView;
+            var order = view.GetType().GetProperty(nameof(IMainViewAPI.SortOrder));
+            var way = view.GetType().GetProperty(nameof(IMainViewAPI.SortOrderDirection));
+            if (order?.CanWrite != true || way?.CanWrite != true)
+            {
+                logger.Warn("Can't sort the main list: this Playnite build's main view can't set its sort");
+                return;
+            }
+
+            order.SetValue(view, ToSortOrder(sort));
+            way.SetValue(view, direction == SortDirection.Descending ? SortOrderDirection.Descending : SortOrderDirection.Ascending);
+        }
+
+        public void FilterMainListByName(string name)
+        {
+            // Not in the SDK: Fullscreen's own name filter, as Y's text entry sets it, on top of the active preset, which
+            // stays lit as its tab. A preset applied for the name would replace the user's edits of it.
+            var settings = FullscreenFilterSettings();
+            var nameProperty = settings?.GetType().GetProperty("Name");
+            if (nameProperty?.CanWrite != true)
+            {
+                logger.Warn("Can't filter the main list by name: this Playnite build has no Fullscreen FilterSettings.Name");
+                return;
+            }
+
+            nameProperty.SetValue(settings, string.IsNullOrEmpty(name) ? null : name);
+        }
+
+        public string TypeMainListName()
+        {
+            // Y's own entry: its on-screen keyboard narrows the list as the user types, and puts the name back if cancelled.
+            // Modal, so the name is the main list's once it returns.
+            FullscreenCommand("OpenSearchCommand")?.Execute(null);
+            return api.MainView.GetCurrentFilterSettings()?.Name ?? string.Empty;
+        }
+
+        /// <summary>Not in the SDK: Fullscreen's live filter settings, AppSettings.Fullscreen.FilterSettings; null if not found.</summary>
+        private static object FullscreenFilterSettings()
+        {
+            object Get(object owner, string name) => owner?.GetType().GetProperty(name)?.GetValue(owner);
+            var model = Application.Current?.MainWindow?.DataContext;
+            return Get(Get(Get(model, "AppSettings"), "Fullscreen"), "FilterSettings");
+        }
+
         public int? CountUserFilterGames()
         {
             try

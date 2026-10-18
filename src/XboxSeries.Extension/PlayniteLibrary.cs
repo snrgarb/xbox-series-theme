@@ -162,8 +162,8 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>A preset's sort order as the core knows it; null for one it doesn't support, which then sorts by name.</summary>
-        private static GameSort? ToGameSort(SortOrder order)
+        /// <summary>A preset's or the main list's sort order as the core knows it; null for one it doesn't support.</summary>
+        internal static GameSort? ToGameSort(SortOrder order)
         {
             switch (order)
             {
