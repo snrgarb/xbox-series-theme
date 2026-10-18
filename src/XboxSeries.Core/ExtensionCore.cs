@@ -636,7 +636,7 @@ namespace XboxSeries.Core
             else if (button == ControllerButton.B && LaunchScreen.IsShown && !Guide.IsOverlayShown)
             {
                 // The escape hatch for a window needing the user that Windows kept out of the foreground, behind it.
-                HideLaunchScreen();
+                DismissLaunchScreen();
             }
             else if (button == ControllerButton.A && dialog != null)
             {

@@ -41,9 +41,10 @@ namespace XboxSeries.Extension
         /// nothing. Null when no debugger answers on 127.0.0.1's ports 8080 or 8081 within a couple of seconds each,
         /// when one does but Steam has no SharedJSContext yet, or when that context won't take the connection: each
         /// before anything is sent, so the caller can safely ask another way, and says why in its own words. Throws
-        /// should the connection fail once the script is sent, when it may have run.
+        /// should the connection fail once the script is sent, when it may have run. <paramref name="target"/> names
+        /// another of the client's pages to run it in instead, such as <c>Steam</c>, its main window's, by its title.
         /// </summary>
-        private static async Task<string> EvaluateInSteam(string expression)
+        private static async Task<string> EvaluateInSteam(string expression, string target = "SharedJSContext")
         {
             string targets = null;
             using (var http = new HttpClient { Timeout = CefProbeTimeout })
@@ -69,7 +70,7 @@ namespace XboxSeries.Extension
                 return null;
             }
 
-            var shared = Serialization.FromJson<List<CefTarget>>(targets)?.FirstOrDefault(t => t.Title == "SharedJSContext");
+            var shared = Serialization.FromJson<List<CefTarget>>(targets)?.FirstOrDefault(t => t.Title == target);
             if (shared?.WebSocketDebuggerUrl == null)
             {
                 return null;

@@ -5,7 +5,8 @@ namespace XboxSeries.Core
 {
     /// <summary>
     /// Port for games' downloads in their library's client (Steam's): how far each has got, installing a game without the
-    /// client's own windows, and the installs it runs that Playnite didn't start.
+    /// client's own windows, and the installs it runs that Playnite didn't start; and a launch the client holds on a
+    /// question for the user, such as the game's EULA.
     /// </summary>
     public interface IDownloads
     {
@@ -36,6 +37,20 @@ namespace XboxSeries.Core
         /// nothing while the client has any of it.
         /// </summary>
         void MarkCancelled(Guid gameId);
+
+        /// <summary>
+        /// Whether the client's launch of the game waits on the user to answer a question in the client's own window,
+        /// such as the game's EULA, a launch option or a CD key: one asked just now, or by an earlier launch and never
+        /// answered, which the client folds a new launch into, asking nothing new. False for a game from any other
+        /// library, and while the client asks nothing.
+        /// </summary>
+        bool IsLaunchWaitingOnUser(Guid gameId);
+
+        /// <summary>
+        /// Shows the client's window holding the question its launch of the game waits on, in front of Playnite's, as
+        /// the client may hold it in a window it keeps hidden, such as Steam's main window under <c>-silent</c>.
+        /// </summary>
+        void ShowLaunchQuestion(Guid gameId);
     }
 
     /// <summary>One game's download, as its library's client last wrote it.</summary>
