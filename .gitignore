@@ -8,3 +8,6 @@ artifacts/
 .claude/worktrees/
 xbox_series_sounds/
 xbox_startup_videos/
+
+# Your own drop folder: screenshots, videos and implementation specs, never committed.
+inbox/
