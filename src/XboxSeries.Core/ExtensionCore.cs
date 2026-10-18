@@ -1117,7 +1117,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Menu on a game tile: Play game (Quit while it runs), Add to or Remove from Favourites, and Manage game.
+        /// Menu on a game tile: Play game (Quit while it runs), Add to or Remove from Favourites, Manage game, and Customise
+        /// Home, or on My games &amp; apps Customise games &amp; apps.
         /// Each closes the menu first, so focus is back on the tile before anything else opens.
         /// </summary>
         private void ShowTileMenu(HomeTile tile)
@@ -1140,12 +1141,15 @@ namespace XboxSeries.Core
                 ListPlayHistoryInMainList();
                 playnite.OpenGameMenu(gameId);
             }));
+            var customise = new DialogOption(
+                MyGames.IsShown ? "Customise games & apps" : "Customise Home", DialogIcon.Customise,
+                () => FromTileMenu(() => Customise(gameId)));
 
             // A pending A on the tile would otherwise open its Game hub under the menu.
             CancelTap();
             StopRepeat();
             sounds.Play(UiSound.PromptOpen);
-            Home.TileMenu = new Dialog(game.Name, null, isPrompt: false, CloseTileMenu, play, favourite, manage);
+            Home.TileMenu = new Dialog(game.Name, null, isPrompt: false, CloseTileMenu, play, favourite, manage, customise);
         }
 
         private void FromTileMenu(Action action)
@@ -1288,7 +1292,10 @@ namespace XboxSeries.Core
         /// Apps to show (Software tools couldn't be read), it opens nothing. Manage and Manage Queue show their own
         /// content too, Manage Queue even with nothing queued, as the console's shows its empty box.
         /// </summary>
-        public void OpenMyGames(MyGamesItem item)
+        public void OpenMyGames(MyGamesItem item) => OpenMyGames(item, returnsToGame: null);
+
+        /// <summary>Opens the page on <paramref name="item"/>, focus going to <paramref name="returnsToGame"/>'s tile as it opens, else the first.</summary>
+        private void OpenMyGames(MyGamesItem item, Guid? returnsToGame)
         {
             CancelNavSettle();
             if (item == MyGamesItem.Apps)
@@ -1318,6 +1325,11 @@ namespace XboxSeries.Core
 
             // The two pages are never up together: My games & apps takes Settings' place.
             CloseSettings();
+            if (!MyGames.IsShown)
+            {
+                MyGames.ReturnsToGame = returnsToGame;
+            }
+
             MyGames.Item = item;
             MyGames.IsShown = true;
         }
@@ -1442,16 +1454,29 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Puts Settings up on the rail's first category, every time it opens. It takes My games &amp; apps' place, which
-        /// gives the user's own filter and sort back.
+        /// gives the user's own filter and sort back. <paramref name="game"/> is the game whose tile menu opened it, by a
+        /// Customise entry, which B goes back to.
         /// </summary>
-        private void ShowSettings(SettingsOrigin from)
+        private void ShowSettings(SettingsOrigin from, Guid? game = null)
         {
+            settingsReturnItem = MyGames.Item;
             CloseMyGames();
             RefreshGamerpics();
             Settings.Category = SettingsCategory.Personalisation;
             Settings.OpenedFrom = from;
+            Settings.OpenedFromGame = game;
             Settings.IsShown = true;
         }
+
+        /// <summary>The item My games &amp; apps showed as Settings took its place, which Customise games &amp; apps' B opens again.</summary>
+        private MyGamesItem settingsReturnItem;
+
+        /// <summary>
+        /// The tile menu's Customise Home, or on My games &amp; apps Customise games &amp; apps: Settings, on
+        /// Personalisation, B going back to the page and the tile whose menu opened it.
+        /// </summary>
+        private void Customise(Guid gameId) =>
+            ShowSettings(MyGames.IsShown ? SettingsOrigin.MyGamesTile : SettingsOrigin.HomeTile, gameId);
 
         /// <summary>The rail's focus moved to <paramref name="category"/>: the page shows it.</summary>
         public void FocusSettingsCategory(SettingsCategory category)
@@ -1492,7 +1517,15 @@ namespace XboxSeries.Core
         {
             if (Settings.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
             {
-                CloseSettings();
+                // Opened by Customise games & apps, the page comes back in Settings' place, on its item and that tile.
+                if (Settings.OpenedFrom == SettingsOrigin.MyGamesTile)
+                {
+                    OpenMyGames(settingsReturnItem, Settings.OpenedFromGame);
+                }
+                else
+                {
+                    CloseSettings();
+                }
             }
         }
 

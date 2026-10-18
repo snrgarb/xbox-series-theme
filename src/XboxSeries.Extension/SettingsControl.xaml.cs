@@ -391,7 +391,11 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// B on the page, from Playnite: back to where it was opened from. Opened from the top bar, focus goes back to its
-        /// Settings button; from the Guide, Home's rows take it as they come back.
+        /// Settings button; from the Guide, Home's rows take it as they come back. From the tile menu's Customise Home, Home's
+        /// rows take it too, on the tile they last had focus on, the one whose menu opened the page; from Customise games
+        /// &amp; apps, My games &amp; apps comes back in the page's place and puts it on that tile
+        /// (<see cref="MyGamesState.ReturnsToGame"/>). Handled, the B goes no further, so My games &amp; apps, back
+        /// already, doesn't take it too.
         /// </summary>
         private void OnViewHostKeyDown(object sender, KeyEventArgs e)
         {

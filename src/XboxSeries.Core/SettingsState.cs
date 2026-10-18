@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 
 namespace XboxSeries.Core
@@ -41,6 +42,12 @@ namespace XboxSeries.Core
         /// <summary>Where the page was opened from, which B goes back to.</summary>
         public SettingsOrigin OpenedFrom { get; internal set; }
 
+        /// <summary>
+        /// The game whose tile's menu opened the page, by Customise Home or Customise games &amp; apps, which focus goes
+        /// back to; null when the top bar or the Guide opened it.
+        /// </summary>
+        public Guid? OpenedFromGame { get; internal set; }
+
         /// <summary>The Discord category: the Connect checklist, the Client ID and Secret, and the status line.</summary>
         public DiscordSettingsState Discord { get; } = new DiscordSettingsState();
 
@@ -72,5 +79,14 @@ namespace XboxSeries.Core
 
         /// <summary>The Guide's Settings entry: B goes to Home.</summary>
         Guide,
+
+        /// <summary>The tile menu's Customise Home, on a Home tile: B goes back to Home, its rows focusing that tile again.</summary>
+        HomeTile,
+
+        /// <summary>
+        /// The tile menu's Customise games &amp; apps, on a tile of My games &amp; apps: B opens the page again on the
+        /// item it showed, focus on that tile.
+        /// </summary>
+        MyGamesTile,
     }
 }
