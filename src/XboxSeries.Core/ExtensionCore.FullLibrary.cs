@@ -69,8 +69,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The pad's A on Full library's name box: Playnite's on-screen keyboard, which narrows the grid as the user
-        /// types, and leaves it as it was if they cancel.
+        /// The pad's A on Full library's name box, or Y on the page: text entry over the page, from the name, which
+        /// narrows the grid as the user types; kept, the grid stays narrowed, and cancelled, the name it had goes back.
         /// </summary>
         public void TypeFullLibraryName()
         {
@@ -79,8 +79,9 @@ namespace XboxSeries.Core
                 return;
             }
 
-            MyGames.NameFilter = playnite.TypeMainListName();
-            RefreshFullLibraryCount();
+            var name = MyGames.NameFilter;
+            ShowTextEntry(TextEntryPage.FullLibrary, "Filter by name", name, keep: _ => { }, typed: FilterFullLibraryByName,
+                drop: () => FilterFullLibraryByName(name));
         }
 
         /// <summary>Clears Full library's name filter, B in its name box: the whole tab shows again.</summary>
@@ -108,11 +109,12 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Full library's name filter goes, off the main list: before the page moves to another nav item, which keeps
-        /// the user's filter as it is, and as it closes, which gives it back for good.
+        /// Full library's name filter goes, off the main list, with text entry typing it: before the page moves to another
+        /// nav item, which keeps the user's filter as it is, and as it closes, which gives it back for good.
         /// </summary>
         private void ForgetLibraryName()
         {
+            DropTextEntryOver(TextEntryPage.FullLibrary);
             if (MyGames.HasNameFilter && mainListFilter == null)
             {
                 playnite.FilterMainListByName(string.Empty);

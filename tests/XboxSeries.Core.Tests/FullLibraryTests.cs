@@ -188,29 +188,73 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_on_screen_keyboard_narrows_the_grid_to_the_name_typed()
-        {
-            core.OpenMyGames(MyGamesItem.FullLibrary);
-            playnite.NameToType = "halo";
-
-            core.TypeFullLibraryName();
-
-            Assert.Equal(new[] { "Halo Infinite" }, playnite.MainList());
-            Assert.Equal("halo", core.MyGames.NameFilter);
-            Assert.Equal(1, core.MyGames.FullLibraryCount);
-        }
-
-        [Fact]
-        public void Cancelling_the_on_screen_keyboard_leaves_the_name_as_it_was()
+        public void The_name_box_opens_text_entry_over_the_page_from_the_name()
         {
             core.OpenMyGames(MyGamesItem.FullLibrary);
             core.FilterFullLibraryByName("ha");
-            playnite.NameToType = null;
 
             core.TypeFullLibraryName();
 
+            Assert.True(core.TextEntry.IsShown);
+            Assert.Equal("Filter by name", core.TextEntry.Caption);
+            Assert.Equal("ha", core.TextEntry.Keyboard.Text);
+            Assert.Equal(2, core.TextEntry.Keyboard.Cursor);
+        }
+
+        [Fact]
+        public void Text_entry_narrows_the_grid_as_the_name_is_typed()
+        {
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.TypeFullLibraryName();
+
+            core.TypeText("hal");
+
+            Assert.Equal(new[] { "Halo Infinite" }, playnite.MainList());
+            Assert.Equal("hal", core.MyGames.NameFilter);
+            Assert.Equal(1, core.MyGames.FullLibraryCount);
+
+            core.DeleteText();
+
+            Assert.Equal(new[] { "Hades", "Halo Infinite" }, playnite.MainList());
+        }
+
+        [Fact]
+        public void Keeping_the_name_leaves_the_grid_narrowed()
+        {
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.TypeFullLibraryName();
+            core.TypeText("halo");
+
+            core.ConfirmTextEntry();
+
+            Assert.False(core.TextEntry.IsShown);
+            Assert.Equal("halo", core.MyGames.NameFilter);
+            Assert.Equal(new[] { "Halo Infinite" }, playnite.MainList());
+        }
+
+        [Fact]
+        public void Cancelling_text_entry_puts_the_name_back_as_it_was()
+        {
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.FilterFullLibraryByName("ha");
+            core.TypeFullLibraryName();
+            core.TypeText("lo");
+
+            core.CancelTextEntry();
+
+            Assert.False(core.TextEntry.IsShown);
             Assert.Equal("ha", core.MyGames.NameFilter);
             Assert.Equal(new[] { "Hades", "Halo Infinite" }, playnite.MainList());
+        }
+
+        [Fact]
+        public void The_name_box_opens_nothing_off_Full_library()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+
+            core.TypeFullLibraryName();
+
+            Assert.False(core.TextEntry.IsShown);
         }
 
         [Fact]
@@ -273,8 +317,9 @@ namespace XboxSeries.Core.Tests
         public void Leaving_the_page_takes_the_name_off_the_users_filter()
         {
             core.OpenMyGames(MyGamesItem.FullLibrary);
-            playnite.NameToType = "halo";
             core.TypeFullLibraryName();
+            core.TypeText("halo");
+            core.ConfirmTextEntry();
 
             core.OpenSettings();
 

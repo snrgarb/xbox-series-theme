@@ -54,105 +54,89 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A on a key of the console keyboard: a character goes in at the cursor, Shift going off after it; Enter puts
-        /// the keyboard away, focus going to the results. The rows follow the text at once.
+        /// A on a key of a console keyboard: a character goes in at the cursor, Shift going off after it. On Search's,
+        /// Enter puts the keyboard away, focus going to the results, and the rows follow the text at once; text entry's
+        /// keyboard, over everything while it is up, keeps the text on Enter.
         /// </summary>
         public void PressKey(KeyboardKey key)
         {
-            var keyboard = Search.Keyboard;
-            if (!SearchHasThePad || !Search.IsKeyboardShown || !keyboard.Keys.Contains(key))
+            if (TextEntry.Keyboard.Keys.Contains(key))
+            {
+                PressTextEntryKey(key);
+                return;
+            }
+
+            if (!SearchHasThePad || !Search.IsKeyboardShown || !Search.Keyboard.Keys.Contains(key))
             {
                 return;
             }
 
-            switch (key.Kind)
+            if (Search.Keyboard.Press(key))
             {
-                case KeyboardKeyKind.Character:
-                    keyboard.Type(key);
-                    break;
-                case KeyboardKeyKind.Space:
-                    keyboard.Insert(" ");
-                    keyboard.SetShifted(false);
-                    break;
-                case KeyboardKeyKind.Shift:
-                    keyboard.SetShifted(!keyboard.IsShifted);
-                    break;
-                case KeyboardKeyKind.Symbols:
-                    keyboard.ToggleSymbols();
-                    break;
-                case KeyboardKeyKind.Backspace:
-                    keyboard.Backspace();
-                    break;
-                case KeyboardKeyKind.Left:
-                    keyboard.MoveCursor(-1);
-                    break;
-                case KeyboardKeyKind.Right:
-                    keyboard.MoveCursor(1);
-                    break;
-                case KeyboardKeyKind.Enter:
-                    Search.IsKeyboardShown = false;
-                    break;
+                Search.IsKeyboardShown = false;
             }
 
             RefreshSearch();
         }
 
         /// <summary>
-        /// A pad shortcut with the keyboard up: X backspace, Y space, LB and RB the cursor left and right, the left stick's
-        /// click Shift, and Start submits. Returns whether the button was the keyboard's, so the view marks it handled.
+        /// A pad shortcut with a keyboard up, text entry's before Search's: X backspace, Y space, LB and RB the cursor left
+        /// and right, the left stick's click Shift, and Start submits. Returns whether the button was the keyboard's, so
+        /// the view marks it handled.
         /// </summary>
         public bool PressKeyboardShortcut(ControllerButton button)
         {
-            if (!SearchHasThePad || !Search.IsKeyboardShown)
+            ConsoleKeyboard keyboard;
+            if (TextEntry.IsShown)
+            {
+                keyboard = TextEntryHasThePad ? TextEntry.Keyboard : null;
+            }
+            else
+            {
+                keyboard = SearchHasThePad && Search.IsKeyboardShown ? Search.Keyboard : null;
+            }
+
+            var key = keyboard?.ShortcutKey(button);
+            if (key == null)
             {
                 return false;
             }
 
-            var kind = ShortcutKey(button);
-            if (kind == null)
-            {
-                return false;
-            }
-
-            PressKey(Search.Keyboard.Keys.First(k => k.Kind == kind));
+            PressKey(key);
             return true;
-        }
-
-        /// <summary>The key a pad button stands for on the keyboard; null for a button that isn't the keyboard's.</summary>
-        private static KeyboardKeyKind? ShortcutKey(ControllerButton button)
-        {
-            switch (button)
-            {
-                case ControllerButton.X: return KeyboardKeyKind.Backspace;
-                case ControllerButton.Y: return KeyboardKeyKind.Space;
-                case ControllerButton.LeftShoulder: return KeyboardKeyKind.Left;
-                case ControllerButton.RightShoulder: return KeyboardKeyKind.Right;
-                case ControllerButton.LeftStick: return KeyboardKeyKind.Shift;
-                case ControllerButton.Start: return KeyboardKeyKind.Enter;
-                default: return null;
-            }
         }
 
         /// <summary>
         /// Text typed on a physical keyboard: in at the cursor as typed, whatever the console keyboard's Shift says, which
-        /// goes off as after any character; with the console keyboard up or away.
+        /// goes off as after any character; into text entry while it is up, else Search's, with its keyboard up or away.
         /// </summary>
         public void TypeText(string text)
         {
-            // Backspace and Enter, say, reach a view as text too; only what prints goes in.
-            var printable = new string((text ?? string.Empty).Where(c => !char.IsControl(c)).ToArray());
-            if (SearchHasThePad && printable.Length > 0)
+            if (TextEntry.IsShown)
             {
-                Search.Keyboard.Insert(printable);
-                Search.Keyboard.SetShifted(false);
+                if (TextEntryHasThePad && TextEntry.Keyboard.InsertTyped(text))
+                {
+                    OnTextEntryTyped();
+                }
+            }
+            else if (SearchHasThePad && Search.Keyboard.InsertTyped(text))
+            {
                 RefreshSearch();
             }
         }
 
-        /// <summary>A physical keyboard's Backspace: deletes before the cursor, as typing goes in, with the console keyboard up or away.</summary>
+        /// <summary>A physical keyboard's Backspace: deletes before the cursor, as typing goes in, text entry's or Search's.</summary>
         public void DeleteText()
         {
-            if (SearchHasThePad)
+            if (TextEntry.IsShown)
+            {
+                if (TextEntryHasThePad)
+                {
+                    TextEntry.Keyboard.Backspace();
+                    OnTextEntryTyped();
+                }
+            }
+            else if (SearchHasThePad)
             {
                 Search.Keyboard.Backspace();
                 RefreshSearch();
@@ -302,9 +286,9 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Whether the page is up with nothing over it. Playnite's own buttons reach the page before the pad's reach the
-        /// core, so a menu or prompt still showing, or the Guide, answers them instead.
+        /// core, so a menu or prompt still showing, the Guide, or text entry answers them instead.
         /// </summary>
-        private bool SearchHasThePad => Search.IsShown && ActiveDialog == null && !Guide.IsOverlayShown;
+        private bool SearchHasThePad => Search.IsShown && !TextEntry.IsShown && ActiveDialog == null && !Guide.IsOverlayShown;
 
         /// <summary>Takes the page away, giving back the user's own filter and sort if a game it opened took the main list over.</summary>
         private void CloseSearch()
