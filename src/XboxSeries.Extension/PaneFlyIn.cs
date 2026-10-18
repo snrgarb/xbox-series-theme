@@ -11,7 +11,8 @@ namespace XboxSeries.Extension
     /// The console's change of the content beside a page's nav, as focus moves along it: the old content goes at once,
     /// and the new comes in a short way, up from below as focus moves down the nav or down from above as it moves up,
     /// fading in as it slows to a stop. Shared by My games &amp; apps and Settings; Full library's and the Guide's tabs,
-    /// across the page, bring theirs in from the side. Playnite's main list only slides, without the fade.
+    /// across the page, bring theirs in from the side while the tabs themselves stay put. Playnite's main list only
+    /// slides, without the fade.
     /// </summary>
     internal static class PaneFlyIn
     {
@@ -26,21 +27,23 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Shows <paramref name="now"/> in place of what <paramref name="shown"/> held, and keeps it there. Reached by
-        /// focus moving <paramref name="alongNav"/>, <paramref name="host"/>, the page's own content, and any
-        /// <paramref name="alongside"/> it come in from below for a move down the nav or from above for one up it, by
-        /// where <paramref name="indexOf"/> puts each on the nav; reached any other way, as the page opening, they are
-        /// just there.
+        /// focus moving <paramref name="alongNav"/>, <paramref name="host"/>, the page's own content, any <paramref
+        /// name="hostPart"/>, more of it that the Dashboard places outside it (Full library's tabs), and any <paramref
+        /// name="alongside"/> it come in from below for a move down the nav or from above for one up it, by where
+        /// <paramref name="indexOf"/> puts each on the nav; reached any other way, as the page opening, they are just
+        /// there. The page's own content, its part outside included, moves and fades as pictures.
         /// </summary>
-        public static void Follow<T>(ref T shown, T now, Func<T, int> indexOf, bool alongNav, UIElement host, UIElement alongside = null)
+        public static void Follow<T>(
+            ref T shown, T now, Func<T, int> indexOf, bool alongNav, UIElement host, UIElement alongside = null, UIElement hostPart = null)
         {
             var direction = Direction(ref shown, now, indexOf, alongNav);
             if (direction == 0)
             {
-                Stop(host, alongside);
+                Stop(host, alongside, hostPart);
                 return;
             }
 
-            new Slide(host).Start(new Vector(0, direction * Travel), host, alongside);
+            new Slide(host, hostPart).Start(new Vector(0, direction * Travel), host, alongside, hostPart);
         }
 
         /// <summary>
@@ -57,7 +60,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            new Slide(asPicture ? pane : null).Start(new Vector(direction * Travel, 0), pane);
+            (asPicture ? new Slide(pane) : new Slide()).Start(new Vector(direction * Travel, 0), pane);
         }
 
         /// <summary>Which way along the nav or tabs <paramref name="now"/> is from what was shown, 0 if not reached along them.</summary>
@@ -140,12 +143,12 @@ namespace XboxSeries.Extension
 
         private sealed class Slide
         {
-            private readonly UIElement cached;
+            private readonly UIElement[] cached;
             private readonly List<Moving> moving = new List<Moving>();
             private EventHandler pendingStart;
 
-            /// <summary>A slide that draws <paramref name="cached"/>, the page's own content, if any, into a picture as it moves.</summary>
-            public Slide(UIElement cached)
+            /// <summary>A slide that draws <paramref name="cached"/>, the page's own content, if any, into pictures as it moves.</summary>
+            public Slide(params UIElement[] cached)
             {
                 this.cached = cached;
             }
@@ -167,7 +170,8 @@ namespace XboxSeries.Extension
                     slides.Add(pane, this);
 
                     // Hidden where it starts at once, so the old content goes at once, whatever an older slide had got to.
-                    moving.Add(new Moving(pane, from, fades: pane == cached));
+                    var asPicture = Array.IndexOf(cached, pane) >= 0;
+                    moving.Add(new Moving(pane, from, fades: asPicture));
                     pane.BeginAnimation(UIElement.OpacityProperty, null);
                     pane.Opacity = 0;
 
@@ -177,7 +181,7 @@ namespace XboxSeries.Extension
                     // redrawing it. Nor does the list fade: part see-through, the whole 4K list, its covers' shadows and
                     // all, would be drawn into a layer of its own every frame of the fade, while Playnite is still
                     // making its covers. It shows as it starts to slide instead.
-                    if (pane == cached)
+                    if (asPicture)
                     {
                         pane.CacheMode = new BitmapCache(PixelsPerUnit(pane)) { SnapsToDevicePixels = true };
                     }

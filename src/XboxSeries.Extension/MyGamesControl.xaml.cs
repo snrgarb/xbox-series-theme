@@ -58,6 +58,12 @@ namespace XboxSeries.Extension
         /// <summary>From where the Dashboard clips Full library's list, under its Sort and Filter row, to its first row's tiles.</summary>
         private const double FullLibraryFirstRowPadding = 24;
         private FrameworkElement gameDetails;
+
+        /// <summary>
+        /// Full library's tabs, Playnite's filter preset selector the Dashboard places over the page: they come in with the
+        /// page's content along the nav, and stay put as tabs switch.
+        /// </summary>
+        private Control libraryTabSelector;
         private ItemsControl libraryTabs;
 
         /// <summary>The Play history game that last had focus, to put focus back on after a rebuild or its Game hub.</summary>
@@ -177,9 +183,9 @@ namespace XboxSeries.Extension
             }
 
             // Full library's tabs: Playnite lights the preset it applies, from LB/RB or from the page giving the user's back.
-            var tabSelector = HomeRows.FindPart(this, "PART_FilterPresetSelector") as Control;
-            tabSelector?.ApplyTemplate();
-            libraryTabs = tabSelector?.Template?.FindName("PART_ItemsFilterPresets", tabSelector) as ItemsControl;
+            libraryTabSelector = HomeRows.FindPart(this, "PART_FilterPresetSelector") as Control;
+            libraryTabSelector?.ApplyTemplate();
+            libraryTabs = libraryTabSelector?.Template?.FindName("PART_ItemsFilterPresets", libraryTabSelector) as ItemsControl;
             libraryTabs?.AddHandler(ToggleButton.CheckedEvent, (RoutedEventHandler)OnLibraryTabChecked);
         }
 
@@ -187,8 +193,9 @@ namespace XboxSeries.Extension
         {
             core.MyGames.PropertyChanged -= OnStateChanged;
 
-            // Gone mid-slide, nothing is left hidden or out of place, Playnite's main list least of all.
-            PaneFlyIn.Stop(ItemHost, mainList);
+            // Gone mid-slide, nothing is left hidden or out of place, Playnite's main list and Full library's tabs least of all.
+            PaneFlyIn.Stop(ItemHost, mainList, libraryTabSelector);
+            libraryTabSelector = null;
             SortPopup.IsOpen = false;
             ResumeLetterKeys();
             if (viewHost != null)
@@ -335,8 +342,9 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// As focus moves along the nav, the new item's content comes in from below for a move down it, or from above for
-        /// a move up, Playnite's main list with it when it shows Games' grid. Changed any other way, as the page opening,
-        /// it is just there.
+        /// a move up, Playnite's main list with it when it shows Games' grid. Full library's tabs, which the Dashboard
+        /// places over the page rather than in it, come in with its header and its Sort and Filter row, sliding and fading
+        /// in as one, rather than standing there as they come. Changed any other way, as the page opening, it is just there.
         /// </summary>
         private void FlyInItem(bool itemChanged)
         {
@@ -344,12 +352,14 @@ namespace XboxSeries.Extension
             PaneFlyIn.Follow(
                 ref shownItem, item, shown => Nav.Children.IndexOf(NavItemOf(shown)),
                 itemChanged && core.MyGames.IsShown && Nav.IsKeyboardFocusWithin,
-                ItemHost, item == MyGamesItem.Games || item == MyGamesItem.FullLibrary ? mainList : null);
+                ItemHost, item == MyGamesItem.Games || item == MyGamesItem.FullLibrary ? mainList : null,
+                item == MyGamesItem.FullLibrary ? libraryTabSelector : null);
         }
 
         /// <summary>
         /// Switching Full library's tabs, its games come in from the right for a tab to the right, or from the left for one
-        /// to the left, as the nav's do from below or above. A tab lit any other way, as the page applying the user's
+        /// to the left, as the nav's do from below or above; the tabs themselves stay put, as the Guide's do and the
+        /// console's. A tab lit any other way, as the page applying the user's
         /// preset on its way to Full library (before it shows it), just lights.
         /// </summary>
         private void OnLibraryTabChecked(object sender, RoutedEventArgs e)
