@@ -28,7 +28,7 @@
         </Border.Effect>
         <StackPanel>
             <TextBlock Text="{Binding Title}" Margin="30,0,30,12" TextWrapping="Wrap"
-                       FontFamily="{DynamicResource XboxFont}" FontSize="28" Foreground="White" />
+                       FontFamily="{DynamicResource XboxHeaderFont}" FontSize="28" Foreground="White" />
             <!-- A prompt's message, under the title. -->
             <TextBlock Text="{Binding Message}" Margin="30,0,30,14" TextWrapping="Wrap"
                        FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="#B3FFFFFF">

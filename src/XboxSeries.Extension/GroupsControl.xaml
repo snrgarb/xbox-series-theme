@@ -55,7 +55,7 @@
                         <DataTemplate>
                             <StackPanel Margin="0,0,0,40">
                                 <TextBlock Text="{Binding Name}" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"
-                                           FontFamily="{DynamicResource XboxFontSemibold}" FontSize="24" Foreground="White" />
+                                           FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="24" Foreground="White" />
                                 <StackPanel Orientation="Horizontal">
                                     <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
