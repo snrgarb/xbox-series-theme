@@ -162,7 +162,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>The key a pad button stands for: X backspace, Y space, LB and RB the cursor, the left stick's click Shift, Start Enter; null for a button that isn't the keyboard's.</summary>
-        internal KeyboardKey ShortcutKey(ControllerButton button)
+        public KeyboardKey ShortcutKey(ControllerButton button)
         {
             KeyboardKeyKind kind;
             switch (button)

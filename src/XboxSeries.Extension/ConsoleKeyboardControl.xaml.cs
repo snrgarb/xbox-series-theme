@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +30,17 @@ namespace XboxSeries.Extension
 
         /// <summary>The key focus is being moved to by the D-pad, which places it on the grid itself.</summary>
         private KeyboardKey movingTo;
+
+        /// <summary>The keys held down by a pad button, A on the key focused or the button a key carries, until it is let go.</summary>
+        private readonly Dictionary<ControllerInput, Button> held = new Dictionary<ControllerInput, Button>();
+
+        /// <summary>Whether a key is held down by the pad, drawn lighter as the mouse pressing it draws it.</summary>
+        public static readonly DependencyProperty IsHeldProperty =
+            DependencyProperty.RegisterAttached("IsHeld", typeof(bool), typeof(ConsoleKeyboardControl), new PropertyMetadata(false));
+
+        public static bool GetIsHeld(DependencyObject element) => (bool)element.GetValue(IsHeldProperty);
+
+        public static void SetIsHeld(DependencyObject element, bool value) => element.SetValue(IsHeldProperty, value);
 
         public ConsoleKeyboardControl()
         {
@@ -69,10 +81,11 @@ namespace XboxSeries.Extension
         public void Reset()
         {
             focusedKey = null;
+            LetGoAll();
         }
 
         /// <summary>The first letter: Q, at the start of the first letter row.</summary>
-        private static KeyboardKey FirstLetter(System.Collections.Generic.IReadOnlyList<KeyboardKey> keys) =>
+        private static KeyboardKey FirstLetter(IReadOnlyList<KeyboardKey> keys) =>
             keys.FirstOrDefault(k => k.Kind == KeyboardKeyKind.Character && k.Row == 1) ?? keys[0];
 
         private bool FocusAt(KeyboardKey key, int toRow, int toColumn)
@@ -132,9 +145,42 @@ namespace XboxSeries.Extension
 
         private void OnFocusWithinChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            // A button let go off the board never reaches it, so nothing stays held.
             if (!(bool)e.NewValue)
             {
                 FocusRing.Visibility = Visibility.Hidden;
+                LetGoAll();
+            }
+        }
+
+        /// <summary>Draws <paramref name="key"/> held down while <paramref name="pad"/> is.</summary>
+        private void Hold(ControllerInput pad, KeyboardKey key)
+        {
+            var button = ButtonOf(key);
+            if (button == null)
+            {
+                return;
+            }
+
+            LetGo(pad);
+            held[pad] = button;
+            SetIsHeld(button, true);
+        }
+
+        private void LetGo(ControllerInput pad)
+        {
+            if (held.TryGetValue(pad, out var button))
+            {
+                held.Remove(pad);
+                button.ClearValue(IsHeldProperty);
+            }
+        }
+
+        private void LetGoAll()
+        {
+            foreach (var pad in held.Keys.ToList())
+            {
+                LetGo(pad);
             }
         }
 
@@ -149,6 +195,11 @@ namespace XboxSeries.Extension
             if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
             {
                 e.Handled = true;
+                if (((FrameworkElement)sender).DataContext is KeyboardKey key)
+                {
+                    Hold(ControllerInput.A, key);
+                }
+
                 Choose(sender);
             }
         }
@@ -161,14 +212,36 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>LT presses the symbols key, as on the console, which the core has no shortcut for.</summary>
+        /// <summary>
+        /// LT presses the symbols key, as on the console, which the core has no shortcut for. Any pad button a key carries
+        /// draws it held down until the button is let go; the host presses it through the core.
+        /// </summary>
         private void OnBoardKeyDown(object sender, KeyEventArgs e)
         {
-            var symbols = Keyboard?.Keys.FirstOrDefault(k => k.Kind == KeyboardKeyKind.Symbols);
-            if (PlayniteInput.PadButtonOf(e) == ControllerInput.TriggerLeft && symbols != null)
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (pad == null || Keyboard == null)
+            {
+                return;
+            }
+
+            var symbols = Keyboard.Keys.FirstOrDefault(k => k.Kind == KeyboardKeyKind.Symbols);
+            if (pad == ControllerInput.TriggerLeft && symbols != null)
             {
                 e.Handled = true;
+                Hold(pad.Value, symbols);
                 KeyChosen?.Invoke(this, symbols);
+            }
+            else if (PlayniteInput.ToButton(pad.Value) is ControllerButton button && Keyboard.ShortcutKey(button) is KeyboardKey key)
+            {
+                Hold(pad.Value, key);
+            }
+        }
+
+        private void OnBoardKeyUp(object sender, KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) is ControllerInput pad)
+            {
+                LetGo(pad);
             }
         }
 
