@@ -69,7 +69,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The pad's A on Full library's name box, or Y on the page: text entry over the page, from the name, which
+        /// The pad's A or Y on Full library's name box: text entry over the page, from the name, which
         /// narrows the grid as the user types; kept, the grid stays narrowed, and cancelled, the name it had goes back.
         /// </summary>
         public void TypeFullLibraryName()
