@@ -117,5 +117,6 @@ namespace XboxSeries.Core
         Home,
         MyGamesAndApps,
         Settings,
+        Search,
     }
 }

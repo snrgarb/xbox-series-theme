@@ -56,8 +56,12 @@ The **Game hub**'s view of one game's achievements, opened from the hub and show
 _Avoid_: achievements window, trophies
 
 **Search**:
-The Dashboard's page for finding games and **Apps** by name. It exists only when the extension is installed.
+The Dashboard's page for finding games and **Apps** by name, typed on the **Console keyboard**. Empty, it shows the games most recently added; typing shows a Games row and an Apps row, each only with something found, never hidden games. A on a game opens its **Game hub**; A on an App starts it. Home's top bar and the **Guide**'s Search **Utility** open it. B puts the keyboard away first, then leaves the page. It exists only when the extension is installed.
 _Avoid_: filter (narrowing the list currently shown by name is Playnite's own filter, not Search)
+
+**Console keyboard**:
+The extension's on-screen keyboard, laid out as the console's: the number row, QWERTY, a symbols key, the cursor's left and right, Shift, Enter and a space bar, with the pad's shortcuts: X backspace, Y space, LB and RB the cursor, Start Enter.
+_Avoid_: on-screen keyboard (Playnite's own, as `SelectString` shows it), OSK
 
 **Settings**:
 The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Personalisation, whose Start up box holds the boot video, the profiles and Who's playing today?; Guide; Discord; then **Playnite settings** and More Playnite options) beside the selected category. It exists only when the extension is installed.
@@ -83,7 +87,7 @@ Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'
 _Avoid_: status bar, tray
 
 **Utility**:
-One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own) and Audio (Windows' default output and input device, each a dropdown, then master volume and mute, and in a **Call** Discord's mute and deafen). Selecting one opens it in a **Flyout**.
+One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own), Audio (Windows' default output and input device, each a dropdown, then master volume and mute, and in a **Call** Discord's mute and deafen) and Search. Selecting Notifications or Audio opens it in a **Flyout**; Search brings Playnite to the front on **Search**.
 _Avoid_: widget, quick setting
 
 **Flyout**:
