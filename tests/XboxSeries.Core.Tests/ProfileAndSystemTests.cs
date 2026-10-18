@@ -27,13 +27,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_Guide_has_the_landing_tab_then_Profile_and_system_and_opens_on_the_landing_tab()
+        public void The_Guide_has_the_landing_tab_then_Now_Playing_then_Profile_and_system_and_opens_on_the_landing_tab()
         {
             Tap(ControllerButton.Guide);
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.Landing, SelectedTab());
-            Assert.Equal(new[] { true, false }, core.Guide.Tabs.Select(t => t.IsSelected));
+            Assert.Equal(new[] { true, false, false }, core.Guide.Tabs.Select(t => t.IsSelected));
         }
 
         [Fact]
@@ -46,15 +46,19 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(GuideTabKind.Landing, SelectedTab());
 
             Tap(ControllerButton.RightShoulder);
+            Assert.Equal(GuideTabKind.NowPlaying, SelectedTab());
+
+            Tap(ControllerButton.RightShoulder);
             Assert.Equal(GuideTabKind.ProfileAndSystem, SelectedTab());
 
             Tap(ControllerButton.RightShoulder);
             Assert.Equal(GuideTabKind.ProfileAndSystem, SelectedTab());
 
             Tap(ControllerButton.LeftShoulder);
+            Tap(ControllerButton.LeftShoulder);
             Assert.Equal(GuideTabKind.Landing, SelectedTab());
             Assert.Equal("Home", core.Guide.FocusedItem.Title);
-            Assert.Equal(new[] { UiSound.Navigate, UiSound.Navigate }, sounds.Played);
+            Assert.Equal(new[] { UiSound.Navigate, UiSound.Navigate, UiSound.Navigate, UiSound.Navigate }, sounds.Played);
         }
 
         [Fact]
@@ -73,9 +77,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void Profile_and_system_shows_the_profile_card_with_the_Windows_user_then_Settings_and_Power()
         {
-            Tap(ControllerButton.Guide);
-
-            Tap(ControllerButton.RightShoulder);
+            OpenProfileTab();
 
             var items = core.Guide.Items;
             Assert.Equal(new[] { GuideItemKind.Profile, GuideItemKind.Settings, GuideItemKind.Power }, items.Select(i => i.Kind));
@@ -89,12 +91,13 @@ namespace XboxSeries.Core.Tests
         public void The_profile_tab_shows_the_account_picture_and_follows_a_change_of_it()
         {
             Tap(ControllerButton.Guide);
-            Assert.Equal(@"C:\pics\gabe.png", core.Guide.Tabs[1].Image);
+            Assert.Equal(@"C:\pics\gabe.png", core.Guide.Tabs.Last().Image);
 
             account.Picture = @"C:\pics\new.png";
             Tap(ControllerButton.RightShoulder);
+            Tap(ControllerButton.RightShoulder);
 
-            Assert.Equal(@"C:\pics\new.png", core.Guide.Tabs[1].Image);
+            Assert.Equal(@"C:\pics\new.png", core.Guide.Tabs.Last().Image);
         }
 
         [Fact]
@@ -108,8 +111,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void A_on_the_profile_card_does_nothing()
         {
-            Tap(ControllerButton.Guide);
-            Tap(ControllerButton.RightShoulder);
+            OpenProfileTab();
             sounds.Played.Clear();
 
             Tap(ControllerButton.A);
@@ -533,6 +535,7 @@ namespace XboxSeries.Core.Tests
         private void OpenProfileTab()
         {
             Tap(ControllerButton.Guide);
+            Tap(ControllerButton.RightShoulder);
             Tap(ControllerButton.RightShoulder);
         }
 

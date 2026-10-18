@@ -403,6 +403,7 @@ namespace XboxSeries.Core.Tests
 
             TapGuide();
             Tap(ControllerButton.RightShoulder);
+            Tap(ControllerButton.RightShoulder);
 
             Assert.Equal("Ana", core.Guide.Items[0].Title);
             Assert.Equal(@"C:\Gamerpics\a.png", core.Guide.Items[0].Image);
@@ -417,6 +418,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.A);
             clock.Advance(TimeSpan.FromSeconds(10));
             TapGuide();
+            Tap(ControllerButton.RightShoulder);
             Tap(ControllerButton.RightShoulder);
 
             var id = core.Status.Profile.Id;

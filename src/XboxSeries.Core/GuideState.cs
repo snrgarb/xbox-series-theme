@@ -191,6 +191,9 @@ namespace XboxSeries.Core
 
         /// <summary>The Discord tab, in the console's Parties &amp; chats slot: only there while Discord is connected.</summary>
         Discord,
+
+        /// <summary>Now Playing: the media Windows' flyout shows. Always there.</summary>
+        NowPlaying,
         ProfileAndSystem,
     }
 
@@ -326,6 +329,16 @@ namespace XboxSeries.Core
         /// <see cref="GuideItem.Occupants"/>: A asks Discord to join it.
         /// </summary>
         DiscordVoiceChannel,
+
+        /// <summary>
+        /// The Now Playing tab's card for Windows' current media session: the track as its title, the artist as its
+        /// <see cref="GuideItem.Detail"/>, its <see cref="GuideItem.Art"/>, the <see cref="GuideItem.App"/> playing it and
+        /// whether it <see cref="GuideItem.IsPlaying"/>. A does nothing on it.
+        /// </summary>
+        NowPlaying,
+
+        /// <summary>The Now Playing tab's only line with no media session: "Nothing's playing". A does nothing on it.</summary>
+        NothingPlaying,
     }
 
     /// <summary>One entry on a Guide tab.</summary>
@@ -337,6 +350,7 @@ namespace XboxSeries.Core
         private bool isSpeaking;
         private bool isMuted;
         private bool isDeafened;
+        private bool isPlaying;
         private IReadOnlyList<string> occupants;
         private string selection;
         private IReadOnlyList<GuideItem> options;
@@ -443,6 +457,21 @@ namespace XboxSeries.Core
         /// <summary>Whether a dropdown's list is open.</summary>
         public bool IsExpanded => options != null;
 
+        /// <summary>The app playing a Now Playing card's media, as people know it, such as Spotify; null for other entries.</summary>
+        public string App { get; internal set; }
+
+        /// <summary>
+        /// A Now Playing card's album art, decoded by the extension and ready to show; null for none, and for other entries.
+        /// </summary>
+        public object Art { get; internal set; }
+
+        /// <summary>Whether a Now Playing card's media is playing, rather than paused.</summary>
+        public bool IsPlaying
+        {
+            get => isPlaying;
+            internal set => Set(ref isPlaying, value, nameof(IsPlaying));
+        }
+
         /// <summary>The Windows device an <see cref="GuideItemKind.AudioDevice"/> entry stands for; null for other entries.</summary>
         internal AudioDevice Device { get; set; }
 
@@ -507,7 +536,7 @@ namespace XboxSeries.Core
             Kind == other.Kind && Title == other.Title && GameId == other.GameId && HasDividerAbove == other.HasDividerAbove
             && Image == other.Image && Source == other.Source && Detail == other.Detail && IsDirectMessage == other.IsDirectMessage
             && UserId == other.UserId
-            && ChannelId == other.ChannelId && GuildId == other.GuildId;
+            && ChannelId == other.ChannelId && GuildId == other.GuildId && App == other.App && Art == other.Art;
 
         /// <summary>Takes the changeable state of <paramref name="other"/>, the same entry built afresh.</summary>
         internal void TakeStateFrom(GuideItem other)
@@ -518,6 +547,7 @@ namespace XboxSeries.Core
             IsSpeaking = other.IsSpeaking;
             IsMuted = other.IsMuted;
             IsDeafened = other.IsDeafened;
+            IsPlaying = other.IsPlaying;
         }
 
         private void Set(ref bool field, bool value, string name)
