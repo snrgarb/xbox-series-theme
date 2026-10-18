@@ -13,7 +13,7 @@ namespace XboxSeries.Core
         /// <summary>My games &amp; apps' Games: installed games, A–Z.</summary>
         internal static readonly GameListFilter Installed = new GameListFilter(installedOnly: true, GameSort.Name, SortDirection.Ascending);
 
-        /// <summary>Every game, last played first, so that every game in Play history can be selected for its Game hub.</summary>
+        /// <summary>Every game, last played first, so that every game in Play history, or that Search found, can be selected for its Game hub.</summary>
         internal static readonly GameListFilter LastPlayed = new GameListFilter(installedOnly: false, GameSort.LastActivity, SortDirection.Descending);
 
         private GameListFilter(bool installedOnly, GameSort sort, SortDirection direction)
