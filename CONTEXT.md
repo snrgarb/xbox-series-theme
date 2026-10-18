@@ -60,7 +60,7 @@ The Dashboard's page for finding games and **Apps** by name, typed on the **Cons
 _Avoid_: filter (narrowing the list currently shown by name is Playnite's own filter, not Search)
 
 **Console keyboard**:
-The extension's on-screen keyboard, laid out as the console's: the number row, QWERTY, a symbols key, the cursor's left and right, Shift, Enter and a space bar, with the pad's shortcuts: X backspace, Y space, LB and RB the cursor, Start Enter.
+The extension's on-screen keyboard, laid out as the console's: the number row, QWERTY, a symbols key, the cursor's left and right, Shift, Enter and a space bar, with the pad's shortcuts: X backspace, Y space, LB and RB the cursor, Start Enter. It is how every text the **Bundle** asks for is typed: on **Search**, and elsewhere (a **Profile**'s gamertag and real name, Discord's Client ID and Secret, Full library's name filter) over the dimmed page under a caption and its field, Start keeping the text and B dropping it.
 _Avoid_: on-screen keyboard (Playnite's own, as `SelectString` shows it), OSK
 
 **Settings**:
