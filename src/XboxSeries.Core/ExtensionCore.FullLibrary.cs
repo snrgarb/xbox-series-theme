@@ -1,3 +1,5 @@
+using System;
+
 namespace XboxSeries.Core
 {
     /// <summary>
@@ -10,6 +12,29 @@ namespace XboxSeries.Core
     {
         /// <summary>The sort the user chose on Full library's dropdown while the page is up; null until they choose one.</summary>
         private LibrarySortOption chosenLibrarySort;
+
+        /// <summary>
+        /// See all at the end of a Group on Home: opens My games &amp; apps on Full library, as the Play history tile
+        /// opens Play history, with the Group's filter preset selected, its tab lit and its games in the grid in the
+        /// preset's own sort. The default Favourites Group has no preset: Full library opens under the user's own
+        /// filter, as the nav opens it. B goes back to Home.
+        /// </summary>
+        public void ChooseSeeAll(HomeGroup group)
+        {
+            if (group == null)
+            {
+                return;
+            }
+
+            OpenMyGames(MyGamesItem.FullLibrary);
+            if (group.FilterPresetId is Guid preset && MyGames.ShowsFullLibrary)
+            {
+                chosenLibrarySort = null;
+                playnite.SelectFilterPreset(preset);
+                RefreshFullLibraryCount();
+                FollowLibrarySort();
+            }
+        }
 
         /// <summary>
         /// Sorts Full library's grid by <paramref name="option"/>, in place. The choice stays as the user switches tabs,
