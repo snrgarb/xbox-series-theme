@@ -219,6 +219,7 @@ namespace XboxSeries.Core
             RefreshHome();
             RefreshFullLibraryCount();
             RefreshApps(snapshot.Apps);
+            RefreshSearch();
 
             // The ring only shows on the page; Windows is asked for a drive's space no more often than that needs.
             if (MyGames.IsShown)
@@ -480,6 +481,7 @@ namespace XboxSeries.Core
         {
             CloseMyGames();
             CloseSettings();
+            CloseSearch();
             if (Guide.IsOpen)
             {
                 homeOwed = true;
@@ -665,7 +667,14 @@ namespace XboxSeries.Core
             else if (button == ControllerButton.A && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
             {
                 // Playnite hands the pad's A to WPF as a key with no Key, which never clicks the tile.
-                ChooseHomeTile(focusedTile);
+                if (Search.IsShown)
+                {
+                    ChooseSearchGame(focusedTile.GameId);
+                }
+                else
+                {
+                    ChooseHomeTile(focusedTile);
+                }
             }
             else if ((button == ControllerButton.LeftShoulder || button == ControllerButton.RightShoulder) && Guide.IsOpen && dialog == null && Guide.Flyout == null)
             {
@@ -1251,6 +1260,9 @@ namespace XboxSeries.Core
             var hero = heroGame == null ? null : row.Concat(played).FirstOrDefault(g => g.Id == heroGame);
             heroGame = hero?.Id;
             Home.Hero = HeroArtOf(hero);
+
+            // Search's tiles read running and installing as Home's do.
+            RefreshSearch();
         }
 
         /// <summary>
@@ -1302,7 +1314,7 @@ namespace XboxSeries.Core
             new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame, StatusOf(game.Id));
 
         /// <summary>
-        /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings if that is up, or moves it there, at
+        /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings or Search if up, or moves it there, at
         /// once: an open still waiting on the nav (<see cref="FocusMyGamesNav"/>) goes. Full library is the main list
         /// under the user's own filter and sort. Games takes the main list over, keeping the user's filter and sort first
         /// (as Full library last left them), to give back on Full library or when the page goes. Play history shows its
@@ -1317,6 +1329,9 @@ namespace XboxSeries.Core
         private void OpenMyGames(MyGamesItem item, Guid? returnsToGame)
         {
             CancelNavSettle();
+
+            // Search goes first, giving back any filter of its own, before Games puts its filter on.
+            CloseSearch();
 
             // Full library's name filter is its own: it goes before Games keeps the user's filter, or anything else shows.
             if (item != MyGamesItem.FullLibrary)
@@ -1349,7 +1364,7 @@ namespace XboxSeries.Core
                 RefreshStorage();
             }
 
-            // The two pages are never up together: My games & apps takes Settings' place.
+            // The pages are never up together: My games & apps takes Settings' place, as it took Search's above.
             CloseSettings();
             if (!MyGames.IsShown)
             {
@@ -1486,14 +1501,15 @@ namespace XboxSeries.Core
         public void OpenSettings() => ShowSettings(SettingsOrigin.TopBar);
 
         /// <summary>
-        /// Puts Settings up on the rail's first category, every time it opens. It takes My games &amp; apps' place, which
-        /// gives the user's own filter and sort back. <paramref name="game"/> is the game whose tile menu opened it, by a
-        /// Customise entry, which B goes back to.
+        /// Puts Settings up on the rail's first category, every time it opens. It takes My games &amp; apps' place, or
+        /// Search's, which gives the user's own filter and sort back. <paramref name="game"/> is the game whose tile menu
+        /// opened it, by a Customise entry, which B goes back to.
         /// </summary>
         private void ShowSettings(SettingsOrigin from, Guid? game = null)
         {
             settingsReturnItem = MyGames.Item;
             CloseMyGames();
+            CloseSearch();
             RefreshGamerpics();
             Settings.Category = SettingsCategory.Personalisation;
             Settings.OpenedFrom = from;
@@ -1812,6 +1828,7 @@ namespace XboxSeries.Core
                     {
                         CloseMyGames();
                         CloseSettings();
+                        CloseSearch();
                         playnite.BringToFront(DashboardPage.Home);
                     };
                 case GuideItemKind.MyGamesAndApps:
@@ -1834,6 +1851,12 @@ namespace XboxSeries.Core
                     {
                         playnite.BringToFront(DashboardPage.Settings);
                         ShowSettings(SettingsOrigin.Guide);
+                    };
+                case GuideItemKind.Search:
+                    return () =>
+                    {
+                        playnite.BringToFront(DashboardPage.Search);
+                        ShowSearch(SearchOrigin.Guide);
                     };
                 default:
                     return null;
@@ -2222,6 +2245,7 @@ namespace XboxSeries.Core
             {
                 new GuideItem(GuideItemKind.Notifications, "Notifications"),
                 new GuideItem(GuideItemKind.Audio, "Audio"),
+                new GuideItem(GuideItemKind.Search, "Search"),
             };
             Guide.FocusedItem = home;
         }

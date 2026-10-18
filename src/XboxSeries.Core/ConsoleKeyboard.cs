@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -82,6 +83,72 @@ namespace XboxSeries.Core
         /// <summary>Every key, in reading order; the same keys for as long as the keyboard lives, their text changing with Shift and symbols.</summary>
         public IReadOnlyList<KeyboardKey> Keys { get; }
 
+        /// <summary>As the keyboard comes up on a page just opened: nothing typed, Shift on, the letters showing.</summary>
+        internal void Reset()
+        {
+            Text = string.Empty;
+            Cursor = 0;
+            IsShifted = true;
+            ShowsSymbols = false;
+            Relabel();
+        }
+
+        /// <summary>Puts <paramref name="characters"/> in at the cursor, which moves past them.</summary>
+        internal void Insert(string characters)
+        {
+            Text = Text.Insert(Cursor, characters);
+            Cursor += characters.Length;
+        }
+
+        /// <summary>A Character key: its text at the cursor, Shift going off after the one character.</summary>
+        internal void Type(KeyboardKey key)
+        {
+            Insert(key.Text);
+            SetShifted(false);
+        }
+
+        /// <summary>Deletes the character before the cursor, if any.</summary>
+        internal void Backspace()
+        {
+            if (Cursor > 0)
+            {
+                Text = Text.Remove(Cursor - 1, 1);
+                Cursor--;
+            }
+        }
+
+        /// <summary>Moves the cursor <paramref name="by"/> characters, held between the start and the end of the text.</summary>
+        internal void MoveCursor(int by) => Cursor = Math.Max(0, Math.Min(Text.Length, Cursor + by));
+
+        internal void SetShifted(bool shifted)
+        {
+            IsShifted = shifted;
+            Relabel();
+        }
+
+        internal void ToggleSymbols()
+        {
+            ShowsSymbols = !ShowsSymbols;
+            Relabel();
+        }
+
+        /// <summary>The keys' text as Shift and symbols have it now: the letter rows in capitals or not, or their symbols; the symbols key "#+=" or "abc".</summary>
+        private void Relabel()
+        {
+            foreach (var key in Keys)
+            {
+                if (key.Kind == KeyboardKeyKind.Symbols)
+                {
+                    key.Text = ShowsSymbols ? "abc" : "#+=";
+                }
+                else if (key.Kind == KeyboardKeyKind.Character && key.Row >= 1 && key.Row <= 3)
+                {
+                    var character = (ShowsSymbols ? KeyboardKey.SymbolRows : KeyboardKey.LetterRows)[key.Row - 1][key.Column - 1].ToString();
+                    key.Text = ShowsSymbols || IsShifted ? character : character.ToLowerInvariant();
+                }
+            }
+        }
+
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
 
@@ -153,6 +220,12 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>The three letter rows, under the number row, in capitals; the last two end in punctuation, as the console's do.</summary>
+        internal static readonly string[] LetterRows = { "QWERTYUIOP", "ASDFGHJKL\"", "ZXCVBNM;:!" };
+
+        /// <summary>What the letter rows read in place of letters with symbols showing; the number row stays.</summary>
+        internal static readonly string[] SymbolRows = { "!@#$%^&*()", "-_=+[]{}\\|", "~`<>/?,.'\"" };
+
         /// <summary>The console's keys in reading order, letters in capitals, as Shift starts on.</summary>
         internal static IReadOnlyList<KeyboardKey> Layout()
         {
@@ -168,11 +241,11 @@ namespace XboxSeries.Core
             Row(0, "1234567890");
             keys.Add(new KeyboardKey(KeyboardKeyKind.Backspace, 0, 11));
             keys.Add(new KeyboardKey(KeyboardKeyKind.Left, 1, 0, rowSpan: 2));
-            Row(1, "QWERTYUIOP");
+            Row(1, LetterRows[0]);
             keys.Add(new KeyboardKey(KeyboardKeyKind.Right, 1, 11, rowSpan: 2));
-            Row(2, "ASDFGHJKL\"");
+            Row(2, LetterRows[1]);
             keys.Add(new KeyboardKey(KeyboardKeyKind.Shift, 3, 0, rowSpan: 2));
-            Row(3, "ZXCVBNM;:!");
+            Row(3, LetterRows[2]);
             keys.Add(new KeyboardKey(KeyboardKeyKind.Enter, 3, 11, rowSpan: 2));
             keys.Add(new KeyboardKey(KeyboardKeyKind.Space, 4, 1, columnSpan: 10));
             return keys;
