@@ -15,14 +15,7 @@
     -->
     <Border x:Name="Bar" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,60,52"
             Height="63" Padding="16,0,20,0" CornerRadius="6"
-            Background="#FF030303" Opacity="0" Visibility="Hidden">
-        <!--
-            Drawn once into a picture, at twice the 1080p size so it stays sharp on the 4K TV, which the fade then only
-            makes fainter or stronger, as the focus glow's cache does.
-        -->
-        <Border.CacheMode>
-            <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
-        </Border.CacheMode>
+            Background="#FF030303" Visibility="Hidden">
         <!-- Each hint stands 26 from the one before it; the first's gap is taken back. -->
         <ItemsControl x:Name="Hints" Focusable="False" VerticalAlignment="Center" Margin="-26,0,0,0">
             <ItemsControl.ItemsPanel>

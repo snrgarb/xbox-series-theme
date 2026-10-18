@@ -93,12 +93,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_bar_is_drawn_once_into_a_picture_sharp_at_4K_and_only_faded()
+        public void The_bar_comes_up_once_the_page_has_settled_without_a_fade_or_a_cache()
         {
-            var cache = Bar().Elements().Single(e => e.Name.LocalName == "Border.CacheMode").Elements().Single();
-
-            Assert.Equal("BitmapCache", cache.Name.LocalName);
-            Assert.Equal("2", (string)cache.Attribute("RenderAtScale"));
+            Assert.DoesNotContain(Bar().Elements(), e => e.Name.LocalName == "Border.CacheMode");
+            Assert.Null(Bar().Attribute("Opacity"));
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "HintBarControl.xaml.cs"));
+            Assert.DoesNotContain("DoubleAnimation", code);
+            Assert.Contains("DispatcherPriority.ContextIdle", code);
         }
 
         [Fact]
