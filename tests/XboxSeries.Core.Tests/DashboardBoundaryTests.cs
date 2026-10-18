@@ -173,13 +173,15 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(2, effected.Count);
             Assert.All(effected, e =>
             {
-                // The focus glow's band is cached by its parent, as WPF caches an element under its own effect.
+                // Cached by its parent, as WPF caches an element under its own effect: a cache on the element itself
+                // would hold it before its effect, which would still be drawn again every frame.
+                Assert.Empty(e.Elements().Where(c => c.Name.LocalName.EndsWith(".CacheMode")));
                 if ((string)e.Attribute("Style") == "{DynamicResource XboxFocusGlow}")
                 {
                     Assert.Equal("{DynamicResource XboxFocusGlowCache}", (string)e.Parent.Attribute("Style"));
                     return;
                 }
-                var cache = e.Elements().Single(c => c.Name.LocalName.EndsWith(".CacheMode")).Elements().Single();
+                var cache = e.Parent.Elements().Single(c => c.Name.LocalName.EndsWith(".CacheMode")).Elements().Single();
                 Assert.Equal("BitmapCache", cache.Name.LocalName);
                 Assert.Equal("2", (string)cache.Attribute("RenderAtScale"));
             });
