@@ -48,6 +48,15 @@ namespace XboxSeries.Extension
         private readonly ExtensionCore core;
         private FrameworkElement viewHost;
         private ListBox mainList;
+
+        /// <summary>Where the Dashboard places its main list, which Full library lifts and leaving it puts back.</summary>
+        private Thickness themeListMargin;
+
+        /// <summary>The Dashboard's gap around each tile in its cell, so above a row's tiles.</summary>
+        private const double TileGap = 7.5;
+
+        /// <summary>From where the Dashboard clips Full library's list, under its Sort and Filter row, to its first row's tiles.</summary>
+        private const double FullLibraryFirstRowPadding = 24;
         private FrameworkElement gameDetails;
         private ItemsControl libraryTabs;
 
@@ -116,6 +125,10 @@ namespace XboxSeries.Extension
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             Nav.IsKeyboardFocusWithinChanged += OnNavFocusWithinChanged;
+
+            // Handled ones too: a TextBox marks every KeyDown it is sent handled, the pad's buttons too, which Playnite
+            // sends as KeyDown with no key, before the box's own handlers hear of them.
+            NameBox.AddHandler(KeyDownEvent, new KeyEventHandler(OnNameBoxKeyDown), handledEventsToo: true);
             shownItem = core.MyGames.Item;
             QueueRows.ItemsSource = queueRows;
             ShowHistory();
@@ -149,6 +162,8 @@ namespace XboxSeries.Extension
             UseGameGridPanel();
             if (mainList != null)
             {
+                themeListMargin = mainList.Margin;
+                LiftFullLibrarysFirstRow();
                 mainList.SizeChanged += FitFiveToARow;
                 mainList.PreviewKeyDown += OnMainListPreviewKeyDown;
                 mainList.KeyDown += OnMainListKeyDown;
@@ -198,6 +213,7 @@ namespace XboxSeries.Extension
 
             if (mainList != null)
             {
+                mainList.Margin = themeListMargin;
                 mainList.SizeChanged -= FitFiveToARow;
                 mainList.PreviewKeyDown -= OnMainListPreviewKeyDown;
                 mainList.KeyDown -= OnMainListKeyDown;
@@ -222,6 +238,7 @@ namespace XboxSeries.Extension
                     }
 
                     ShowItem();
+                    LiftFullLibrarysFirstRow();
                     FlyInItem(e.PropertyName == nameof(MyGamesState.Item));
 
                     // Opened from Home, the top bar or the Guide: focus goes to the first tile. Moving through the nav keeps it there.
@@ -446,13 +463,36 @@ namespace XboxSeries.Extension
         /// as wide as the screen's aspect ratio, so the list's width varies, and a fixed height would fit fewer cells to a
         /// row on a narrower screen. Floored, so rounding never makes a cell wider than a fifth.
         /// </summary>
-        private static void FitFiveToARow(object sender, SizeChangedEventArgs e)
+        private void FitFiveToARow(object sender, SizeChangedEventArgs e)
         {
             var list = (FrameworkElement)sender;
             if (e.WidthChanged && list.ActualWidth > 0)
             {
                 list.Height = Math.Floor(list.ActualWidth / 5 * 3.5);
+                LiftFullLibrarysFirstRow();
             }
+        }
+
+        /// <summary>
+        /// Full library's first row a padding under its Sort and Filter row, rather than under the quarter cell Playnite's
+        /// panel always leaves above it: the list is lifted by that quarter cell, its tile gap and less the padding, and the
+        /// Dashboard clips it where it would otherwise start, so scrolled tiles still stop under the row. A quarter of a
+        /// cell, a fifth of the list's width, which varies with the screen's shape; elsewhere the list keeps the theme's place.
+        /// </summary>
+        private void LiftFullLibrarysFirstRow()
+        {
+            if (mainList == null)
+            {
+                return;
+            }
+
+            var margin = themeListMargin;
+            if (core.MyGames.ShowsFullLibrary && mainList.ActualWidth > 0)
+            {
+                margin.Top -= Math.Floor(mainList.ActualWidth / 5 * 3.5) / 3.5 / 4 + TileGap - FullLibraryFirstRowPadding;
+            }
+
+            mainList.Margin = margin;
         }
 
         /// <summary>
@@ -781,7 +821,9 @@ namespace XboxSeries.Extension
 
         private void ChooseSort(LibrarySortOption option)
         {
+            // The grid in its new order: down from the row starts again at its first game.
             core.SortFullLibrary(option);
+            lastFocusedGridGame = null;
             CloseSortList();
         }
 
@@ -889,7 +931,7 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The pad in the name box: A (or Y) opens Playnite's on-screen keyboard, which narrows the grid as the user
-        /// types; B clears the name and closes the box, the whole tab showing again.
+        /// types; B clears the name and closes the box, the whole tab showing again. Heard though the box marked it handled.
         /// </summary>
         private void OnNameBoxKeyDown(object sender, KeyEventArgs e)
         {
@@ -1281,13 +1323,26 @@ namespace XboxSeries.Extension
             mainList.SelectedIndex = index;
             if (mainList.ItemContainerGenerator.ContainerFromIndex(index) == null)
             {
-                mainList.ScrollIntoView(mainList.Items[index]);
+                ScrollToRowOf(index);
                 mainList.UpdateLayout();
             }
 
             if (mainList.ItemContainerGenerator.ContainerFromIndex(index) is UIElement game)
             {
                 game.Focus();
+            }
+        }
+
+        /// <summary>
+        /// Scrolls the grid to the row of the game at <paramref name="index"/>, at the top as the first row rests. Not
+        /// ScrollIntoView: Playnite's panel brings only a built tile into view, so it does nothing for a game whose tile
+        /// isn't, as one far down the list after a sort. Five to a row, each 1/3.5 of the list's height tall.
+        /// </summary>
+        private void ScrollToRowOf(int index)
+        {
+            if (HomeRows.FindChild<VirtualizingPanel>(mainList) is IScrollInfo panel)
+            {
+                panel.SetVerticalOffset(index / 5 * (panel.ViewportHeight / 3.5));
             }
         }
 
