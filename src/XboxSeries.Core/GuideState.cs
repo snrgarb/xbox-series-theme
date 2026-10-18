@@ -246,6 +246,9 @@ namespace XboxSeries.Core
         /// <summary>The landing tab's Audio utility, whose flyout has Windows' master volume and mute.</summary>
         Audio,
 
+        /// <summary>The landing tab's Search utility: Playnite comes to the front on Search, the Guide closing.</summary>
+        Search,
+
         /// <summary>One of Playnite's notifications, in the Notifications flyout.</summary>
         Notification,
 
