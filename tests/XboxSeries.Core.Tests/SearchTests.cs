@@ -709,11 +709,11 @@ namespace XboxSeries.Core.Tests
             core.OpenSearch();
             Type("halo");
 
-            core.DeleteSearchText();
+            core.DeleteText();
             Assert.Equal("hal", core.Search.Keyboard.Text);
 
             core.PressKeyboardShortcut(ControllerButton.Start);
-            core.DeleteSearchText();
+            core.DeleteText();
             Assert.Equal("ha", core.Search.Keyboard.Text);
         }
 
@@ -914,7 +914,7 @@ namespace XboxSeries.Core.Tests
         private void Press(KeyboardKey key) => core.PressKey(key);
 
         /// <summary>Types on a physical keyboard.</summary>
-        private void Type(string text) => core.TypeSearchText(text);
+        private void Type(string text) => core.TypeText(text);
 
         /// <summary>Pressed and let go. A Guide tap opens the Guide 0.3 s after its press, so it waits that out.</summary>
         private void Tap(ControllerButton button)

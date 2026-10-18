@@ -137,7 +137,7 @@ namespace XboxSeries.Core
         /// Text typed on a physical keyboard: in at the cursor as typed, whatever the console keyboard's Shift says, which
         /// goes off as after any character; with the console keyboard up or away.
         /// </summary>
-        public void TypeSearchText(string text)
+        public void TypeText(string text)
         {
             // Backspace and Enter, say, reach a view as text too; only what prints goes in.
             var printable = new string((text ?? string.Empty).Where(c => !char.IsControl(c)).ToArray());
@@ -150,7 +150,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>A physical keyboard's Backspace: deletes before the cursor, as typing goes in, with the console keyboard up or away.</summary>
-        public void DeleteSearchText()
+        public void DeleteText()
         {
             if (SearchHasThePad)
             {
