@@ -70,7 +70,6 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown += OnViewHostKeyDown;
-                viewHost.PreviewKeyDown += OnViewHostPreviewKeyDown;
             }
 
             gameDetails = HomeRows.FindGameDetails(this);
@@ -95,7 +94,6 @@ namespace XboxSeries.Extension
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
-                viewHost.PreviewKeyDown -= OnViewHostPreviewKeyDown;
                 viewHost = null;
             }
 
@@ -365,18 +363,6 @@ namespace XboxSeries.Extension
 
             e.Handled = true;
             core.TypeText(e.Text);
-        }
-
-        /// <summary>As Settings: Playnite's LB/RB, Y and RS act on the main list hidden behind the page, so here they do nothing.</summary>
-        private void OnViewHostPreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            var button = PlayniteInput.PadButtonOf(e);
-            if (core.Search.IsShown
-                && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder
-                    || button == ControllerInput.Y || button == ControllerInput.RightStick))
-            {
-                e.Handled = true;
-            }
         }
 
         /// <summary>
