@@ -71,11 +71,14 @@ namespace XboxSeries.Extension
 #endif
         };
 
-        /// <summary>Discord's buttons, as the pad moves between them: a row each, Connect and Disconnect side by side.</summary>
+        /// <summary>
+        /// Discord's buttons, as the pad moves between them: a row each, Type and Paste side by side for the Client ID and
+        /// Secret, as Connect and Disconnect are.
+        /// </summary>
         private Button[][] DiscordRows => new[]
         {
-            new[] { PasteClientIdButton },
-            new[] { PasteClientSecretButton },
+            new[] { TypeClientIdButton, PasteClientIdButton },
+            new[] { TypeClientSecretButton, PasteClientSecretButton },
             new[] { ConnectButton, DisconnectButton },
         };
 
@@ -233,7 +236,7 @@ namespace XboxSeries.Extension
             else if (e.OriginalSource == DiscordItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
                 e.Handled = true;
-                PasteClientIdButton.Focus();
+                TypeClientIdButton.Focus();
             }
 #if DEBUG
             else if (e.OriginalSource == DebugItem && (pad == ControllerInput.A || e.Key == Key.Right))
@@ -259,11 +262,17 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The pad in Discord's options: up and down between its rows, left and right along Connect and Disconnect, Left
-        /// from the first column or B back to the rail's Discord, and A presses the button focused.
+        /// The pad in Discord's options: up and down between its rows, left and right along Type and Paste or Connect and
+        /// Disconnect, Left from the first column or B back to the rail's Discord, and A presses the button focused.
         /// </summary>
         private void OnDiscordPaneKeyDown(object sender, KeyEventArgs e)
         {
+            // Text entry over the page has the pad: B there cancels it, never goes back to the rail.
+            if (core.TextEntry.IsShown)
+            {
+                return;
+            }
+
             var rows = DiscordRows;
             var row = Array.FindIndex(rows, r => r.Contains(e.OriginalSource));
             if (row < 0)
@@ -303,9 +312,21 @@ namespace XboxSeries.Extension
             PressDiscordButton(sender);
         }
 
+        /// <summary>
+        /// Type opens text entry over the page, saving what is kept, the overlay giving focus back to Type as it goes;
+        /// Paste saves the clipboard's text at once.
+        /// </summary>
         private void PressDiscordButton(object button)
         {
-            if (button == PasteClientIdButton || button == PasteClientSecretButton)
+            if (button == TypeClientIdButton)
+            {
+                core.TypeDiscordClientId();
+            }
+            else if (button == TypeClientSecretButton)
+            {
+                core.TypeDiscordClientSecret();
+            }
+            else if (button == PasteClientIdButton || button == PasteClientSecretButton)
             {
                 // A clipboard another program holds open pastes nothing, leaving the field; an empty one forgets it.
                 var text = ClipboardText();
@@ -381,7 +402,7 @@ namespace XboxSeries.Extension
         private void OnViewHostPreviewKeyDown(object sender, KeyEventArgs e)
         {
             var button = PlayniteInput.PadButtonOf(e);
-            if (core.Settings.IsShown
+            if (core.Settings.IsShown && !core.TextEntry.IsShown
                 && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder
                     || button == ControllerInput.Y || button == ControllerInput.RightStick))
             {
@@ -399,7 +420,8 @@ namespace XboxSeries.Extension
         /// </summary>
         private void OnViewHostKeyDown(object sender, KeyEventArgs e)
         {
-            if (!core.Settings.IsShown || PlayniteInput.PadButtonOf(e) != ControllerInput.B)
+            // While text entry is up over the page, its B cancels it, and the page stays.
+            if (!core.Settings.IsShown || core.TextEntry.IsShown || PlayniteInput.PadButtonOf(e) != ControllerInput.B)
             {
                 return;
             }
