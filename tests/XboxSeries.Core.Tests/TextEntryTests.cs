@@ -246,6 +246,28 @@ namespace XboxSeries.Core.Tests
             Assert.True(core.Settings.Discord.HasClientSecret);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void A_Client_Secret_typed_is_not_kept_in_the_keyboard_once_text_entry_goes(bool kept)
+        {
+            core.OpenSettings();
+            core.TypeDiscordClientSecret();
+            Type("new-secret");
+
+            if (kept)
+            {
+                core.ConfirmTextEntry();
+            }
+            else
+            {
+                core.CancelTextEntry();
+            }
+
+            Assert.Equal(string.Empty, Keyboard.Text);
+            Assert.False(core.TextEntry.IsSecret);
+        }
+
         [Fact]
         public void A_secret_after_it_leaves_the_next_entry_plain()
         {

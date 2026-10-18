@@ -135,7 +135,10 @@ namespace XboxSeries.Core
             TextEntry.IsShown = true;
         }
 
-        /// <summary>Takes text entry away, then keeps the text, or drops it, putting back what it changed.</summary>
+        /// <summary>
+        /// Takes text entry away, then keeps the text, or drops it, putting back what it changed. The keyboard forgets the
+        /// text either way, so a Client Secret typed isn't left in it.
+        /// </summary>
         private void EndTextEntry(bool keep)
         {
             var kept = keepText;
@@ -145,6 +148,8 @@ namespace XboxSeries.Core
             typedText = null;
             dropText = null;
             TextEntry.IsShown = false;
+            TextEntry.Keyboard.Reset();
+            TextEntry.IsSecret = false;
             if (keep)
             {
                 kept?.Invoke(text);
