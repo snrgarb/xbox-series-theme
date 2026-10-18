@@ -281,7 +281,7 @@
             </Style>
 
             <!--
-                Full library's Sort dropdown, as the console's: a dark box, "Sort A–Z" at its left and a chevron at its
+                Full library's Sort dropdown, as the console's: a dark box, "Sorted by A–Z" at its left and a chevron at its
                 right. Focused, it fills with the accent and carries the console's green glow as a blurred band, as the
                 footer's button does.
             -->
@@ -602,7 +602,7 @@
                 </Button>
                 <TextBox x:Name="NameBox" DockPanel.Dock="Left" Style="{StaticResource NameBox}" Margin="24,0,0,0"
                          Visibility="Collapsed" TextChanged="OnNameTyped" GotKeyboardFocus="OnNameBoxFocused"
-                         LostKeyboardFocus="OnNameBoxLeft" PreviewKeyDown="OnNameBoxPreviewKeyDown" KeyDown="OnNameBoxKeyDown" />
+                         LostKeyboardFocus="OnNameBoxLeft" PreviewKeyDown="OnNameBoxPreviewKeyDown" />
                 <Button x:Name="FilterButton" DockPanel.Dock="Right" Style="{StaticResource FooterButton}" Height="60"
                         Click="OnFilterClick">
                     <StackPanel Orientation="Horizontal">

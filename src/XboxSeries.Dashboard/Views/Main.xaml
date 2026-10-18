@@ -287,13 +287,14 @@
             </DataTrigger>
             <!--
                 Full library: under its filter preset tabs (y 190 to 246) and the extension's Sort and Filter row below them
-                (y 262 to 322), from 14 under that row (y 336, so 136 into this row), as the list clips its tiles to its
-                own top as they scroll up and would otherwise draw over the row. Scrolled tiles fade out over the quarter
-                cell the panel leaves above the first row (0.25 of the list's 3.5 cells), short of the first row's focus
-                ring, so they don't butt against the row: XboxFullLibraryFade, over the list.
+                (y 262 to 322), from 4 under that row (y 326, so 126 into this row), clipping the list there, as its tiles
+                would otherwise draw over the row as they scroll up. The extension lifts the list by the quarter cell the
+                panel leaves above the first row, so that row's tiles start 24 under the clip; scrolled tiles fade out
+                over the top of that padding, short of the first row's focus ring: XboxFullLibraryFade, over the list.
             -->
             <DataTrigger Binding="{Binding Content.State.ShowsFullLibrary, ElementName=XboxSeries_MyGames}" Value="True">
-                <Setter Property="Margin" Value="436.5,136,86.5,0" />
+                <Setter Property="Margin" Value="436.5,126,86.5,0" />
+                <Setter Property="ClipToBounds" Value="True" />
             </DataTrigger>
             <!-- Never over Settings. -->
             <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Settings}" Value="True">
@@ -571,17 +572,19 @@
                                         </TextBlock>
 
                                         <!--
-                                            Full library: scrolled tiles fade out at the list's top (XboxMainList). Painted over the
-                                            list in My games & apps' flat page colour (its PageBrush, #FF1F1F1F), solid to 1% of the
-                                            list's height and clear by 6%, rather than an OpacityMask on the list, which draws the
-                                            whole list into a picture of its own, at the 4K screen's size, every frame it changes.
-                                            Over the list's own width only, so it doesn't cover the nav's divider in its margin.
+                                            Full library: scrolled tiles fade out at the list's clipped top (XboxMainList). Painted
+                                            over the list in My games & apps' flat page colour (its PageBrush, #FF1F1F1F), solid at
+                                            the clip and clear 12 under it, within the 24 above the first row's tiles, rather than an
+                                            OpacityMask on the list, which draws the whole list into a picture of its own, at the 4K
+                                            screen's size, every frame it changes. Over the list's own width only, so it doesn't
+                                            cover the nav's divider in its margin.
                                         -->
-                                        <Rectangle x:Name="XboxFullLibraryFade" Margin="80,0,80,0" IsHitTestVisible="False">
+                                        <Rectangle x:Name="XboxFullLibraryFade" Margin="80,0,80,0" Height="12" VerticalAlignment="Top"
+                                                   IsHitTestVisible="False">
                                             <Rectangle.Fill>
                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="#FF1F1F1F" Offset="0.01" />
-                                                    <GradientStop Color="#001F1F1F" Offset="0.06" />
+                                                    <GradientStop Color="#FF1F1F1F" Offset="0" />
+                                                    <GradientStop Color="#001F1F1F" Offset="1" />
                                                 </LinearGradientBrush>
                                             </Rectangle.Fill>
                                             <Rectangle.Style>

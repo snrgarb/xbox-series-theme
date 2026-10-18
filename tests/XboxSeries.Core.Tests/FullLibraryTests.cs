@@ -49,7 +49,7 @@ namespace XboxSeries.Core.Tests
             core.SortFullLibrary(Option(option));
 
             Assert.Equal(order, playnite.MainList());
-            Assert.Equal("Sort " + option, core.MyGames.SortLabel);
+            Assert.Equal("Sorted by " + option, core.MyGames.SortLabel);
         }
 
         [Fact]

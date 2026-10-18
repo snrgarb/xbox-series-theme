@@ -388,7 +388,11 @@ namespace XboxSeries.Extension
             return typed.Result ? typed.SelectedString : null;
         }
 
-        /// <summary>The page showing's boxes, in reading order; a hidden one, as Remove profile with one profile, aside.</summary>
+        /// <summary>
+        /// The page showing's boxes, in reading order, as laid out: not the visual tree's, which a panel keeps in z-order,
+        /// so the focused box, raised over its neighbours for its glow, would come last. A hidden one, as Remove profile
+        /// with one profile, aside.
+        /// </summary>
         private IEnumerable<Button> Buttons()
         {
             FrameworkElement shown;
@@ -403,7 +407,12 @@ namespace XboxSeries.Extension
                 default: shown = PersonalisationPage; break;
             }
 
-            return Descendants(shown).OfType<Button>().Where(button => button.IsVisible);
+            return Descendants(shown).OfType<Button>()
+                .Where(button => button.IsVisible)
+                .Select(button => new { Button = button, At = button.TranslatePoint(new Point(), shown) })
+                .OrderBy(box => Math.Round(box.At.Y))
+                .ThenBy(box => box.At.X)
+                .Select(box => box.Button);
         }
 
         /// <summary>How many boxes a row of the page showing holds.</summary>

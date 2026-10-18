@@ -135,8 +135,8 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>The Sort dropdown's own text, such as "Sort A–Z"; just "Sort" while the grid is in none of its options.</summary>
-        public string SortLabel => LibrarySort == null ? "Sort" : "Sort " + LibrarySort.Name;
+        /// <summary>The Sort dropdown's own text, such as "Sorted by A–Z"; just "Sort" while the grid is in none of its options.</summary>
+        public string SortLabel => LibrarySort == null ? "Sort" : "Sorted by " + LibrarySort.Name;
 
         /// <summary>
         /// The name Full library's grid is narrowed to, on top of the user's tab: Playnite's own name filter of the main
