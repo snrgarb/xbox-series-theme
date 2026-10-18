@@ -50,6 +50,31 @@ namespace XboxSeries.Core
         /// <summary>Shows <paramref name="filter"/>'s games in the main list, in its order, as a filter preset the extension builds.</summary>
         void ShowInMainList(GameListFilter filter);
 
+        /// <summary>Playnite's own sort of the main list; null for one the core doesn't know, as by platform.</summary>
+        GameSort? MainListSort { get; }
+
+        /// <summary>Which way Playnite's own sort of the main list runs.</summary>
+        SortDirection MainListSortDirection { get; }
+
+        /// <summary>
+        /// Sorts the main list with Playnite's own sort, leaving its filter and preset as they are. Only while it shows
+        /// the user's own filter, as Full library.
+        /// </summary>
+        void SortMainList(GameSort sort, SortDirection direction);
+
+        /// <summary>
+        /// Narrows the main list to games whose name holds <paramref name="name"/>, with Playnite's own name filter, on top
+        /// of its filter and preset; empty shows them whole. Only while it shows the user's own filter, as Full library.
+        /// </summary>
+        void FilterMainListByName(string name);
+
+        /// <summary>
+        /// Playnite's own entry of the main list's name filter, its on-screen keyboard in Fullscreen, which narrows the
+        /// list as the user types and puts the name back if cancelled. Returns the name the main list is filtered by once
+        /// it closes. Only while it shows the user's own filter, as Full library.
+        /// </summary>
+        string TypeMainListName();
+
         /// <summary>
         /// How many games the main list shows under the user's own filter: the one kept by <see cref="SaveUserFilter"/>
         /// while the Dashboard's is up, otherwise the current one. Null when Playnite can't say yet.

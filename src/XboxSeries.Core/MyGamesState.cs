@@ -19,6 +19,8 @@ namespace XboxSeries.Core
         private bool hasApps;
         private IReadOnlyList<QueueEntry> queue = new QueueEntry[0];
         private IReadOnlyList<HomeTile> recentlyInstalled = new HomeTile[0];
+        private LibrarySortOption librarySort;
+        private string nameFilter = string.Empty;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -105,6 +107,52 @@ namespace XboxSeries.Core
                 }
             }
         }
+
+        /// <summary>Full library's Sort dropdown: its options, in the console's order.</summary>
+        public IReadOnlyList<LibrarySortOption> SortOptions => LibrarySortOption.All;
+
+        /// <summary>
+        /// The sort Full library's grid is in, as its Sort dropdown names it: the one the user chose there, or else
+        /// Playnite's own sort of the main list; null when that is none of the dropdown's options.
+        /// </summary>
+        public LibrarySortOption LibrarySort
+        {
+            get => librarySort;
+            internal set
+            {
+                if (librarySort != value)
+                {
+                    librarySort = value;
+                    Changed(nameof(LibrarySort));
+                    Changed(nameof(SortLabel));
+                }
+            }
+        }
+
+        /// <summary>The Sort dropdown's own text, such as "Sort A–Z"; just "Sort" while the grid is in none of its options.</summary>
+        public string SortLabel => LibrarySort == null ? "Sort" : "Sort " + LibrarySort.Name;
+
+        /// <summary>
+        /// The name Full library's grid is narrowed to, on top of the user's tab: Playnite's own name filter of the main
+        /// list. Empty when it shows the whole tab.
+        /// </summary>
+        public string NameFilter
+        {
+            get => nameFilter;
+            internal set
+            {
+                value = value ?? string.Empty;
+                if (nameFilter != value)
+                {
+                    nameFilter = value;
+                    Changed(nameof(NameFilter));
+                    Changed(nameof(HasNameFilter));
+                }
+            }
+        }
+
+        /// <summary>Whether Full library's grid is narrowed by name.</summary>
+        public bool HasNameFilter => NameFilter.Length > 0;
 
         /// <summary>Apps: Playnite's Software tools, as tiles in Playnite's order; empty when they couldn't be read.</summary>
         public IReadOnlyList<App> Apps
@@ -279,6 +327,42 @@ namespace XboxSeries.Core
 
         /// <summary>How far the bar fills, from 0 to 1.</summary>
         public double Fraction { get; }
+    }
+
+    /// <summary>
+    /// One option of Full library's Sort dropdown: a sort of Playnite's own, the newest or most first except A–Z. Games
+    /// without the field, never played or with no release date, come last.
+    /// </summary>
+    public sealed class LibrarySortOption
+    {
+        public static readonly LibrarySortOption AToZ = new LibrarySortOption("A–Z", GameSort.Name, SortDirection.Ascending);
+        public static readonly LibrarySortOption LastPlayed = new LibrarySortOption("Last played", GameSort.LastActivity, SortDirection.Descending);
+        public static readonly LibrarySortOption RecentlyAdded = new LibrarySortOption("Recently added", GameSort.Added, SortDirection.Descending);
+        public static readonly LibrarySortOption Playtime = new LibrarySortOption("Playtime", GameSort.Playtime, SortDirection.Descending);
+        public static readonly LibrarySortOption ReleaseDate = new LibrarySortOption("Release date", GameSort.ReleaseDate, SortDirection.Descending);
+
+        /// <summary>Every option, in the dropdown's order.</summary>
+        public static readonly IReadOnlyList<LibrarySortOption> All = new[] { AToZ, LastPlayed, RecentlyAdded, Playtime, ReleaseDate };
+
+        private LibrarySortOption(string name, GameSort sort, SortDirection direction)
+        {
+            Name = name;
+            Sort = sort;
+            Direction = direction;
+        }
+
+        /// <summary>The option's name, such as "Last played".</summary>
+        public string Name { get; }
+
+        public GameSort Sort { get; }
+
+        public SortDirection Direction { get; }
+
+        /// <summary>The option for Playnite's sort of the main list; null when it is none of them.</summary>
+        internal static LibrarySortOption Of(GameSort? sort, SortDirection direction) =>
+            All.FirstOrDefault(o => o.Sort == sort && o.Direction == direction);
+
+        public override string ToString() => Name;
     }
 
     /// <summary>The items of My games &amp; apps' left nav.</summary>

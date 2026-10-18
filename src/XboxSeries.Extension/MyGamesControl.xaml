@@ -281,6 +281,123 @@
             </Style>
 
             <!--
+                Full library's Sort dropdown, as the console's: a dark box, "Sort A–Z" at its left and a chevron at its
+                right. Focused, it fills with the accent and carries the console's green glow as a blurred band, as the
+                footer's button does.
+            -->
+            <Style x:Key="SortBox" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Width" Value="400" />
+                <Setter Property="Height" Value="60" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Back" Background="#FF333333" CornerRadius="2">
+                                    <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlowCache}" Visibility="Hidden">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
+                                </Border>
+                                <ContentPresenter Margin="22,0,22,0" VerticalAlignment="Center" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                    <Setter TargetName="Glow" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
+                One of the Sort dropdown's options in its open list: its name, and a tick on the one the grid is in (Tag
+                "Selected"). Focused, it fills with the accent and carries the glow band, as the nav's items do.
+            -->
+            <Style x:Key="SortOption" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="60" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid Background="Transparent">
+                                <Border x:Name="Back">
+                                    <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlowCache}" Visibility="Hidden">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
+                                </Border>
+                                <TextBlock x:Name="Tick" Text="&#xE73E;" Style="{StaticResource NavIcon}" FontSize="20"
+                                           Margin="18,0,0,0" Visibility="Hidden" />
+                                <ContentPresenter Margin="62,0,24,0" VerticalAlignment="Center" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Tag" Value="Selected">
+                                    <Setter TargetName="Tick" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="{DynamicResource GlyphBrush}" />
+                                    <Setter TargetName="Glow" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!--
+                Full library's name box: Playnite's own name filter of the grid, typed into with a keyboard or, from the
+                pad's A, Playnite's on-screen keyboard. A dark box with the search glyph, reading "Filter by name" while
+                empty; focused, the accent ring stands 4 off it carrying the console's green glow as a blurred band, the
+                box staying dark so the name stays legible.
+            -->
+            <Style x:Key="NameBox" TargetType="TextBox">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Width" Value="400" />
+                <Setter Property="Height" Value="60" />
+                <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+                <Setter Property="FontSize" Value="22" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="CaretBrush" Value="White" />
+                <Setter Property="SelectionBrush" Value="{DynamicResource GlyphBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Grid>
+                                <Border Background="#FF333333" CornerRadius="2" />
+                                <TextBlock Text="&#xE721;" Style="{StaticResource NavIcon}" FontSize="20" Margin="20,0,0,0" />
+                                <TextBlock x:Name="Placeholder" Text="Filter by name" Style="{StaticResource Text}"
+                                           Foreground="{StaticResource DimBrush}" Margin="62,0,20,0" VerticalAlignment="Center"
+                                           IsHitTestVisible="False" Visibility="Hidden" />
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="58,0,20,0" VerticalAlignment="Center"
+                                              Focusable="False" HorizontalScrollBarVisibility="Hidden"
+                                              VerticalScrollBarVisibility="Hidden" />
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Text" Value="">
+                                    <Setter TargetName="Placeholder" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
                 The holder of a cover or queue row: drawn over its neighbours while what it holds is focused, so their backs
                 don't cover the ring's glow band.
             -->
@@ -453,10 +570,73 @@
             <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
             <TextBlock x:Name="Count" Text="{Binding GameCount, StringFormat='{}{0} games'}" Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
-            <!-- Full library's count: the games Playnite's main list shows under the user's filter. -->
-            <TextBlock x:Name="LibraryCount" Text="{Binding FullLibraryCount, StringFormat='{}{0} games'}"
-                       Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}"
-                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
+
+            <!--
+                Full library's tabs take focus through this, laid under the Dashboard's tabs (PART_FilterPresetSelector, at
+                the top of this row): the active tab is lit as the console lights focus, Left and Right switch the tab as
+                LB and RB do, and the tabs themselves, Playnite's own, never take focus, as A on one would apply it again.
+            -->
+            <Button x:Name="TabsFocus" Grid.Row="1" Height="56" VerticalAlignment="Top" FocusVisualStyle="{x:Null}"
+                    Visibility="Collapsed" PreviewKeyDown="OnTabsPreviewKeyDown" KeyDown="OnTabsKeyDown">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent" />
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <!--
+                Full library's row between its tabs and its grid, as the console's: the Sort dropdown at the left, then the
+                name box while it is open or holds a name, and at the right the count of the games the grid shows and the
+                Filter button, which opens the name box, as Y does. Flush with the grid's tiles below it.
+            -->
+            <DockPanel x:Name="LibraryBar" Grid.Row="1" Height="60" Margin="4,72,4,0" VerticalAlignment="Top"
+                       Visibility="Collapsed" LastChildFill="False" KeyDown="OnLibraryBarKeyDown" GotKeyboardFocus="OnLibraryBarFocused"
+                       PreviewKeyDown="OnLibraryBarPreviewKeyDown">
+                <Button x:Name="SortButton" DockPanel.Dock="Left" Style="{StaticResource SortBox}" Click="OnSortClick">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" Style="{StaticResource NavIcon}" FontSize="18"
+                                   Width="Auto" />
+                        <TextBlock Text="{Binding SortLabel}" Style="{StaticResource Text}" FontSize="22" />
+                    </DockPanel>
+                </Button>
+                <TextBox x:Name="NameBox" DockPanel.Dock="Left" Style="{StaticResource NameBox}" Margin="24,0,0,0"
+                         Visibility="Collapsed" TextChanged="OnNameTyped" GotKeyboardFocus="OnNameBoxFocused"
+                         LostKeyboardFocus="OnNameBoxLeft" PreviewKeyDown="OnNameBoxPreviewKeyDown" KeyDown="OnNameBoxKeyDown" />
+                <Button x:Name="FilterButton" DockPanel.Dock="Right" Style="{StaticResource FooterButton}" Height="60"
+                        Click="OnFilterClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE71C;" Style="{StaticResource NavIcon}" FontSize="20" Width="Auto" Margin="0,0,14,0" />
+                        <TextBlock Text="Filter" Style="{StaticResource Text}" FontSize="22" />
+                    </StackPanel>
+                </Button>
+                <!-- Full library's count: the games its grid shows, under the user's tab and any name. -->
+                <TextBlock x:Name="LibraryCount" DockPanel.Dock="Right" Text="{Binding FullLibraryCount, StringFormat='{}{0} games'}"
+                           Style="{StaticResource Text}" Foreground="{StaticResource DimBrush}" VerticalAlignment="Center"
+                           Margin="0,0,24,0" />
+            </DockPanel>
+
+            <!--
+                The Sort dropdown's list, opened by A on it, over the grid below: Playnite's main list draws over the page,
+                so the list is a popup of its own, opaque. Up and down move through it, A sorts the grid by the option
+                focused, and B closes it, focus back on the dropdown either way.
+            -->
+            <Popup x:Name="SortPopup" PlacementTarget="{Binding ElementName=SortButton}" Placement="Bottom" VerticalOffset="8"
+                   StaysOpen="True" AllowsTransparency="False" Focusable="False">
+                <Border Width="400" Background="#FF2B2B2B" Padding="0,8">
+                    <ItemsControl x:Name="SortOptions" ItemsSource="{Binding SortOptions}" Focusable="False"
+                                  KeyboardNavigation.DirectionalNavigation="Contained"
+                                  PreviewKeyDown="OnSortOptionsPreviewKeyDown" KeyDown="OnSortOptionsKeyDown">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource SortOption}" Click="OnSortOptionClick">
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="22" />
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+            </Popup>
 
             <!--
                 Play history, in its sections. Virtualized: only the rows on screen are built, and their art read, so a long

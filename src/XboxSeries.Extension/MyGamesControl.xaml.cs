@@ -92,6 +92,21 @@ namespace XboxSeries.Extension
         /// <summary>The queue row with focus, whose game's tile the core was last told of.</summary>
         private QueueRow focusedQueueRow;
 
+        /// <summary>Whether Full library's name box is open, from Filter or Y, before it holds a name.</summary>
+        private bool nameBoxOpen;
+
+        /// <summary>Whether the name box is being given the core's name, rather than typed into.</summary>
+        private bool showingName;
+
+        /// <summary>
+        /// Playnite's own letter keys (Y for its name entry, F for its filters, R for its presets), taken off the page
+        /// while the name box has focus, so typing a name types them rather than running them.
+        /// </summary>
+        private readonly List<InputBinding> suspendedKeys = new List<InputBinding>();
+
+        /// <summary>What in Full library's Sort and Filter row last had focus, for up from the grid and down from the tabs.</summary>
+        private UIElement lastRowFocus;
+
         internal MyGamesControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -136,6 +151,7 @@ namespace XboxSeries.Extension
             {
                 mainList.SizeChanged += FitFiveToARow;
                 mainList.PreviewKeyDown += OnMainListPreviewKeyDown;
+                mainList.KeyDown += OnMainListKeyDown;
                 ((INotifyCollectionChanged)mainList.Items).CollectionChanged += OnMainListChanged;
             }
 
@@ -158,6 +174,8 @@ namespace XboxSeries.Extension
 
             // Gone mid-slide, nothing is left hidden or out of place, Playnite's main list least of all.
             PaneFlyIn.Stop(ItemHost, mainList);
+            SortPopup.IsOpen = false;
+            ResumeLetterKeys();
             if (viewHost != null)
             {
                 viewHost.KeyDown -= OnViewHostKeyDown;
@@ -182,6 +200,7 @@ namespace XboxSeries.Extension
             {
                 mainList.SizeChanged -= FitFiveToARow;
                 mainList.PreviewKeyDown -= OnMainListPreviewKeyDown;
+                mainList.KeyDown -= OnMainListKeyDown;
                 ((INotifyCollectionChanged)mainList.Items).CollectionChanged -= OnMainListChanged;
                 mainList = null;
             }
@@ -195,6 +214,13 @@ namespace XboxSeries.Extension
                 case nameof(MyGamesState.Item):
                     // Another item's games, or the page opened afresh: right from the nav starts again at the first.
                     lastFocusedGridGame = null;
+                    lastRowFocus = null;
+                    if (!core.MyGames.ShowsFullLibrary)
+                    {
+                        SortPopup.IsOpen = false;
+                        nameBoxOpen = false;
+                    }
+
                     ShowItem();
                     FlyInItem(e.PropertyName == nameof(MyGamesState.Item));
 
@@ -211,6 +237,9 @@ namespace XboxSeries.Extension
                     break;
                 case nameof(MyGamesState.Storage):
                     ShowStorage();
+                    break;
+                case nameof(MyGamesState.NameFilter):
+                    ShowName();
                     break;
                 case nameof(MyGamesState.PlayHistory):
                     // Rebuilding Play history replaces its rows, and with them the focused one: put focus back on the same game.
@@ -273,7 +302,9 @@ namespace XboxSeries.Extension
             ItemHost.Visibility = navShown;
             QueuePage.Visibility = queue ? Visibility.Visible : Visibility.Collapsed;
             Count.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
-            LibraryCount.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
+            LibraryBar.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
+            TabsFocus.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
+            ShowNameBox();
             LookingForMore.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
             var empty = core.MyGames.PlayHistory.Count == 0;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
@@ -313,6 +344,13 @@ namespace XboxSeries.Extension
             if (index < 0)
             {
                 index = libraryTabs.Items.IndexOf(tab.DataContext);
+            }
+
+            // The tab's preset can bring a sort of its own: the one chosen on Full library's dropdown goes back on at
+            // once, before the grid is drawn in the preset's.
+            if (core.MyGames.ShowsFullLibrary)
+            {
+                core.OnMainListChanged();
             }
 
             // Another tab's games: right from the nav starts again at the first.
@@ -436,7 +474,7 @@ namespace XboxSeries.Extension
         private void OnMainListPreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (!core.MyGames.ShowsGameGrid
-                || (e.Key != Key.Left && e.Key != Key.Down)
+                || (e.Key != Key.Left && e.Key != Key.Down && e.Key != Key.Up)
                 || !(ItemsControl.ContainerFromElement(mainList, e.OriginalSource as DependencyObject) is ListBoxItem game)
                 || !(VisualTreeHelper.GetParent(game) is Panel panel))
             {
@@ -463,7 +501,474 @@ namespace XboxSeries.Extension
                 gameAboveFooter = index;
                 SeeFullLibrary.Focus();
             }
+            else if (e.Key == Key.Up && core.MyGames.ShowsFullLibrary
+                && row.Any(c => mainList.ItemContainerGenerator.IndexFromContainer(c) == 0))
+            {
+                // Up from Full library's first row: its Sort and Filter row, whose way back down is to this game.
+                e.Handled = true;
+                lastFocusedGridGame = mainList.ItemContainerGenerator.ItemFromContainer(game);
+                FocusRow();
+            }
         }
+
+        /// <summary>Y on Full library's grid opens its name box, rather than Playnite's own name entry.</summary>
+        private void OnMainListKeyDown(object sender, KeyEventArgs e)
+        {
+            if (core.MyGames.ShowsFullLibrary && PlayniteInput.PadButtonOf(e) == ControllerInput.Y)
+            {
+                e.Handled = true;
+                OpenNameBox();
+            }
+        }
+
+        /// <summary>Focuses what in Full library's Sort and Filter row last had focus, else its Sort dropdown.</summary>
+        private void FocusRow()
+        {
+            if (lastRowFocus == null || !lastRowFocus.IsVisible || !lastRowFocus.Focus())
+            {
+                SortButton.Focus();
+            }
+        }
+
+        /// <summary>Down from Full library's tabs or row: the grid's game focus last left it from, else its first; with none, focus stays.</summary>
+        private void FocusGridFromRow()
+        {
+            if (mainList == null || mainList.Items.Count == 0)
+            {
+                return;
+            }
+
+            var last = lastFocusedGridGame == null ? -1 : mainList.Items.IndexOf(lastFocusedGridGame);
+            FocusGame(Math.Max(last, 0));
+        }
+
+        /// <summary>Up from Full library's row: the tabs, through the focus laid under them.</summary>
+        private void FocusTabs()
+        {
+            TabsFocus.Focus();
+        }
+
+        /// <summary>
+        /// On Full library's tabs, Left and Right switch to the tab beside, as LB and RB do; left from the first goes back
+        /// to the nav, as from the grid's first column. Down goes to the Sort and Filter row.
+        /// </summary>
+        private void OnTabsPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Left:
+                    e.Handled = true;
+                    if (!SwitchTab(-1))
+                    {
+                        FullLibraryItem.Focus();
+                    }
+
+                    break;
+                case Key.Right:
+                    e.Handled = true;
+                    SwitchTab(1);
+                    break;
+                case Key.Down:
+                    e.Handled = true;
+                    FocusRow();
+                    break;
+                case Key.Up:
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        /// <summary>A on the tabs: the tab focused is already the one showing. Y opens the name box.</summary>
+        private void OnTabsKeyDown(object sender, KeyEventArgs e)
+        {
+            var button = PlayniteInput.PadButtonOf(e);
+            if (button == ControllerInput.A)
+            {
+                e.Handled = true;
+            }
+            else if (button == ControllerInput.Y)
+            {
+                e.Handled = true;
+                OpenNameBox();
+            }
+        }
+
+        /// <summary>
+        /// Applies the tab <paramref name="step"/> along from the one showing, as Playnite's own tab does when chosen;
+        /// false with none there.
+        /// </summary>
+        private bool SwitchTab(int step)
+        {
+            var tabs = libraryTabs?.Items.OfType<ButtonBase>().ToList();
+            var at = tabs?.FindIndex(t => t is ToggleButton toggle && toggle.IsChecked == true) ?? -1;
+            if (at < 0 || at + step < 0 || at + step >= tabs.Count)
+            {
+                return false;
+            }
+
+            var next = tabs[at + step];
+            next.Command?.Execute(next.CommandParameter);
+            return true;
+        }
+
+        private void OnLibraryBarFocused(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            lastRowFocus = e.NewFocus as UIElement;
+        }
+
+        /// <summary>
+        /// The D-pad along Full library's Sort and Filter row: up to the tabs, down to the grid, left from Sort back to
+        /// the nav. The name box moves its caret first, so it handles its own.
+        /// </summary>
+        private void OnLibraryBarPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.OriginalSource == NameBox)
+            {
+                return;
+            }
+
+            var fromSort = e.OriginalSource == SortButton;
+            switch (e.Key)
+            {
+                case Key.Up:
+                    e.Handled = true;
+                    FocusTabs();
+                    break;
+                case Key.Down:
+                    e.Handled = true;
+                    FocusGridFromRow();
+                    break;
+                case Key.Left:
+                    e.Handled = true;
+                    if (fromSort)
+                    {
+                        FullLibraryItem.Focus();
+                    }
+                    else if (!NameBox.IsVisible || !NameBox.Focus())
+                    {
+                        SortButton.Focus();
+                    }
+
+                    break;
+                case Key.Right:
+                    e.Handled = true;
+                    if (fromSort && (!NameBox.IsVisible || !NameBox.Focus()))
+                    {
+                        FilterButton.Focus();
+                    }
+
+                    break;
+            }
+        }
+
+        /// <summary>The pad's A opens the Sort dropdown or, on Filter, the name box; Y opens the name box from anywhere on the row.</summary>
+        private void OnLibraryBarKeyDown(object sender, KeyEventArgs e)
+        {
+            var button = PlayniteInput.PadButtonOf(e);
+            if (button == ControllerInput.A && e.OriginalSource == SortButton)
+            {
+                e.Handled = true;
+                OpenSortList();
+            }
+            else if ((button == ControllerInput.A && e.OriginalSource == FilterButton) || button == ControllerInput.Y)
+            {
+                e.Handled = true;
+                OpenNameBox();
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnLibraryBarKeyDown.
+        private void OnSortClick(object sender, RoutedEventArgs e) => OpenSortList();
+
+        private void OnFilterClick(object sender, RoutedEventArgs e) => OpenNameBox();
+
+        /// <summary>Opens the Sort dropdown's list, its option the grid is in ticked and focused.</summary>
+        private void OpenSortList()
+        {
+            if (!core.MyGames.ShowsFullLibrary)
+            {
+                return;
+            }
+
+            SortPopup.IsOpen = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (!SortPopup.IsOpen)
+                {
+                    return;
+                }
+
+                SortOptions.UpdateLayout();
+                var options = core.MyGames.SortOptions;
+                Button current = null;
+                for (var i = 0; i < options.Count; i++)
+                {
+                    var option = ButtonIn(SortOptions, i);
+                    if (option != null)
+                    {
+                        var chosen = options[i] == core.MyGames.LibrarySort;
+                        option.Tag = chosen ? "Selected" : null;
+                        current = chosen || current == null ? option : current;
+                    }
+                }
+
+                current?.Focus();
+            }));
+        }
+
+        /// <summary>Closes the Sort dropdown's list, focus back on the dropdown.</summary>
+        private void CloseSortList()
+        {
+            SortPopup.IsOpen = false;
+            SortButton.Focus();
+        }
+
+        /// <summary>Up and down through the Sort dropdown's list, which holds focus while open; Escape closes it.</summary>
+        private void OnSortOptionsPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var at = IndexIn(SortOptions, e.OriginalSource as DependencyObject);
+            switch (e.Key)
+            {
+                case Key.Up:
+                case Key.Down:
+                    e.Handled = true;
+                    ButtonIn(SortOptions, at + (e.Key == Key.Up ? -1 : 1))?.Focus();
+                    break;
+                case Key.Left:
+                case Key.Right:
+                    e.Handled = true;
+                    break;
+                case Key.Escape:
+                    e.Handled = true;
+                    CloseSortList();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// The pad's A sorts the grid by the option focused, B closes the list; the list keeps every other button from
+        /// the page behind it, as LB and RB switching its tab.
+        /// </summary>
+        private void OnSortOptionsKeyDown(object sender, KeyEventArgs e)
+        {
+            var button = PlayniteInput.PadButtonOf(e);
+            if (button == null)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            if (button == ControllerInput.A && (e.OriginalSource as FrameworkElement)?.DataContext is LibrarySortOption option)
+            {
+                ChooseSort(option);
+            }
+            else if (button == ControllerInput.B)
+            {
+                CloseSortList();
+            }
+        }
+
+        // The keyboard's Enter and the mouse.
+        private void OnSortOptionClick(object sender, RoutedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is LibrarySortOption option)
+            {
+                ChooseSort(option);
+            }
+        }
+
+        private void ChooseSort(LibrarySortOption option)
+        {
+            core.SortFullLibrary(option);
+            CloseSortList();
+        }
+
+        /// <summary>Opens Full library's name box, from Filter or Y, and puts focus in it at the end of any name.</summary>
+        private void OpenNameBox()
+        {
+            if (!core.MyGames.ShowsFullLibrary)
+            {
+                return;
+            }
+
+            SortPopup.IsOpen = false;
+            nameBoxOpen = true;
+            ShowNameBox();
+            LibraryBar.UpdateLayout();
+            NameBox.Focus();
+            NameBox.CaretIndex = NameBox.Text.Length;
+        }
+
+        /// <summary>The name box shows while open or while the grid is narrowed by name.</summary>
+        private void ShowNameBox()
+        {
+            NameBox.Visibility = core.MyGames.ShowsFullLibrary && (nameBoxOpen || core.MyGames.HasNameFilter)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        /// <summary>The name box follows the core's name, as the on-screen keyboard or B changes it.</summary>
+        private void ShowName()
+        {
+            if (NameBox.Text != core.MyGames.NameFilter)
+            {
+                showingName = true;
+                NameBox.Text = core.MyGames.NameFilter;
+                NameBox.CaretIndex = NameBox.Text.Length;
+                showingName = false;
+            }
+
+            if (!core.MyGames.HasNameFilter && !NameBox.IsKeyboardFocused)
+            {
+                nameBoxOpen = false;
+            }
+
+            ShowNameBox();
+        }
+
+        // Typed with a keyboard: the grid narrows as the name changes.
+        private void OnNameTyped(object sender, TextChangedEventArgs e)
+        {
+            if (!showingName)
+            {
+                core.FilterFullLibraryByName(NameBox.Text);
+            }
+        }
+
+        private void OnNameBoxFocused(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            SuspendLetterKeys();
+        }
+
+        // Left empty, the box closes as focus goes.
+        private void OnNameBoxLeft(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            ResumeLetterKeys();
+            if (NameBox.Text.Length == 0)
+            {
+                nameBoxOpen = false;
+                ShowNameBox();
+            }
+        }
+
+        /// <summary>
+        /// The D-pad and keys in the name box: up to the tabs, down (or Enter) to the grid, left and right along the row
+        /// once the caret is at the name's end, and Escape clears it.
+        /// </summary>
+        private void OnNameBoxPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var atStart = NameBox.CaretIndex == 0 && NameBox.SelectionLength == 0;
+            var atEnd = NameBox.CaretIndex == NameBox.Text.Length && NameBox.SelectionLength == 0;
+            switch (e.Key)
+            {
+                case Key.Up:
+                    e.Handled = true;
+                    FocusTabs();
+                    break;
+                case Key.Down:
+                case Key.Enter:
+                    e.Handled = true;
+                    FocusGridFromRow();
+                    break;
+                case Key.Left when atStart:
+                    e.Handled = true;
+                    SortButton.Focus();
+                    break;
+                case Key.Right when atEnd:
+                    e.Handled = true;
+                    FilterButton.Focus();
+                    break;
+                case Key.Escape:
+                    e.Handled = true;
+                    CloseNameBox();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// The pad in the name box: A (or Y) opens Playnite's on-screen keyboard, which narrows the grid as the user
+        /// types; B clears the name and closes the box, the whole tab showing again.
+        /// </summary>
+        private void OnNameBoxKeyDown(object sender, KeyEventArgs e)
+        {
+            var button = PlayniteInput.PadButtonOf(e);
+            if (button == ControllerInput.A || button == ControllerInput.Y)
+            {
+                e.Handled = true;
+                TypeName();
+            }
+            else if (button == ControllerInput.B)
+            {
+                e.Handled = true;
+                CloseNameBox();
+            }
+        }
+
+        /// <summary>Playnite's on-screen keyboard for the name; then the grid's first game, or the box again with no game to show.</summary>
+        private void TypeName()
+        {
+            core.TypeFullLibraryName();
+
+            // Playnite puts focus back on its list as its keyboard closes: on the narrowed grid's first game.
+            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+            {
+                if (!core.MyGames.ShowsFullLibrary || !IsVisible)
+                {
+                    return;
+                }
+
+                lastFocusedGridGame = null;
+                if (core.MyGames.HasNameFilter && mainList != null && mainList.Items.Count > 0)
+                {
+                    FocusGame(0);
+                }
+                else
+                {
+                    OpenNameBox();
+                }
+            }));
+        }
+
+        /// <summary>Clears the name, the whole tab showing again, and closes the box, focus on Filter, which opens it.</summary>
+        private void CloseNameBox()
+        {
+            core.ClearFullLibraryName();
+            nameBoxOpen = false;
+            FilterButton.Focus();
+            ShowNameBox();
+        }
+
+        private void SuspendLetterKeys()
+        {
+            if (viewHost == null || suspendedKeys.Count > 0)
+            {
+                return;
+            }
+
+            foreach (var key in viewHost.InputBindings.OfType<KeyBinding>().Where(IsTypingKey).ToList())
+            {
+                viewHost.InputBindings.Remove(key);
+                suspendedKeys.Add(key);
+            }
+        }
+
+        private void ResumeLetterKeys()
+        {
+            if (viewHost != null)
+            {
+                foreach (var key in suspendedKeys)
+                {
+                    viewHost.InputBindings.Add(key);
+                }
+            }
+
+            suspendedKeys.Clear();
+        }
+
+        /// <summary>A key binding of Playnite's that a name typed would run: a letter, digit or space with no modifier.</summary>
+        private static bool IsTypingKey(KeyBinding binding) =>
+            binding.Modifiers == ModifierKeys.None
+            && ((binding.Key >= Key.A && binding.Key <= Key.Z) || (binding.Key >= Key.D0 && binding.Key <= Key.D9) || binding.Key == Key.Space);
 
         // The keyboard's Enter and the mouse; the pad's A arrives as OnSeeFullLibraryKeyDown.
         private void OnSeeFullLibrary(object sender, RoutedEventArgs e)
@@ -508,10 +1013,12 @@ namespace XboxSeries.Extension
         {
             if (core.MyGames.IsShown && PlayniteInput.PadButtonOf(e) == ControllerInput.B)
             {
-                // On Manage Queue, B goes back to Manage rather than leaving the page.
+                // On Manage Queue, B goes back to Manage rather than leaving the page; on Full library narrowed by name,
+                // back to its whole tab.
                 var item = core.MyGames.Item;
+                var narrowed = core.MyGames.HasNameFilter;
                 core.LeaveMyGames();
-                e.Handled = !core.MyGames.IsShown || core.MyGames.Item != item;
+                e.Handled = !core.MyGames.IsShown || core.MyGames.Item != item || narrowed != core.MyGames.HasNameFilter;
             }
         }
 
