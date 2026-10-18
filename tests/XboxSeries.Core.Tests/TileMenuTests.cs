@@ -34,7 +34,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.Start);
 
             Assert.Equal("Hades", core.Home.TileMenu.Title);
-            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game" }, Options());
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Customise Home" }, Options());
             Assert.Equal("Play game", core.Home.TileMenu.FocusedOption.Label);
         }
 
@@ -174,7 +174,7 @@ namespace XboxSeries.Core.Tests
             OpenMenuOn("Hades");
 
             Assert.Equal(
-                new[] { DialogIcon.Play, DialogIcon.Favourite, DialogIcon.Manage },
+                new[] { DialogIcon.Play, DialogIcon.Favourite, DialogIcon.Manage, DialogIcon.Customise },
                 core.Home.TileMenu.Options.Select(o => o.Icon));
         }
 
@@ -209,7 +209,7 @@ namespace XboxSeries.Core.Tests
 
             OpenMenuOn("Halo Infinite");
 
-            Assert.Equal(new[] { "Quit", "Add to Favourites", "Manage game" }, Options());
+            Assert.Equal(new[] { "Quit", "Add to Favourites", "Manage game", "Customise Home" }, Options());
             Assert.Equal(DialogIcon.Quit, core.Home.TileMenu.Options[0].Icon);
         }
 
@@ -242,6 +242,134 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Customise_Home_opens_Settings_on_Personalisation()
+        {
+            OpenMenuOn("Hades");
+
+            Choose("Customise Home");
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.True(core.Settings.IsShown);
+            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+        }
+
+        [Fact]
+        public void B_from_Settings_opened_by_Customise_Home_goes_back_to_the_tile_that_opened_it()
+        {
+            OpenMenuOn("Hades");
+            Choose("Customise Home");
+
+            core.LeaveSettings();
+
+            Assert.False(core.Settings.IsShown);
+            Assert.False(core.MyGames.IsShown);
+            Assert.Equal(SettingsOrigin.HomeTile, core.Settings.OpenedFrom);
+            Assert.Equal(library.Id("Hades"), core.Settings.OpenedFromGame);
+        }
+
+        [Fact]
+        public void Customise_Home_from_a_Group_tile_goes_back_to_that_tile()
+        {
+            core.FocusHomeTile(GroupTile("Tunic"));
+            Tap(ControllerButton.Start);
+            Choose("Customise Home");
+
+            core.LeaveSettings();
+
+            Assert.False(core.Settings.IsShown);
+            Assert.Equal(library.Id("Tunic"), core.Settings.OpenedFromGame);
+        }
+
+        [Fact]
+        public void The_tile_menu_on_My_games_and_apps_offers_Customise_games_and_apps()
+        {
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Hades"));
+
+            Tap(ControllerButton.Start);
+
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Customise games & apps" }, Options());
+            Assert.Equal(DialogIcon.Customise, core.Home.TileMenu.Options[3].Icon);
+        }
+
+        [Fact]
+        public void Customise_games_and_apps_opens_Settings_on_Personalisation_in_the_pages_place()
+        {
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Hades"));
+            Tap(ControllerButton.Start);
+
+            Choose("Customise games & apps");
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.True(core.Settings.IsShown);
+            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.False(core.MyGames.IsShown);
+            Assert.Equal(SettingsOrigin.MyGamesTile, core.Settings.OpenedFrom);
+        }
+
+        [Fact]
+        public void B_from_Settings_opened_by_Customise_games_and_apps_goes_back_to_the_page_and_its_tile()
+        {
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Hades"));
+            Tap(ControllerButton.Start);
+            Choose("Customise games & apps");
+
+            core.LeaveSettings();
+
+            Assert.False(core.Settings.IsShown);
+            Assert.True(core.MyGames.IsShown);
+            Assert.Equal(MyGamesItem.PlayHistory, core.MyGames.Item);
+            Assert.Equal(library.Id("Hades"), core.MyGames.ReturnsToGame);
+        }
+
+        [Fact]
+        public void B_from_Settings_opened_by_Customise_games_and_apps_on_Manage_Queue_goes_back_to_Manage_Queue()
+        {
+            var queued = new FakeLibrary().WithGame("33 Immortals", installed: false, installing: true);
+            core.OnLibraryChanged(queued.Snapshot());
+            core.OpenMyGames(MyGamesItem.ManageQueue);
+            core.FocusHomeTile(core.MyGames.Queue.Single().Tile);
+            Tap(ControllerButton.Start);
+            Choose("Customise games & apps");
+
+            core.LeaveSettings();
+
+            Assert.True(core.MyGames.IsShown);
+            Assert.Equal(MyGamesItem.ManageQueue, core.MyGames.Item);
+            Assert.Equal(queued.Id("33 Immortals"), core.MyGames.ReturnsToGame);
+        }
+
+        [Fact]
+        public void My_games_and_apps_opened_any_other_way_starts_at_its_first_tile()
+        {
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+            core.FocusHomeTile(EntryOf("Hades"));
+            Tap(ControllerButton.Start);
+            Choose("Customise games & apps");
+            core.LeaveSettings();
+            core.LeaveMyGames();
+
+            core.OpenMyGames(MyGamesItem.PlayHistory);
+
+            Assert.Null(core.MyGames.ReturnsToGame);
+        }
+
+        [Fact]
+        public void Settings_from_the_top_bar_after_Customise_goes_back_to_the_top_bar()
+        {
+            OpenMenuOn("Hades");
+            Choose("Customise Home");
+            core.LeaveSettings();
+
+            core.OpenSettings();
+
+            Assert.Equal(SettingsOrigin.TopBar, core.Settings.OpenedFrom);
+            Assert.Null(core.Settings.OpenedFromGame);
+        }
+
+        [Fact]
         public void Add_to_Favourites_makes_the_game_a_favourite()
         {
             OpenMenuOn("Hades");
@@ -257,7 +385,7 @@ namespace XboxSeries.Core.Tests
         {
             OpenMenuOn("Tunic");
 
-            Assert.Equal(new[] { "Play game", "Remove from Favourites", "Manage game" }, Options());
+            Assert.Equal(new[] { "Play game", "Remove from Favourites", "Manage game", "Customise Home" }, Options());
             Assert.Equal(DialogIcon.Unfavourite, core.Home.TileMenu.Options[1].Icon);
 
             Choose("Remove from Favourites");
@@ -289,8 +417,9 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
 
-            Assert.Equal("Manage game", core.Home.TileMenu.FocusedOption.Label);
+            Assert.Equal("Customise Home", core.Home.TileMenu.FocusedOption.Label);
             Assert.True(core.Home.TileMenu.FocusedOption.IsFocused);
             Assert.False(core.Home.TileMenu.Options[0].IsFocused);
         }
@@ -382,6 +511,10 @@ namespace XboxSeries.Core.Tests
 
         // With no preset flagged, the Favourites Group stands in, holding Tunic.
         private HomeTile GroupTile(string title) => core.Home.Groups.SelectMany(g => g.Tiles).Single(t => t.Title == title);
+
+        /// <summary>The Play history entry's tile of the game named <paramref name="title"/>.</summary>
+        private HomeTile EntryOf(string title) =>
+            core.MyGames.PlayHistory.SelectMany(s => s.Entries).Single(e => e.Tile.Title == title).Tile;
 
         private string[] Options() => core.Home.TileMenu.Options.Select(o => o.Label).ToArray();
 
