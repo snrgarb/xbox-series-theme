@@ -110,12 +110,16 @@ namespace XboxSeries.Extension
         /// <summary>Whether Full library's name box is open, from Filter or Y, before it holds a name.</summary>
         private bool nameBoxOpen;
 
-        /// <summary>Whether the name box is being given the core's name, rather than typed into.</summary>
-        private bool showingName;
+        /// <summary>Whether text entry over the page is up for Full library's name, from the name box.</summary>
+        private bool typingName;
+
+        /// <summary>The name the grid was narrowed by as text entry opened, to tell a new name kept from one left as it was.</summary>
+        private string nameBeforeTyping;
 
         /// <summary>
         /// Playnite's own letter keys (Y for its name entry, F for its filters, R for its presets), taken off the page
-        /// while the name box has focus, so typing a name types them rather than running them.
+        /// while the name box has focus, so a letter typed on a keyboard there opens text entry with it rather than
+        /// running them.
         /// </summary>
         private readonly List<InputBinding> suspendedKeys = new List<InputBinding>();
 
@@ -152,6 +156,7 @@ namespace XboxSeries.Extension
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             core.MyGames.PropertyChanged += OnStateChanged;
+            core.TextEntry.PropertyChanged += OnTextEntryChanged;
 
             // Put up before the page was loaded: what it shows now is where the next move along the nav is from.
             shownItem = core.MyGames.Item;
@@ -192,6 +197,8 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.MyGames.PropertyChanged -= OnStateChanged;
+            core.TextEntry.PropertyChanged -= OnTextEntryChanged;
+            typingName = false;
 
             // Gone mid-slide, nothing is left hidden or out of place, Playnite's main list and Full library's tabs least of all.
             PaneFlyIn.Stop(ItemHost, mainList, libraryTabSelector);
@@ -670,7 +677,7 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The D-pad along Full library's Sort and Filter row: up to the tabs, down to the grid, left from Sort back to
-        /// the nav. The name box moves its caret first, so it handles its own.
+        /// the nav. The name box handles its own.
         /// </summary>
         private void OnLibraryBarPreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -837,7 +844,7 @@ namespace XboxSeries.Extension
             CloseSortList();
         }
 
-        /// <summary>Opens Full library's name box, from Filter or Y, and puts focus in it at the end of any name.</summary>
+        /// <summary>Opens Full library's name box, from Filter or Y, and puts focus on it.</summary>
         private void OpenNameBox()
         {
             if (!core.MyGames.ShowsFullLibrary)
@@ -850,7 +857,6 @@ namespace XboxSeries.Extension
             ShowNameBox();
             LibraryBar.UpdateLayout();
             NameBox.Focus();
-            NameBox.CaretIndex = NameBox.Text.Length;
         }
 
         /// <summary>The name box shows while open or while the grid is narrowed by name.</summary>
@@ -861,18 +867,19 @@ namespace XboxSeries.Extension
                 : Visibility.Collapsed;
         }
 
-        /// <summary>The name box follows the core's name, as the on-screen keyboard or B changes it.</summary>
+        /// <summary>
+        /// The name box follows the core's name, as it is typed over the page or B clears it. Emptied as it is typed, the
+        /// box stays open, for focus to come back to.
+        /// </summary>
         private void ShowName()
         {
             if (NameBox.Text != core.MyGames.NameFilter)
             {
-                showingName = true;
                 NameBox.Text = core.MyGames.NameFilter;
                 NameBox.CaretIndex = NameBox.Text.Length;
-                showingName = false;
             }
 
-            if (!core.MyGames.HasNameFilter && !NameBox.IsKeyboardFocused)
+            if (!core.MyGames.HasNameFilter && !NameBox.IsKeyboardFocused && !typingName)
             {
                 nameBoxOpen = false;
             }
@@ -880,25 +887,16 @@ namespace XboxSeries.Extension
             ShowNameBox();
         }
 
-        // Typed with a keyboard: the grid narrows as the name changes.
-        private void OnNameTyped(object sender, TextChangedEventArgs e)
-        {
-            if (!showingName)
-            {
-                core.FilterFullLibraryByName(NameBox.Text);
-            }
-        }
-
         private void OnNameBoxFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
             SuspendLetterKeys();
         }
 
-        // Left empty, the box closes as focus goes.
+        // Left empty, the box closes as focus goes; not for text entry over the page, which gives focus back to it.
         private void OnNameBoxLeft(object sender, KeyboardFocusChangedEventArgs e)
         {
             ResumeLetterKeys();
-            if (NameBox.Text.Length == 0)
+            if (NameBox.Text.Length == 0 && !typingName)
             {
                 nameBoxOpen = false;
                 ShowNameBox();
@@ -906,13 +904,11 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The D-pad and keys in the name box: up to the tabs, down (or Enter) to the grid, left and right along the row
-        /// once the caret is at the name's end, and Escape clears it.
+        /// The D-pad and keys in the name box: up to the tabs, down to the grid, left and right along the row, Enter
+        /// types the name over the page, and Escape clears it.
         /// </summary>
         private void OnNameBoxPreviewKeyDown(object sender, KeyEventArgs e)
         {
-            var atStart = NameBox.CaretIndex == 0 && NameBox.SelectionLength == 0;
-            var atEnd = NameBox.CaretIndex == NameBox.Text.Length && NameBox.SelectionLength == 0;
             switch (e.Key)
             {
                 case Key.Up:
@@ -920,15 +916,18 @@ namespace XboxSeries.Extension
                     FocusTabs();
                     break;
                 case Key.Down:
-                case Key.Enter:
                     e.Handled = true;
                     FocusGridFromRow();
                     break;
-                case Key.Left when atStart:
+                case Key.Enter:
+                    e.Handled = true;
+                    TypeName();
+                    break;
+                case Key.Left:
                     e.Handled = true;
                     SortButton.Focus();
                     break;
-                case Key.Right when atEnd:
+                case Key.Right:
                     e.Handled = true;
                     FilterButton.Focus();
                     break;
@@ -940,11 +939,17 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The pad in the name box: A (or Y) opens Playnite's on-screen keyboard, which narrows the grid as the user
-        /// types; B clears the name and closes the box, the whole tab showing again. Heard though the box marked it handled.
+        /// The pad in the name box: A (or Y) types the name over the page, the grid narrowing as it is typed; B clears the
+        /// name and closes the box, the whole tab showing again. Heard though the box marked it handled; not while text
+        /// entry is up, whose B cancels it.
         /// </summary>
         private void OnNameBoxKeyDown(object sender, KeyEventArgs e)
         {
+            if (core.TextEntry.IsShown)
+            {
+                return;
+            }
+
             var button = PlayniteInput.PadButtonOf(e);
             if (button == ControllerInput.A || button == ControllerInput.Y)
             {
@@ -958,12 +963,63 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Playnite's on-screen keyboard for the name; then the grid's first game, or the box again with no game to show.</summary>
+        /// <summary>
+        /// A letter typed on a keyboard in the name box, which only shows the name: text entry over the page, the letter
+        /// going in after the name there.
+        /// </summary>
+        private void OnNameBoxTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = true;
+            if (string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0]) || core.TextEntry.IsShown)
+            {
+                return;
+            }
+
+            TypeName();
+            if (core.TextEntry.IsShown)
+            {
+                core.TypeText(e.Text);
+            }
+        }
+
+        // The mouse: the box takes focus and the name is typed over the page, rather than a caret placed in it.
+        private void OnNameBoxMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            NameBox.Focus();
+            TypeName();
+        }
+
+        /// <summary>
+        /// Text entry over the page for the name, the grid narrowing as it is typed; <see cref="OnTextEntryChanged"/>
+        /// moves focus on as it goes.
+        /// </summary>
         private void TypeName()
         {
-            core.TypeFullLibraryName();
+            if (!core.MyGames.ShowsFullLibrary || core.TextEntry.IsShown)
+            {
+                return;
+            }
 
-            // Playnite puts focus back on its list as its keyboard closes: on the narrowed grid's first game.
+            nameBeforeTyping = core.MyGames.NameFilter;
+            typingName = true;
+            core.TypeFullLibraryName();
+            typingName = core.TextEntry.IsShown;
+        }
+
+        /// <summary>
+        /// Text entry for the name gone, the overlay giving focus back to the name box: a new name kept goes on to the
+        /// narrowed grid's first game; cancelled, the name kept as it was, or nothing found, focus stays on the box, open.
+        /// </summary>
+        private void OnTextEntryChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(TextEntryState.IsShown) || core.TextEntry.IsShown || !typingName)
+            {
+                return;
+            }
+
+            typingName = false;
+            var before = nameBeforeTyping;
             Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
             {
                 if (!core.MyGames.ShowsFullLibrary || !IsVisible)
@@ -972,7 +1028,8 @@ namespace XboxSeries.Extension
                 }
 
                 lastFocusedGridGame = null;
-                if (core.MyGames.HasNameFilter && mainList != null && mainList.Items.Count > 0)
+                var kept = core.MyGames.HasNameFilter && core.MyGames.NameFilter != before;
+                if (kept && mainList != null && mainList.Items.Count > 0)
                 {
                     FocusGame(0);
                 }
@@ -1065,7 +1122,8 @@ namespace XboxSeries.Extension
         /// <summary>B on the page, from Playnite: back to Home. B on the Game hub or a menu never gets here.</summary>
         private void OnViewHostKeyDown(object sender, KeyEventArgs e)
         {
-            if (core.MyGames.IsShown && PlayniteInput.PadButtonOf(e) == ControllerInput.B)
+            // While text entry is up over the page, its B cancels it, and the page stays as it is.
+            if (core.MyGames.IsShown && !core.TextEntry.IsShown && PlayniteInput.PadButtonOf(e) == ControllerInput.B)
             {
                 // On Manage Queue, B goes back to Manage rather than leaving the page; on Full library narrowed by name,
                 // back to its whole tab.

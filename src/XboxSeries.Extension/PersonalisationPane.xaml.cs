@@ -46,11 +46,17 @@ namespace XboxSeries.Extension
         /// <summary>The profile the Profile and Picture pages are of, by Id: the core replaces a profile it changes.</summary>
         private string profileId;
 
+        /// <summary>
+        /// The profiles there were as Add profile opened text entry, by Id, until it goes: the one not among them is the
+        /// one added. Null with no add pending.
+        /// </summary>
+        private HashSet<string> profilesBeforeAdd;
+
         public PersonalisationPane()
         {
             InitializeComponent();
-            Loaded += (s, e) => { if (core != null) { State.PropertyChanged += OnStateChanged; } };
-            Unloaded += (s, e) => { if (core != null) { State.PropertyChanged -= OnStateChanged; } };
+            Loaded += (s, e) => { if (core != null) { Follow(true); } };
+            Unloaded += (s, e) => { if (core != null) { Follow(false); } };
         }
 
         /// <summary>B, or Left from the first column, on Personalisation's boxes: back to the rail's Personalisation.</summary>
@@ -98,7 +104,39 @@ namespace XboxSeries.Extension
             DataContext = State;
             if (IsLoaded)
             {
+                Follow(true);
+            }
+        }
+
+        private void Follow(bool on)
+        {
+            State.PropertyChanged -= OnStateChanged;
+            core.TextEntry.PropertyChanged -= OnTextEntryChanged;
+            if (on)
+            {
                 State.PropertyChanged += OnStateChanged;
+                core.TextEntry.PropertyChanged += OnTextEntryChanged;
+            }
+        }
+
+        /// <summary>
+        /// Text entry gone: the overlay gives focus back to the box that opened it. From Add profile, a profile kept is
+        /// added, and focus goes on to its box, as Add profile's own box, made again with the page, is no longer the one
+        /// the overlay remembers; cancelled, it stays on Add profile.
+        /// </summary>
+        private void OnTextEntryChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(TextEntryState.IsShown) || core.TextEntry.IsShown || profilesBeforeAdd == null)
+            {
+                return;
+            }
+
+            var before = profilesBeforeAdd;
+            profilesBeforeAdd = null;
+            if (page == Page.Profiles)
+            {
+                FocusSoon(() => ProfileButton(State.Profiles.FirstOrDefault(p => !before.Contains(p.Id))?.Id)
+                    ?? Buttons().LastOrDefault(button => button.DataContext is AddProfileItem));
             }
         }
 
@@ -213,6 +251,12 @@ namespace XboxSeries.Extension
         /// </summary>
         private void OnPaneKeyDown(object sender, KeyEventArgs e)
         {
+            // Text entry over the page has the pad: B there cancels it, never steps the pane back a page.
+            if (core.TextEntry.IsShown)
+            {
+                return;
+            }
+
             var buttons = Buttons().ToList();
             var here = buttons.IndexOf(e.OriginalSource as Button);
             if (here < 0)
@@ -287,29 +331,21 @@ namespace XboxSeries.Extension
             }
             else if (button.DataContext is AddProfileItem)
             {
-                var gamertag = Type("Gamertag of the new profile", "Add profile", "");
-                var added = gamertag == null ? null : core.AddProfile(gamertag);
-                FocusSoon(() => ProfileButton(added?.Id) ?? button);
+                // Text entry over the page; the profile is added once its gamertag is kept (OnTextEntryChanged).
+                profilesBeforeAdd = new HashSet<string>(State.Profiles.Select(p => p.Id));
+                core.TypeNewProfile();
+                if (!core.TextEntry.IsShown)
+                {
+                    profilesBeforeAdd = null;
+                }
             }
             else if (button == GamertagBox && Profile is Profile gamertagOf)
             {
-                var gamertag = Type("Gamertag", "Gamertag", gamertagOf.Gamertag);
-                if (gamertag != null)
-                {
-                    core.SetProfileGamertag(gamertagOf.Id, gamertag);
-                }
-
-                FocusSoon(() => GamertagBox);
+                core.TypeProfileGamertag(gamertagOf.Id);
             }
             else if (button == RealNameBox && Profile is Profile realNameOf)
             {
-                var realName = Type("Real name", "Real name", realNameOf.RealName);
-                if (realName != null)
-                {
-                    core.SetProfileRealName(realNameOf.Id, realName);
-                }
-
-                FocusSoon(() => RealNameBox);
+                core.TypeProfileRealName(realNameOf.Id);
             }
             else if (button == PictureBox && Profile is Profile pictureOf)
             {
@@ -376,16 +412,6 @@ namespace XboxSeries.Extension
             var back = opened.Pop();
             Show(back.Page);
             FocusSoon(() => back.Opener as Button ?? ProfileButton(back.Opener as string) ?? AtIndex(0));
-        }
-
-        /// <summary>
-        /// Playnite's own text entry, with its on-screen keyboard in Fullscreen, prefilled; null when cancelled. The
-        /// extension's console keyboard (#39) takes its place once Search has it.
-        /// </summary>
-        private static string Type(string message, string caption, string text)
-        {
-            var typed = API.Instance.Dialogs.SelectString(message, caption, text);
-            return typed.Result ? typed.SelectedString : null;
         }
 
         /// <summary>

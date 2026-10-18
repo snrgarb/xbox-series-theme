@@ -209,9 +209,9 @@
 
             <!--
                 Discord: the checklist for making the user's own Discord application, beside the QR code of the developer
-                portal it's made at; its Client ID and Secret, each filled by Paste from the Windows clipboard; Connect and
-                Disconnect; and the status line. Right or A on the rail's Discord comes in; Left from the first column or
-                B goes back to it.
+                portal it's made at; its Client ID and Secret, each typed over the page with Type or filled by Paste from the
+                Windows clipboard; Connect and Disconnect; and the status line. Right or A on the rail's Discord comes in;
+                Left from the first column or B goes back to it.
             -->
             <StackPanel x:Name="DiscordPane" Grid.Row="1" DataContext="{Binding Discord}" Visibility="Collapsed"
                         KeyDown="OnDiscordPaneKeyDown">
@@ -246,7 +246,7 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- The application's Client ID, shown, and its Secret, only whether one is saved. -->
+                <!-- The application's Client ID, shown, and its Secret, only whether one is saved; each with Type, then Paste. -->
                 <Grid Margin="0,0,0,20" Style="{StaticResource RaisedWhenFocused}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="420" />
@@ -256,9 +256,14 @@
                         <TextBlock Text="Client ID" Style="{StaticResource Text}" />
                         <TextBlock Text="{Binding ClientId, TargetNullValue='Not set'}" Style="{StaticResource MutedText}" />
                     </StackPanel>
-                    <Button x:Name="PasteClientIdButton" Grid.Column="1" Style="{StaticResource PaneButton}" Click="OnDiscordButtonClick">
-                        <TextBlock Text="Paste" Style="{StaticResource Text}" />
-                    </Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="TypeClientIdButton" Style="{StaticResource PaneButton}" Margin="0,0,20,0" Click="OnDiscordButtonClick">
+                            <TextBlock Text="Type" Style="{StaticResource Text}" />
+                        </Button>
+                        <Button x:Name="PasteClientIdButton" Style="{StaticResource PaneButton}" Click="OnDiscordButtonClick">
+                            <TextBlock Text="Paste" Style="{StaticResource Text}" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
                 <Grid Margin="0,0,0,36" Style="{StaticResource RaisedWhenFocused}">
                     <Grid.ColumnDefinitions>
@@ -280,9 +285,14 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </StackPanel>
-                    <Button x:Name="PasteClientSecretButton" Grid.Column="1" Style="{StaticResource PaneButton}" Click="OnDiscordButtonClick">
-                        <TextBlock Text="Paste" Style="{StaticResource Text}" />
-                    </Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="TypeClientSecretButton" Style="{StaticResource PaneButton}" Margin="0,0,20,0" Click="OnDiscordButtonClick">
+                            <TextBlock Text="Type" Style="{StaticResource Text}" />
+                        </Button>
+                        <Button x:Name="PasteClientSecretButton" Style="{StaticResource PaneButton}" Click="OnDiscordButtonClick">
+                            <TextBlock Text="Paste" Style="{StaticResource Text}" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
