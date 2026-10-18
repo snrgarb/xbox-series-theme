@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Playnite.SDK.Controls;
+using Playnite.SDK.Events;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -29,9 +30,11 @@ namespace XboxSeries.Extension
         /// <summary>Whether focus is in the Groups. Kept by hand: a rebuild removes the focused tile before this hears of it.</summary>
         private bool hasFocus;
 
-        // Where focus last was, to put it back after a rebuild or a Game hub: the Group's place, and the game (null for See all).
+        // Where focus last was, to put it back after a rebuild, a Game hub or My games & apps: the Group's place, and the
+        // game, or its See all tile.
         private int lastGroup;
         private Guid? lastGame;
+        private bool lastSeeAll;
 
         internal GroupsControl(ExtensionCore core, HomeScreen homeScreen)
         {
@@ -89,6 +92,7 @@ namespace XboxSeries.Extension
             {
                 lastGroup = 0;
                 lastGame = null;
+                lastSeeAll = false;
                 FocusTileSoon();
             }
         }
@@ -120,6 +124,7 @@ namespace XboxSeries.Extension
             {
                 lastGroup = Rows.ItemContainerGenerator.IndexFromContainer(row);
                 lastGame = (tile.DataContext as HomeTile)?.GameId;
+                lastSeeAll = tile.DataContext is HomeGroup;
                 ScrollTo(row);
             }
         }
@@ -231,7 +236,25 @@ namespace XboxSeries.Extension
             core.ChooseHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
         }
 
-        /// <summary>Focuses the last focused game's tile, or failing that its Group's first tile, once the tiles are laid out.</summary>
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnSeeAllKeyDown. The tile's DataContext is its Group.
+        private void OnSeeAllClick(object sender, RoutedEventArgs e)
+        {
+            core.ChooseSeeAll((HomeGroup)((FrameworkElement)sender).DataContext);
+        }
+
+        private void OnSeeAllKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            {
+                e.Handled = true;
+                core.ChooseSeeAll((HomeGroup)((FrameworkElement)sender).DataContext);
+            }
+        }
+
+        /// <summary>
+        /// Focuses the last focused game's tile, or its Group's See all tile if that was last focused, or failing either
+        /// its Group's first tile, once the tiles are laid out.
+        /// </summary>
         private void FocusTileSoon()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
@@ -244,7 +267,8 @@ namespace XboxSeries.Extension
 
                 var row = Rows.ItemContainerGenerator.ContainerFromIndex(Math.Min(lastGroup, Rows.Items.Count - 1));
                 var tiles = row == null ? new List<Button>() : Tiles(row);
-                var tile = tiles.FirstOrDefault(b => (b.DataContext as HomeTile)?.GameId == lastGame) ?? tiles.FirstOrDefault();
+                var tile = (lastSeeAll ? tiles.LastOrDefault() : tiles.FirstOrDefault(b => b.DataContext is HomeTile t && t.GameId == lastGame))
+                    ?? tiles.FirstOrDefault();
                 tile?.Focus();
             }));
         }

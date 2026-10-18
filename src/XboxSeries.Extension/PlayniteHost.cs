@@ -417,6 +417,12 @@ namespace XboxSeries.Extension
             });
         }
 
+        public void SelectFilterPreset(Guid presetId)
+        {
+            // The saved preset itself, as its tab applies it, so Playnite keeps it selected and lit.
+            api.MainView.ApplyFilterPreset(presetId);
+        }
+
         public GameSort? MainListSort => PlayniteLibrary.ToGameSort(api.MainView.SortOrder);
 
         public SortDirection MainListSortDirection =>
