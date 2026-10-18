@@ -50,6 +50,12 @@ namespace XboxSeries.Core
         /// <summary>Shows <paramref name="filter"/>'s games in the main list, in its order, as a filter preset the extension builds.</summary>
         void ShowInMainList(GameListFilter filter);
 
+        /// <summary>
+        /// Selects the saved filter preset <paramref name="presetId"/> on the main list, as its tab on Full library does:
+        /// its filter and, if it has one, its sort. Only while it shows the user's own filter, as Full library.
+        /// </summary>
+        void SelectFilterPreset(Guid presetId);
+
         /// <summary>Playnite's own sort of the main list; null for one the core doesn't know, as by platform.</summary>
         GameSort? MainListSort { get; }
 
