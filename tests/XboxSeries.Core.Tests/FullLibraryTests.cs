@@ -344,6 +344,55 @@ namespace XboxSeries.Core.Tests
             Assert.True(listTop > rowBottom, $"the grid ({listTop}) starts under the row ({rowBottom})");
         }
 
+        [Fact]
+        public void The_name_box_reads_from_its_left_with_the_search_glyph_in_a_column_of_its_own_at_its_right()
+        {
+            var style = MyGames().Descendants().Single(e => (string)e.Attribute(X + "Key") == "NameBox");
+            var template = style.Descendants().Single(e => e.Name.LocalName == "ControlTemplate");
+            var root = template.Elements().First(e => !e.Name.LocalName.Contains("."));
+            XElement Part(string name) => template.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
+            string Column(XElement e) => (string)e.Attribute(XName.Get("Grid.Column")) ?? "0";
+            string Setter(string property) => (string)style.Elements().SingleOrDefault(s => (string)s.Attribute("Property") == property)?.Attribute("Value");
+
+            // Left aligned whatever the page round it inherits, as the Sort dropdown's "Sorted by A–Z" reads.
+            Assert.Equal("Left", Setter("TextAlignment"));
+            Assert.Equal("Left", (string)Part("Placeholder").Attribute("TextAlignment"));
+
+            // The glyph in its own sized column at the right, as the Sort dropdown's chevron, so the name never runs under
+            // it: a Width on an otherwise stretched element centres it over the text.
+            Assert.Equal("Grid", root.Name.LocalName);
+            var columns = root.Descendants().Where(e => e.Name.LocalName == "ColumnDefinition").ToList();
+            Assert.Equal(2, columns.Count);
+            Assert.Equal("Auto", (string)columns[1].Attribute("Width"));
+            Assert.Equal("0", Column(Part("PART_ContentHost")));
+            Assert.Equal("0", Column(Part("Placeholder")));
+            Assert.Equal("1", Column(Part("Icon")));
+        }
+
+        [Fact]
+        public void The_name_box_focus_ring_stays_clear_of_the_grid_drawn_over_the_row_below_it()
+        {
+            var myGames = MyGames();
+            var main = XDocument.Load(Path.Combine(RepoRoot(), "src", "XboxSeries.Dashboard", "Views", "Main.xaml"));
+
+            // Full library's list, and its fade painted solid in the page's colour, start this far under the row and draw
+            // over My games & apps; a ring standing further out of the box than that has its bottom edge painted over.
+            var itemHost = Named(myGames, "ItemHost");
+            var contentTop = Margin(itemHost)[1] + double.Parse((string)itemHost.Descendants().First(e => e.Name.LocalName == "RowDefinition").Attribute("Height"));
+            var rowBottom = contentTop + Margin(Named(myGames, "LibraryBar"))[1] + double.Parse((string)Named(myGames, "LibraryBar").Attribute("Height"));
+            var library = main.Descendants().Single(e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == "{Binding Content.State.ShowsFullLibrary, ElementName=XboxSeries_MyGames}"
+                && e.Parent.Parent.Attribute(X + "Key")?.Value == "XboxMainList");
+            var gap = 200 + Margin(library.Elements().Single(e => (string)e.Attribute("Property") == "Margin"), "Value")[1] - rowBottom;
+
+            var style = myGames.Descendants().Single(e => (string)e.Attribute(X + "Key") == "NameBox");
+            var ring = style.Descendants().Single(e => (string)e.Attribute(X + "Name") == "FocusRing");
+            var margin = Margin(ring);
+            var outBelow = -(margin.Length == 4 ? margin[3] : margin.Length == 2 ? margin[1] : margin[0]);
+            Assert.True(outBelow <= gap, $"the ring stands {outBelow} below the box, the grid {gap} under it");
+            Assert.Equal("Hidden", (string)ring.Attribute("Visibility"));
+        }
+
         private static XDocument MyGames() =>
             XDocument.Load(Path.Combine(RepoRoot(), "src", "XboxSeries.Extension", "MyGamesControl.xaml"));
 
