@@ -1,0 +1,49 @@
+<controls:PluginUserControl x:Class="XboxSeries.Extension.HintBarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+             Focusable="False" IsHitTestVisible="False">
+    <!--
+        The hint bar, placed by the Dashboard over the whole page, the Game hub included: a dark rounded pill in the
+        bottom-right corner, as the console's, holding the core's hints left to right (HomeState.Hints), each a pad
+        button's glyph and what it does: More options, Menu's three lines in a white ring, while what has focus has a
+        menu. Anchored to the corner rather than placed, as the page is 1080 tall but only as wide as the screen's aspect
+        makes it. No effect on it, and cached, so nothing is drawn again as it fades; it keeps its last hints while
+        hidden, so showing again lays nothing out.
+    -->
+    <Border x:Name="Bar" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,64,40"
+            Height="48" Padding="12,0,22,0" CornerRadius="24"
+            Background="{DynamicResource XboxChipBrush}" Opacity="0" Visibility="Hidden">
+        <!--
+            Drawn once into a picture, at twice the 1080p size so it stays sharp on the 4K TV, which the fade then only
+            makes fainter or stronger, as the focus glow's cache does.
+        -->
+        <Border.CacheMode>
+            <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
+        </Border.CacheMode>
+        <!-- Each hint stands 28 from the one before it; the first's gap is taken back. -->
+        <ItemsControl x:Name="Hints" Focusable="False" VerticalAlignment="Center" Margin="-28,0,0,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Margin="28,0,0,0">
+                        <!-- Menu, the only button with a hint so far: three lines in a white ring, as beside the Guide. -->
+                        <Grid x:Name="MenuGlyph" Width="27" Height="27" VerticalAlignment="Center">
+                            <Ellipse Stroke="{DynamicResource XboxTextBrush}" StrokeThickness="2" />
+                            <TextBlock Text="&#xE700;" FontFamily="{DynamicResource XboxIconFont}" FontSize="12"
+                                       Foreground="{DynamicResource XboxTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="22"
+                                   Foreground="{DynamicResource XboxTextBrush}" VerticalAlignment="Center"
+                                   Margin="12,0,0,2" />
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+</controls:PluginUserControl>

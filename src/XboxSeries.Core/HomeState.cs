@@ -12,6 +12,7 @@ namespace XboxSeries.Core
         private IReadOnlyList<HomeGroup> groups = new HomeGroup[0];
         private HeroArt hero;
         private Dialog menu;
+        private IReadOnlyList<GuideHint> hints = new GuideHint[0];
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -59,6 +60,17 @@ namespace XboxSeries.Core
         {
             get => menu;
             internal set => Set(ref menu, value, nameof(TileMenu));
+        }
+
+        /// <summary>
+        /// The hint bar at the Dashboard's bottom right, left to right: More options while what has focus has a menu, a
+        /// Group's tile on Home, a game on My games &amp; apps or the Game hub; empty, and the bar hidden, otherwise, as
+        /// while a Tile menu, the Guide or a prompt is up. The same list stands while the hints don't change.
+        /// </summary>
+        public IReadOnlyList<GuideHint> Hints
+        {
+            get => hints;
+            internal set => Set(ref hints, value, nameof(Hints));
         }
 
         internal void ReturnFromGame(Guid gameId) => ReturnedFromGame?.Invoke(gameId);
