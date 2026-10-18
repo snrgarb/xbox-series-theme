@@ -28,7 +28,7 @@
             <Setter Property="BorderThickness" Value="4" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
-            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="Visibility" Value="Hidden" />
         </Style>
     </UserControl.Resources>
 
@@ -58,7 +58,9 @@
                                            FontFamily="{DynamicResource XboxFont}" FontSize="25" Foreground="White" />
                             </StackPanel>
                             <Border x:Name="FocusRing" Style="{StaticResource Ring}">
-                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                                <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                </Border>
                             </Border>
                         </Grid>
                         <DataTemplate.Triggers>
@@ -110,7 +112,9 @@
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
-                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                    </Border>
                 </Border>
             </Grid>
         </StackPanel>

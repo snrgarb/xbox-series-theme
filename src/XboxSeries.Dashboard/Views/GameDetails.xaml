@@ -67,7 +67,7 @@
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="Margin" Value="-8" />
         <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
-        <Setter Property="Visibility" Value="Collapsed" />
+        <Setter Property="Visibility" Value="Hidden" />
         <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
 
@@ -78,7 +78,9 @@
             <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="False"
                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
             <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}">
-                <Border Style="{DynamicResource XboxFocusGlow}" />
+                <Border Style="{DynamicResource XboxFocusGlowCache}">
+                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                </Border>
             </Border>
             <!-- What an icon-only action does, shown above it while it has focus. -->
             <Border x:Name="Label" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="-150,-48,-150,0"
@@ -179,7 +181,9 @@
             <Border Background="{TemplateBinding Background}" CornerRadius="4" />
             <ContentPresenter Margin="{TemplateBinding Padding}" />
             <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}">
-                <Border Style="{DynamicResource XboxFocusGlow}" />
+                <Border Style="{DynamicResource XboxFocusGlowCache}">
+                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                </Border>
             </Border>
         </Grid>
         <ControlTemplate.Triggers>

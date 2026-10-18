@@ -48,8 +48,10 @@
                         <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
                         <!-- 4 of gap and 4 of ring out from the box, as Home's tiles. -->
                         <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="8"
-                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Collapsed">
-                            <Border Style="{DynamicResource XboxFocusGlow}" />
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                            <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                            </Border>
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>

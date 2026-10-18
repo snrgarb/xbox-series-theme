@@ -9,8 +9,8 @@
     <SolidColorBrush x:Key="GlyphBrush" Color="#FF107C10" />
     <SolidColorBrush x:Key="GlyphLightBrush" Color="#FF2CA243" />
     <!--
-        The faint green glow the console gives whatever has focus: a blurred band, the child of the Border that draws the
-        focus shape (a ring, slab or bar), so it shows and hides with it. From a 4 px ring's inside, -7.5 centres its 11 on
+        The faint green glow the console gives whatever has focus: a blurred band, inside the Border that draws the
+        focus shape (a ring, slab or bar), under an XboxFocusGlowCache, so it shows and hides with it. From a 4 px ring's inside, -7.5 centres its 11 on
         the ring. A ring's own drop shadow is too thin to show; this is matched to the console's recording, drawn 30%
         tighter. A round ring sets CornerRadius 999 on its band, as on itself.
     -->
@@ -24,6 +24,24 @@
         <Setter Property="Effect">
             <Setter.Value>
                 <BlurEffect Radius="17" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!--
+        The band's parent, which blurs it once into a picture, at the 4K screen's 2 pixels to a 1080p one, that is then
+        only laid on the screen: WPF caches an element's content and children under its own effect and opacity, so a
+        cache on the band itself kept the band unblurred and blurred it again every frame anything round it moved, as a
+        tile grows on focus, at the 4K screen's size. Whatever shows and hides the glow (the ring, or this parent where
+        there's no ring) does it with Hidden, never Collapsed: Hidden only draws it at opacity 0, which the screen skips
+        without throwing the picture away, where Collapsed takes it out of layout and draws it again as it comes back.
+        Hidden keeps its place in layout, which is nothing here, as the band and its ring stand out of their element
+        by negative margins; Opacity 0 would draw the same but leave it to be pointed at and fight the band's own 0.5.
+    -->
+    <Style x:Key="XboxFocusGlowCache" TargetType="Border">
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="CacheMode">
+            <Setter.Value>
+                <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
             </Setter.Value>
         </Setter>
     </Style>
