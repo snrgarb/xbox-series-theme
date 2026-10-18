@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
@@ -9,7 +9,7 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// The hint bar, injected over the Dashboard as a custom element. It shows the core's <see cref="HomeState.Hints"/>
-    /// and decides nothing itself: it fades in while there are any and out once there are none.
+    /// and decides nothing itself: it shows while there are any and hides once there are none.
     /// It also tells the core when focus is on Playnite's own parts with a menu, which no control of the extension's is
     /// on to report: a game in My games &amp; apps' grid (Playnite's main list) and the Game hub. Each loses focus as
     /// Playnite leaves the foreground, as when Manage game or a dialog opens in its own window.
@@ -17,8 +17,6 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class HintBarControl : PluginUserControl
     {
-        private static readonly Duration FadeDuration = TimeSpan.FromMilliseconds(120);
-
         private readonly ExtensionCore core;
         private FrameworkElement mainList;
         private FrameworkElement gameHub;
@@ -100,44 +98,35 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// With hints, the bar shows them and fades in; with none, it fades out still showing the last, and is then
-        /// hidden rather than collapsed, so it keeps its place and size and coming back lays nothing out.
+        /// With hints, the bar shows them once the page has settled; with none, it is hidden at once, rather than
+        /// collapsed, so it keeps its place and size and coming back lays nothing out. No fade: focus moving onto My games
+        /// &amp; apps' grid as its tiles are built and its pane slides in is when the bar comes up, and a fade there kept
+        /// the whole 4K page redrawing on the frames that are already the heaviest, which lagged on the TV.
         /// </summary>
         private void Follow()
         {
-            var hints = core.Home.Hints;
-            if (hints.Count > 0)
+            if (core.Home.Hints.Count == 0)
             {
+                Bar.Visibility = Visibility.Hidden;
+                return;
+            }
+
+            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+            {
+                // Gone again before the page settled, as by focus passing over the grid: nothing shows.
+                var hints = core.Home.Hints;
+                if (hints.Count == 0)
+                {
+                    return;
+                }
+
                 if (Hints.ItemsSource != hints)
                 {
                     Hints.ItemsSource = hints;
                 }
 
                 Bar.Visibility = Visibility.Visible;
-                Fade(1, completed: null);
-            }
-            else if (Bar.Visibility == Visibility.Visible)
-            {
-                Fade(0, completed: () =>
-                {
-                    // Shown again while fading out: the fade in has taken over.
-                    if (core.Home.Hints.Count == 0)
-                    {
-                        Bar.Visibility = Visibility.Hidden;
-                    }
-                });
-            }
-        }
-
-        private void Fade(double to, Action completed)
-        {
-            var fade = new DoubleAnimation(to, FadeDuration);
-            if (completed != null)
-            {
-                fade.Completed += (_, __) => completed();
-            }
-
-            Bar.BeginAnimation(OpacityProperty, fade);
+            }));
         }
     }
 }
