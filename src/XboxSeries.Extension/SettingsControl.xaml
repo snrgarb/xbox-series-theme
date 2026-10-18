@@ -33,6 +33,7 @@
             <!-- The rail's names, Settings' nav, headers as My games & apps' nav labels are (#77). -->
             <Style x:Key="RailText" TargetType="TextBlock" BasedOn="{StaticResource HeaderText}">
                 <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontWeight" Value="350" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
