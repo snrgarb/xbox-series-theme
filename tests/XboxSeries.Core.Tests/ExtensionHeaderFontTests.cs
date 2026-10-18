@@ -1,9 +1,8 @@
-using System;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Xunit;
+using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
@@ -13,8 +12,7 @@ namespace XboxSeries.Core.Tests
     // its name, or the text its own style gives it) and its font followed through its style and BasedOn chain.
     public class ExtensionHeaderFontTests
     {
-        private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
-        private static readonly string ExtensionDir = Path.Combine(FindRepoRoot(), "src", "XboxSeries.Extension");
+        private static readonly string ExtensionDir = Path.Combine(RepoRoot, "src", "XboxSeries.Extension");
 
         [Theory]
         // My games & apps: the page's heading, Manage Queue's and its sections, Play history's day headings, the nav labels.
@@ -107,6 +105,8 @@ namespace XboxSeries.Core.Tests
             return styleKey == null ? null : FontOfStyle(doc, StyleByKey(doc, styleKey));
         }
 
+        // The one TextBlock matching every "|"-separated condition: "Name=N" its x:Name, "Sets=T" a Text setter in its
+        // style, any other "Attr=V" an attribute of its own.
         private static XElement Select(XDocument doc, string selector)
         {
             var conditions = selector.Split('|').Select(c => c.Split(new[] { '=' }, 2)).ToList();
@@ -118,38 +118,6 @@ namespace XboxSeries.Core.Tests
 
             Assert.True(matches.Count == 1, $"{selector} matches {matches.Count} TextBlocks");
             return matches[0];
-        }
-
-        private static string FontOfStyle(XDocument doc, XElement style)
-        {
-            var setter = style.Elements().FirstOrDefault(e => e.Name.LocalName == "Setter" && (string)e.Attribute("Property") == "FontFamily");
-            if (setter != null)
-            {
-                return ResourceKey((string)setter.Attribute("Value"));
-            }
-
-            var basedOn = ResourceKey((string)style.Attribute("BasedOn"));
-            return basedOn == null ? null : FontOfStyle(doc, StyleByKey(doc, basedOn));
-        }
-
-        private static XElement StyleByKey(XDocument doc, string key) =>
-            doc.Descendants().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute(X + "Key") == key);
-
-        private static string ResourceKey(string markup)
-        {
-            var match = markup == null ? null : Regex.Match(markup, @"^\{(?:Dynamic|Static)Resource\s+(\w+)\}$");
-            return match != null && match.Success ? match.Groups[1].Value : null;
-        }
-
-        private static string FindRepoRoot()
-        {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null && !File.Exists(Path.Combine(dir.FullName, "XboxSeries.slnx")))
-            {
-                dir = dir.Parent;
-            }
-
-            return dir?.FullName ?? throw new InvalidOperationException("Repo root not found");
         }
     }
 }
