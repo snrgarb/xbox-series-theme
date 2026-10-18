@@ -358,12 +358,16 @@ namespace XboxSeries.Core
             Status.Battery = controller.Battery;
         }
 
-        /// <summary>Playnite's main list changed its games. On Full library, that's the user switching tabs, so its count follows.</summary>
+        /// <summary>
+        /// Playnite's main list changed its games. On Full library, that's the user switching tabs, so its count follows,
+        /// and the sort chosen on its dropdown is put back over any the tab's preset brought.
+        /// </summary>
         public void OnMainListChanged()
         {
             if (MyGames.ShowsFullLibrary)
             {
                 RefreshFullLibraryCount();
+                FollowLibrarySort();
             }
         }
 
@@ -1305,6 +1309,13 @@ namespace XboxSeries.Core
         private void OpenMyGames(MyGamesItem item, Guid? returnsToGame)
         {
             CancelNavSettle();
+
+            // Full library's name filter is its own: it goes before Games keeps the user's filter, or anything else shows.
+            if (item != MyGamesItem.FullLibrary)
+            {
+                ForgetLibraryName();
+            }
+
             if (item == MyGamesItem.Apps)
             {
                 if (!MyGames.HasApps)
@@ -1339,6 +1350,7 @@ namespace XboxSeries.Core
 
             MyGames.Item = item;
             MyGames.IsShown = true;
+            FollowLibrarySort();
         }
 
         /// <summary>
@@ -1438,8 +1450,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it. Playnite's own B reaches the
-        /// page before the pad's reaches the core, so a menu or prompt still showing answers the B instead.
+        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it, or on Full library narrowed by
+        /// name, back to its whole tab. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
+        /// prompt still showing answers the B instead.
         /// </summary>
         public void LeaveMyGames()
         {
@@ -1448,6 +1461,11 @@ namespace XboxSeries.Core
                 if (MyGames.Item == MyGamesItem.ManageQueue)
                 {
                     MyGames.Item = MyGamesItem.Manage;
+                }
+                else if (MyGames.ShowsFullLibrary && MyGames.HasNameFilter)
+                {
+                    // Narrowed by name, Full library shows its whole tab again first.
+                    ClearFullLibraryName();
                 }
                 else
                 {
@@ -1545,6 +1563,7 @@ namespace XboxSeries.Core
         public void OnApplicationStopped()
         {
             ThawGame();
+            ForgetLibraryName();
             GiveBackMainList();
             playnite.ReleaseUserFilter();
         }
@@ -1552,6 +1571,8 @@ namespace XboxSeries.Core
         private void CloseMyGames()
         {
             CancelNavSettle();
+            ForgetLibraryName();
+            chosenLibrarySort = null;
             MyGames.IsShown = false;
             GiveBackMainList();
             playnite.ReleaseUserFilter();

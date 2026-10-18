@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using XboxSeries.Core;
 
 namespace XboxSeries.Core.Tests.Fakes
@@ -61,6 +62,9 @@ namespace XboxSeries.Core.Tests.Fakes
 
         private GameListFilter savedFilter;
 
+        /// <summary>The sort and name filter <see cref="SaveUserFilter"/> kept with the user's filter.</summary>
+        private (GameSort? Sort, SortDirection Direction, string Name) savedView;
+
         /// <summary>The filter and sort the core last put on the main list; null while it shows the user's own.</summary>
         public GameListFilter MainListFilter { get; private set; }
 
@@ -69,11 +73,16 @@ namespace XboxSeries.Core.Tests.Fakes
         /// <summary>How many times the user's own filter and sort were put back.</summary>
         public int UserFilterRestores { get; private set; }
 
-        public void SaveUserFilter() => savedFilter = MainListFilter;
+        public void SaveUserFilter()
+        {
+            savedFilter = MainListFilter;
+            savedView = (MainListSort, MainListSortDirection, MainListName);
+        }
 
         public void RestoreUserFilter()
         {
             MainListFilter = savedFilter;
+            (MainListSort, MainListSortDirection, MainListName) = savedView;
             UserFilterRestores++;
         }
 
@@ -82,8 +91,110 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void ShowInMainList(GameListFilter filter)
         {
+            // Its own preset, with its own sort and no name.
             MainListFilter = filter;
+            MainListSort = filter.Sort;
+            MainListSortDirection = filter.Direction;
+            MainListName = string.Empty;
             MainListShows++;
+        }
+
+        /// <summary>Playnite's own sort of the main list, A–Z until something changes it.</summary>
+        public GameSort? MainListSort { get; private set; } = GameSort.Name;
+
+        public SortDirection MainListSortDirection { get; private set; } = SortDirection.Ascending;
+
+        /// <summary>The main list's name filter; empty for none.</summary>
+        public string MainListName { get; private set; } = string.Empty;
+
+        /// <summary>How many times the core sorted the main list.</summary>
+        public int MainListSorts { get; private set; }
+
+        public void SortMainList(GameSort sort, SortDirection direction)
+        {
+            RequireUsersOwnFilter();
+            MainListSort = sort;
+            MainListSortDirection = direction;
+            MainListSorts++;
+        }
+
+        public void FilterMainListByName(string name)
+        {
+            RequireUsersOwnFilter();
+            MainListName = name ?? string.Empty;
+        }
+
+        /// <summary>What the user types on Playnite's on-screen keyboard, the next time it opens; null to cancel it.</summary>
+        public string NameToType { get; set; }
+
+        public string TypeMainListName()
+        {
+            RequireUsersOwnFilter();
+            if (NameToType != null)
+            {
+                MainListName = NameToType;
+            }
+
+            return MainListName;
+        }
+
+        /// <summary>
+        /// The user switching Full library's tab to a preset with a sort of its own, as Playnite applies it; null for a
+        /// preset without one. Playnite's name filter is the main list's, so it stays.
+        /// </summary>
+        public void SwitchPreset(GameSort? sort, SortDirection direction = SortDirection.Ascending)
+        {
+            if (sort != null)
+            {
+                MainListSort = sort;
+                MainListSortDirection = direction;
+            }
+        }
+
+        /// <summary>The library the main list is over, for <see cref="MainList"/> and the count of the user's filter.</summary>
+        public LibrarySnapshot Library { get; set; }
+
+        /// <summary>
+        /// The names of the games Playnite's main list shows, in its order: the core's own filter while it shows one;
+        /// otherwise the user's, here every game not hidden, narrowed by name and in Playnite's sort.
+        /// </summary>
+        public string[] MainList() =>
+            (MainListFilter != null
+                ? MainListFilter.Apply(Library.Games)
+                : Sorted(UsersGames(MainListName), MainListSort, MainListSortDirection))
+            .Select(g => g.Name)
+            .ToArray();
+
+        private IEnumerable<LibraryGame> UsersGames(string name) =>
+            Library.Games.Where(g => !g.Hidden && g.Name.IndexOf(name, StringComparison.CurrentCultureIgnoreCase) >= 0);
+
+        /// <summary>As Playnite sorts: games without the field last, ties by name.</summary>
+        private static IEnumerable<LibraryGame> Sorted(IEnumerable<LibraryGame> games, GameSort? sort, SortDirection direction)
+        {
+            Func<LibraryGame, IComparable> key;
+            switch (sort)
+            {
+                case GameSort.LastActivity: key = g => g.LastActivity; break;
+                case GameSort.Added: key = g => g.Added; break;
+                case GameSort.Modified: key = g => g.Modified; break;
+                case GameSort.ReleaseDate: key = g => g.ReleaseDate; break;
+                case GameSort.Playtime: key = g => g.Playtime; break;
+                case GameSort.PlayCount: key = g => g.PlayCount; break;
+                default: key = g => g.SortingName; break;
+            }
+
+            var byName = StringComparer.CurrentCultureIgnoreCase;
+            var withField = games.OrderBy(g => key(g) == null);
+            var ordered = direction == SortDirection.Descending ? withField.ThenByDescending(key) : withField.ThenBy(key);
+            return ordered.ThenBy(g => g.SortingName, byName);
+        }
+
+        private void RequireUsersOwnFilter()
+        {
+            if (!ShowsUsersOwnFilter)
+            {
+                throw new InvalidOperationException("Only the user's own filter, as Full library shows it, is sorted or filtered by name");
+            }
         }
 
         /// <summary>How many times the user's own filter was let go of, into Playnite's saved settings.</summary>
@@ -101,7 +212,9 @@ namespace XboxSeries.Core.Tests.Fakes
         /// <summary>How many games the user's own filter shows; null when Playnite can't say.</summary>
         public int? UserFilterGameCount { get; set; }
 
-        public int? CountUserFilterGames() => UserFilterGameCount;
+        public int? CountUserFilterGames() =>
+            UserFilterGameCount
+            ?? (Library == null ? (int?)null : UsersGames(ShowsUsersOwnFilter ? MainListName : savedView.Name ?? string.Empty).Count());
 
         /// <summary>How many times Playnite was asked to open its Fullscreen settings.</summary>
         public int PlayniteSettingsOpened { get; private set; }
