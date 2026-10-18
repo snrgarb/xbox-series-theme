@@ -36,16 +36,20 @@
                         <!--
                             As Home's: its shadow drawn once into a picture, at the 4K screen's 2 pixels to a 1080p one, which
                             the list then moves as it scrolls, rather than the shadow being drawn again for every tile every frame.
+                            The picture is the badge's, the icon's parent: WPF caches an element under its own effect, so a cache
+                            on the icon itself would hold it unshadowed. Shown, hidden and faded by the badge, above the picture.
                         -->
-                        <Path x:Name="SourceIcon" Width="20" Height="20" Margin="10" Stretch="Uniform"
-                              HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">
-                            <Path.CacheMode>
+                        <Border x:Name="SourceBadge" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                IsHitTestVisible="False" Visibility="Collapsed">
+                            <Border.CacheMode>
                                 <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
-                            </Path.CacheMode>
-                            <Path.Effect>
-                                <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
-                            </Path.Effect>
-                        </Path>
+                            </Border.CacheMode>
+                            <Path x:Name="SourceIcon" Width="20" Height="20" Stretch="Uniform" Fill="White">
+                                <Path.Effect>
+                                    <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
+                                </Path.Effect>
+                            </Path>
+                        </Border>
 
                         <!-- Hidden on focus, where ListGameItemStyle's title band puts it under the title instead. -->
                         <Border x:Name="InstallingBand" VerticalAlignment="Bottom" CornerRadius="0,0,6,6" Visibility="Collapsed">
@@ -80,14 +84,14 @@
                         </MultiDataTrigger>
                         <DataTrigger Binding="{Binding Source.Name}" Value="Steam">
                             <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource XboxSourceSteam}" />
-                            <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="SourceBadge" Property="Visibility" Value="Visible" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Source.Name}" Value="Xbox">
                             <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource XboxSourceXbox}" />
-                            <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="SourceBadge" Property="Visibility" Value="Visible" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsFocused, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
-                            <Setter TargetName="SourceIcon" Property="Opacity" Value="0" />
+                            <Setter TargetName="SourceBadge" Property="Opacity" Value="0" />
                             <Setter TargetName="InstallingBand" Property="Opacity" Value="0" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsInstalled}" Value="False">
@@ -97,7 +101,7 @@
                         <!-- After the not-installed trigger, so an installing game's download mark gives way to the caption. -->
                         <DataTrigger Binding="{Binding IsInstalling}" Value="True">
                             <Setter TargetName="InstallingBand" Property="Visibility" Value="Visible" />
-                            <Setter TargetName="SourceIcon" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="SourceBadge" Property="Visibility" Value="Collapsed" />
                             <Setter TargetName="StateBadge" Property="Visibility" Value="Collapsed" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
