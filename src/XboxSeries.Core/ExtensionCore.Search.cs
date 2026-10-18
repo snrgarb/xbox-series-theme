@@ -25,10 +25,16 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Puts Search up empty, every time it opens: nothing typed, Shift on, the letters showing, the keyboard up. It
-        /// takes the place of My games &amp; apps, which gives the user's own filter and sort back, and of Settings.
+        /// takes the place of My games &amp; apps, which gives the user's own filter and sort back, and of Settings, and
+        /// of Home, whose tile focus had last goes, so the pad's A and Start can't reach it under the page.
         /// </summary>
         private void ShowSearch(SearchOrigin from)
         {
+            if (focusedTile != null)
+            {
+                LeaveHomeTile(focusedTile);
+            }
+
             CloseMyGames();
             CloseSettings();
             Search.Keyboard.Reset();
@@ -66,6 +72,7 @@ namespace XboxSeries.Core
                     break;
                 case KeyboardKeyKind.Space:
                     keyboard.Insert(" ");
+                    keyboard.SetShifted(false);
                     break;
                 case KeyboardKeyKind.Shift:
                     keyboard.SetShifted(!keyboard.IsShifted);
@@ -138,6 +145,16 @@ namespace XboxSeries.Core
             {
                 Search.Keyboard.Insert(printable);
                 Search.Keyboard.SetShifted(false);
+                RefreshSearch();
+            }
+        }
+
+        /// <summary>A physical keyboard's Backspace: deletes before the cursor, as typing goes in, with the console keyboard up or away.</summary>
+        public void DeleteSearchText()
+        {
+            if (SearchHasThePad)
+            {
+                Search.Keyboard.Backspace();
                 RefreshSearch();
             }
         }
