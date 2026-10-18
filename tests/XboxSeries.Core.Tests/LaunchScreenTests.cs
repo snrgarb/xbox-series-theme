@@ -12,6 +12,7 @@ namespace XboxSeries.Core.Tests
     {
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 15, 20, 0, 0));
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
+        private readonly FakeDownloads steam = new FakeDownloads();
         private readonly FakePlayniteHost playnite;
         private readonly ExtensionCore core;
         private readonly FakeLibrary library;
@@ -19,7 +20,7 @@ namespace XboxSeries.Core.Tests
         public LaunchScreenTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), steam);
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\Art\halo-bg.jpg", coverImage: @"C:\Art\halo-cover.jpg")
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), coverImage: @"C:\Art\hades-cover.jpg")
@@ -320,6 +321,84 @@ namespace XboxSeries.Core.Tests
             Assert.True(core.LaunchScreen.IsShown);
             clock.Advance(TimeSpan.FromSeconds(1.5));
             Assert.False(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void Steams_launch_waiting_on_its_EULA_steps_the_Launch_screen_aside_and_puts_the_EULA_in_front()
+        {
+            // Steam asks in its main window, which -silent keeps hidden, so no window ever comes to the foreground.
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Assert.True(core.LaunchScreen.IsShown);
+
+            steam.LaunchesWaitingOnUser.Add(library.Id("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+
+            Assert.False(core.LaunchScreen.IsShown);
+            Assert.Equal(new[] { library.Id("Halo Infinite") }, steam.LaunchQuestionsShown);
+        }
+
+        [Fact]
+        public void A_launch_joining_one_Steam_still_waits_on_steps_aside_at_once()
+        {
+            // An earlier Play's EULA, never answered: Steam folds the new launch into it and asks nothing new.
+            steam.LaunchesWaitingOnUser.Add(library.Id("Halo Infinite"));
+
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+
+            Assert.False(core.LaunchScreen.IsShown);
+            Assert.Equal(new[] { library.Id("Halo Infinite") }, steam.LaunchQuestionsShown);
+        }
+
+        [Fact]
+        public void Steams_question_is_put_in_front_once_and_the_game_starting_after_it_is_answered_brings_nothing_back()
+        {
+            steam.LaunchesWaitingOnUser.Add(library.Id("Halo Infinite"));
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(30));
+
+            steam.LaunchesWaitingOnUser.Clear();
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            Assert.False(core.LaunchScreen.IsShown);
+            Assert.Single(steam.LaunchQuestionsShown);
+        }
+
+        [Fact]
+        public void Another_games_launch_waiting_on_Steam_leaves_this_Launch_screen_up()
+        {
+            steam.LaunchesWaitingOnUser.Add(library.Id("Hades"));
+
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(30));
+
+            Assert.True(core.LaunchScreen.IsShown);
+            Assert.Empty(steam.LaunchQuestionsShown);
+        }
+
+        [Fact]
+        public void B_while_Steam_waits_on_the_launch_puts_Steams_question_in_front()
+        {
+            steam.LaunchesWaitingOnUser.Add(library.Id("Halo Infinite"));
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            Tap(ControllerButton.B);
+            clock.Advance(TimeSpan.FromSeconds(5));
+
+            Assert.False(core.LaunchScreen.IsShown);
+            Assert.Equal(new[] { library.Id("Halo Infinite") }, steam.LaunchQuestionsShown);
+        }
+
+        [Fact]
+        public void B_with_nothing_waiting_on_the_user_only_dismisses_the_Launch_screen()
+        {
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            Tap(ControllerButton.B);
+
+            Assert.False(core.LaunchScreen.IsShown);
+            Assert.Empty(steam.LaunchQuestionsShown);
         }
 
         private void Play(string name)

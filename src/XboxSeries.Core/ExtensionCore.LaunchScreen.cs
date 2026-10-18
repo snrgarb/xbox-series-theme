@@ -6,7 +6,9 @@ namespace XboxSeries.Core
     /// The Launch screen: as a game launches, its art covers every window, launchers and splash windows included, until
     /// Playnite says the game started, its launch was cancelled, or it stopped. It steps aside sooner for a window that
     /// needs the user, such as a EULA, a sign-in or an error: one not Playnite's that holds the foreground for
-    /// <see cref="LaunchScreenStepsAsideAfter"/>. B dismisses it too, and failing all of those, it gives up.
+    /// <see cref="LaunchScreenStepsAsideAfter"/>, or the client's own question its launch waits on, which the client
+    /// may ask in a window it keeps hidden, so it is put in front. B dismisses it too, and failing all of those, it
+    /// gives up.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -54,11 +56,18 @@ namespace XboxSeries.Core
         /// <summary>
         /// A window not Playnite's that has held the foreground for <see cref="LaunchScreenStepsAsideAfter"/> needs the
         /// user, so the Launch screen steps aside for it; Playnite's own in front, the Overlay with the Guide among them,
-        /// or another window taking its place, starts the count again.
+        /// or another window taking its place, starts the count again. The client saying its launch waits on the user
+        /// steps it aside at once, with the client's question put in front, since Steam asks in its main window, which
+        /// <c>-silent</c> keeps hidden, so nothing would ever come to the foreground and the game would never start.
         /// </summary>
         private void LookAtLaunchForeground()
         {
             launchScreenWatch = null;
+            if (StepAsideForLaunchQuestion())
+            {
+                return;
+            }
+
             var front = windowSystem.ForegroundWindow;
             if (front == IntPtr.Zero || windowSystem.IsPlaynites(front))
             {
@@ -76,6 +85,32 @@ namespace XboxSeries.Core
             }
 
             WatchLaunchForeground();
+        }
+
+        /// <summary>
+        /// When the client's launch of the game the Launch screen is up for waits on the user, the Launch screen goes
+        /// and the client's question is put in front; whether it did.
+        /// </summary>
+        private bool StepAsideForLaunchQuestion()
+        {
+            var game = launchScreenGame;
+            if (game == null || !downloads.IsLaunchWaitingOnUser(game.Value))
+            {
+                return false;
+            }
+
+            HideLaunchScreen();
+            downloads.ShowLaunchQuestion(game.Value);
+            return true;
+        }
+
+        /// <summary>B: the Launch screen goes, and the client's question with it in front, should its launch wait on one.</summary>
+        private void DismissLaunchScreen()
+        {
+            if (!StepAsideForLaunchQuestion())
+            {
+                HideLaunchScreen();
+            }
         }
 
         /// <summary>
