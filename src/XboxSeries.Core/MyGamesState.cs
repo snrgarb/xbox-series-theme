@@ -38,6 +38,12 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// The game whose tile takes focus as the page opens: the one whose tile menu opened Settings, by Customise games
+        /// &amp; apps, B coming back from it. Null when the page opens any other way, starting at its first tile.
+        /// </summary>
+        public Guid? ReturnsToGame { get; internal set; }
+
         /// <summary>The left nav's item the page is showing.</summary>
         public MyGamesItem Item
         {

@@ -89,6 +89,10 @@
                             <DataTrigger Binding="{Binding Icon}" Value="Remove">
                                 <Setter TargetName="Icon" Property="Text" Value="&#xE74D;" />
                             </DataTrigger>
+                            <!-- Customise, as the tile menu's Customise Home and Customise games & apps: Personalize's brush. -->
+                            <DataTrigger Binding="{Binding Icon}" Value="Customise">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE771;" />
+                            </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
