@@ -75,13 +75,6 @@ namespace XboxSeries.Core
         void FilterMainListByName(string name);
 
         /// <summary>
-        /// Playnite's own entry of the main list's name filter, its on-screen keyboard in Fullscreen, which narrows the
-        /// list as the user types and puts the name back if cancelled. Returns the name the main list is filtered by once
-        /// it closes. Only while it shows the user's own filter, as Full library.
-        /// </summary>
-        string TypeMainListName();
-
-        /// <summary>
         /// How many games the main list shows under the user's own filter: the one kept by <see cref="SaveUserFilter"/>
         /// while the Dashboard's is up, otherwise the current one. Null when Playnite can't say yet.
         /// </summary>

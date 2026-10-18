@@ -654,17 +654,17 @@ namespace XboxSeries.Core
             {
                 ShowMenuFor(Guide.FocusedItem);
             }
-            else if (button == ControllerButton.Start && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
+            else if (button == ControllerButton.Start && dialog == null && TileHasThePad)
             {
                 ShowTileMenu(focusedTile);
             }
-            else if (button == ControllerButton.Back && dialog == null && focusedTile != null && !Guide.IsOverlayShown
+            else if (button == ControllerButton.Back && dialog == null && TileHasThePad
                 && MyGames.IsShown && MyGames.Item == MyGamesItem.ManageQueue)
             {
                 // Manage Queue's hint bar offers View for Manage game, on its rows and Recently installed covers alike.
                 playnite.OpenGameMenu(focusedTile.GameId);
             }
-            else if (button == ControllerButton.A && dialog == null && focusedTile != null && !Guide.IsOverlayShown)
+            else if (button == ControllerButton.A && dialog == null && TileHasThePad)
             {
                 // Playnite hands the pad's A to WPF as a key with no Key, which never clicks the tile.
                 ChooseHomeTile(focusedTile);
@@ -681,6 +681,9 @@ namespace XboxSeries.Core
                 repeatTimer = clock.After(RepeatDelay, () => Repeat(button));
             }
         }
+
+        /// <summary>Whether a tile has focus with nothing over it: neither the Guide nor text entry, which have the pad.</summary>
+        private bool TileHasThePad => focusedTile != null && !Guide.IsOverlayShown && !TextEntry.IsShown;
 
         private static bool IsDirection(ControllerButton button) =>
             button == ControllerButton.DPadUp || button == ControllerButton.DPadDown
@@ -1185,7 +1188,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void ChooseHomeTile(HomeTile tile)
         {
-            if (tileMenuHoldsA)
+            if (tileMenuHoldsA || TextEntry.IsShown)
             {
                 return;
             }
@@ -1453,7 +1456,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void StartApp(Guid appId)
         {
-            if (!MyGames.IsShown || MyGames.Item != MyGamesItem.Apps || ActiveDialog != null || Guide.IsOverlayShown)
+            if (!MyGames.IsShown || MyGames.Item != MyGamesItem.Apps || ActiveDialog != null || Guide.IsOverlayShown || TextEntry.IsShown)
             {
                 return;
             }
@@ -1472,7 +1475,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void LeaveMyGames()
         {
-            if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
                 if (MyGames.Item == MyGamesItem.ManageQueue)
                 {
@@ -1557,7 +1560,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void LeaveSettings()
         {
-            if (Settings.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            if (Settings.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
                 // Opened by Customise games & apps, the page comes back in Settings' place, on its item and that tile.
                 if (Settings.OpenedFrom == SettingsOrigin.MyGamesTile)
@@ -1573,6 +1576,7 @@ namespace XboxSeries.Core
 
         private void CloseSettings()
         {
+            DropTextEntryOver(TextEntryPage.Settings);
             Settings.IsShown = false;
         }
 
