@@ -138,6 +138,10 @@ _Avoid_: pin, favourite, quick join
 The **Discord tab**'s last entry, a **Flyout** of the user's Discord servers, those the user has joined a **Call** in first, most recently joined first (every one remembered, however far its **Known channels** have fallen), then the rest by name; a server opens onto its voice channels, each with the avatars of the people in it or Empty, and A on one joins it.
 _Avoid_: guilds (Discord's API name), browse
 
+**Now Playing**:
+The Guide tab, after the **Discord tab** and before Profile & system, showing and controlling the media Windows' flyout shows: the track's title and artist, its album art, the app playing it, by the name people know it by, and whether it plays or is paused, following Windows' current media session live. It is always there; with no media playing it says "Nothing's playing".
+_Avoid_: media player, music
+
 **Guide button**:
 The Xbox logo button in the centre of an Xbox controller.
 _Avoid_: home button, Xbox button

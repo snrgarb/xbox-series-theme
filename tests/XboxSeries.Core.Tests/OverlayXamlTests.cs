@@ -34,10 +34,35 @@ namespace XboxSeries.Core.Tests
             Assert.All(decodingTriggers, count => Assert.Equal(1, count));
         }
 
+        [Fact]
+        public void Now_Playing_has_a_glyph_for_its_tab_icon_a_heading_and_a_card_with_the_art_as_the_extension_decoded_it()
+        {
+            var overlay = Overlay();
+            var tabTemplate = overlay.Descendants().Single(e => e.Name.LocalName == "ItemsControl" && (string)e.Attribute("ItemsSource") == "{Binding Tabs}")
+                .Descendants().Single(e => e.Name.LocalName == "DataTemplate");
+            var tabTrigger = KindTrigger(tabTemplate, "NowPlaying");
+            Assert.Contains(tabTrigger.Elements(), s => (string)s.Attribute("TargetName") == "TabGlyph" && (string)s.Attribute("Value") == "Visible");
+            Assert.Contains(tabTrigger.Elements(), s => (string)s.Attribute("TargetName") == "Logo" && (string)s.Attribute("Value") == "Collapsed");
+
+            Assert.Contains(overlay.Descendants(), e => e.Name.LocalName == "Setter" && (string)e.Attribute("Value") == "Now Playing");
+
+            var entry = GuideEntryTemplate();
+            var card = KindTrigger(entry, "NowPlaying");
+            Assert.Contains(card.Elements(), s => (string)s.Attribute("TargetName") == "Media" && (string)s.Attribute("Value") == "Visible");
+            Assert.Contains(entry.Descendants(), e => e.Name.LocalName == "ImageBrush" && (string)e.Attribute("ImageSource") == "{Binding Art}");
+            Assert.NotNull(KindTrigger(entry, "NothingPlaying"));
+        }
+
+        private static XElement KindTrigger(XElement template, string kind) =>
+            template.Elements().Single(e => e.Name.LocalName == "DataTemplate.Triggers").Elements()
+                .Single(t => (string)t.Attribute("Binding") == "{Binding Kind}" && (string)t.Attribute("Value") == kind);
+
+        private static XDocument Overlay() =>
+            XDocument.Load(Path.Combine(FindRepoRoot(), "src", "XboxSeries.Extension", "OverlayWindow.xaml"));
+
         private static XElement GuideEntryTemplate()
         {
-            var overlay = XDocument.Load(Path.Combine(FindRepoRoot(), "src", "XboxSeries.Extension", "OverlayWindow.xaml"));
-            return overlay.Descendants().Single(e => e.Name.LocalName == "DataTemplate" && (string)e.Attribute(X + "Key") == "GuideEntry");
+            return Overlay().Descendants().Single(e => e.Name.LocalName == "DataTemplate" && (string)e.Attribute(X + "Key") == "GuideEntry");
         }
 
         private static string FindRepoRoot()
