@@ -94,7 +94,9 @@ namespace XboxSeries.Extension
                     return settings;
                 case "Status": return new StatusControl(core);
                 case "InstallAction": return new InstallActionControl(core);
-                case "Hints": return new HintBarControl(core);
+                // The hint bar is off for now: it lagged on the TV moving into My games & apps' grid. The Dashboard keeps its
+                // place, empty; return HintBarControl here to bring it back.
+                case "Hints": return null;
                 case "Search": return new SearchControl(core);
                 case "TextEntry": return new TextEntryControl(core);
                 default: return null;
