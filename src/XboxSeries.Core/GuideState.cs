@@ -216,7 +216,7 @@ namespace XboxSeries.Core
         public string Image { get; }
     }
 
-    /// <summary>A hint beside the Guide panel: a pad button and what it does.</summary>
+    /// <summary>A hint beside the Guide panel, or on the Dashboard's hint bar: a pad button and what it does.</summary>
     public sealed class GuideHint
     {
         internal GuideHint(ControllerButton button, string text)

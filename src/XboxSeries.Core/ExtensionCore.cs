@@ -191,6 +191,7 @@ namespace XboxSeries.Core
             LoadShortcuts();
             LoadRecentServers();
             LoadStartUp();
+            WatchHints();
         }
 
         public StatusState Status { get; } = new StatusState();
@@ -1050,6 +1051,7 @@ namespace XboxSeries.Core
         public void FocusHomeTile(HomeTile tile)
         {
             focusedTile = tile;
+            RefreshHints();
             CancelHeroFollow();
             if (!Home.RecentRow.Contains(tile))
             {
@@ -1081,6 +1083,7 @@ namespace XboxSeries.Core
             if (focusedTile == tile)
             {
                 focusedTile = null;
+                RefreshHints();
                 CancelHeroFollow();
                 if (heroGame != null)
                 {
