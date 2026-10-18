@@ -22,6 +22,7 @@ namespace XboxSeries.Core.Tests
         protected readonly FakeSoundPlayer sounds = new FakeSoundPlayer();
         protected readonly FakeSecretStore secrets = new FakeSecretStore();
         protected readonly FakeDiscordOAuth oauth = new FakeDiscordOAuth();
+        protected readonly FakeMediaSessions media = new FakeMediaSessions();
         protected FakeDiscordTransport transport;
         protected ExtensionCore core;
 
@@ -36,7 +37,7 @@ namespace XboxSeries.Core.Tests
             var windows = new FakeWindowSystem();
             transport = new FakeDiscordTransport();
             core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(),
-                new FakeAudio(), new FakeController(), transport, oauth, secrets, new FakeDownloads());
+                new FakeAudio(), new FakeController(), transport, oauth, secrets, new FakeDownloads(), media);
         }
 
         protected GuideState Guide => core.Guide;

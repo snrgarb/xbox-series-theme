@@ -87,6 +87,7 @@ namespace XboxSeries.Core
         private readonly IUserAccount account;
         private readonly IAudio audio;
         private readonly IController controller;
+        private readonly IMediaSessions mediaSessions;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private IReadOnlyList<Notification> notifications = new Notification[0];
 
@@ -169,8 +170,10 @@ namespace XboxSeries.Core
             IDiscordTransport discord,
             IDiscordOAuth discordOAuth,
             ISecretStore secrets,
-            IDownloads downloads)
+            IDownloads downloads,
+            IMediaSessions mediaSessions = null)
         {
+            this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
             this.downloads = downloads;
             this.discord = discord;
             this.discordOAuth = discordOAuth;
@@ -963,6 +966,10 @@ namespace XboxSeries.Core
             {
                 ShowDiscordTab();
             }
+            else if (tab == GuideTabKind.NowPlaying)
+            {
+                ShowNowPlayingTab();
+            }
             else
             {
                 ShowProfileTab();
@@ -971,13 +978,13 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The icons along the Guide's top, the Discord tab's among them from the first Connect until Disconnect, signed
-        /// in or not (<see cref="DiscordSettingsState.HasDiscordTab"/>).
+        /// in or not (<see cref="DiscordSettingsState.HasDiscordTab"/>), and Now Playing's always, before Profile &amp; system.
         /// </summary>
         private void RefreshTabs()
         {
             var kinds = Settings.Discord.HasDiscordTab
-                ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }
-                : new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem };
+                ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }
+                : new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem };
             Guide.Tabs = kinds
                 .Select(k => new GuideTab(k, k == Guide.Tab, k == GuideTabKind.ProfileAndSystem ? ProfilePicture : null))
                 .ToList();
@@ -1672,7 +1679,8 @@ namespace XboxSeries.Core
         {
             if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
                 || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle || item.Kind == GuideItemKind.DiscordUnavailable
-                || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant || IsEmptyDropdown(item))
+                || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant
+                || item.Kind == GuideItemKind.NowPlaying || item.Kind == GuideItemKind.NothingPlaying || IsEmptyDropdown(item))
             {
                 return;
             }

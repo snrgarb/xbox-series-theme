@@ -445,15 +445,15 @@ namespace XboxSeries.Core.Tests
             core.ConnectDiscord();
             Ready();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem }, OpenGuideTabs());
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, OpenGuideTabs());
         }
 
         [Fact]
-        public void Once_connected_the_Discord_tab_sits_between_the_landing_tab_and_Profile_and_system()
+        public void Once_connected_the_Discord_tab_sits_between_the_landing_tab_and_Now_Playing()
         {
             ConnectFully();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }, OpenGuideTabs());
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, OpenGuideTabs());
             Assert.Equal(GuideTabKind.Landing, core.Guide.Tab);
         }
 
@@ -465,10 +465,10 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.RightShoulder);
             Assert.Equal(GuideTabKind.Discord, core.Guide.Tab);
-            Assert.Equal(new[] { false, true, false }, core.Guide.Tabs.Select(t => t.IsSelected));
+            Assert.Equal(new[] { false, true, false, false }, core.Guide.Tabs.Select(t => t.IsSelected));
 
             Tap(ControllerButton.RightShoulder);
-            Assert.Equal(GuideTabKind.ProfileAndSystem, core.Guide.Tab);
+            Assert.Equal(GuideTabKind.NowPlaying, core.Guide.Tab);
 
             Tap(ControllerButton.LeftShoulder);
             Assert.Equal(GuideTabKind.Discord, core.Guide.Tab);
@@ -526,7 +526,7 @@ namespace XboxSeries.Core.Tests
 
             ConnectFully();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.Landing, core.Guide.Tab);
             Assert.Same(focused, core.Guide.FocusedItem);
         }
@@ -540,7 +540,7 @@ namespace XboxSeries.Core.Tests
 
             core.DisconnectDiscord();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.Landing, core.Guide.Tab);
             Assert.True(core.Guide.Tabs[0].IsSelected);
             Assert.Equal("Home", core.Guide.FocusedItem.Title);
@@ -553,10 +553,11 @@ namespace XboxSeries.Core.Tests
             OpenGuideTabs();
             Tap(ControllerButton.RightShoulder);
             Tap(ControllerButton.RightShoulder);
+            Tap(ControllerButton.RightShoulder);
 
             core.OnDiscordClosed();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, core.Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.ProfileAndSystem, core.Guide.Tab);
             Assert.Equal("Discord isn't running", Discord.StatusText);
         }

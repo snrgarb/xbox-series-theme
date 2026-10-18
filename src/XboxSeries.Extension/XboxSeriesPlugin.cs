@@ -22,6 +22,7 @@ namespace XboxSeries.Extension
         private readonly PlayniteHost host;
         private readonly GamingInputController controller = new GamingInputController();
         private readonly WindowsAudio audio = new WindowsAudio();
+        private readonly WindowsMediaSessions mediaSessions = new WindowsMediaSessions();
         private readonly DiscordPipe discordPipe = new DiscordPipe();
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private bool libraryPushed;
@@ -53,7 +54,7 @@ namespace XboxSeries.Extension
             steamDownloads = downloads;
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
-                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads);
+                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions);
 
             // Home's elements, its top bar's status area, My games & apps, Settings and the Game hub's Install, placed by
             // the Dashboard as ContentControls named XboxSeries_<element>.
@@ -146,6 +147,11 @@ namespace XboxSeries.Extension
             PushNotifications();
             controller.Changed += () => OnUiThread(core.OnControllersChanged);
             audio.DevicesChanged += () => OnUiThread(core.OnAudioDevicesChanged);
+
+            // Windows' media sessions, for Now Playing, followed from here: what the flyout shows is ready before the
+            // Guide first opens. Their changes arrive on threads of their own.
+            mediaSessions.Changed += () => OnUiThread(core.OnMediaSessionChanged);
+            mediaSessions.Start();
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
             // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with
@@ -169,6 +175,7 @@ namespace XboxSeries.Extension
             startupWindow?.Shutdown();
             discordPipe.Close();
             audio.Dispose();
+            mediaSessions.Dispose();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
             PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
