@@ -65,6 +65,7 @@ namespace XboxSeries.Extension
             // A timer, not an animation: the fade is the window's own alpha, which only Windows draws.
             fade = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(15) };
             fade.Tick += (_, __) => StepFade();
+            InputManager.Current.PreProcessInput += OnPreProcessInput;
         }
 
         /// <summary>The window as Playnite closes; anything else closing it, as Alt+F4, is refused.</summary>
@@ -72,6 +73,7 @@ namespace XboxSeries.Extension
         {
             closing = true;
             startup.PropertyChanged -= OnStartupChanged;
+            InputManager.Current.PreProcessInput -= OnPreProcessInput;
             fade.Stop();
             StopVideo();
             HideSwirl();
@@ -348,6 +350,37 @@ namespace XboxSeries.Extension
             if (!e.IsRepeat && ButtonFor(e) is ControllerButton button)
             {
                 core.OnControllerButton(button, ButtonState.Pressed);
+            }
+        }
+
+        /// <summary>
+        /// A key or pad button on its way to Home while the sequence shows: it never gets there. Playnite's window takes
+        /// the foreground as it first shows, and the UI thread can be too busy to take it back before a press arrives,
+        /// which would land on Home's focused tile, as A on the Recent row's first game opening its Game hub. A real
+        /// key does here what it would have done in this window; a pad button reaches the core through its callback.
+        /// </summary>
+        private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
+        {
+            if (!startup.IsShown || !(e.StagingItem.Input is KeyEventArgs key)
+                || !(Keyboard.FocusedElement is DependencyObject focused) || Window.GetWindow(focused) == this
+                || Window.GetWindow(focused) != Application.Current?.MainWindow)
+            {
+                return;
+            }
+
+            e.Cancel();
+            if (key.RoutedEvent == Keyboard.PreviewKeyDownEvent)
+            {
+                logger.Info($"Held back {key.Key} from Home during Start-up");
+                OnPreviewKeyDown(key);
+            }
+            else if (key.RoutedEvent == Keyboard.PreviewKeyUpEvent)
+            {
+                OnPreviewKeyUp(key);
+            }
+            else if (PlayniteInput.PadButtonOf(key) is Playnite.SDK.Events.ControllerInput pad && key.RoutedEvent == Keyboard.KeyDownEvent)
+            {
+                logger.Info($"Held back pad {pad} from Home during Start-up");
             }
         }
 
