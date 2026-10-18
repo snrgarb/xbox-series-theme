@@ -189,7 +189,7 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- A profile: its gamertag, real name and picture, each typed or chosen on a page of its own, and Remove. -->
+        <!-- A profile: its gamertag and real name, each typed over the page, its picture, chosen on a page of its own, and Remove. -->
         <StackPanel x:Name="ProfilePage" Visibility="Collapsed">
             <ContentPresenter Content="{Binding Picture}" ContentTemplate="{StaticResource Picture}" Width="120" Height="120"
                               HorizontalAlignment="Left" Margin="0,0,0,30" />
