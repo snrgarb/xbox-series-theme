@@ -45,5 +45,14 @@ namespace XboxSeries.Core.Tests.Fakes
         public List<Guid> MarkedCancelled { get; } = new List<Guid>();
 
         public void MarkCancelled(Guid gameId) => MarkedCancelled.Add(gameId);
+
+        /// <summary>The games whose launch the client says waits on the user, as on its EULA; none until added.</summary>
+        public HashSet<Guid> LaunchesWaitingOnUser { get; } = new HashSet<Guid>();
+
+        public bool IsLaunchWaitingOnUser(Guid gameId) => LaunchesWaitingOnUser.Contains(gameId);
+
+        public List<Guid> LaunchQuestionsShown { get; } = new List<Guid>();
+
+        public void ShowLaunchQuestion(Guid gameId) => LaunchQuestionsShown.Add(gameId);
     }
 }
