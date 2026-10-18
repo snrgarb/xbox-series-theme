@@ -199,11 +199,13 @@ namespace XboxSeries.Extension
                     FlyInItem(e.PropertyName == nameof(MyGamesState.Item));
 
                     // Opened from Home, the top bar or the Guide: focus goes to the first tile. Moving through the nav keeps it there.
+                    // Opened again by B from Settings, which Customise games & apps opened, it goes back to that menu's tile.
                     if (core.MyGames.IsShown && !Nav.IsKeyboardFocusWithin)
                     {
-                        lastFocusedGame = null;
+                        var returnsTo = e.PropertyName == nameof(MyGamesState.IsShown) ? core.MyGames.ReturnsToGame : null;
+                        lastFocusedGame = returnsTo;
                         lastFocusedApp = null;
-                        lastFocusedQueueGame = null;
+                        lastFocusedQueueGame = returnsTo;
                         lastFocusedCover = 0;
                         FocusContentSoon();
                     }
