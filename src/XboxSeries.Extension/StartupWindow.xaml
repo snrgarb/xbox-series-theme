@@ -37,6 +37,10 @@
                 <Setter Property="TextAlignment" Value="Center" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
+            <!-- Its title, in the header font (#77). -->
+            <Style x:Key="StartupHeader" TargetType="TextBlock" BasedOn="{StaticResource StartupText}">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+            </Style>
 
             <!--
                 A profile's picture, 380 round: the person glyph on the console's green, under the picture itself, which
@@ -66,7 +70,7 @@
             <!-- The title and the profiles: laid out 1080 tall at the screen's aspect, as the Overlay is, and scaled to the screen. -->
             <Viewbox Stretch="Uniform">
                 <Grid x:Name="Root" Height="1080" Width="1920">
-                    <TextBlock Text="Who's playing today?" Style="{StaticResource StartupText}" FontSize="60"
+                    <TextBlock Text="Who's playing today?" Style="{StaticResource StartupHeader}" FontSize="60"
                                VerticalAlignment="Top" Margin="0,150,0,0" />
 
                     <!--
