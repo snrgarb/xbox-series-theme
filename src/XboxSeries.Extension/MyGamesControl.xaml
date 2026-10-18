@@ -33,9 +33,19 @@
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
+            <!-- Headers, in the header font (#77): the page's heading, Manage Queue's and its sections, Play history's days. -->
+            <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+            </Style>
+
             <Style x:Key="NavText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
                 <Setter Property="FontSize" Value="24" />
                 <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- A nav item's name, a header (#77); its count beside it, and Manage's Queue line, stay NavText. -->
+            <Style x:Key="NavLabel" TargetType="TextBlock" BasedOn="{StaticResource NavText}">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
             </Style>
 
             <Style x:Key="NavIcon" TargetType="TextBlock">
@@ -445,7 +455,7 @@
                     <DockPanel>
                         <TextBlock Text="&#xE7FC;" Style="{StaticResource NavIcon}" />
                         <TextBlock DockPanel.Dock="Right" Text="{Binding GameCount}" Style="{StaticResource NavText}" />
-                        <TextBlock Text="Games" Style="{StaticResource NavText}" />
+                        <TextBlock Text="Games" Style="{StaticResource NavLabel}" />
                     </DockPanel>
                 </Button>
                 <!-- Hidden when Playnite's Software tools can't be read, rather than showing an Apps that never fills. -->
@@ -454,21 +464,21 @@
                     <DockPanel>
                         <TextBlock Text="&#xE71D;" Style="{StaticResource NavIcon}" />
                         <TextBlock DockPanel.Dock="Right" Text="{Binding Apps.Count}" Style="{StaticResource NavText}" />
-                        <TextBlock Text="Apps" Style="{StaticResource NavText}" />
+                        <TextBlock Text="Apps" Style="{StaticResource NavLabel}" />
                     </DockPanel>
                 </Button>
                 <Button x:Name="PlayHistoryItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
                     <DockPanel>
                         <TextBlock Text="&#xE81C;" Style="{StaticResource NavIcon}" />
                         <TextBlock DockPanel.Dock="Right" Text="{Binding PlayHistoryCount}" Style="{StaticResource NavText}" />
-                        <TextBlock Text="Play history" Style="{StaticResource NavText}" />
+                        <TextBlock Text="Play history" Style="{StaticResource NavLabel}" />
                     </DockPanel>
                 </Button>
                 <Button x:Name="FullLibraryItem" Style="{StaticResource NavItem}" GotKeyboardFocus="OnNavFocused" Click="OnNavClick">
                     <DockPanel>
                         <TextBlock Text="&#xE8F1;" Style="{StaticResource NavIcon}" />
                         <TextBlock DockPanel.Dock="Right" Text="{Binding FullLibraryCount}" Style="{StaticResource NavText}" />
-                        <TextBlock Text="Full library" Style="{StaticResource NavText}" />
+                        <TextBlock Text="Full library" Style="{StaticResource NavLabel}" />
                     </DockPanel>
                 </Button>
 
@@ -484,7 +494,7 @@
                     <StackPanel>
                         <DockPanel Height="58">
                             <TextBlock Text="&#xE821;" Style="{StaticResource NavIcon}" />
-                            <TextBlock Text="Manage" Style="{StaticResource NavText}" />
+                            <TextBlock Text="Manage" Style="{StaticResource NavLabel}" />
                         </DockPanel>
                         <DockPanel Height="40" Margin="44,0,0,10" Visibility="{Binding HasQueue, Converter={StaticResource Visibility}}">
                             <TextBlock DockPanel.Dock="Right" Text="{Binding QueueCount}" Style="{StaticResource NavText}"
@@ -578,7 +588,7 @@
             </Grid.RowDefinitions>
 
             <!-- Semilight (350), lighter than the page's other text, as the console's headings are: regular reads heavy at this size. -->
-            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
+            <TextBlock x:Name="Header" Style="{StaticResource HeaderText}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
             <TextBlock x:Name="Count" Text="{Binding GameCount, StringFormat='{}{0} games'}" Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,0,0" />
 
@@ -672,7 +682,7 @@
                     <GroupStyle>
                         <GroupStyle.HeaderTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="30" Margin="32,0,0,18" />
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource HeaderText}" FontSize="30" Margin="32,0,0,18" />
                             </DataTemplate>
                         </GroupStyle.HeaderTemplate>
                         <GroupStyle.ContainerStyle>
@@ -811,7 +821,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Manage Queue" Style="{StaticResource Text}" FontSize="42" FontWeight="350"
+            <TextBlock Text="Manage Queue" Style="{StaticResource HeaderText}" FontSize="42" FontWeight="350"
                        Margin="96,72,96,0" />
 
             <!-- The rows sit 24 in from the scroller's edges, which its margin cancels, so their ring and glow band aren't cut off there. -->
@@ -829,7 +839,7 @@
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
-                        <TextBlock Text="Recently installed" Style="{StaticResource Text}" FontSize="30" Margin="0,14,0,14" />
+                        <TextBlock Text="Recently installed" Style="{StaticResource HeaderText}" FontSize="30" Margin="0,14,0,14" />
                         <ScrollViewer Margin="-24,0" Focusable="False"
                                       HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
                             <ItemsControl x:Name="Covers" ItemsSource="{Binding RecentlyInstalled}" Focusable="False" Margin="24"
@@ -852,7 +862,7 @@
 
                     <!-- Installing: one row for each game in the queue, the current download first, then those next up. -->
                     <StackPanel Visibility="{Binding HasQueue, Converter={StaticResource Visibility}}">
-                        <TextBlock Text="Installing" Style="{StaticResource Text}" FontSize="30" Margin="0,30,0,30" />
+                        <TextBlock Text="Installing" Style="{StaticResource HeaderText}" FontSize="30" Margin="0,30,0,30" />
                         <ItemsControl x:Name="QueueRows" Focusable="False" ItemContainerStyle="{StaticResource RaisedWhenFocused}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>

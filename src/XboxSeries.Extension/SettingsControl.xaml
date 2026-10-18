@@ -25,7 +25,13 @@
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
-            <Style x:Key="RailText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+            <!-- Headers, in the header font (#77): Settings' title and the category's heading. -->
+            <Style x:Key="HeaderText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
+                <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+            </Style>
+
+            <!-- The rail's names, Settings' nav, headers as My games & apps' nav labels are (#77). -->
+            <Style x:Key="RailText" TargetType="TextBlock" BasedOn="{StaticResource HeaderText}">
                 <Setter Property="FontSize" Value="24" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
@@ -151,7 +157,7 @@
             windows rather than show beside the rail. Focusing a category shows it.
         -->
         <StackPanel Grid.Column="0" Margin="0,78,0,0">
-            <TextBlock Text="Settings" Style="{StaticResource Text}" FontSize="30" Height="54" Margin="75,0,0,58" />
+            <TextBlock Text="Settings" Style="{StaticResource HeaderText}" FontSize="30" Height="54" Margin="75,0,0,58" />
             <StackPanel x:Name="Rail" KeyDown="OnRailKeyDown">
                 <Button x:Name="PersonalisationItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
                     <TextBlock Text="Personalisation" Style="{StaticResource RailText}" />
@@ -191,7 +197,7 @@
             </Grid.RowDefinitions>
 
             <!-- Semilight (350), lighter than the page's other text, as the console's headings are: regular reads heavy at this size. -->
-            <TextBlock x:Name="Header" Style="{StaticResource Text}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
+            <TextBlock x:Name="Header" Style="{StaticResource HeaderText}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
 
             <!--
                 Personalisation: its boxes, Start up's for now, each opening a page of its own in their place, the header

@@ -39,7 +39,7 @@
             <StackPanel.RenderTransform>
                 <TranslateTransform x:Name="ContentSlide" />
             </StackPanel.RenderTransform>
-            <TextBlock Text="{Binding Title}" FontFamily="{DynamicResource XboxFont}" FontSize="54" Foreground="White" />
+            <TextBlock Text="{Binding Title}" FontFamily="{DynamicResource XboxHeaderFont}" FontSize="54" Foreground="White" />
             <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False" Margin="0,79,0,0">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
