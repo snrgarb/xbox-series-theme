@@ -77,6 +77,22 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(font, FontOf(file, selector));
         }
 
+        // The left navs' labels are in Bahnschrift SemiLight, as the page headings are, lighter than its Regular, which
+        // reads heavy at nav size; the headings' SemiBold stays for the Group names and the hub.
+        [Theory]
+        [InlineData("MyGamesControl.xaml", "NavLabel")]
+        [InlineData("SettingsControl.xaml", "RailText")]
+        public void The_left_navs_are_in_the_header_fonts_SemiLight(string file, string key)
+        {
+            var doc = XDocument.Load(Path.Combine(ExtensionDir, file));
+            var style = StyleByKey(doc, key);
+
+            Assert.Equal("XboxHeaderFont", FontOfStyle(doc, style));
+            Assert.Equal("350", style.Elements()
+                .Where(e => e.Name.LocalName == "Setter" && (string)e.Attribute("Property") == "FontWeight")
+                .Select(e => (string)e.Attribute("Value")).SingleOrDefault());
+        }
+
         // The font key a TextBlock reaches: its own FontFamily, else its inline style's, else its keyed style's, each
         // style followed down its BasedOn. "Key=K" asks for the keyed style K itself.
         private static string FontOf(string file, string selector)

@@ -43,9 +43,11 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
-            <!-- A nav item's name, a header (#77); its count beside it, and Manage's Queue line, stay NavText. -->
+            <!-- A nav item's name, a header (#77) in SemiLight, as the page heading: Bahnschrift's Regular reads heavy at
+                 nav size. Its count beside it, and Manage's Queue line, stay NavText. -->
             <Style x:Key="NavLabel" TargetType="TextBlock" BasedOn="{StaticResource NavText}">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+                <Setter Property="FontWeight" Value="350" />
             </Style>
 
             <Style x:Key="NavIcon" TargetType="TextBlock">
