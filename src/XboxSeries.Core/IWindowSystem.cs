@@ -17,6 +17,12 @@ namespace XboxSeries.Core
         /// </summary>
         IntPtr FindWindowUnder(string directory);
 
+        /// <summary>
+        /// Whether <paramref name="window"/> is one of Playnite's own: Fullscreen's, its dialogs', or the Bundle's, the
+        /// Overlay and the Launch screen among them; not a launcher's or a game's.
+        /// </summary>
+        bool IsPlaynites(IntPtr window);
+
         /// <summary>Tries to make the Overlay the foreground window with keyboard focus. Windows may refuse.</summary>
         void TakeForeground();
 

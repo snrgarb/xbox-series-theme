@@ -194,6 +194,134 @@ namespace XboxSeries.Core.Tests
             Assert.True(core.LaunchScreen.IsShown);
         }
 
+        [Fact]
+        public void A_launchers_window_holding_the_foreground_for_5_seconds_steps_the_Launch_screen_aside()
+        {
+            // A EULA, a sign-in or an error the game won't start without: it takes the foreground and waits for an answer.
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            clock.Advance(TimeSpan.FromSeconds(2));
+
+            windows.OpenWindow(@"C:\Program Files (x86)\Steam\steam.exe");
+            clock.Advance(TimeSpan.FromSeconds(4));
+            Assert.True(core.LaunchScreen.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(1.5));
+            Assert.False(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void A_window_in_front_for_under_5_seconds_leaves_the_Launch_screen_up()
+        {
+            // A launcher's progress or splash window, gone again before the game starts.
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            windows.OpenWindow(@"C:\Program Files\Electronic Arts\EA Desktop\EADesktop.exe");
+            clock.Advance(TimeSpan.FromSeconds(3));
+            playnite.BringToFront();
+            clock.Advance(TimeSpan.FromSeconds(3));
+            windows.OpenWindow(@"C:\Program Files\Electronic Arts\EA Desktop\EADesktop.exe");
+            clock.Advance(TimeSpan.FromSeconds(3));
+            playnite.BringToFront();
+            clock.Advance(TimeSpan.FromSeconds(30));
+
+            Assert.True(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void Each_window_in_front_counts_its_own_5_seconds()
+        {
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            windows.OpenWindow(@"C:\Program Files (x86)\Steam\steam.exe");
+            clock.Advance(TimeSpan.FromSeconds(4));
+            windows.OpenWindow(@"C:\Games\Halo\HaloLauncher.exe");
+            clock.Advance(TimeSpan.FromSeconds(4));
+            Assert.True(core.LaunchScreen.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(1.5));
+            Assert.False(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void Playnites_own_window_in_front_keeps_the_Launch_screen_up_until_the_timeout()
+        {
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            clock.Advance(TimeSpan.FromSeconds(60));
+
+            Assert.True(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void The_Guide_open_over_the_Launch_screen_doesnt_step_it_aside()
+        {
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            Tap(ControllerButton.Guide);
+            Assert.Equal(FakeWindowSystem.Overlay, windows.Foreground);
+
+            clock.Advance(TimeSpan.FromSeconds(20));
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.True(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void B_dismisses_the_Launch_screen_as_an_escape_hatch()
+        {
+            // For a window Windows kept out of the foreground, behind Playnite's.
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            Tap(ControllerButton.B);
+
+            Assert.False(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void B_with_the_Guide_open_closes_the_Guide_and_leaves_the_Launch_screen_up()
+        {
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            Tap(ControllerButton.Guide);
+
+            Tap(ControllerButton.B);
+
+            Assert.False(core.Guide.IsOpen);
+            Assert.True(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void B_with_no_Launch_screen_does_nothing_to_a_later_launch()
+        {
+            Tap(ControllerButton.B);
+
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            Assert.True(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
+        public void Once_stepped_aside_the_game_starting_doesnt_bring_it_back_and_the_next_launch_watches_afresh()
+        {
+            core.OnGameStarting(library.Id("Halo Infinite"));
+            windows.OpenWindow(@"C:\Program Files (x86)\Steam\steam.exe");
+            clock.Advance(TimeSpan.FromSeconds(6));
+            Assert.False(core.LaunchScreen.IsShown);
+
+            core.OnGameStarted(library.Id("Halo Infinite"));
+            Assert.False(core.LaunchScreen.IsShown);
+            core.OnGameStopped(library.Id("Halo Infinite"));
+
+            playnite.BringToFront();
+            core.OnGameStarting(library.Id("Hades"));
+            clock.Advance(TimeSpan.FromSeconds(4));
+            Assert.True(core.LaunchScreen.IsShown);
+
+            windows.OpenWindow(@"C:\Program Files (x86)\Steam\steam.exe");
+            clock.Advance(TimeSpan.FromSeconds(4));
+            Assert.True(core.LaunchScreen.IsShown);
+            clock.Advance(TimeSpan.FromSeconds(1.5));
+            Assert.False(core.LaunchScreen.IsShown);
+        }
+
         private void Play(string name)
         {
             var id = library.Id(name);
