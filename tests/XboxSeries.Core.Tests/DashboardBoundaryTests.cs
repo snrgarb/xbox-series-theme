@@ -61,7 +61,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Home_hosts_the_extensions_hero_Recent_row_Groups_tile_menu_My_games_Settings_status_area_and_hint_bar_as_custom_elements()
+        public void Home_hosts_the_extensions_hero_Recent_row_Groups_tile_menu_My_games_Settings_Search_status_area_and_hint_bar_as_custom_elements()
         {
             var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
             var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
@@ -70,7 +70,7 @@ namespace XboxSeries.Core.Tests
                 .Select(e => (string)e.Attribute(x + "Name"))
                 .Where(name => name != null && name.StartsWith("XboxSeries_"));
 
-            Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_Hints", "XboxSeries_MyGames", "XboxSeries_RecentRow", "XboxSeries_Settings", "XboxSeries_Status", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
+            Assert.Equal(new[] { "XboxSeries_Groups", "XboxSeries_Hero", "XboxSeries_Hints", "XboxSeries_MyGames", "XboxSeries_RecentRow", "XboxSeries_Search", "XboxSeries_Settings", "XboxSeries_Status", "XboxSeries_TileMenu" }, elements.OrderBy(n => n));
         }
 
         [Fact]
@@ -101,6 +101,63 @@ namespace XboxSeries.Core.Tests
                 && (string)e.Attribute("Binding") == $"{{PluginStatus Plugin={ExtensionId()}, Status=Installed}}"
                 && (string)e.Attribute("Value") == "False");
             Assert.Equal(mainMenu.Parent.ElementsAfterSelf().First(), settings);
+        }
+
+        [Fact]
+        public void Top_bar_Search_is_Playnites_name_filter_theme_only_and_the_extensions_page_with_it()
+        {
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var topBar = main.Descendants().Single(e => (string)e.Attribute(x + "Name") == "XboxTopBar");
+            var filter = topBar.Descendants().Single(e => (string)e.Attribute(x + "Name") == "PART_ButtonSearch");
+            // The extension finds the button by this name, to give it focus back as Search closes.
+            var search = topBar.Descendants().Single(e => (string)e.Attribute(x + "Name") == "XboxTopBarSearch");
+
+            // Playnite drives the part's own properties, so it is hidden with the extension through its wrapper.
+            Assert.Contains("XboxThemeOnly", (string)filter.Parent.Attribute("Style"));
+            Assert.Equal("{Binding Content.OpenSearchCommand, ElementName=XboxSeries_Search}", (string)search.Attribute("Command"));
+            Assert.Equal("Search", (string)search.Attribute("Tag"));
+            Assert.Contains(search.Descendants(), e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == $"{{PluginStatus Plugin={ExtensionId()}, Status=Installed}}"
+                && (string)e.Attribute("Value") == "False");
+            Assert.Contains(search.Descendants(), e => (string)e.Attribute("Style") == "{StaticResource XboxSearchIcon}");
+
+            // Focus order either way: My games & apps, Search, Settings.
+            Assert.Equal(filter.Parent.ElementsAfterSelf().First(), search);
+            var settingsWrapper = topBar.Descendants().Single(e => (string)e.Attribute(x + "Name") == "PART_ButtonMainMenu").Parent;
+            Assert.Equal(search.ElementsAfterSelf().First(), settingsWrapper);
+            Assert.Equal("My games & apps", (string)filter.Parent.ElementsBeforeSelf().Last().Attribute("Tag"));
+        }
+
+        [Theory]
+        [InlineData("XboxHomeOnly")]
+        [InlineData("XboxMainList")]
+        public void Home_hides_on_Search_as_it_does_on_Settings(string key)
+        {
+            // Search replaces Home as Settings does: whatever hides under Settings hides under Search too.
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var style = main.Root.Elements().Single(e => (string)e.Attribute(x + "Key") == key);
+            string Hides(string page) => style.Descendants()
+                .Where(e => e.Name.LocalName == "DataTrigger"
+                    && (string)e.Attribute("Binding") == $"{{Binding Content.State.IsShown, ElementName={page}}}"
+                    && (string)e.Attribute("Value") == "True")
+                .SelectMany(e => e.Elements().Where(c => c.Name.LocalName == "Setter"))
+                .Select(c => $"{(string)c.Attribute("Property")}={(string)c.Attribute("Value")}")
+                .SingleOrDefault();
+
+            Assert.Equal("Visibility=Collapsed", Hides("XboxSeries_Settings"));
+            Assert.Equal("Visibility=Collapsed", Hides("XboxSeries_Search"));
+        }
+
+        [Fact]
+        public void Every_trigger_on_Settings_being_up_has_its_match_for_Search()
+        {
+            var main = File.ReadAllText(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            int Count(string page) => Regex.Matches(main, Regex.Escape($"Content.State.IsShown, ElementName={page}}}")).Count;
+
+            Assert.True(Count("XboxSeries_Settings") > 0);
+            Assert.Equal(Count("XboxSeries_Settings"), Count("XboxSeries_Search"));
         }
 
         [Fact]

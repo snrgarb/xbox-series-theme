@@ -8,7 +8,9 @@
     main list beside its nav while State.ShowsGameGrid is, and the user's filter presets as tabs while State.ShowsFullLibrary
     is; all are read by path, so they are inert without it. Its Settings page (XboxSeries_Settings) replaces Home the same
     way while its State.IsShown is true, and the top bar's Settings button opens it; theme-only, that button is Playnite's
-    own, which opens Playnite's main menu.
+    own, which opens Playnite's main menu. Its Search page (XboxSeries_Search) replaces Home the same way again, and the top
+    bar's Search button opens it; theme-only, that button is Playnite's name filter of the main list. The three pages are
+    never up together.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -250,13 +252,16 @@
         </Style.Triggers>
     </Style>
 
-    <!-- Home only: hidden while the extension's My games & apps or Settings page is up. -->
+    <!-- Home only: hidden while the extension's My games & apps, Settings or Search page is up. -->
     <Style x:Key="XboxHomeOnly" TargetType="FrameworkElement">
         <Style.Triggers>
             <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_MyGames}" Value="True">
                 <Setter Property="Visibility" Value="Collapsed" />
             </DataTrigger>
             <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Settings}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Search}" Value="True">
                 <Setter Property="Visibility" Value="Collapsed" />
             </DataTrigger>
         </Style.Triggers>
@@ -296,8 +301,11 @@
                 <Setter Property="Margin" Value="436.5,126,86.5,0" />
                 <Setter Property="ClipToBounds" Value="True" />
             </DataTrigger>
-            <!-- Never over Settings. -->
+            <!-- Never over Settings or Search. -->
             <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Settings}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Search}" Value="True">
                 <Setter Property="Visibility" Value="Collapsed" />
             </DataTrigger>
         </Style.Triggers>
@@ -337,6 +345,9 @@
 
                             <!-- With the extension, Settings: its rail and the category showing, over the whole page. -->
                             <ContentControl x:Name="XboxSeries_Settings" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
+
+                            <!-- With the extension, Search: its box, the console keyboard and the results, over the whole page. -->
+                            <ContentControl x:Name="XboxSeries_Search" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
 
                             <!--
                                 Full library's tabs: the user's own filter presets, as Playnite cycles them with LB/RB and lights the
@@ -416,8 +427,27 @@
                                             <Path Data="{StaticResource XboxLibrarySolid}" Style="{StaticResource XboxFilledIcon}" />
                                         </Grid>
                                     </ButtonEx>
-                                    <!-- Playnite's name filter of the main list, as Y. Search proper is the extension's page. -->
-                                    <ButtonEx x:Name="PART_ButtonSearch" Tag="Filter by name" Style="{StaticResource XboxTopBarButton}">
+                                    <!--
+                                        Search, in one place either way. Theme-only, Playnite's name filter of the main list, as Y;
+                                        Playnite drives the part's own properties, so it is hidden through a wrapper. With the
+                                        extension, its Search page, which gives this button focus back, by its name, as it closes.
+                                    -->
+                                    <Grid Style="{StaticResource XboxThemeOnly}">
+                                        <ButtonEx x:Name="PART_ButtonSearch" Tag="Filter by name" Style="{StaticResource XboxTopBarButton}">
+                                            <TextBlock Style="{StaticResource XboxSearchIcon}" />
+                                        </ButtonEx>
+                                    </Grid>
+                                    <ButtonEx x:Name="XboxTopBarSearch" Tag="Search"
+                                              Command="{Binding Content.OpenSearchCommand, ElementName=XboxSeries_Search}">
+                                        <ButtonEx.Style>
+                                            <Style TargetType="ButtonEx" BasedOn="{StaticResource XboxTopBarButton}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{PluginStatus Plugin=XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b, Status=Installed}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ButtonEx.Style>
                                         <TextBlock Style="{StaticResource XboxSearchIcon}" />
                                     </ButtonEx>
                                     <!--
