@@ -42,9 +42,10 @@ namespace XboxSeries.Core
         private static readonly TimeSpan HeroLeave = TimeSpan.FromMilliseconds(100);
 
         /// <summary>
-        /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it. Opening one has
-        /// Playnite refilter its list and the page lay its content out again, a frame or more each, so focus passing down
-        /// the nav (a held d-pad repeats faster than this) opens only the item it stops on.
+        /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it, when focus came there
+        /// this soon after reaching another. Opening one has Playnite refilter its list and the page lay its content out
+        /// again, a frame or more each, so focus passing down the nav (a held d-pad repeats faster than this) opens only
+        /// the item it stops on, while a single step opens at once.
         /// </summary>
         private static readonly TimeSpan NavSettle = TimeSpan.FromMilliseconds(150);
 
@@ -157,6 +158,9 @@ namespace XboxSeries.Core
 
         /// <summary>The open waiting for focus to stay on a nav item of My games &amp; apps; null with none.</summary>
         private IDisposable navTimer;
+
+        /// <summary>When focus last reached a nav item of My games &amp; apps.</summary>
+        private DateTime lastNavFocus = DateTime.MinValue;
 
         public ExtensionCore(
             IClock clock,
@@ -1373,15 +1377,17 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Focus moved along My games &amp; apps' nav to <paramref name="item"/>: the page opens it once focus has stayed
-        /// there for <see cref="NavSettle"/>, so focus passing down the nav doesn't open every item on its way. Back on the
-        /// item showing, nothing opens. A or Right on the item opens it at once (<see cref="OpenMyGames"/>), so they never
+        /// Focus moved along My games &amp; apps' nav to <paramref name="item"/>: the page opens it at once, or, with focus
+        /// on another item within <see cref="NavSettle"/> before, once focus has stayed there for that long, so focus
+        /// passing down the nav doesn't open every item on its way. Back on the item showing, nothing opens. A or Right on the item opens it at once (<see cref="OpenMyGames"/>), so they never
         /// go into the content of the item before. With the page not up, it opens at once.
         /// </summary>
         public void FocusMyGamesNav(MyGamesItem item)
         {
             CancelNavSettle();
-            if (!MyGames.IsShown)
+            var passing = clock.Now - lastNavFocus < NavSettle;
+            lastNavFocus = clock.Now;
+            if (!MyGames.IsShown || (MyGames.Item != item && !passing))
             {
                 OpenMyGames(item);
             }

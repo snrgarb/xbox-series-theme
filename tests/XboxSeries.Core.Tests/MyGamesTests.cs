@@ -283,9 +283,23 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Focus_moving_along_the_nav_opens_an_item_once_it_has_stayed_there()
+        public void A_single_step_along_the_nav_opens_the_item_at_once()
         {
             core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+
+            Assert.Equal(MyGamesItem.FullLibrary, core.MyGames.Item);
+            Assert.True(playnite.ShowsUsersOwnFilter);
+        }
+
+        [Fact]
+        public void Focus_moving_on_along_the_nav_opens_an_item_once_it_has_stayed_there()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
 
             core.FocusMyGamesNav(MyGamesItem.FullLibrary);
             clock.Advance(TimeSpan.FromMilliseconds(149));
@@ -310,6 +324,7 @@ namespace XboxSeries.Core.Tests
                     opened.Add(core.MyGames.Item);
                 }
             };
+            core.FocusMyGamesNav(MyGamesItem.Games);
 
             core.FocusMyGamesNav(MyGamesItem.PlayHistory);
             clock.Advance(TimeSpan.FromMilliseconds(100));
@@ -327,6 +342,7 @@ namespace XboxSeries.Core.Tests
         public void Focus_back_on_the_item_showing_drops_the_one_it_passed()
         {
             core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
 
             core.FocusMyGamesNav(MyGamesItem.FullLibrary);
             core.FocusMyGamesNav(MyGamesItem.Games);
@@ -340,6 +356,7 @@ namespace XboxSeries.Core.Tests
         public void A_or_Right_on_the_nav_opens_the_focused_item_at_once_and_only_once()
         {
             core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
             core.FocusMyGamesNav(MyGamesItem.FullLibrary);
 
             core.OpenMyGames(MyGamesItem.FullLibrary);
@@ -355,6 +372,7 @@ namespace XboxSeries.Core.Tests
         public void B_while_focus_settles_on_the_nav_leaves_the_page_without_opening_the_item()
         {
             core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
             core.FocusMyGamesNav(MyGamesItem.PlayHistory);
 
             core.LeaveMyGames();
@@ -368,6 +386,7 @@ namespace XboxSeries.Core.Tests
         public void Focus_leaving_the_nav_before_it_settles_leaves_the_item_showing()
         {
             core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
             core.FocusMyGamesNav(MyGamesItem.FullLibrary);
 
             core.LeaveMyGamesNav();
