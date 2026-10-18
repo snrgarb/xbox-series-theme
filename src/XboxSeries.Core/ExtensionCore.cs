@@ -24,10 +24,10 @@ namespace XboxSeries.Core
         private const int PlayHistoryCollageCount = 4;
 
         /// <summary>
-        /// How many games a Group on Home shows before its See all tile: as many as the Recent row, so that every row
-        /// on Home is the same width.
+        /// How many games a Group on Home shows before its See all tile: six tall cards, as on the console's Home, which
+        /// with See all span the Recent row's width.
         /// </summary>
-        private const int GroupTileCount = RecentRowCount;
+        private const int GroupTileCount = 6;
 
         /// <summary>How soon a second A on the same Home tile counts as a double-tap, which launches the game.</summary>
         private static readonly TimeSpan DoubleTapWindow = TimeSpan.FromMilliseconds(300);

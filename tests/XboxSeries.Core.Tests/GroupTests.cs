@@ -108,7 +108,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_Group_shows_at_most_7_games_before_See_all_like_the_Recent_row()
+        public void A_Group_shows_at_most_6_games_before_See_all()
         {
             var library = new FakeLibrary();
             var names = Enumerable.Range(1, 14).Select(i => $"Game {i:00}").ToArray();
@@ -119,11 +119,11 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.WithFilterPreset("Everything", showInFullscreenQuickSelection: true, games: names).Snapshot());
 
-            Assert.Equal(names.Take(7), GroupTitles("Everything"));
+            Assert.Equal(names.Take(6), GroupTitles("Everything"));
         }
 
         [Fact]
-        public void A_Groups_See_all_tile_shows_a_collage_of_its_next_4_games_like_Play_history()
+        public void A_Groups_See_all_tile_shows_a_collage_of_the_4_games_after_its_6_like_Play_history()
         {
             var library = new FakeLibrary();
             var names = Enumerable.Range(1, 14).Select(i => $"Game {i:00}").ToArray();
@@ -134,7 +134,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.WithFilterPreset("Everything", showInFullscreenQuickSelection: true, games: names).Snapshot());
 
-            Assert.Equal(names.Skip(7).Take(4), core.Home.Groups.Single().SeeAll.Select(t => t.Title));
+            Assert.Equal(names.Skip(6).Take(4), core.Home.Groups.Single().SeeAll.Select(t => t.Title));
         }
 
         [Fact]
@@ -176,7 +176,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_Favourites_Group_holds_at_most_7_games()
+        public void The_Favourites_Group_holds_at_most_6_games()
         {
             var library = new FakeLibrary();
             for (var i = 1; i <= 12; i++)
@@ -186,7 +186,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnLibraryChanged(library.Snapshot());
 
-            Assert.Equal(7, core.Home.Groups.Single().Tiles.Count);
+            Assert.Equal(6, core.Home.Groups.Single().Tiles.Count);
         }
 
         [Fact]

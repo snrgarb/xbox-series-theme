@@ -1,10 +1,15 @@
 <ResourceDictionary x:Class="XboxSeries.Extension.HomeTiles"
                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:XboxSeries.Extension">
+                    xmlns:local="clr-namespace:XboxSeries.Extension"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- Home's game tiles, shared by the Recent row and the Groups so that every tile on Home looks the same. -->
     <local:DecodedImageConverter x:Key="Image" />
     <local:TileStatusConverter x:Key="StatusOf" />
+
+    <!-- The size HomeTileArt lays a cover out at: a focused square tile's. A Group's tall cards set their own. -->
+    <sys:Double x:Key="HomeTileCoverWidth">245</sys:Double>
+    <sys:Double x:Key="HomeTileCoverHeight">245</sys:Double>
 
     <!--
         Library source icons, as vector paths so they stay sharp however the row is scaled. Path data from
@@ -104,10 +109,11 @@
             <!--
                 The cover is laid out once at a focused tile's size, 245, and scaled to the tile, so as the tile grows and
                 shrinks the graphics card scales the cover it has rather than the cover being laid out and drawn again
-                every frame. Tiles are square, so this shows the same as the cover filling the tile itself.
+                every frame. It is laid out at the tile's own shape, so this shows the same as the cover filling the tile
+                itself: square here, and a Group's tall card sets its own size (HomeTileCoverWidth and Height) over these.
             -->
             <Viewbox Stretch="UniformToFill">
-                <Image Width="245" Height="245"
+                <Image Width="{DynamicResource HomeTileCoverWidth}" Height="{DynamicResource HomeTileCoverHeight}"
                        Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
                        Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
             </Viewbox>
