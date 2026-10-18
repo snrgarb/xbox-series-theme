@@ -13,6 +13,9 @@ namespace XboxSeries.Core.Tests.Fakes
 
         private readonly HashSet<IntPtr> windows = new HashSet<IntPtr> { Overlay };
         private readonly Dictionary<IntPtr, string> programs = new Dictionary<IntPtr, string>();
+
+        /// <summary>Playnite's own windows: the Overlay's, and Fullscreen's.</summary>
+        private readonly HashSet<IntPtr> playnites = new HashSet<IntPtr> { Overlay };
         private long nextHandle = 100;
 
         public IntPtr Foreground { get; private set; }
@@ -51,6 +54,14 @@ namespace XboxSeries.Core.Tests.Fakes
             return window;
         }
 
+        /// <summary>Opens one of Playnite's own windows, as Fullscreen's, and brings it to the front.</summary>
+        public IntPtr OpenPlayniteWindow()
+        {
+            var window = OpenWindow();
+            playnites.Add(window);
+            return window;
+        }
+
         /// <summary>Closes a window, as when a game quits or crashes.</summary>
         public void CloseWindow(IntPtr window)
         {
@@ -64,6 +75,8 @@ namespace XboxSeries.Core.Tests.Fakes
         IntPtr IWindowSystem.ForegroundWindow => Foreground;
 
         public bool Exists(IntPtr window) => windows.Contains(window);
+
+        public bool IsPlaynites(IntPtr window) => playnites.Contains(window);
 
         public IntPtr FindWindowUnder(string directory) =>
             windows.FirstOrDefault(w => programs.TryGetValue(w, out var path)

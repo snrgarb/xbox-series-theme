@@ -95,7 +95,7 @@ A green banner, as the console's, shown at the bottom of the screen above every 
 _Avoid_: popup, notification (Notifications are Playnite's own messages)
 
 **Launch screen**:
-The launching game's art, full screen above every window, as on the console: its background art, or its cover blurred and darkened, chosen as **Home**'s hero chooses it. It fades in as a game is launched from anywhere in the **Bundle**, hides Steam, the Xbox app, Epic's launcher and any splash or update windows behind it, and fades out once the game is running, or the launch is cancelled, fails or times out. It never takes focus, so the game gets the pad as soon as it starts. It is separate from the **Overlay**.
+The launching game's art, full screen above every window, as on the console: its background art, or its cover blurred and darkened, chosen as **Home**'s hero chooses it. It fades in as a game is launched from anywhere in the **Bundle**, hides Steam, the Xbox app, Epic's launcher and any splash or update windows behind it, and fades out once the game is running, or the launch is cancelled, fails or times out. It steps aside sooner for a window that needs the user, such as a EULA, a sign-in or an error: a launcher's or game's window that holds the foreground for 5 s; and B, with the **Guide** closed, dismisses it. It never takes focus, so the game gets the pad as soon as it starts. It is separate from the **Overlay**.
 _Avoid_: splash, loading screen
 
 **Start-up**:

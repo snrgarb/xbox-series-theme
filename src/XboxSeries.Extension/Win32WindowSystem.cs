@@ -13,6 +13,9 @@ namespace XboxSeries.Extension
     {
         private static readonly ILogger logger = LogManager.GetLogger();
 
+        /// <summary>Playnite's process, which the Bundle's windows share.</summary>
+        private static readonly int ThisProcessId = Process.GetCurrentProcess().Id;
+
         /// <summary>How long after handing a window the foreground to look whether it's in front: another process's window only comes once its thread handles the activation.</summary>
         private static readonly TimeSpan ForegroundSettle = TimeSpan.FromMilliseconds(250);
 
@@ -30,6 +33,10 @@ namespace XboxSeries.Extension
         public IntPtr ForegroundWindow => NativeMethods.GetForegroundWindow();
 
         public bool Exists(IntPtr window) => window != IntPtr.Zero && NativeMethods.IsWindow(window);
+
+        /// <summary>Playnite's own: a window of this process, which the Bundle's windows share with Playnite's.</summary>
+        public bool IsPlaynites(IntPtr window) =>
+            window != IntPtr.Zero && NativeMethods.ProcessIdOf(window) == ThisProcessId;
 
         public IntPtr FindWindowUnder(string directory)
         {

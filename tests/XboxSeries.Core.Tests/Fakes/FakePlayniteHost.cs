@@ -13,7 +13,7 @@ namespace XboxSeries.Core.Tests.Fakes
         public FakePlayniteHost(FakeWindowSystem windows)
         {
             this.windows = windows;
-            Window = windows.OpenWindow();
+            Window = windows.OpenPlayniteWindow();
         }
 
         /// <summary>Playnite Fullscreen's main window.</summary>

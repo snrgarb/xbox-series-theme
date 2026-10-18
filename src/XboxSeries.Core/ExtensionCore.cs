@@ -74,7 +74,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// How long the Launch screen waits for the game to start before giving up, so a launcher waiting for the user
-        /// (a sign-in, an update, an agreement) isn't hidden for good.
+        /// (a sign-in, an update, an agreement) isn't hidden for good, should it neither take the foreground nor B be pressed.
         /// </summary>
         private static readonly TimeSpan LaunchScreenTimeout = TimeSpan.FromSeconds(90);
 
@@ -631,6 +631,11 @@ namespace XboxSeries.Core
             else if (button == ControllerButton.B && Guide.IsOpen)
             {
                 Dismiss(button, ReturnToRecordedWindow);
+            }
+            else if (button == ControllerButton.B && LaunchScreen.IsShown && !Guide.IsOverlayShown)
+            {
+                // The escape hatch for a window needing the user that Windows kept out of the foreground, behind it.
+                HideLaunchScreen();
             }
             else if (button == ControllerButton.A && dialog != null)
             {
