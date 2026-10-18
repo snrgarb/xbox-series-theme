@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Threading;
 using Playnite.SDK.Controls;
 using XboxSeries.Core;
 
@@ -98,35 +97,25 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// With hints, the bar shows them once the page has settled; with none, it is hidden at once, rather than
-        /// collapsed, so it keeps its place and size and coming back lays nothing out. No fade: focus moving onto My games
-        /// &amp; apps' grid as its tiles are built and its pane slides in is when the bar comes up, and a fade there kept
-        /// the whole 4K page redrawing on the frames that are already the heaviest, which lagged on the TV.
+        /// With hints, the bar shows them at once, on the frame focus lands; with none, it is hidden at once, rather than
+        /// collapsed, so it keeps its place and size and coming back lays nothing out. No fade, nor waiting for the page
+        /// to settle: on My games &amp; apps' grid, as its tiles are built, either left it coming up late.
         /// </summary>
         private void Follow()
         {
-            if (core.Home.Hints.Count == 0)
+            var hints = core.Home.Hints;
+            if (hints.Count == 0)
             {
                 Bar.Visibility = Visibility.Hidden;
                 return;
             }
 
-            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+            if (Hints.ItemsSource != hints)
             {
-                // Gone again before the page settled, as by focus passing over the grid: nothing shows.
-                var hints = core.Home.Hints;
-                if (hints.Count == 0)
-                {
-                    return;
-                }
+                Hints.ItemsSource = hints;
+            }
 
-                if (Hints.ItemsSource != hints)
-                {
-                    Hints.ItemsSource = hints;
-                }
-
-                Bar.Visibility = Visibility.Visible;
-            }));
+            Bar.Visibility = Visibility.Visible;
         }
     }
 }

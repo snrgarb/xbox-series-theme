@@ -93,13 +93,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_bar_comes_up_once_the_page_has_settled_without_a_fade_or_a_cache()
+        public void The_bar_comes_up_at_once_without_a_fade_a_wait_or_a_cache()
         {
             Assert.DoesNotContain(Bar().Elements(), e => e.Name.LocalName == "Border.CacheMode");
             Assert.Null(Bar().Attribute("Opacity"));
             var code = File.ReadAllText(Path.Combine(ExtensionDir, "HintBarControl.xaml.cs"));
             Assert.DoesNotContain("DoubleAnimation", code);
-            Assert.Contains("DispatcherPriority.ContextIdle", code);
+            Assert.DoesNotContain("BeginInvoke", code);
         }
 
         [Fact]
