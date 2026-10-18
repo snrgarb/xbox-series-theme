@@ -19,36 +19,52 @@
     </controls:PluginUserControl.Resources>
 
     <!--
-        Laid out at a fixed 1080p width, the row with a tile focused (8 tiles, 7 gaps and the focus growth), and scaled
-        to the width there is, so with a tile focused it spans the top bar on 16:9 and 16:10 screens alike: from the
-        avatar's left edge (105) to the notifications button's right edge (105 + its 10 margin). With no tile focused
-        the growth widens the gaps instead, so the row still spans it, as on the console. The scale never changes as focus moves. As tall as a focused tile, so focus
-        never shifts the row; placed to sit where the console's row does.
+        Home's first screen: the Recent row, and under it the placeholder tiles (PromoRow), which fly with it. Stacked,
+        so each is scaled by the width alone. They run below the row's slot in the Dashboard into the space under it;
+        the negative bottom margin keeps WPF from clipping them to the slot.
     -->
-    <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,53,115,0">
-        <!-- No layout rounding: rounding each growing tile to whole pixels would nudge the tiles after it. -->
-        <StackPanel Orientation="Horizontal" Width="1526" Height="245" UseLayoutRounding="False">
-            <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False" VerticalAlignment="Bottom">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
-                                Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
-                                Click="OnTileClick" GotKeyboardFocus="OnTileFocused" LostKeyboardFocus="OnTileLeft" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+    <StackPanel Margin="0,0,0,-240">
+        <!--
+            Laid out at a fixed 1080p width, the row with a tile focused (8 tiles, 7 gaps and the focus growth), and scaled
+            to the width there is, so with a tile focused it spans the top bar on 16:9 and 16:10 screens alike: from the
+            avatar's left edge (105) to the notifications button's right edge (105 + its 10 margin). With no tile focused
+            the growth widens the gaps instead, so the row still spans it, as on the console. The scale never changes as focus moves. As tall as a focused tile, so focus
+            never shifts the row; placed to sit where the console's row does.
+        -->
+        <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,53,115,0">
+            <!-- No layout rounding: rounding each growing tile to whole pixels would nudge the tiles after it. -->
+            <StackPanel Orientation="Horizontal" Width="1526" Height="245" UseLayoutRounding="False">
+                <ItemsControl x:Name="Tiles" ItemsSource="{Binding RecentRow}" Focusable="False" VerticalAlignment="Bottom">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource HomeTile}" Tag="{Binding Title}"
+                                    Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
+                                    Click="OnTileClick" GotKeyboardFocus="OnTileFocused" LostKeyboardFocus="OnTileLeft" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-            <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history. -->
-            <!-- With nothing for the collage, the tile shows the history icon instead. -->
-            <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0"
-                    Click="OnPlayHistoryClick" KeyDown="OnPlayHistoryKeyDown">
-                <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding PlayHistory}" Tag="&#xE81C;" />
-            </Button>
-        </StackPanel>
-    </Viewbox>
+                <!-- Play history: a collage of the next 4 played games. It opens My games & apps on Play history. -->
+                <!-- With nothing for the collage, the tile shows the history icon instead. -->
+                <Button x:Name="PlayHistoryTile" Style="{StaticResource HomeTile}" Tag="Play history" Margin="0"
+                        Click="OnPlayHistoryClick" KeyDown="OnPlayHistoryKeyDown">
+                    <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding PlayHistory}" Tag="&#xE81C;" />
+                </Button>
+            </StackPanel>
+        </Viewbox>
+
+        <!--
+            The placeholder tiles, at the Recent row's 1080p width in a Viewbox with its side margins, so the two scale alike
+            and the tiles line up with the row's edges: 24 under it, then 190 tall, which fits above the screen's foot at
+            16:9 and on narrower screens.
+        -->
+        <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,0,115,0">
+            <local:PromoRow x:Name="Promos" Width="1526" Height="214" />
+        </Viewbox>
+    </StackPanel>
 </controls:PluginUserControl>

@@ -32,6 +32,14 @@ namespace XboxSeries.Extension
         private bool hasFocus;
         private FrameworkElement gameDetails;
 
+        /// <summary>
+        /// Whether focus on the first screen is, or goes back to, the placeholder tiles under the row rather than the row
+        /// itself, and which of them; and the Recent-row tile Down left for them, which Up goes back to.
+        /// </summary>
+        private bool promosFocused;
+        private int lastPromo;
+        private Button leftForPromos;
+
         internal RecentRowControl(ExtensionCore core, HomeScreen homeScreen)
         {
             InitializeComponent();
@@ -41,9 +49,15 @@ namespace XboxSeries.Extension
             DataContext = core.Home;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-            GotKeyboardFocus += (_, __) =>
+            GotKeyboardFocus += (_, e) =>
             {
                 hasFocus = true;
+                promosFocused = e.NewFocus is Button focused && Promos.IsAncestorOf(focused);
+                if (promosFocused)
+                {
+                    lastPromo = Math.Max(0, Promos.AllTiles.ToList().IndexOf((Button)e.NewFocus));
+                }
+
                 homeScreen.LastFocusedRow = this;
                 homeScreen.Show(groups: false);
                 growth.Start();
@@ -112,6 +126,7 @@ namespace XboxSeries.Extension
         {
             lastFocusedGame = gameId;
             hasFocus = true;
+            promosFocused = false;
             homeScreen.LastFocusedRow = this;
             homeScreen.Show(groups: false);
             FocusTileSoon();
@@ -129,25 +144,65 @@ namespace XboxSeries.Extension
             growth.Start();
         }
 
-        /// <summary>Down moves to the Groups' screen, when the Dashboard has them; other directions move focus as usual.</summary>
+        /// <summary>
+        /// Down moves from the row to the placeholder tiles under it, onto the one below, and from them to the Groups'
+        /// screen, when the Dashboard has them; Up from the tiles goes back to the row's tile Down left. Left and Right
+        /// move along the tiles, stopping at the ends. Elsewhere in the row, keys move focus as usual.
+        /// </summary>
         private void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Down && homeScreen.HasGroups)
+            if (!(Keyboard.FocusedElement is Button focused))
+            {
+                return;
+            }
+
+            if (Promos.IsAncestorOf(focused))
+            {
+                var promos = Promos.AllTiles.ToList();
+                var place = promos.IndexOf(focused);
+                switch (e.Key)
+                {
+                    case Key.Left when place > 0: promos[place - 1].Focus(); break;
+                    case Key.Right when place < promos.Count - 1: promos[place + 1].Focus(); break;
+                    case Key.Up: FocusRecentTile(leftForPromos); break;
+                    case Key.Down when homeScreen.HasGroups: homeScreen.Show(groups: true); break;
+                    case Key.Left:
+                    case Key.Right:
+                    case Key.Down:
+                        break;
+                    default: return;
+                }
+
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Down)
             {
                 e.Handled = true;
-                homeScreen.Show(groups: true);
+                leftForPromos = focused;
+                Promos.NearestTo(focused).Focus();
                 return;
             }
 
             HomeRows.MoveFocus(e);
         }
 
-        /// <summary>Flies the row out as the Groups come in, and back in, taking focus, as they go.</summary>
+        /// <summary>
+        /// Flies the row out as the Groups come in, and back in, taking focus, as they go: up from the Groups onto the
+        /// placeholder tiles, the screen they were left from, or back to where it was.
+        /// </summary>
         private void OnScreenChanged(object sender, EventArgs e)
         {
             HomeRows.Fly(this, !homeScreen.ShowsGroups, -HomeRows.FlyDistance);
             if (!homeScreen.ShowsGroups)
             {
+                // The row itself setting the screen, taking focus or with a game exiting, has already said where it goes.
+                if (homeScreen.LastFocusedRow != this)
+                {
+                    promosFocused = true;
+                }
+
                 FocusTileSoon();
             }
         }
@@ -209,7 +264,10 @@ namespace XboxSeries.Extension
             core.ChooseHomeTile((HomeTile)((FrameworkElement)sender).DataContext);
         }
 
-        /// <summary>Focuses the last focused game's tile, or the first, once the tiles are laid out.</summary>
+        /// <summary>
+        /// Focuses the placeholder tile last focused, when focus was on them, or else the last focused game's tile, or
+        /// the first, once the tiles are laid out.
+        /// </summary>
         private void FocusTileSoon()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
@@ -220,10 +278,26 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                var tiles = GameTiles();
-                var tile = tiles.FirstOrDefault(b => ((HomeTile)b.DataContext).GameId == lastFocusedGame) ?? tiles.FirstOrDefault();
-                (tile ?? PlayHistoryTile).Focus();
+                if (promosFocused)
+                {
+                    Promos.AllTiles[Math.Min(lastPromo, Promos.AllTiles.Count - 1)].Focus();
+                    return;
+                }
+
+                FocusRecentTile(null);
             }));
+        }
+
+        /// <summary>Focuses <paramref name="tile"/> if it is still in the row, or else the last focused game's tile, or the first.</summary>
+        private void FocusRecentTile(Button tile)
+        {
+            if (tile == null || !tile.IsVisible || !IsAncestorOf(tile))
+            {
+                var tiles = GameTiles();
+                tile = tiles.FirstOrDefault(b => ((HomeTile)b.DataContext).GameId == lastFocusedGame) ?? tiles.FirstOrDefault() ?? PlayHistoryTile;
+            }
+
+            tile.Focus();
         }
 
         private List<Button> GameTiles() =>
