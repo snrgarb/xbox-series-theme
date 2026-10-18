@@ -114,6 +114,9 @@ namespace XboxSeries.Extension
 
             // Beneath the Toast's and the Overlay, which it keeps above it as it shows, so Toasts and the Guide show over it.
             launchScreenWindow = launchScreenWindow ?? new LaunchScreenWindow(core.LaunchScreen, toastWindow, overlay);
+
+            // So work left for when the UI thread is idle runs at once, not when something else next wakes it.
+            DispatcherHeartbeat.Start(PlayniteApi.MainView.UIDispatcher);
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
