@@ -22,7 +22,7 @@ namespace XboxSeries.Core.Tests
 
             var width = Number(Keyed(groups, "HomeTileCoverWidth").Value);
             var gap = Number(((string)Setter(groups, "Margin")).Split(',')[2]);
-            var recentWidth = Number((string)recent.Descendants().First(e => e.Name.LocalName == "StackPanel").Attribute("Width"));
+            var recentWidth = Number((string)recent.Descendants().First(e => e.Name.LocalName == "StackPanel" && e.Attribute("Width") != null).Attribute("Width"));
 
             Assert.Equal(recentWidth, 7 * width + 6 * gap);
             // Every Group's row is 1526 wide, at the Recent row's own scale.
