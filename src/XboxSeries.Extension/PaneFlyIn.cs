@@ -20,7 +20,7 @@ namespace XboxSeries.Extension
         private const double Travel = 50;
 
         /// <summary>How long it takes to settle, as on the console.</summary>
-        private static readonly Duration SlideDuration = TimeSpan.FromMilliseconds(230);
+        private static readonly Duration SlideDuration = TimeSpan.FromMilliseconds(120);
 
         // Each element's slide, so a newer one takes it over and an older one ending leaves it alone.
         private static readonly ConditionalWeakTable<UIElement, Slide> slides = new ConditionalWeakTable<UIElement, Slide>();
