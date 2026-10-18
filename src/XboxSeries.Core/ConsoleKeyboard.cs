@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace XboxSeries.Core
 {
@@ -91,6 +92,91 @@ namespace XboxSeries.Core
             IsShifted = true;
             ShowsSymbols = false;
             Relabel();
+        }
+
+        /// <summary>
+        /// As the keyboard comes up over text already typed, as text entry's does: <paramref name="startingText"/>, the
+        /// cursor at its end, Shift on only with nothing typed, the letters showing.
+        /// </summary>
+        internal void Reset(string startingText)
+        {
+            Reset();
+            Text = startingText ?? string.Empty;
+            Cursor = Text.Length;
+            SetShifted(Text.Length == 0);
+        }
+
+        /// <summary>
+        /// A on <paramref name="key"/>: a character or a space goes in at the cursor, Shift going off after it; Shift and
+        /// the symbols key turn; backspace and the arrows edit and move. Enter is the keyboard's owner's to answer, so
+        /// it only says so: returns whether the key was Enter.
+        /// </summary>
+        internal bool Press(KeyboardKey key)
+        {
+            switch (key.Kind)
+            {
+                case KeyboardKeyKind.Character:
+                    Type(key);
+                    break;
+                case KeyboardKeyKind.Space:
+                    Insert(" ");
+                    SetShifted(false);
+                    break;
+                case KeyboardKeyKind.Shift:
+                    SetShifted(!IsShifted);
+                    break;
+                case KeyboardKeyKind.Symbols:
+                    ToggleSymbols();
+                    break;
+                case KeyboardKeyKind.Backspace:
+                    Backspace();
+                    break;
+                case KeyboardKeyKind.Left:
+                    MoveCursor(-1);
+                    break;
+                case KeyboardKeyKind.Right:
+                    MoveCursor(1);
+                    break;
+                case KeyboardKeyKind.Enter:
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Text typed on a physical keyboard: in at the cursor as typed, whatever Shift says, which goes off as after any
+        /// character. Backspace and Enter, say, reach a view as text too; only what prints goes in. Returns whether anything did.
+        /// </summary>
+        internal bool InsertTyped(string typed)
+        {
+            var printable = new string((typed ?? string.Empty).Where(c => !char.IsControl(c)).ToArray());
+            if (printable.Length == 0)
+            {
+                return false;
+            }
+
+            Insert(printable);
+            SetShifted(false);
+            return true;
+        }
+
+        /// <summary>The key a pad button stands for: X backspace, Y space, LB and RB the cursor, the left stick's click Shift, Start Enter; null for a button that isn't the keyboard's.</summary>
+        internal KeyboardKey ShortcutKey(ControllerButton button)
+        {
+            KeyboardKeyKind kind;
+            switch (button)
+            {
+                case ControllerButton.X: kind = KeyboardKeyKind.Backspace; break;
+                case ControllerButton.Y: kind = KeyboardKeyKind.Space; break;
+                case ControllerButton.LeftShoulder: kind = KeyboardKeyKind.Left; break;
+                case ControllerButton.RightShoulder: kind = KeyboardKeyKind.Right; break;
+                case ControllerButton.LeftStick: kind = KeyboardKeyKind.Shift; break;
+                case ControllerButton.Start: kind = KeyboardKeyKind.Enter; break;
+                default: return null;
+            }
+
+            return Keys.First(k => k.Kind == kind);
         }
 
         /// <summary>Puts <paramref name="characters"/> in at the cursor, which moves past them.</summary>
