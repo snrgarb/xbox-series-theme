@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Globalization;
 using System.Xml.Linq;
 using Xunit;
 
@@ -47,14 +48,48 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_bar_wears_the_Dashboards_brushes_and_fonts_and_no_effect()
+        public void The_bar_wears_the_Dashboards_fonts_and_no_effect()
         {
             var xaml = HintBar();
 
-            Assert.Equal("{DynamicResource XboxChipBrush}", (string)Bar().Attribute("Background"));
             Assert.All(xaml.Descendants().Where(e => e.Name.LocalName == "TextBlock"),
                 t => Assert.StartsWith("{DynamicResource Xbox", (string)t.Attribute("FontFamily")));
             Assert.DoesNotContain(xaml.Descendants(), e => e.Name.LocalName.EndsWith("Effect") || e.Name.LocalName.EndsWith(".Effect"));
+        }
+
+        // Measured on the console's My games capture (L1-games.png, 720 tall), times 1.5 for the 1080-tall page.
+        [Fact]
+        public void The_bar_is_the_consoles_opaque_near_black_rectangle_with_small_rounded_corners()
+        {
+            var bar = Bar();
+            var background = (string)bar.Attribute("Background");
+
+            Assert.Matches("^#FF[0-9A-F]{6}$", background);
+            Assert.All(new[] { 3, 5, 7 }, i => Assert.True(int.Parse(background.Substring(i, 2), NumberStyles.HexNumber) < 0x10));
+            Assert.Equal("6", (string)bar.Attribute("CornerRadius"));
+            Assert.Equal("63", (string)bar.Attribute("Height"));
+        }
+
+        [Fact]
+        public void The_bar_stands_60_in_from_the_right_and_52_up_from_the_bottom()
+        {
+            Assert.Equal("0,0,60,52", (string)Bar().Attribute("Margin"));
+        }
+
+        [Fact]
+        public void Each_hint_is_a_36_ring_then_a_25_label()
+        {
+            var xaml = HintBar();
+            var label = xaml.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Text}");
+
+            Assert.Equal("25", (string)label.Attribute("FontSize"));
+            Assert.Equal("{DynamicResource XboxFont}", (string)label.Attribute("FontFamily"));
+            Assert.All(new[] { "MenuGlyph", "YGlyph" }, name =>
+            {
+                var glyph = Named(xaml, name);
+                Assert.Equal("36", (string)glyph.Attribute("Width"));
+                Assert.Equal("36", (string)glyph.Attribute("Height"));
+            });
         }
 
         [Fact]
@@ -77,11 +112,35 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void More_options_shows_Menus_three_lines_in_a_white_ring()
         {
-            var glyph = HintBar().Descendants().Single(e => (string)e.Attribute(X + "Name") == "MenuGlyph");
+            var glyph = Named(HintBar(), "MenuGlyph");
 
             Assert.Contains(glyph.Elements(), e => e.Name.LocalName == "Ellipse" && (string)e.Attribute("Stroke") == "{DynamicResource XboxTextBrush}");
             Assert.Contains(glyph.Elements(), e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "");
         }
+
+        [Fact]
+        public void Y_shows_a_yellow_Y_in_a_yellow_ring_in_Menus_place()
+        {
+            var xaml = HintBar();
+            var glyph = Named(xaml, "YGlyph");
+            var ring = glyph.Elements().Single(e => e.Name.LocalName == "Ellipse");
+            var letter = glyph.Elements().Single(e => e.Name.LocalName == "TextBlock");
+
+            Assert.Equal("Collapsed", (string)glyph.Attribute("Visibility"));
+            Assert.Equal(XboxYellow, (string)ring.Attribute("Stroke"));
+            Assert.Equal("Y", (string)letter.Attribute("Text"));
+            Assert.Equal(XboxYellow, (string)letter.Attribute("Foreground"));
+
+            var onY = xaml.Descendants().Single(e => e.Name.LocalName == "DataTrigger" && (string)e.Attribute("Value") == "Y");
+            Assert.Equal("{Binding Button}", (string)onY.Attribute("Binding"));
+            Assert.Contains(onY.Elements(), s => (string)s.Attribute("TargetName") == "YGlyph" && (string)s.Attribute("Value") == "Visible");
+            Assert.Contains(onY.Elements(), s => (string)s.Attribute("TargetName") == "MenuGlyph" && (string)s.Attribute("Value") == "Collapsed");
+        }
+
+        private const string XboxYellow = "#FFFFB900";
+
+        private static XElement Named(XDocument xaml, string name) =>
+            xaml.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
 
         private static XDocument HintBar() => XDocument.Load(Path.Combine(ExtensionDir, "HintBarControl.xaml"));
 
