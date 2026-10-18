@@ -616,6 +616,12 @@
                         <GameDetails x:Name="PART_ElemGameDetails"
                                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
+                        <!--
+                            With the extension, the hint bar: More options at the bottom right while what has focus has a menu,
+                            over the whole page and the Game hub alike, under the tile menu's dim. Empty without it.
+                        -->
+                        <ContentControl x:Name="XboxSeries_Hints" Focusable="False" IsTabStop="False" />
+
                         <!-- With the extension, the tile menu: over the whole page, dimming it, centred. -->
                         <ContentControl x:Name="XboxSeries_TileMenu" Focusable="False" IsTabStop="False" />
 
