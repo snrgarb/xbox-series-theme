@@ -51,9 +51,12 @@
     -->
     <SolidColorBrush x:Key="XboxGreenBrush" Color="#FF107C10" />
 
-    <!-- Microsoft's UI font and icon font, as on the console. Fluent Icons ships with Windows 11, MDL2 with Windows 10. -->
+    <!-- Microsoft's UI font and icon font, as on the console. Fluent Icons ships with Windows 11, MDL2 with Windows 10.
+         Headers (page titles, headings, nav labels) are in Bahnschrift, which ships with Windows 10 and 11; body text in Segoe UI. -->
     <FontFamily x:Key="XboxFont">Segoe UI</FontFamily>
     <FontFamily x:Key="XboxFontSemibold">Segoe UI Semibold</FontFamily>
+    <FontFamily x:Key="XboxHeaderFont">Bahnschrift</FontFamily>
+    <FontFamily x:Key="XboxHeaderFontSemibold">Bahnschrift SemiBold</FontFamily>
     <FontFamily x:Key="XboxIconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <SolidColorBrush x:Key="XboxTextBrush" Color="#FFFFFFFF" />
