@@ -151,6 +151,18 @@ namespace XboxSeries.Core.Tests.Fakes
             }
         }
 
+        /// <summary>The saved filter preset selected on the main list, its tab lit on Full library; null for none.</summary>
+        public Guid? SelectedPreset { get; private set; }
+
+        public void SelectFilterPreset(Guid presetId)
+        {
+            // As Playnite applies a saved preset: its filter and, if it has one, its sort; the name filter stays.
+            RequireUsersOwnFilter();
+            var preset = Library.FilterPresets.Single(p => p.Id == presetId);
+            SelectedPreset = presetId;
+            SwitchPreset(preset.Sort, preset.SortDirection);
+        }
+
         /// <summary>The library the main list is over, for <see cref="MainList"/> and the count of the user's filter.</summary>
         public LibrarySnapshot Library { get; set; }
 
@@ -166,7 +178,8 @@ namespace XboxSeries.Core.Tests.Fakes
             .ToArray();
 
         private IEnumerable<LibraryGame> UsersGames(string name) =>
-            Library.Games.Where(g => !g.Hidden && g.Name.IndexOf(name, StringComparison.CurrentCultureIgnoreCase) >= 0);
+            Library.Games.Where(g => !g.Hidden && g.Name.IndexOf(name, StringComparison.CurrentCultureIgnoreCase) >= 0
+                && (SelectedPreset == null || Library.FilterPresets.Single(p => p.Id == SelectedPreset).Games.Contains(g.Id)));
 
         /// <summary>As Playnite sorts: games without the field last, ties by name.</summary>
         private static IEnumerable<LibraryGame> Sorted(IEnumerable<LibraryGame> games, GameSort? sort, SortDirection direction)

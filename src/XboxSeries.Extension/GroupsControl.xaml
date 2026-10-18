@@ -74,11 +74,12 @@
                                     </ItemsControl>
 
                                     <!--
-                                        See all: the whole Group, in My games & apps once that page exists (#37). A card as
-                                        tall as the games', drawn like Play history's tile: a collage of the Group's next
-                                        games after its 6, or the library icon when they all fit.
+                                        See all: the whole Group, on My games & apps' Full library with its preset's tab
+                                        selected. A card as tall as the games', drawn like Play history's tile: a collage
+                                        of the Group's next games after its 6, or the library icon when they all fit.
                                     -->
-                                    <Button Style="{StaticResource GroupCard}" Tag="See all" Margin="0">
+                                    <Button Style="{StaticResource GroupCard}" Tag="See all" Margin="0"
+                                            Click="OnSeeAllClick" KeyDown="OnSeeAllKeyDown">
                                         <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding SeeAll}" Tag="&#xE8F1;" />
                                     </Button>
                                 </StackPanel>
