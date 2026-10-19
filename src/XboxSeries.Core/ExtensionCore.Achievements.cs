@@ -17,7 +17,7 @@ namespace XboxSeries.Core
         private const string AchievementsUnlockedLine = " achievements unlocked";
 
         /// <summary>The rare Toast's line, before the view adds " - &lt;n&gt;%".</summary>
-        private const string RareAchievementUnlockedLine = "Rare achievement unlocked";
+        private const string RareAchievementUnlockedLine = "Rare Achievement unlocked";
 
         /// <summary>An achievement fewer than this percentage of players have is rare, as the console's rule; one of unknown rarity never is.</summary>
         private const double RareBelow = 10;
@@ -30,6 +30,14 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan RareAchievementToastDuration = TimeSpan.FromSeconds(8.5);
 
+        /// <summary>
+        /// How long the rare Toast's outro takes once it hides, the pill collapsing into its circle and the circle to a
+        /// dot: the next Toast waits for it, then the usual gap.
+        /// </summary>
+        private static readonly TimeSpan RareAchievementOutro = TimeSpan.FromSeconds(1.12);
+
+#if DEBUG
+
         /// <summary>The Debug menu's made-up unlocks' name, and its description for a rare one's second page.</summary>
         private const string DebugAchievementName = "Two's Good, but I Want Three";
         private const string DebugAchievementDescription = "Earned at least 2 stars on 15 different maps in Frontier Defense";
@@ -37,6 +45,7 @@ namespace XboxSeries.Core
         /// <summary>The Debug menu's made-up unlocks' rarity: a rare one's, and any other's.</summary>
         private const double DebugRareRarity = 1;
         private const double DebugCommonRarity = 40;
+#endif
 
         /// <summary>
         /// How long an unlock heard live waits for others with it before its Toast. PlayniteAchievements' in-game check
@@ -152,6 +161,8 @@ namespace XboxSeries.Core
             RefreshAchievements();
         }
 
+#if DEBUG
+
         /// <summary>
         /// The Debug menu: tells of <paramref name="count"/> made-up unlocks, rare ones (unlocked by 1% of players) or not,
         /// as unlocks heard live are, without counting them in the totals. Whatever game runs, or none, their Toast waits
@@ -173,6 +184,7 @@ namespace XboxSeries.Core
                 EnqueueToast(UnlocksToast(made));
             }
         }
+#endif
 
         /// <summary>A game started: its unlocks are the ones told of now, from this moment on.</summary>
         private void FollowAchievementsOf(Guid gameId)
@@ -201,7 +213,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The Toast telling of these unlocks: one with its icon, "Achievement unlocked", its name and its Score, or when
-        /// <see cref="IsRare"/> the rare Toast, "Rare achievement unlocked", with its rarity and description as well;
+        /// <see cref="IsRare"/> the rare Toast, "Rare Achievement unlocked", with its rarity and description as well;
         /// several as one ordinary Toast, "&lt;n&gt; achievements unlocked", rare ones among them or not.
         /// </summary>
         private static WaitingToast UnlocksToast(IReadOnlyList<Achievement> unlocks)

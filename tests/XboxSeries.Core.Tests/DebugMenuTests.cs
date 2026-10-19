@@ -117,12 +117,26 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_Toast_after_a_rare_one_waits_for_its_outro_before_the_usual_gap()
+        {
+            core.DebugAchievementsUnlocked(1, rare: true);
+            core.DebugAchievementsUnlocked(1, rare: false);
+
+            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.True(core.Toast.IsShown);
+        }
+
+        [Fact]
         public void A_test_rare_unlock_shows_the_rare_Toast_at_1_percent_with_its_description_and_sound()
         {
             core.DebugAchievementsUnlocked(1, rare: true);
 
             Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
-            Assert.Equal("Rare achievement unlocked", core.Toast.Text);
+            Assert.Equal("Rare Achievement unlocked", core.Toast.Text);
             Assert.Equal(1, core.Toast.Rarity);
             Assert.Equal("Two's Good, but I Want Three", core.Toast.Detail);
             Assert.Equal(100, core.Toast.Score);

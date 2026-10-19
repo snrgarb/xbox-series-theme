@@ -496,7 +496,7 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(1));
 
             Assert.Equal(rare ? ToastKind.RareAchievementUnlocked : ToastKind.AchievementUnlocked, core.Toast.Kind);
-            Assert.Equal(rare ? "Rare achievement unlocked" : "Achievement unlocked", core.Toast.Text);
+            Assert.Equal(rare ? "Rare Achievement unlocked" : "Achievement unlocked", core.Toast.Text);
             Assert.Equal(rare ? rarity : null, core.Toast.Rarity);
         }
 
@@ -512,7 +512,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.True(core.Toast.IsShown);
             Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
-            Assert.Equal("Rare achievement unlocked", core.Toast.Text);
+            Assert.Equal("Rare Achievement unlocked", core.Toast.Text);
             Assert.Equal(1, core.Toast.Rarity);
             Assert.Equal("three.png", core.Toast.Image);
             Assert.Equal("Two's Good, but I Want Three", core.Toast.Detail);
@@ -561,7 +561,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_rare_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_the_usual_gap()
+        public void The_rare_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_its_outro_and_the_usual_gap()
         {
             core.OnNotificationsChanged(new Notification[0]);
             core.OnGameStarted(hades);
@@ -576,7 +576,10 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(0.01));
             Assert.False(core.Toast.IsShown);
 
-            clock.Advance(TimeSpan.FromSeconds(0.5));
+            clock.Advance(TimeSpan.FromSeconds(1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
             Assert.True(core.Toast.IsShown);
             Assert.Equal(ToastKind.Notification, core.Toast.Kind);
         }
@@ -611,7 +614,7 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(1));
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
 
-            clock.Advance(TimeSpan.FromSeconds(9));
+            clock.Advance(TimeSpan.FromSeconds(10.2));
 
             Assert.Equal(ToastKind.Notification, core.Toast.Kind);
             Assert.Null(core.Toast.Rarity);

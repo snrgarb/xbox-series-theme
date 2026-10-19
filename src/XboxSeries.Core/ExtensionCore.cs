@@ -301,7 +301,7 @@ namespace XboxSeries.Core
             {
                 shownToast = null;
                 Toast.IsShown = false;
-                toastTimer = waitingToasts.Count == 0 ? null : clock.After(ToastGap, ShowNextToast);
+                toastTimer = waitingToasts.Count == 0 ? null : clock.After(rare ? RareAchievementOutro + ToastGap : ToastGap, ShowNextToast);
             });
         }
 
