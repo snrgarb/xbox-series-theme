@@ -8,7 +8,7 @@
     <!--
         An App, after the console's app tiles and as Home's game tiles are titled: its art above a solid black band holding
         its name in white, at the bottom left, on one line. It fills its tile, which rounds its corners off.
-        A Microsoft Store app's icon is its package's tile art, so it fills the art edge to edge over the accent, as the
+        A Microsoft Store app's icon is its package's tile art, so it covers the art edge to edge over the accent, as the
         console's do. Any other App's icon sits inset on white, a soft shadow behind it. With no icon, or one that can't be
         read, a generic app glyph in its place, as large: dark grey on white, white on the accent.
         The icon is decoded at twice the widest a tile gets, for the 4K screen's 2 pixels to a 1080p one, and no larger.
@@ -52,6 +52,7 @@
             <DataTrigger Binding="{Binding IsStoreApp}" Value="True">
                 <Setter TargetName="Art" Property="Background" Value="{DynamicResource GlyphBrush}" />
                 <Setter TargetName="Shadowed" Property="Margin" Value="0" />
+                <Setter TargetName="Icon" Property="Stretch" Value="UniformToFill" />
                 <Setter TargetName="Shadowed" Property="CacheMode" Value="{x:Null}" />
                 <Setter TargetName="Icon" Property="Effect" Value="{x:Null}" />
                 <Setter TargetName="NoIconGlyph" Property="Foreground" Value="White" />

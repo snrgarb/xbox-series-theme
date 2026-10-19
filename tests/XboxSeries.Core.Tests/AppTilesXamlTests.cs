@@ -60,6 +60,8 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("True", (string)store.Attribute("Value"));
             Assert.Equal("{DynamicResource GlyphBrush}", Set("Art", "Background"));
             Assert.Equal("0", Set("Shadowed", "Margin"));
+            // The art is wider than tall over the name's band, so the square tile art covers it, not fits in it.
+            Assert.Equal("UniformToFill", Set("Icon", "Stretch"));
             Assert.Equal("{x:Null}", Set("Icon", "Effect"));
             Assert.Equal("White", Set("NoIconGlyph", "Foreground"));
         }
@@ -74,7 +76,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("{StaticResource AppTileArt}", (string)Named(doc.Root, list).Attribute("ItemTemplate"));
             Assert.Contains(doc.Descendants(), e => e.Name.LocalName == "AppTiles");
             Assert.DoesNotContain(doc.Descendants(), e => e.Name.LocalName == "DataTemplate"
-                                                          && e.Descendants().Any(d => (string)d.Attribute("Text") == "&#xECAA;" || (string)d.Attribute("Text") == ""));
+                                                          && e.Descendants().Any(d => (string)d.Attribute("Text") == "\uECAA"));
         }
     }
 }
