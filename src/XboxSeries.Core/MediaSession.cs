@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace XboxSeries.Core
 {
-    /// <summary>One app's media, as Windows' media flyout shows it: the track, its art, the app and whether it plays.</summary>
+    /// <summary>One app's media, as Windows' media flyout shows it: the track, the app and whether it plays. Its art is fetched apart.</summary>
     public sealed class MediaSession
     {
         /// <summary>
@@ -40,21 +40,22 @@ namespace XboxSeries.Core
         };
 
         public MediaSession(
-            string appId, string title, string artist, bool isPlaying, object art = null,
+            string appId, string title, string artist, bool isPlaying,
             bool canTogglePlayPause = true, bool canGoPrevious = true, bool canGoNext = true,
-            TimeSpan position = default, TimeSpan duration = default, DateTime lastUpdated = default)
+            TimeSpan position = default, TimeSpan duration = default, DateTime lastUpdated = default,
+            bool hasArt = true)
         {
             AppId = appId ?? "";
             Title = title ?? "";
             Artist = string.IsNullOrEmpty(artist) ? null : artist;
             IsPlaying = isPlaying;
-            Art = art;
             CanTogglePlayPause = canTogglePlayPause;
             CanGoPrevious = canGoPrevious;
             CanGoNext = canGoNext;
             Position = position;
             Duration = duration;
             LastUpdated = lastUpdated;
+            HasArt = hasArt;
         }
 
         /// <summary>The app's raw id, as Windows has it: an AUMID, an executable's name or path.</summary>
@@ -67,11 +68,6 @@ namespace XboxSeries.Core
 
         /// <summary>Whether it is playing, rather than paused or stopped.</summary>
         public bool IsPlaying { get; }
-
-        /// <summary>
-        /// The album art as the extension has decoded it, ready to show, which the core only passes on; null for none.
-        /// </summary>
-        public object Art { get; }
 
         /// <summary>Whether the app takes play/pause now, as its playback controls say.</summary>
         public bool CanTogglePlayPause { get; }
@@ -90,6 +86,12 @@ namespace XboxSeries.Core
 
         /// <summary>When the app last told <see cref="Position"/>, in <see cref="IClock.Now"/>'s terms (local time).</summary>
         public DateTime LastUpdated { get; }
+
+        /// <summary>
+        /// Whether the app has art for what it plays now. The art itself is fetched apart (<see cref="IMediaSessions.FetchArt"/>);
+        /// this changing, as an app tells of the art after the title, is what makes it a change.
+        /// </summary>
+        public bool HasArt { get; }
 
         /// <summary>The app as people know it, Spotify, Chrome or Edge, rather than its raw id.</summary>
         public string App => FriendlyAppName(AppId);
