@@ -632,6 +632,21 @@ namespace XboxSeries.Core
             Detail = other.Detail;
             App = other.App;
             Art = other.Art;
+
+            // A Now Playing card keeps its own controls, as focus may be on one, each turning on or off and Play/Pause
+            // showing Play or Pause as the fresh card's say.
+            if (controls != null && other.Controls != null && controls.Count == other.Controls.Count)
+            {
+                for (var i = 0; i < controls.Count; i++)
+                {
+                    controls[i].IsEnabled = other.Controls[i].IsEnabled;
+                    controls[i].IsPlaying = other.Controls[i].IsPlaying;
+                }
+            }
+            else
+            {
+                Controls = other.Controls;
+            }
         }
 
         private void Set<T>(ref T field, T value, string name)
