@@ -69,7 +69,9 @@ namespace XboxSeries.Core.Tests
         public void Every_kind_has_a_tile_image_a_slide_and_but_for_the_default_a_trigger_picking_its_image()
         {
             var images = Load("ToastImages.xaml");
-            foreach (var kind in Enum.GetNames(typeof(ToastKind)))
+            // But for the rare achievement's, which isn't the banner at all but a control of its own, the blue pill with
+            // its diamond (RareAchievementToast.xaml, RareAchievementXamlTests), so it has no tile to slide or picture.
+            foreach (var kind in Enum.GetNames(typeof(ToastKind)).Where(k => k != nameof(ToastKind.RareAchievementUnlocked)))
             {
                 Assert.Single(images.Descendants(), e => (string)e.Attribute(X + "Key") == "ToastImage." + kind);
                 Assert.Single(images.Descendants(), e => (string)e.Attribute(X + "Key") == "ToastSlide." + kind);
