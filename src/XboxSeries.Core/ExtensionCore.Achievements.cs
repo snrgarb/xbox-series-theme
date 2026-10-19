@@ -130,6 +130,14 @@ namespace XboxSeries.Core
             RefreshAchievements();
         }
 
+        /// <summary>
+        /// The Debug menu: tells of <paramref name="count"/> made-up unlocks, rare ones (unlocked by 1% of players) or not,
+        /// as unlocks heard live are, without counting them in the totals.
+        /// </summary>
+        public void DebugAchievementsUnlocked(int count, bool rare)
+        {
+        }
+
         /// <summary>A game started: its unlocks are the ones told of now, from this moment on.</summary>
         private void FollowAchievementsOf(Guid gameId)
         {
