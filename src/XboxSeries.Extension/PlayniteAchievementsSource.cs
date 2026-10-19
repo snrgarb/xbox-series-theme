@@ -17,9 +17,11 @@ namespace XboxSeries.Extension
     /// </summary>
     /// <remarks>
     /// Its cache's changes, from a game's refresh after it exits, its periodic refresh or the user's edits, arrive on
-    /// threads of its own, often many at once: they mark the games named for reading again, and raise
-    /// <see cref="Changed"/> once on the UI thread for all that arrive within <see cref="ChangeCoalescing"/>. An unlock its
-    /// in-game monitor hears of while the game runs raises <see cref="Unlocked"/> on the UI thread.
+    /// threads of its own, often many at once: they mark the games named for reading again, and once
+    /// <see cref="ChangeCoalescing"/> has passed, those marked meanwhile are read off the UI thread, then
+    /// <see cref="Changed"/> is raised once on it. <see cref="Games"/> only hands out the last read, so the UI thread never
+    /// waits on PlayniteAchievements. An unlock its in-game monitor hears of while the game runs raises
+    /// <see cref="Unlocked"/> on the UI thread.
     /// </remarks>
     internal sealed partial class PlayniteAchievementsSource : IAchievements, IDisposable
     {
@@ -38,7 +40,7 @@ namespace XboxSeries.Extension
         /// <summary>Guards <see cref="readAll"/> and <see cref="stale"/>, which any thread marks.</summary>
         private readonly object marks = new object();
 
-        /// <summary>One read of PlayniteAchievements at a time, and the games as last read.</summary>
+        /// <summary>One read of PlayniteAchievements at a time, and the games it keeps.</summary>
         private readonly object reading = new object();
 
         private readonly Dictionary<Guid, GameAchievements> games = new Dictionary<Guid, GameAchievements>();
@@ -47,8 +49,8 @@ namespace XboxSeries.Extension
 
         private bool readAll = true;
 
-        /// <summary>The games as last read, handed out until something is marked to read again.</summary>
-        private GameAchievements[] lastRead = NoGames;
+        /// <summary>The games as last read, which <see cref="Games"/> hands out.</summary>
+        private volatile GameAchievements[] lastRead = NoGames;
 
         /// <summary>The thread reading now, whose own cache events (as its scope settling) aren't changes; 0 when none is.</summary>
         private int readingThread;
@@ -79,7 +81,7 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Finds PlayniteAchievements and starts following it, on the UI thread once every plugin is loaded; reads every
-        /// game off it, and raises <see cref="Changed"/> once they're read. Does nothing without it.
+        /// game off the UI thread, and raises <see cref="Changed"/> once they're read. Does nothing without it.
         /// </summary>
         public void Start(Dispatcher uiDispatcher)
         {
@@ -97,20 +99,19 @@ namespace XboxSeries.Extension
             Subscribe(bound);
             logger.Info("Achievements are read from PlayniteAchievements");
 
-            // The first read of every game, off the UI thread, so the core's first read finds them already read.
-            Task.Run(() =>
-            {
-                Games();
-                SignalChanged();
-            });
+            // Every game is marked from the start: this is the first read.
+            SignalChanged();
         }
 
-        public IReadOnlyList<GameAchievements> Games()
+        public IReadOnlyList<GameAchievements> Games() => binding == null ? NoGames : lastRead;
+
+        /// <summary>Reads the games marked since the last read, off the UI thread, keeping what was read before on a failure.</summary>
+        private void Read()
         {
             var bound = binding;
             if (bound == null)
             {
-                return NoGames;
+                return;
             }
 
             lock (reading)
@@ -127,7 +128,7 @@ namespace XboxSeries.Extension
 
                 if (!all && some.Length == 0)
                 {
-                    return lastRead;
+                    return;
                 }
 
                 readingThread = Thread.CurrentThread.ManagedThreadId;
@@ -172,7 +173,7 @@ namespace XboxSeries.Extension
                         logger.Error(e, "Couldn't read PlayniteAchievements' achievements; showing what was last read");
                     }
 
-                    return lastRead;
+                    return;
                 }
                 finally
                 {
@@ -180,7 +181,6 @@ namespace XboxSeries.Extension
                 }
 
                 lastRead = games.Values.ToArray();
-                return lastRead;
             }
         }
 
@@ -243,8 +243,8 @@ namespace XboxSeries.Extension
         private bool IsOwnRead() => readingThread == Thread.CurrentThread.ManagedThreadId;
 
         /// <summary>
-        /// <see cref="Changed"/>, raised on the UI thread once <see cref="ChangeCoalescing"/> has passed; any signalled
-        /// meanwhile are part of it.
+        /// A read of what is marked once <see cref="ChangeCoalescing"/> has passed, then <see cref="Changed"/> on the UI
+        /// thread; any signalled meanwhile are part of it.
         /// </summary>
         private void SignalChanged()
         {
@@ -260,11 +260,20 @@ namespace XboxSeries.Extension
         private void OnChangeTimer(object sender, EventArgs e)
         {
             changeTimer.Stop();
-            Interlocked.Exchange(ref changePending, 0);
-            if (binding != null)
+            var ui = dispatcher;
+            Task.Run(() =>
             {
-                Changed?.Invoke();
-            }
+                // Marks from now on wait for the next read: this one may already have taken them.
+                Interlocked.Exchange(ref changePending, 0);
+                Read();
+                ui.BeginInvoke(new Action(() =>
+                {
+                    if (binding != null)
+                    {
+                        Changed?.Invoke();
+                    }
+                }));
+            });
         }
 
         /// <summary>An unlock heard of live, on the UI thread, as PlayniteAchievements raises it there.</summary>
@@ -288,11 +297,8 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            // Its cache has it too by now, or will soon: the game is read again on the next read.
-            lock (marks)
-            {
-                stale.Add(gameId);
-            }
+            // Its cache has it too by now, or will soon: the game is read again.
+            Mark(new[] { gameId });
 
             Unlocked?.Invoke(gameId, achievement);
         }

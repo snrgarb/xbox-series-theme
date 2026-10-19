@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -423,9 +424,17 @@ namespace XboxSeries.Extension
 
             public void RemoveAll()
             {
+                // Each on its own, so one that fails still leaves the static AchievementUnlocked's handler removed.
                 foreach (var entry in subscribed)
                 {
-                    entry.Key.RemoveEventHandler(entry.Value.Key, entry.Value.Value);
+                    try
+                    {
+                        entry.Key.RemoveEventHandler(entry.Value.Key, entry.Value.Value);
+                    }
+                    catch (Exception e) when (!(e is OutOfMemoryException))
+                    {
+                        logger.Warn($"Couldn't stop following PlayniteAchievements' {entry.Key.Name}: {e.Message}");
+                    }
                 }
 
                 subscribed.Clear();
@@ -478,7 +487,8 @@ namespace XboxSeries.Extension
                 }
                 catch (TargetInvocationException e) when (e.InnerException != null)
                 {
-                    throw e.InnerException;
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw;
                 }
             }
 

@@ -78,9 +78,7 @@ namespace XboxSeries.Core
         public void OnAchievementsChanged()
         {
             recordedAchievements = achievements.IsAvailable ? achievements.Games() : new GameAchievements[0];
-            var unlocked = recordedAchievements
-                .SelectMany(g => g.Achievements.Where(a => a.UnlockedAt != null).Select(a => new GameAchievement(g.GameId, a)))
-                .ToList();
+            var unlocked = RecordedUnlocks().ToList();
             var shown = new HashSet<string>(unlocked.Select(u => u.Key));
             liveUnlocks.RemoveAll(u => shown.Contains(u.Key));
 
@@ -183,13 +181,19 @@ namespace XboxSeries.Core
             return CommonScore;
         }
 
+        /// <summary>Every unlock in the games' achievements as last read.</summary>
+        private IEnumerable<GameAchievement> RecordedUnlocks() =>
+            recordedAchievements.SelectMany(g => g.Achievements.Where(a => a.UnlockedAt != null).Select(a => new GameAchievement(g.GameId, a)));
+
         /// <summary>
         /// The Profile's totals and last unlocks, over every game this PC has achievements for; none at all without
-        /// PlayniteAchievements, or with no game having any. Profile &amp; system showing shows them in place.
+        /// PlayniteAchievements, with no game having any, or before the first read, so unlocks heard live never make
+        /// totals on their own. Profile &amp; system showing shows them in place.
         /// </summary>
         private void RefreshAchievements()
         {
-            var any = achievements.IsAvailable && (liveUnlocks.Count > 0 || recordedAchievements.Any(g => g.Achievements.Count > 0));
+            var any = achievements.IsAvailable && achievementsRead
+                && (liveUnlocks.Count > 0 || recordedAchievements.Any(g => g.Achievements.Count > 0));
             if (!any)
             {
                 Guide.Achievements = null;
@@ -197,8 +201,7 @@ namespace XboxSeries.Core
             }
             else
             {
-                var unlocked = recordedAchievements
-                    .SelectMany(g => g.Achievements.Where(a => a.UnlockedAt != null).Select(a => new GameAchievement(g.GameId, a)))
+                var unlocked = RecordedUnlocks()
                     .Concat(liveUnlocks)
                     .ToList();
                 Guide.Achievements = new ProfileAchievements(unlocked.Sum(u => ScoreOf(u.Achievement)), unlocked.Count);
