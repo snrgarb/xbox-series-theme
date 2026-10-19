@@ -1,7 +1,12 @@
 <!--
-    Playnite's game status view, shown over the Dashboard while a game launches or installs: the Dashboard's dark
-    background, the game's cover, its status in white under it in the header font, and Playnite's action buttons as the
-    console's grey tiles, the focused one lighter and ringed in green.
+    Playnite's game status view, "<Game> is starting…" then "<Game> is running…", shown while a game launches and runs,
+    drawn as the Launch screen it follows: the game's art over the whole view, chosen as Home's hero and the Launch screen
+    choose it (the extension's HeroLayer), so the Launch screen's fade-out reveals the same picture. Background art as it
+    is; without it, the cover blurred and darkened; black for neither. Over it, Home's hero scrim and a shade behind the
+    centred column, then the cover, the status in white in the header font and Playnite's Close as the console's grey
+    tile, the focused one lighter and ringed in green.
+    Playnite injects no custom elements into this template, and the extension's hero, at Main's level, would follow the
+    selected game rather than the launching one, so the art is plain XAML on the view's Game.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -19,7 +24,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type GameStatus}">
-                    <Grid Background="{DynamicResource MainBackgourndBrush}"
+                    <Grid Background="Black"
                           x:Name="PART_ViewHost"
                           KeyboardNavigation.DirectionalNavigation="Contained"
                           KeyboardNavigation.TabNavigation="Cycle"
@@ -37,6 +42,44 @@
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
+                        <!--
+                            The art, as HeroLayer draws it. Playnite's converter resolves the database's relative paths.
+                            The cover, small and portrait, is blurred (radius 60, overhanging by 120 so the blur's soft
+                            edges fall outside) and darkened; the triggers below give it its picture only when there is
+                            no background art, so under background art it is neither decoded nor blurred. Background
+                            art gets no effect: it is full size.
+                        -->
+                        <Grid x:Name="XboxGameStatusArt" Grid.RowSpan="5" Grid.ColumnSpan="3"
+                              ClipToBounds="True" IsHitTestVisible="False">
+                            <Grid x:Name="XboxGameStatusCoverArt" Visibility="Collapsed">
+                                <Image x:Name="XboxGameStatusCover" Stretch="UniformToFill" Margin="-120"
+                                       HorizontalAlignment="Center" VerticalAlignment="Top"
+                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                    <Image.Effect>
+                                        <BlurEffect Radius="60" RenderingBias="Performance" />
+                                    </Image.Effect>
+                                </Image>
+                                <Rectangle Fill="#99000000" />
+                            </Grid>
+                            <Image x:Name="XboxGameStatusBackground" Stretch="UniformToFill"
+                                   HorizontalAlignment="Center" VerticalAlignment="Top"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   Source="{Binding Game.BackgroundImage, Converter={StaticResource ImageStringToImageConverter}}" />
+                        </Grid>
+
+                        <!-- Home's hero scrim, then a soft shade behind the centred cover, status and Close for bright art. -->
+                        <Rectangle Grid.RowSpan="5" Grid.ColumnSpan="3" IsHitTestVisible="False"
+                                   Fill="{DynamicResource XboxHeroScrimBrush}" />
+                        <Rectangle Grid.RowSpan="5" Grid.ColumnSpan="3" IsHitTestVisible="False">
+                            <Rectangle.Fill>
+                                <RadialGradientBrush Center="0.5,0.55" GradientOrigin="0.5,0.55" RadiusX="0.45" RadiusY="0.6">
+                                    <GradientStop Color="#B3000000" Offset="0" />
+                                    <GradientStop Color="#80000000" Offset="0.55" />
+                                    <GradientStop Color="#00000000" Offset="1" />
+                                </RadialGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+
                         <Image Name="PART_ImageCover" RenderOptions.BitmapScalingMode="Fant"
                                Height="360" HorizontalAlignment="Center"
                                Grid.Row="1" Grid.Column="1" />
@@ -50,6 +93,19 @@
                                     HorizontalAlignment="Center"
                                     Grid.Row="3" Grid.Column="1" />
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- No background art (as the hero chooses): the cover, blurred and darkened; with no cover either, black. -->
+                        <DataTrigger Binding="{Binding Game.BackgroundImage}" Value="{x:Null}">
+                            <Setter TargetName="XboxGameStatusCoverArt" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="XboxGameStatusCover" Property="Source"
+                                    Value="{Binding Game.CoverImage, Converter={StaticResource ImageStringToImageConverter}}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Game.BackgroundImage}" Value="">
+                            <Setter TargetName="XboxGameStatusCoverArt" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="XboxGameStatusCover" Property="Source"
+                                    Value="{Binding Game.CoverImage, Converter={StaticResource ImageStringToImageConverter}}" />
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
