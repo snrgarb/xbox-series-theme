@@ -215,23 +215,67 @@ namespace XboxSeries.Extension
 
         public void Power(PowerCommand command)
         {
+            // Carried out here, as Playnite's own Computer class does, not through its main menu's commands: those ask
+            // "Are you sure?" again, and our dialog already asked. Shutting down or restarting, Playnite saves and closes
+            // on its own as Windows ends the session.
             switch (command)
             {
                 case PowerCommand.TurnOffPc:
-                    Later(FullscreenCommand("ShutdownSystemCommand"));
+                    Later(() => RunShutdown("/s /hybrid /t 0"));
                     break;
                 case PowerCommand.RestartPc:
-                    Later(FullscreenCommand("RestartSystemCommand"));
+                    Later(() => RunShutdown("-r -t 0"));
                     break;
                 case PowerCommand.Sleep:
-                    Later(FullscreenCommand("SleepSystemCommand"));
+                    Later(Sleep);
                     break;
                 case PowerCommand.ExitPlaynite:
-                    Later(FullscreenCommand("ExitCommand"));
+                    Later(QuitPlaynite);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(command), command, null);
             }
+        }
+
+        private static void RunShutdown(string arguments)
+        {
+            try
+            {
+                using (Process.Start(new ProcessStartInfo("shutdown.exe", arguments) { CreateNoWindow = true, UseShellExecute = false }))
+                {
+                }
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, $"Couldn't run shutdown.exe {arguments}");
+            }
+        }
+
+        private static void Sleep()
+        {
+            if (!NativeMethods.SetSuspendState(hibernate: false, forceCritical: true, disableWakeEvent: false))
+            {
+                logger.Error($"Couldn't put the PC to sleep: error {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
+            }
+        }
+
+        /// <summary>
+        /// Not in the SDK: Playnite's own exit, <c>PlayniteApplication.Current.Quit()</c>, which saves settings and releases
+        /// resources first; the WPF application is that PlayniteApplication. On a Playnite build without it, the WPF
+        /// shutdown, after which Playnite still releases them.
+        /// </summary>
+        private static void QuitPlaynite()
+        {
+            var app = Application.Current;
+            var quit = app?.GetType().GetMethod("Quit", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
+            if (quit != null)
+            {
+                quit.Invoke(app, new object[] { true });
+                return;
+            }
+
+            logger.Warn("Can't quit as Playnite does: this Playnite build has no PlayniteApplication.Current.Quit");
+            Application.Current?.Shutdown();
         }
 
         /// <summary>
@@ -258,8 +302,14 @@ namespace XboxSeries.Extension
         {
             if (command != null)
             {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() => command.Execute(null)));
+                Later(() => command.Execute(null));
             }
+        }
+
+        /// <summary>Runs <paramref name="action"/> once the caller is done, as <see cref="Later(ICommand)"/>.</summary>
+        private static void Later(Action action)
+        {
+            Application.Current.Dispatcher.BeginInvoke(action);
         }
 
         public void SetFavourite(Guid gameId, bool favourite)

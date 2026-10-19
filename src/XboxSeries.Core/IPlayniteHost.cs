@@ -86,7 +86,10 @@ namespace XboxSeries.Core
         /// <summary>Opens Playnite's own Fullscreen main menu: Switch to Desktop mode, Update library, Minimise, Exit.</summary>
         void OpenMainMenu();
 
-        /// <summary>Carries out <paramref name="command"/> as Playnite's own Fullscreen menu does, closing Playnite cleanly first where it must.</summary>
+        /// <summary>
+        /// Carries out <paramref name="command"/> itself, without Playnite's own "Are you sure?": turning off or restarting
+        /// the PC, Playnite closes cleanly as Windows ends the session; sleeping, it keeps running.
+        /// </summary>
         void Power(PowerCommand command);
 #if DEBUG
 
