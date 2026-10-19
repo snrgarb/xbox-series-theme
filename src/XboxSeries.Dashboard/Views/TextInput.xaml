@@ -1,0 +1,106 @@
+<!--
+    Playnite's on-screen keyboard, which Y and every text prompt of Playnite's opens: its keys and their pad buttons are
+    Playnite's, laid out as it lays them out. Drawn as the Console keyboard (the extension's ConsoleKeyboardControl.xaml):
+    dark grey keys on a dark grey panel, the focused key lighter with the green focus ring hugging it, lighter again
+    while pressed; the field above them Search's pill.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- A key: the Console keyboard's grey block, 4 off its neighbours, its ring 3 wide just outside it. -->
+    <Style x:Key="TextInputButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
+        <Setter Property="Margin" Value="2" />
+        <Setter Property="Padding" Value="12,4,12,4" />
+        <Setter Property="MinWidth" Value="76" />
+        <Setter Property="MinHeight" Value="60" />
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="Background" Value="#FF2F3238" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonEx">
+                    <Grid>
+                        <Border x:Name="Back" Background="{TemplateBinding Background}" CornerRadius="2" />
+                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="{TemplateBinding FontSize}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                   Margin="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </TextBlock>
+                        <Border x:Name="FocusRing" Margin="-3" BorderThickness="3" CornerRadius="4"
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">
+                            <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                            </Border>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Back" Property="Background" Value="#FF555963" />
+                        </Trigger>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Back" Property="Background" Value="#FF555963" />
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Back" Property="Background" Value="#FF7A7E88" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TextInputCheckbox" BasedOn="{StaticResource {x:Type CheckBoxEx}}" TargetType="CheckBoxEx">
+        <Setter Property="Margin" Value="0,8,0,8" />
+    </Style>
+
+    <!-- The field: Search's pill, the keyboard's width, white text in Segoe UI, ringed in green while it has focus. -->
+    <Style x:Key="TextInputTextbox" BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
+        <Setter Property="Margin" Value="0,0,0,36" />
+        <Setter Property="Height" Value="54" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="Padding" Value="28,0,28,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Grid>
+                        <Border Background="{TemplateBinding Background}" CornerRadius="27" />
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" />
+                        <Border x:Name="FocusRing" Margin="-5" BorderThickness="4" CornerRadius="32"
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">
+                            <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" />
+                            </Border>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The prompt's options, shown only when it has some: the panel's grey, without a padding of its own when empty. -->
+    <Style x:Key="TextInputOptionsBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style x:Key="TextInputKeysBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+</ResourceDictionary>

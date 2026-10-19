@@ -1,0 +1,23 @@
+<!-- Playnite's tooltips: a small dark panel of the extension's menus' grey, white text in Segoe UI. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style TargetType="{x:Type ToolTip}">
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,6,12,6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

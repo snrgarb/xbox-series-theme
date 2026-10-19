@@ -1,0 +1,32 @@
+<!--
+    Playnite's progress bar, as its progress window shows it: the Game hub's thin rounded bar, green over a faint white
+    track (Views/GameDetails.xaml, XboxHubProgressBar).
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style TargetType="{x:Type ProgressBar}">
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Background" Value="#33FFFFFF" />
+        <Setter Property="Foreground" Value="{DynamicResource GlyphLightBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid>
+                        <Border x:Name="PART_Track" Background="{TemplateBinding Background}" CornerRadius="3" />
+                        <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="3"
+                                HorizontalAlignment="Left" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ProgressWindowProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+        <Setter Property="Height" Value="6" />
+        <Setter Property="Margin" Value="0,28,0,0" />
+    </Style>
+</ResourceDictionary>

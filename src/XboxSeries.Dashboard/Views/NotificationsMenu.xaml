@@ -1,0 +1,30 @@
+<!--
+    Playnite's notifications, without the extension (with it, the Guide's Notifications shows them): a full-height dark
+    grey panel at the right, its title in the header font, Dismiss all, then each notification a grey tile of wrapped
+    text, the focused one lighter and ringed in green.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style x:Key="NotificationsMenuBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
+    </Style>
+
+    <Style x:Key="NotificationsMenuItemButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
+        <Setter Property="Margin" Value="12,4,12,4" />
+        <Setter Property="Padding" Value="20,14,20,14" />
+        <Setter Property="Background" Value="{DynamicResource XboxTileBrush}" />
+    </Style>
+
+    <Style x:Key="NotificationsMenuDismissButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
+        <Setter Property="Margin" Value="12,2,12,20" />
+        <Setter Property="Padding" Value="20,0,20,0" />
+        <Setter Property="MinHeight" Value="60" />
+    </Style>
+
+    <Style x:Key="NotificationsMenuHeaderText" BasedOn="{StaticResource XboxPanelTitle}" TargetType="TextBlock">
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,20,0" />
+    </Style>
+</ResourceDictionary>
