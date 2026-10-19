@@ -39,13 +39,22 @@ namespace XboxSeries.Core
             Known("discord", "Discord"),
         };
 
-        public MediaSession(string appId, string title, string artist, bool isPlaying, object art = null)
+        public MediaSession(
+            string appId, string title, string artist, bool isPlaying, object art = null,
+            bool canTogglePlayPause = true, bool canGoPrevious = true, bool canGoNext = true,
+            TimeSpan position = default, TimeSpan duration = default, DateTime lastUpdated = default)
         {
             AppId = appId ?? "";
             Title = title ?? "";
             Artist = string.IsNullOrEmpty(artist) ? null : artist;
             IsPlaying = isPlaying;
             Art = art;
+            CanTogglePlayPause = canTogglePlayPause;
+            CanGoPrevious = canGoPrevious;
+            CanGoNext = canGoNext;
+            Position = position;
+            Duration = duration;
+            LastUpdated = lastUpdated;
         }
 
         /// <summary>The app's raw id, as Windows has it: an AUMID, an executable's name or path.</summary>
@@ -63,6 +72,24 @@ namespace XboxSeries.Core
         /// The album art as the extension has decoded it, ready to show, which the core only passes on; null for none.
         /// </summary>
         public object Art { get; }
+
+        /// <summary>Whether the app takes play/pause now, as its playback controls say.</summary>
+        public bool CanTogglePlayPause { get; }
+
+        /// <summary>Whether the app takes previous now, as its playback controls say.</summary>
+        public bool CanGoPrevious { get; }
+
+        /// <summary>Whether the app takes next now, as its playback controls say.</summary>
+        public bool CanGoNext { get; }
+
+        /// <summary>How far into the track it was at <see cref="LastUpdated"/>; only accurate then.</summary>
+        public TimeSpan Position { get; }
+
+        /// <summary>The track's length; zero for none, as for a live stream.</summary>
+        public TimeSpan Duration { get; }
+
+        /// <summary>When the app last told <see cref="Position"/>, in <see cref="IClock.Now"/>'s terms (local time).</summary>
+        public DateTime LastUpdated { get; }
 
         /// <summary>The app as people know it, Spotify, Chrome or Edge, rather than its raw id.</summary>
         public string App => FriendlyAppName(AppId);

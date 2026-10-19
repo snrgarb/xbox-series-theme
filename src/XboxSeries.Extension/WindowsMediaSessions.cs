@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -35,6 +36,19 @@ namespace XboxSeries.Extension
         public event Action Changed;
 
         public MediaSession Current => current;
+
+        // Stub (#75): every app's session, read and followed.
+        public IReadOnlyList<MediaSession> Sessions => current == null ? new MediaSession[0] : new[] { current };
+
+        // Stub (#73): asks the app to carry out the command.
+        public void Send(MediaCommand command, string appId)
+        {
+        }
+
+        // Stub (#74): reads and decodes the app's art, answering through ArtFetched.
+        public void FetchArt(string appId, int request)
+        {
+        }
 
         /// <summary>Starts following Windows' current media session, where Windows has the API.</summary>
         public void Start()
@@ -90,7 +104,9 @@ namespace XboxSeries.Extension
         private static bool Same(MediaSession a, MediaSession b) =>
             a == null || b == null
                 ? a == b
-                : a.AppId == b.AppId && a.Title == b.Title && a.Artist == b.Artist && a.IsPlaying == b.IsPlaying && a.Art == b.Art;
+                : a.AppId == b.AppId && a.Title == b.Title && a.Artist == b.Artist && a.IsPlaying == b.IsPlaying && a.Art == b.Art
+                    && a.CanTogglePlayPause == b.CanTogglePlayPause && a.CanGoPrevious == b.CanGoPrevious && a.CanGoNext == b.CanGoNext
+                    && a.Position == b.Position && a.Duration == b.Duration && a.LastUpdated == b.LastUpdated;
 
         /// <summary>
         /// Follows Windows' current media session. Every refresh, whatever asked for it, runs alone and in turn, off the
@@ -118,6 +134,7 @@ namespace XboxSeries.Extension
             private readonly TypedEventHandler<GlobalSystemMediaTransportControlsSessionManager, SessionsChangedEventArgs> onSessionsChanged;
             private readonly TypedEventHandler<GlobalSystemMediaTransportControlsSession, MediaPropertiesChangedEventArgs> onMediaChanged;
             private readonly TypedEventHandler<GlobalSystemMediaTransportControlsSession, PlaybackInfoChangedEventArgs> onPlaybackChanged;
+            private readonly TypedEventHandler<GlobalSystemMediaTransportControlsSession, TimelinePropertiesChangedEventArgs> onTimelineChanged;
 
             /// <summary>Windows' session manager, asked for once and kept; null until it has answered.</summary>
             private GlobalSystemMediaTransportControlsSessionManager manager;
@@ -138,6 +155,7 @@ namespace XboxSeries.Extension
                 onSessionsChanged = (_, __) => Refresh("media sessions came or went");
                 onMediaChanged = (_, __) => Refresh($"{sessionApp} changed what it plays");
                 onPlaybackChanged = (_, __) => Refresh($"{sessionApp} played, paused or stopped");
+                onTimelineChanged = (_, __) => Refresh($"{sessionApp} moved in its track");
             }
 
             /// <summary>Reads the current session again, in turn, off the calling thread. Never throws.</summary>
@@ -303,6 +321,7 @@ namespace XboxSeries.Extension
                     var app = sessionApp;
                     next.MediaPropertiesChanged += onMediaChanged;
                     next.PlaybackInfoChanged += onPlaybackChanged;
+                    next.TimelinePropertiesChanged += onTimelineChanged;
                     logger.Info($"Now Playing: following the media session of {app}");
                     return true;
                 }
@@ -322,6 +341,7 @@ namespace XboxSeries.Extension
                 {
                     last.MediaPropertiesChanged -= onMediaChanged;
                     last.PlaybackInfoChanged -= onPlaybackChanged;
+                    last.TimelinePropertiesChanged -= onTimelineChanged;
                 });
             }
 
@@ -346,8 +366,12 @@ namespace XboxSeries.Extension
             {
                 var app = playing.SourceAppUserModelId;
                 var properties = await playing.TryGetMediaPropertiesAsync().AsTask().ConfigureAwait(false);
-                var status = playing.GetPlaybackInfo()?.PlaybackStatus;
-                var isPlaying = status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                var playback = playing.GetPlaybackInfo();
+                var isPlaying = playback?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                var controls = playback?.Controls;
+                var timeline = playing.GetTimelineProperties();
+                var duration = timeline == null ? TimeSpan.Zero : timeline.EndTime - timeline.StartTime;
+                var position = timeline == null ? TimeSpan.Zero : timeline.Position - timeline.StartTime;
                 var title = properties?.Title;
                 var artist = properties?.Artist;
 
@@ -359,7 +383,14 @@ namespace XboxSeries.Extension
                     artTrack = track;
                 }
 
-                return new MediaSession(app, title, artist, isPlaying, art);
+                return new MediaSession(
+                    app, title, artist, isPlaying, art,
+                    canTogglePlayPause: controls?.IsPlayPauseToggleEnabled ?? false,
+                    canGoPrevious: controls?.IsPreviousEnabled ?? false,
+                    canGoNext: controls?.IsNextEnabled ?? false,
+                    position: position < TimeSpan.Zero ? TimeSpan.Zero : position,
+                    duration: duration < TimeSpan.Zero ? TimeSpan.Zero : duration,
+                    lastUpdated: timeline?.LastUpdatedTime.LocalDateTime ?? default);
             }
 
             /// <summary>The art, a frozen bitmap decoded at <see cref="ArtWidth"/>; null for none, or art that won't decode.</summary>

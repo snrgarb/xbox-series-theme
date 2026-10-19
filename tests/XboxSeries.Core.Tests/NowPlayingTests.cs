@@ -96,7 +96,7 @@ namespace XboxSeries.Core.Tests
             FocusOn(GuideItemKind.NothingPlaying);
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             var item = Flyout.Last();
             Assert.Equal(GuideItemKind.NowPlaying, item.Kind);
@@ -112,7 +112,7 @@ namespace XboxSeries.Core.Tests
             FocusOn(GuideItemKind.Mute);
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.Equal(GuideItemKind.NowPlaying, Flyout.Last().Kind);
             Assert.Equal(GuideItemKind.Mute, Guide.FocusedItem.Kind);
@@ -129,14 +129,14 @@ namespace XboxSeries.Core.Tests
             var item = items.Last();
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: false);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.Same(items, Flyout);
             Assert.False(item.IsPlaying);
             Assert.Same(item, Guide.FocusedItem);
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.True(item.IsPlaying);
         }
@@ -152,7 +152,7 @@ namespace XboxSeries.Core.Tests
             var art = new object();
 
             media.Current = new MediaSession("MSEdge", "Lo-fi beats", "Lofi Girl", isPlaying: true, art: art);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.Same(item, Flyout.Last());
             Assert.Equal("Lo-fi beats", item.Title);
@@ -178,7 +178,7 @@ namespace XboxSeries.Core.Tests
             var device = Guide.FocusedItem;
 
             media.Current = new MediaSession(Spotify, "Save Your Tears", "The Weeknd", isPlaying: true);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.Same(items, Flyout);
             Assert.True(output.IsExpanded);
@@ -194,7 +194,7 @@ namespace XboxSeries.Core.Tests
             FocusOn(GuideItemKind.NowPlaying);
 
             media.Current = null;
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             var item = Flyout.Last();
             Assert.Equal(GuideItemKind.NothingPlaying, item.Kind);
@@ -208,7 +208,7 @@ namespace XboxSeries.Core.Tests
             var landing = Guide.Items;
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.Same(landing, Guide.Items);
             Assert.Null(Guide.Flyout);
@@ -217,7 +217,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.B);
             clock.Advance(TimeSpan.FromSeconds(2));
             media.Current = null;
-            core.OnMediaSessionChanged();
+            MediaChanged();
 
             Assert.False(Guide.IsOpen);
 

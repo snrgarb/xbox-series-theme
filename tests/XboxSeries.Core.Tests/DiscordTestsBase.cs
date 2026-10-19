@@ -74,6 +74,16 @@ namespace XboxSeries.Core.Tests
 
         protected void Leave() => Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null, ["guild_id"] = null });
 
+        /// <summary>
+        /// The extension signals a media session change, and the core is given time to act on it, past any wait it makes
+        /// (as #74's debounce); use it rather than calling <see cref="ExtensionCore.OnMediaSessionChanged"/> alone.
+        /// </summary>
+        protected void MediaChanged()
+        {
+            core.OnMediaSessionChanged();
+            clock.Advance(TimeSpan.FromMilliseconds(300));
+        }
+
         protected void OpenGuide()
         {
             Tap(ControllerButton.Guide);
