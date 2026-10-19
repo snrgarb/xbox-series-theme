@@ -83,7 +83,7 @@ namespace XboxSeries.Core.Tests
             var rarity = Regex.Match(runs[1], @"^\{Binding Rarity, Mode=OneWay, StringFormat='(.*)', TargetNullValue=''\}$");
             Assert.True(rarity.Success, runs[1]);
 
-            // "Rare achievement unlocked - 1%": whole numbers bare, small ones to a tenth.
+            // "Rare Achievement unlocked - 1%": whole numbers bare, small ones to a tenth.
             string Format(double value) => string.Format(CultureInfo.InvariantCulture, rarity.Groups[1].Value.Replace("{}", ""), value);
             Assert.Equal(" - 1%", Format(1));
             Assert.Equal(" - 0.3%", Format(0.3));

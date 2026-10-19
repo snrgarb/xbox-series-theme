@@ -34,7 +34,7 @@ namespace XboxSeries.Core
         AchievementUnlocked,
 
         /// <summary>
-        /// "Rare achievement unlocked - &lt;n&gt;%" as one unlock few players have is told of: the console's rare Toast, a
+        /// "Rare Achievement unlocked - &lt;n&gt;%" as one unlock few players have is told of: the console's rare Toast, a
         /// blue pill with a spinning diamond, paging from its header, Score and name to its <see cref="ToastState.Description"/>,
         /// then the prompt, with a sound of its own. Several recorded together are an ordinary <see cref="AchievementUnlocked"/>.
         /// </summary>
