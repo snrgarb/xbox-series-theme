@@ -202,7 +202,25 @@ namespace XboxSeries.Core
         /// Whether the App is a Microsoft Store app, as Playnite imports one: started by explorer.exe on
         /// shell:AppsFolder\&lt;package family&gt;!&lt;app id&gt;, its icon the package's tile art.
         /// </summary>
-        public bool IsStoreApp => false;
+        public bool IsStoreApp
+        {
+            get
+            {
+                if (Path == null || Arguments == null)
+                    return false;
+                var fileName = Path.Substring(Path.LastIndexOfAny(new[] { '\\', '/' }) + 1);
+                if (!string.Equals(fileName, "explorer.exe", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                var target = Unquoted(Arguments.Trim());
+                const string appsFolder = @"shell:AppsFolder\";
+                return target.StartsWith(appsFolder, StringComparison.OrdinalIgnoreCase)
+                    && target.IndexOf('!', appsFolder.Length) >= 0;
+            }
+        }
+
+        /// <summary>The text without the double quotes around the whole of it, if it has them.</summary>
+        private static string Unquoted(string text) =>
+            text.Length >= 2 && text[0] == '"' && text[text.Length - 1] == '"' ? text.Substring(1, text.Length - 2) : text;
 
         /// <summary>Whether two Apps would show and start the same: same id, name, path, arguments, icon and working directory.</summary>
         internal static bool Same(App a, App b) =>
