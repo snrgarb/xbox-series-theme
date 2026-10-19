@@ -105,7 +105,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// What the Toast showing as the Guide button went down told of, which the tap opens the Guide at: Notifications,
-        /// the Discord tab's Answer for a call, or Profile &amp; system for the greeting; a Queued Toast's tap goes to
+        /// the Discord tab's Answer for a call, or Profile &amp; system for the greeting and an unlock; a Queued Toast's tap goes to
         /// Manage Queue instead, and a Ready to play Toast's starts its game. Null for no Toast.
         /// </summary>
         private ToastKind? toastAtGuidePress;
@@ -296,6 +296,8 @@ namespace XboxSeries.Core
             Toast.Text = shownToast.Text;
             Toast.Kind = shownToast.Kind;
             Toast.Image = shownToast.Image;
+            Toast.Detail = shownToast.Detail;
+            Toast.Score = shownToast.Score;
             Toast.IsShown = true;
             sounds.Play(UiSound.Notification);
             toastTimer = clock.After(ToastDuration, () =>
@@ -426,6 +428,7 @@ namespace XboxSeries.Core
             runningGame = gameId;
             startingGame = null;
             homeOwed = false;
+            FollowAchievementsOf(gameId);
             HideLaunchScreenFor(gameId);
             RefreshHome();
         }
@@ -767,7 +770,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// A tap opens the Guide at the subject of the Toast showing, as the console does: Notifications for a
-        /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting.
+        /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting's and
+        /// an Achievement unlocked Toast's, where the Profile's totals and last unlocks are.
         /// A Queued Toast's subject isn't in the Guide but on Manage Queue, so the tap goes there instead, and a Ready
         /// to play Toast's tap starts its game. An Uninstalled Toast's subject is gone, so its tap just opens the Guide.
         /// </summary>
@@ -796,7 +800,7 @@ namespace XboxSeries.Core
             {
                 ShowTab(GuideTabKind.Discord);
             }
-            else if (toastAtGuidePress == ToastKind.Greeting)
+            else if (toastAtGuidePress == ToastKind.Greeting || toastAtGuidePress == ToastKind.AchievementUnlocked)
             {
                 ShowTab(GuideTabKind.ProfileAndSystem);
             }
@@ -1040,16 +1044,18 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Profile &amp; system: the profile card with the profile signed in, or the Windows user before the first
-        /// sign-in, then Settings and Power, each under a divider.
+        /// sign-in, then the last achievements unlocked, if any, then Settings and Power, each under a divider.
         /// </summary>
         private void ShowProfileTab()
         {
-            Guide.Items = new[]
-            {
-                new GuideItem(GuideItemKind.Profile, Status.Profile?.Gamertag ?? account.Name, image: ProfilePicture),
-                new GuideItem(GuideItemKind.Settings, "Settings", hasDividerAbove: true),
-                new GuideItem(GuideItemKind.Power, "Power", hasDividerAbove: true),
-            };
+            Guide.Items = new[] { new GuideItem(GuideItemKind.Profile, Status.Profile?.Gamertag ?? account.Name, image: ProfilePicture) }
+                .Concat(RecentAchievementItems())
+                .Concat(new[]
+                {
+                    new GuideItem(GuideItemKind.Settings, "Settings", hasDividerAbove: true),
+                    new GuideItem(GuideItemKind.Power, "Power", hasDividerAbove: true),
+                })
+                .ToArray();
             Guide.FocusedItem = Guide.Items[0];
         }
 
@@ -1759,7 +1765,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void Select(GuideItem item, Action<Action> dismiss)
         {
-            if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
+            if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.RecentAchievement || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
                 || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle || item.Kind == GuideItemKind.DiscordUnavailable
                 || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant
                 || item.Kind == GuideItemKind.NowPlaying || item.Kind == GuideItemKind.NothingPlaying || IsEmptyDropdown(item) || !item.IsEnabled)
@@ -2328,12 +2334,14 @@ namespace XboxSeries.Core
         /// </summary>
         private sealed class WaitingToast
         {
-            public WaitingToast(string text, ToastKind kind, string image, Guid? gameId = null)
+            public WaitingToast(string text, ToastKind kind, string image, Guid? gameId = null, string detail = null, int? score = null)
             {
                 Text = text;
                 Kind = kind;
                 Image = image;
                 GameId = gameId;
+                Detail = detail;
+                Score = score;
             }
 
             public string Text { get; }
@@ -2344,6 +2352,12 @@ namespace XboxSeries.Core
 
             /// <summary>The game a Ready to play Toast tells of, which its Guide press starts; null for any other.</summary>
             public Guid? GameId { get; }
+
+            /// <summary>An Achievement unlocked Toast's achievement name, under its line; null for any other.</summary>
+            public string Detail { get; }
+
+            /// <summary>An Achievement unlocked Toast's achievement's Score; null for any other.</summary>
+            public int? Score { get; }
         }
     }
 }
