@@ -78,4 +78,45 @@
         <GradientStop Color="#D9000000" Offset="1" />
     </LinearGradientBrush>
 
+    <!--
+        Playnite's windows: its keyboard, message boxes, item selections, game menu and the rest, drawn as the extension
+        draws the console's menus and prompts (MenuPanel.xaml): the screen dimmed as under the tile menu, a dark grey panel
+        with softly rounded corners, white text in Segoe UI and the green focus ring with its glow. Their layouts are
+        Playnite's; the Views and DefaultControls files restyle what Playnite lets a theme.
+    -->
+    <!-- The dim Playnite lays over its main window while one of its windows is up: the tile menu's. -->
+    <SolidColorBrush x:Key="OverlayBrush" Color="#99000000" />
+    <!-- The extension's menu panel grey, behind every menu and prompt of Playnite's and its filter panels. -->
+    <SolidColorBrush x:Key="XboxPanelBrush" Color="#FF2B2B2B" />
+    <SolidColorBrush x:Key="OverlayMenuBackgroundBrush" Color="#FF2B2B2B" />
+    <!-- A focused or pointed-at row is filled a little lighter, as the extension's menus fill theirs. -->
+    <SolidColorBrush x:Key="XboxRowLitBrush" Color="#26FFFFFF" />
+    <!-- A button standing on its own, as a message box's or a prompt's: the console's grey tile. -->
+    <SolidColorBrush x:Key="XboxTileBrush" Color="#FF3B3B3B" />
+    <!-- Every text in Playnite's windows is set in this, directly or through its buttons' templates. -->
+    <Style x:Key="TextBlockBaseStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
+        <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+    </Style>
+
+    <!-- A row's icon in Playnite's menus, as the extension's menus draw theirs: a white line glyph in a 24 wide column. -->
+    <Style x:Key="XboxMenuIcon" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Margin" Value="0,0,20,0" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+    </Style>
+    <!-- A menu's or a prompt's title, top left of its panel, in the header font's regular weight. -->
+    <Style x:Key="XboxPanelTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
 </ResourceDictionary>

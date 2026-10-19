@@ -1,0 +1,35 @@
+<!--
+    Playnite's message box, as every prompt of Playnite's asks: drawn as the extension's prompts (MenuPanel.xaml), a dark
+    grey panel centred over the dimmed screen, the caption top left in the header font, the message under it dimmed, and
+    its buttons as the console's grey tiles in a row, the focused one lighter and ringed in green.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style x:Key="MessageBoxBorder" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinWidth" Value="560" />
+    </Style>
+
+    <Style x:Key="MessageBoxCaptionText" BasedOn="{StaticResource XboxPanelTitle}" TargetType="TextBlock">
+        <Setter Property="Margin" Value="0,0,0,14" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="TextAlignment" Value="Left" />
+    </Style>
+
+    <Style x:Key="MessageBoxMessageText" BasedOn="{StaticResource TextBlockBaseStyle}" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="Foreground" Value="{DynamicResource XboxTextDimBrush}" />
+        <Setter Property="LineHeight" Value="28" />
+    </Style>
+
+    <Style x:Key="MessageBoxButton" BasedOn="{StaticResource {x:Type Button}}" TargetType="Button">
+        <Setter Property="Margin" Value="0,0,16,0" />
+        <Setter Property="MinWidth" Value="160" />
+        <Setter Property="MinHeight" Value="56" />
+        <Setter Property="Padding" Value="24,0,24,0" />
+        <Setter Property="Background" Value="{DynamicResource XboxTileBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+</ResourceDictionary>
