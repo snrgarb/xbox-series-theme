@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Playnite.SDK;
@@ -501,19 +499,26 @@ namespace XboxSeries.Extension
             suspendedKeys.Clear();
         }
 
+        /// <summary>
+        /// A row's room changed size, as when it first shows or the page is laid out: its list shows only the whole tiles
+        /// that fit, 7 at most (<see cref="SearchRowWidth"/>).
+        /// </summary>
+        private void OnRowSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (!e.WidthChanged)
+            {
+                return;
+            }
+
+            foreach (var list in ((Panel)sender).Children.OfType<ListBox>())
+            {
+                list.Width = SearchRowWidth.ListWidth(e.NewSize.Width);
+            }
+        }
+
         /// <summary>A key binding of Playnite's that typing would run: a letter, digit or space with no modifier.</summary>
         private static bool IsTypingKey(KeyBinding binding) =>
             binding.Modifiers == ModifierKeys.None
             && ((binding.Key >= Key.A && binding.Key <= Key.Z) || (binding.Key >= Key.D0 && binding.Key <= Key.D9) || binding.Key == Key.Space);
-    }
-
-    /// <summary>A row of Search's tiles' width, from the width its row has, cut to whole tiles: <see cref="SearchRowWidth"/>.</summary>
-    internal sealed class WholeTilesWidthConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
-            SearchRowWidth.ListWidth(value is double available ? available : 0);
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-            throw new NotSupportedException();
     }
 }

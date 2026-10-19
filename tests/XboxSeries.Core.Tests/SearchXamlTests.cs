@@ -99,13 +99,19 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void The_rows_are_left_aligned_and_cut_to_whole_tiles()
         {
-            var row = TileRow(Load("SearchControl.xaml"));
-            var width = row.Elements().Single(s => (string)s.Attribute("Property") == "Width");
+            // Cut as each row's room changes size, not by a binding to its ActualWidth, which kept the width it had while
+            // the row was hidden, one tile, once it showed.
+            var doc = Load("SearchControl.xaml");
+            var row = TileRow(doc);
+            var lists = doc.Descendants().Where(e => e.Name.LocalName == "ListBox" && (string)e.Attribute("Style") == "{StaticResource TileRow}").ToList();
 
             Assert.Contains(row.Elements(), s => (string)s.Attribute("Property") == "HorizontalAlignment"
                                                  && (string)s.Attribute("Value") == "Left");
-            Assert.Contains("Converter={StaticResource WholeTilesWidth}", (string)width.Attribute("Value"));
-            Assert.Contains("SearchRowWidth.ListWidth(", File.ReadAllText(Path.Combine(ExtensionDir, "SearchControl.xaml.cs")));
+            Assert.DoesNotContain(row.Elements(), s => (string)s.Attribute("Property") == "Width");
+            Assert.Equal(3, lists.Count);
+            Assert.All(lists, list => Assert.Equal("OnRowSizeChanged", (string)list.Parent.Attribute("SizeChanged")));
+            Assert.Matches(new System.Text.RegularExpressions.Regex(@"void OnRowSizeChanged\(object sender, SizeChangedEventArgs e\).*?\.Width = SearchRowWidth\.ListWidth\(e\.NewSize\.Width\);", System.Text.RegularExpressions.RegexOptions.Singleline),
+                File.ReadAllText(Path.Combine(ExtensionDir, "SearchControl.xaml.cs")));
         }
 
         [Fact]
