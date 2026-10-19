@@ -143,6 +143,97 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+
+            <!--
+                A dropdown's box, as the Guide's Audio Output and Input (OverlayWindow's DropBox): a box naming the choice,
+                a long one cut short, with a chevron at its end. Focused, as the pane's buttons, it lightens and the accent
+                ring stands off it carrying the glow. Open (Tag "Open"), focus down in its list, it stays lit, its own edge
+                the accent with the glow, a blurred band centred on it, and the chevron points up.
+            -->
+            <Style x:Key="DropBox" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="58" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Back" CornerRadius="4" BorderThickness="2" BorderBrush="#80FFFFFF" Background="#14FFFFFF" />
+                                <ContentPresenter Margin="18,0,50,0" VerticalAlignment="Center" />
+                                <TextBlock x:Name="Chevron" Text="&#xE70D;" FontFamily="{DynamicResource XboxIconFont}" FontSize="16"
+                                           Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,18,0" />
+                                <Border x:Name="OpenEdge" CornerRadius="4" BorderThickness="2" BorderBrush="{DynamicResource GlyphLightBrush}"
+                                        Visibility="Hidden">
+                                    <!-- The band centred on this thinner edge: half its 2 and 8 more out. -->
+                                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" Margin="-6.5" />
+                                    </Border>
+                                </Border>
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="12"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Tag" Value="Open">
+                                    <Setter TargetName="Back" Property="Background" Value="#26FFFFFF" />
+                                    <Setter TargetName="OpenEdge" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="Chevron" Property="Text" Value="&#xE70E;" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="#26FFFFFF" />
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
+                A choice in a dropdown's open list, as the Guide's devices: a shorter row, its name cut short when long, the
+                one chosen (Tag "Selected") ticked where the Guide's rows have their icon. Focused, it lightens and the accent
+                ring stands off it carrying the glow, drawn over the rows round it.
+            -->
+            <Style x:Key="DropOption" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="60" />
+                <Setter Property="Margin" Value="6,0,6,2" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Back" CornerRadius="4" Background="Transparent" />
+                                <TextBlock x:Name="Tick" Text="&#xE73E;" FontFamily="{DynamicResource XboxIconFont}" FontSize="20"
+                                           Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="14,0,0,0"
+                                           Visibility="Hidden" />
+                                <ContentPresenter Margin="52,0,16,0" VerticalAlignment="Center" />
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="12"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="Tag" Value="Selected">
+                                    <Setter TargetName="Tick" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="#26FFFFFF" />
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="Panel.ZIndex" Value="1" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
@@ -206,6 +297,28 @@
                 boxes goes back to it.
             -->
             <local:PersonalisationPane x:Name="PersonalisationPane" Grid.Row="1" Visibility="Collapsed" />
+
+            <!--
+                Guide: its behaviour options, the Now Playing source for now, a dropdown as the Guide's Audio Output and
+                Input are: which app the Audio flyout's Now Playing follows. Its list opens under the box and as wide, laid
+                over what is below rather than pushing it down: the Canvas takes no height. Right or A on the rail's Guide
+                comes in; Left or B goes back to it.
+            -->
+            <StackPanel x:Name="GuidePane" Grid.Row="1" DataContext="{Binding Guide}" Visibility="Collapsed"
+                        HorizontalAlignment="Left" Width="560" KeyDown="OnGuidePaneKeyDown">
+                <TextBlock Text="Now Playing source" Style="{StaticResource Text}" />
+                <TextBlock Text="The app the Audio flyout's Now Playing follows while it plays or is paused, else whatever Windows shows."
+                           Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,18" />
+                <Button x:Name="NowPlayingSourceBox" Style="{StaticResource DropBox}" Click="OnNowPlayingSourceBoxClick">
+                    <TextBlock Text="{Binding NowPlayingSource}" Style="{StaticResource Text}" />
+                </Button>
+                <Canvas Height="0" Margin="0,8,0,0">
+                    <Border x:Name="NowPlayingSourceList" Width="560" Padding="0,6"
+                            CornerRadius="4" Background="#FF2E2E2E" BorderBrush="#33FFFFFF" BorderThickness="1" Visibility="Collapsed">
+                        <StackPanel x:Name="NowPlayingSourceOptions" />
+                    </Border>
+                </Canvas>
+            </StackPanel>
 
             <!--
                 Discord: the checklist for making the user's own Discord application, beside the QR code of the developer

@@ -16,6 +16,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnMediaSessionChanged()
         {
+            NoteMediaApps();
             if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
             {
                 return;
