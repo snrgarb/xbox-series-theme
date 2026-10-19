@@ -91,10 +91,10 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The open Audio flyout, as Windows and Discord report now: its entries take their new states in place, an open
-        /// list following the devices and the Now Playing card its play state, focus staying where it was; when the
-        /// entries themselves change, as a call begins or ends or a new track or app plays, the flyout is rebuilt, any
-        /// list closed first so focus lands on an entry still there: the same kind of entry, so a Now Playing entry
-        /// focused stays focused as it changes, and Windows' Mute for a Discord toggle gone with the call.
+        /// list following the devices and the Now Playing card its track and play state, focus staying where it was;
+        /// when the entries themselves change, as a call begins or ends or a music app starts or the last one goes, the
+        /// flyout is rebuilt, any list closed first so focus lands on an entry still there: the same kind of entry, so a
+        /// Now Playing entry focused stays focused as it changes, and Windows' Mute for a Discord toggle gone with the call.
         /// </summary>
         private void RefreshAudioFlyout()
         {

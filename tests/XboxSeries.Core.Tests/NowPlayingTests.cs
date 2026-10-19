@@ -90,7 +90,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_session_appearing_with_focus_on_nothing_playing_shows_its_card_focus_on_it()
+        public void A_session_appearing_with_focus_on_no_music_app_is_running_shows_its_card_focus_on_it()
         {
             OpenAudio();
             FocusOn(GuideItemKind.NothingPlaying);
@@ -148,14 +148,42 @@ namespace XboxSeries.Core.Tests
             OpenAudio();
             FocusOn(GuideItemKind.NowPlaying);
 
-            media.Current = new MediaSession("MSEdge", "Lo-fi beats", "Lofi Girl", isPlaying: true);
+            var item = Flyout.Last();
+            var art = new object();
+
+            media.Current = new MediaSession("MSEdge", "Lo-fi beats", "Lofi Girl", isPlaying: true, art: art);
             core.OnMediaSessionChanged();
 
-            var item = Flyout.Last();
+            Assert.Same(item, Flyout.Last());
             Assert.Equal("Lo-fi beats", item.Title);
+            Assert.Equal("Lofi Girl", item.Detail);
             Assert.Equal("Edge", item.App);
+            Assert.Same(art, item.Art);
             Assert.Same(item, Guide.FocusedItem);
             Assert.Single(Flyout, i => i.Kind == GuideItemKind.NowPlaying);
+        }
+
+        [Fact]
+        public void A_new_track_with_a_device_list_open_leaves_the_list_open_and_focus_on_its_device()
+        {
+            audio.Add("speakers", "Speakers", AudioDeviceKind.Output);
+            audio.Add("headphones", "Headphones", AudioDeviceKind.Output);
+            audio.SetDefault(AudioDeviceKind.Output, "headphones");
+            media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
+            OpenAudio();
+            var items = Flyout;
+            Tap(ControllerButton.A);
+            var output = Flyout.First(i => i.Kind == GuideItemKind.AudioOutput);
+            Assert.True(output.IsExpanded);
+            var device = Guide.FocusedItem;
+
+            media.Current = new MediaSession(Spotify, "Save Your Tears", "The Weeknd", isPlaying: true);
+            core.OnMediaSessionChanged();
+
+            Assert.Same(items, Flyout);
+            Assert.True(output.IsExpanded);
+            Assert.Same(device, Guide.FocusedItem);
+            Assert.Equal("Save Your Tears", Flyout.Last().Title);
         }
 
         [Fact]
