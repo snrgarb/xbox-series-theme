@@ -12,7 +12,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Adapter: the console's UI sounds, played through Playnite Fullscreen's own audio engine, so they share its device
     /// and its interface volume. The engine isn't in the SDK, so it is reached by reflection; if any of it is missing
-    /// (Desktop mode, a Playnite that has changed, no audio device) the Bundle simply stays silent.
+    /// (Desktop mode, a Playnite that has changed, no audio device) the Bundle simply stays silent. The Start-up sequence
+    /// plays its sounds from a thread of its own, so every use of the engine, and the turns and sounds kept, is locked.
     /// </summary>
     internal sealed class PlayniteSounds : ISoundPlayer
     {
@@ -35,6 +36,7 @@ namespace XboxSeries.Extension
         private readonly string directory;
         private readonly Dictionary<string, IntPtr> loaded = new Dictionary<string, IntPtr>();
         private readonly Dictionary<UiSound, int> turns = new Dictionary<UiSound, int>();
+        private readonly object gate = new object();
 
         public PlayniteSounds(IPlayniteAPI api)
         {
@@ -46,13 +48,22 @@ namespace XboxSeries.Extension
             }
 
             // Loaded up front, so the first Guide over a game doesn't wait on the disk.
-            foreach (var file in Files.Values.SelectMany(f => f))
+            lock (gate)
             {
-                Load(file);
+                foreach (var file in Files.Values.SelectMany(f => f))
+                {
+                    Load(file);
+                }
             }
         }
 
-        public void Play(UiSound sound) => PlayFile(Next(sound));
+        public void Play(UiSound sound)
+        {
+            lock (gate)
+            {
+                PlayFile(Next(sound));
+            }
+        }
 
         /// <summary>
         /// Silences Playnite's own navigation and activation sounds, the Dashboard's audio\navigation.wav and
@@ -70,12 +81,15 @@ namespace XboxSeries.Extension
 
             try
             {
-                var volume = silent ? 0 : engine.InterfaceVolume();
-                foreach (var sound in engine.ThemeSounds())
+                lock (gate)
                 {
-                    if (sound != IntPtr.Zero)
+                    var volume = silent ? 0 : engine.InterfaceVolume();
+                    foreach (var sound in engine.ThemeSounds())
                     {
-                        engine.SetSoundVolume(sound, volume);
+                        if (sound != IntPtr.Zero)
+                        {
+                            engine.SetSoundVolume(sound, volume);
+                        }
                     }
                 }
             }
@@ -88,13 +102,22 @@ namespace XboxSeries.Extension
         /// <summary>Plays <paramref name="sound"/> and waits for it to finish, as when Playnite is about to close.</summary>
         public void PlayToEnd(UiSound sound)
         {
-            var file = Next(sound);
-            if (PlayFile(file))
+            string file;
+            bool played;
+            lock (gate)
+            {
+                file = Next(sound);
+                played = PlayFile(file);
+            }
+
+            // Waited out of the lock, so the Start-up thread's sounds never wait on it.
+            if (played)
             {
                 Thread.Sleep(WavLength(Path.Combine(directory, file)));
             }
         }
 
+        /// <summary>The sound's next file, its turn taken. Called with the lock held, as are <see cref="PlayFile"/> and <see cref="Load"/>.</summary>
         private string Next(UiSound sound)
         {
             var files = Files[sound];

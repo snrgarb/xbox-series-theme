@@ -14,7 +14,7 @@
         Left="-32000" Top="-32000" Width="10" Height="10">
     <!--
         The Start-up sequence: opaque, Topmost and full-screen over Playnite as it starts in Fullscreen, and again on
-        waking from sleep. It follows the core's StartupState and holds no logic. The boot video plays full screen on
+        waking from sleep. It follows its sequence's StartupState and holds no logic. The boot video plays full screen on
         black; then Who's playing today? and Signing you in, drawn after the console's (docs/reference/startup), over its
         green swirl (SwirlBackground). Who's playing today? has the profiles in a row, centred, each a large round picture
         with its gamertag under it, the focused one bigger in a green ring a little way out from it, its real name under
