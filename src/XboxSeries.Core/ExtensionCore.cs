@@ -766,7 +766,7 @@ namespace XboxSeries.Core
         /// A tap opens the Guide at the subject of the Toast showing, as the console does: Notifications for a
         /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting.
         /// A Queued Toast's subject isn't in the Guide but on Manage Queue, so the tap goes there instead, and a Ready
-        /// to play Toast's tap starts its game.
+        /// to play Toast's tap starts its game. An Uninstalled Toast's subject is gone, so its tap just opens the Guide.
         /// </summary>
         private void OpenGuideFromTap()
         {

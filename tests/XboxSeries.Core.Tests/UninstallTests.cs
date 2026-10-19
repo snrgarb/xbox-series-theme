@@ -172,13 +172,14 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_game_already_being_uninstalled_is_asked_once()
+        public void A_game_already_being_uninstalled_stays_silent_and_is_asked_once()
         {
             Installed();
             downloads.Uninstallable.Add(hades);
             core.UninstallGame(hades);
 
-            Assert.False(core.CanUninstallSilently(hades));
+            // Pressed again before Steam is done, the menu's Uninstall mustn't fall back on Steam's own dialog.
+            Assert.True(core.CanUninstallSilently(hades));
             core.UninstallGame(hades);
             Assert.Equal(new[] { hades }, downloads.UninstallsAsked);
         }
