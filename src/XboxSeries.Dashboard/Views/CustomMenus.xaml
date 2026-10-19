@@ -1,22 +1,117 @@
 <!--
-    Playnite's menus of game clients, software tools and extensions' commands, from its main menu: drawn as the
-    extension's menus (MenuPanel.xaml), a dark grey panel centred over the dimmed screen, full-width rows of an icon and
-    a label, the focused one filled a little lighter and ringed in green. The icons are each client's, tool's or
-    command's own. Its rows scroll, so each stands 5 off its neighbours and the list's ends, keeping its ring whole.
+    Playnite's menus of game clients, software tools and extensions' commands, from its main menu and the game menu's
+    Extensions: drawn as the console's menus, as the game menu is (GameMenu.xaml), a 450 wide dark grey panel centred
+    over the dimmed screen and rows 72 apart of an icon and a label. The focused row is filled a lighter grey across the
+    panel's full width and ringed in green, the ring standing 8 past the panel on either side with its glow about it.
+    The icons are each client's, tool's or command's own. Playnite gives these windows no title.
+
+    Playnite fixes each window's panel Border at 500 wide, so the Border is left clear and the 450 panel is drawn inside
+    the rows' scroll area, behind them. The rows sit in a ScrollViewer, whose content presenter clips to itself, so the
+    scroll area reaches 36 past the panel on either side and 22 above and below, as the game menu's does, and the rows
+    are inset back by the same, less the ring's overhang at the sides: nothing a row draws on focus is clipped, while a
+    row scrolled out of the list shows no more than its last or first 22 past the panel, short of its icon and label.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Style x:Key="GameClientMenuButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
-        <Setter Property="Margin" Value="12,5,12,5" />
-        <Setter Property="Padding" Value="20,0,20,0" />
-        <Setter Property="MinHeight" Value="50" />
+    <!-- The rows of all three, as the game menu's: each menu's own style below gives only its content. -->
+    <Style x:Key="XboxCustomMenuRow" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
+        <!-- 28 in from the scroll area's sides, which stand 36 past the panel's: the row and its ring 8 past it. -->
+        <Setter Property="Margin" Value="28,0,28,0" />
+        <!-- The icon's 24 column centred 44 in from the panel's edge, 52 from the row's; a chevron as far in at the right. -->
+        <Setter Property="Padding" Value="40,0,40,0" />
+        <Setter Property="Height" Value="72" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonEx">
+                    <Grid Background="Transparent">
+                        <!-- The panel's full width, the ring's overhang in from the row's sides; 4 inside the ring's 4 above and below, 56 tall. -->
+                        <Border x:Name="Fill" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowFocusBrush}" Visibility="Hidden" />
+                        <Border x:Name="Lit" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowLitBrush}" Visibility="Hidden" />
+                        <!-- The label in Segoe UI 22, each text of the content template taking it up. -->
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          TextElement.FontFamily="{DynamicResource XboxFont}" TextElement.FontSize="22"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                        <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="7"
+                                BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">
+                            <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                            </Border>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Lit" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Fill" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The panel of all three: Playnite's 500 wide Border left clear, the 450 panel drawn in the rows' scroll area. -->
+    <Style x:Key="XboxCustomMenuPanel" TargetType="Border">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Width" Value="500" />
+        <Setter Property="Padding" Value="0" />
+        <Style.Resources>
+            <!--
+                The rows' scroll area: 11 past the Border's sides, 36 past the panel's, and 22 above and below it. The
+                panel is drawn in it, 36 in from its sides and 22 from its top and bottom: 450 wide, as tall as the rows.
+            -->
+            <Style TargetType="ScrollViewer">
+                <Setter Property="Margin" Value="-11,-22,-11,-22" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollViewer">
+                            <Grid>
+                                <Border x:Name="Panel" Margin="36,22,36,22" CornerRadius="6" Background="{DynamicResource XboxPanelBrush}" />
+                                <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
+                                                        CanContentScroll="{TemplateBinding CanContentScroll}" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <!--
+                The rows' list: 11 whole rows at most, all that fit in Playnite's 810 high middle of the screen, so a
+                longer list scrolls by whole rows and none is cut where the scroll area passes the panel.
+            -->
+            <Style TargetType="ItemsControlEx">
+                <Setter Property="MaxHeight" Value="792" />
+                <Style.Resources>
+                    <!--
+                        The rows' presenter in Playnite's template gives back the scroll area's top and bottom. Playnite
+                        sets these windows' rows' panel itself, and a panel made from a template takes no implicit style
+                        from beyond it; the presenter, inside the list's template, finds this one in the list's style.
+                    -->
+                    <Style TargetType="ItemsPresenter">
+                        <Setter Property="Margin" Value="0,22,0,22" />
+                    </Style>
+                </Style.Resources>
+            </Style>
+        </Style.Resources>
+    </Style>
+
+    <Style x:Key="GameClientMenuButton" BasedOn="{StaticResource XboxCustomMenuRow}" TargetType="ButtonEx">
         <Setter Property="ContentTemplate">
             <Setter.Value>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
                         <ContentControl Content="{Binding Icon}" Width="24" Height="24" Focusable="False"
-                                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,20,0" />
+                                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,32,0" />
                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                     </StackPanel>
                 </DataTemplate>
@@ -24,24 +119,16 @@
         </Setter>
     </Style>
 
-    <Style x:Key="GameClientsBorder" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Width" Value="450" />
-        <Setter Property="Padding" Value="0,12,0,12" />
-    </Style>
+    <Style x:Key="GameClientsBorder" BasedOn="{StaticResource XboxCustomMenuPanel}" TargetType="Border" />
 
-    <Style x:Key="SoftwareToolMenuButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
-        <Setter Property="Margin" Value="12,5,12,5" />
-        <Setter Property="Padding" Value="20,0,20,0" />
-        <Setter Property="MinHeight" Value="50" />
+    <Style x:Key="SoftwareToolMenuButton" BasedOn="{StaticResource XboxCustomMenuRow}" TargetType="ButtonEx">
         <Setter Property="ContentTemplate">
             <Setter.Value>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
                         <Image Source="{Binding Icon, Converter={StaticResource ImageStringToImageConverter}}" Width="24" Height="24"
                                Focusable="False" RenderOptions.BitmapScalingMode="Fant"
-                               VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,20,0" />
+                               VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,32,0" />
                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                     </StackPanel>
                 </DataTemplate>
@@ -49,39 +136,26 @@
         </Setter>
     </Style>
 
-    <Style x:Key="SoftwareToolsBorder" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Width" Value="450" />
-        <Setter Property="Padding" Value="0,12,0,12" />
-    </Style>
+    <Style x:Key="SoftwareToolsBorder" BasedOn="{StaticResource XboxCustomMenuPanel}" TargetType="Border" />
 
     <!-- A command with commands under it shows the console's chevron at its right. -->
-    <Style x:Key="ExtensionMenuButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
-        <Setter Property="Margin" Value="12,5,12,5" />
-        <Setter Property="Padding" Value="20,0,20,0" />
-        <Setter Property="MinHeight" Value="50" />
+    <Style x:Key="ExtensionMenuButton" BasedOn="{StaticResource XboxCustomMenuRow}" TargetType="ButtonEx">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="ContentTemplate">
             <Setter.Value>
                 <DataTemplate>
                     <DockPanel>
                         <ContentControl Content="{Binding Icon}" Width="24" Height="24" Focusable="False"
-                                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,20,0"
+                                        VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,32,0"
                                         DockPanel.Dock="Left" />
                         <TextBlock Text="&#xE76C;" Style="{DynamicResource XboxMenuIcon}" Margin="20,0,0,0" DockPanel.Dock="Right"
                                    Visibility="{Binding Children, Converter={StaticResource NullToVisibilityConverter}}" />
-                        <TextBlock Text="{Binding Header}" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                        <TextBlock Text="{Binding Header}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" DockPanel.Dock="Left" />
                     </DockPanel>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
-    <Style x:Key="ExtensionsBorder" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource XboxPanelBrush}" />
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Width" Value="450" />
-        <Setter Property="Padding" Value="0,12,0,12" />
-    </Style>
+    <Style x:Key="ExtensionsBorder" BasedOn="{StaticResource XboxCustomMenuPanel}" TargetType="Border" />
 </ResourceDictionary>
