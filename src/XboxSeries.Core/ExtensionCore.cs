@@ -281,7 +281,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The next waiting Toast, with the notification sound, unless the call's or the greeting is showing, which
+        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own and for its longer
+        /// <see cref="RareAchievementToastDuration"/>, unless the call's or the greeting is showing, which
         /// they wait behind, or Start-up covers the screen, which they wait for.
         /// </summary>
         private void ShowNextToast()
@@ -293,14 +294,10 @@ namespace XboxSeries.Core
             }
 
             shownToast = waitingToasts.Dequeue();
-            Toast.Text = shownToast.Text;
-            Toast.Kind = shownToast.Kind;
-            Toast.Image = shownToast.Image;
-            Toast.Detail = shownToast.Detail;
-            Toast.Score = shownToast.Score;
-            Toast.IsShown = true;
-            sounds.Play(UiSound.Notification);
-            toastTimer = clock.After(ToastDuration, () =>
+            var rare = shownToast.Kind == ToastKind.RareAchievementUnlocked;
+            Toast.Show(shownToast.Text, shownToast.Kind, shownToast.Image, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description);
+            sounds.Play(rare ? UiSound.RareAchievement : UiSound.Notification);
+            toastTimer = clock.After(rare ? RareAchievementToastDuration : ToastDuration, () =>
             {
                 shownToast = null;
                 Toast.IsShown = false;
@@ -800,7 +797,8 @@ namespace XboxSeries.Core
             {
                 ShowTab(GuideTabKind.Discord);
             }
-            else if (toastAtGuidePress == ToastKind.Greeting || toastAtGuidePress == ToastKind.AchievementUnlocked)
+            else if (toastAtGuidePress == ToastKind.Greeting || toastAtGuidePress == ToastKind.AchievementUnlocked
+                || toastAtGuidePress == ToastKind.RareAchievementUnlocked)
             {
                 ShowTab(GuideTabKind.ProfileAndSystem);
             }
@@ -2334,7 +2332,9 @@ namespace XboxSeries.Core
         /// </summary>
         private sealed class WaitingToast
         {
-            public WaitingToast(string text, ToastKind kind, string image, Guid? gameId = null, string detail = null, int? score = null)
+            public WaitingToast(
+                string text, ToastKind kind, string image, Guid? gameId = null, string detail = null, int? score = null,
+                double? rarity = null, string description = null)
             {
                 Text = text;
                 Kind = kind;
@@ -2342,6 +2342,8 @@ namespace XboxSeries.Core
                 GameId = gameId;
                 Detail = detail;
                 Score = score;
+                Rarity = rarity;
+                Description = description;
             }
 
             public string Text { get; }
@@ -2358,6 +2360,12 @@ namespace XboxSeries.Core
 
             /// <summary>An Achievement unlocked Toast's achievement's Score; null for any other.</summary>
             public int? Score { get; }
+
+            /// <summary>A rare achievement's rarity, the percentage of players who have it; null for any other Toast.</summary>
+            public double? Rarity { get; }
+
+            /// <summary>A rare achievement's description, its Toast's second page; null for none and for any other Toast.</summary>
+            public string Description { get; }
         }
     }
 }

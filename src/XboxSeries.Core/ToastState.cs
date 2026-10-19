@@ -186,5 +186,21 @@ namespace XboxSeries.Core
                 }
             }
         }
+
+        /// <summary>
+        /// The Toast shows as told: its line, kind and image, and the achievement's name, Score, rarity and description
+        /// where it has them. Every field is set at once, so nothing of the Toast before lingers on this one.
+        /// </summary>
+        internal void Show(string text, ToastKind kind, string image, string detail = null, int? score = null, double? rarity = null, string description = null)
+        {
+            Text = text;
+            Kind = kind;
+            Image = image;
+            Detail = detail;
+            Score = score;
+            Rarity = rarity;
+            Description = description;
+            IsShown = true;
+        }
     }
 }
