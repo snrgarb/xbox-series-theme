@@ -6,7 +6,7 @@ using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
-    // Apps' tiles, titled as Home's game tiles: the App's art over a black band holding its name in white. A Microsoft
+    // Apps' tiles, titled as Home's game tiles: focused, a black band over the art's foot holds the App's name in white. A Microsoft
     // Store app's tile art fills the art over the accent; any other App's icon sits on white, a soft shadow behind it. The
     // XAML isn't run here; these checks guard the face's look and that My games & apps and Search share the one face.
     public class AppTilesXamlTests
@@ -22,17 +22,38 @@ namespace XboxSeries.Core.Tests
             root.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
 
         [Fact]
-        public void The_name_is_white_in_the_body_font_on_a_black_band_on_one_line()
+        public void The_name_is_white_in_the_body_font_on_a_black_band_over_the_art_foot()
         {
             var name = Face().Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Name}");
             var band = name.Parent;
 
-            Assert.Equal("Border", band.Name.LocalName);
-            Assert.Equal("Black", (string)band.Attribute("Background"));
+            Assert.Equal("TitleBand", (string)band.Attribute(X + "Name"));
+            Assert.Equal("#E6000000", (string)band.Attribute("Background"));
+            Assert.Equal("Bottom", (string)band.Attribute("VerticalAlignment"));
+            Assert.Null(band.Attribute("Grid.Row"));
             Assert.Equal("White", (string)name.Attribute("Foreground"));
             Assert.Equal("{DynamicResource XboxFont}", (string)name.Attribute("FontFamily"));
-            Assert.Equal("NoWrap", (string)name.Attribute("TextWrapping"));
-            Assert.Equal("CharacterEllipsis", (string)name.Attribute("TextTrimming"));
+            Assert.Equal("Wrap", (string)name.Attribute("TextWrapping"));
+            Assert.Equal("52", (string)name.Attribute("MaxHeight"));
+        }
+
+        [Fact]
+        public void The_band_shows_only_while_the_tile_is_focused()
+        {
+            var face = Face();
+            var focused = face.Descendants().Single(e => e.Name.LocalName == "DataTrigger"
+                                                         && ((string)e.Attribute("Binding"))?.Contains("IsKeyboardFocused") == true);
+            string To(string actions) => focused.Elements().Single(e => e.Name.LocalName == "DataTrigger." + actions)
+                .Descendants().Single(e => e.Name.LocalName == "DoubleAnimation"
+                                           && (string)e.Attribute("Storyboard.TargetName") == "TitleBand"
+                                           && (string)e.Attribute("Storyboard.TargetProperty") == "Opacity")
+                .Attribute("To").Value;
+
+            Assert.Equal("0", (string)Named(face, "TitleBand").Attribute("Opacity"));
+            Assert.Contains("AncestorType=ListBoxItem", (string)focused.Attribute("Binding"));
+            Assert.Equal("True", (string)focused.Attribute("Value"));
+            Assert.Equal("1", To("EnterActions"));
+            Assert.Equal("0", To("ExitActions"));
         }
 
         [Fact]
@@ -60,8 +81,6 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("True", (string)store.Attribute("Value"));
             Assert.Equal("{DynamicResource GlyphBrush}", Set("Art", "Background"));
             Assert.Equal("0", Set("Shadowed", "Margin"));
-            // The art is wider than tall over the name's band, so the square tile art covers it, not fits in it.
-            Assert.Equal("UniformToFill", Set("Icon", "Stretch"));
             Assert.Equal("{x:Null}", Set("Icon", "Effect"));
             Assert.Equal("White", Set("NoIconGlyph", "Foreground"));
         }

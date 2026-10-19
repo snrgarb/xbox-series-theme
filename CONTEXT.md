@@ -24,7 +24,7 @@ The Dashboard's library page: a left nav (Games, Apps, Groups, Play history, Ful
 _Avoid_: library page, collection
 
 **Apps**:
-Playnite's Software tools, shown under **My games & apps**. They are not games. Each tile has the App's name in white on a black band under its art: a Microsoft Store app's tile art fills the tile over the accent, any other App's icon sits centred on white with a soft shadow.
+Playnite's Software tools, shown under **My games & apps**. They are not games. Each tile is the App's art, its name in white on a black band over the art's foot while focused: a Microsoft Store app's tile art fills the tile over the accent, any other App's icon sits centred on white with a soft shadow.
 _Avoid_: tools, programs
 
 **Queue**:
