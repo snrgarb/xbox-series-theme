@@ -149,8 +149,9 @@ namespace XboxSeries.Core.Tests
         {
             string[] focusTriggers = { "IsFocused", "IsKeyboardFocused", "IsKeyboardFocusWithin", "IsMouseOver" };
             // Views that watch focus without drawing it: a library tile's content only hides its source icon on focus;
-            // the tile's ring is its container's, in ListGameItemStyle.
-            string[] drawNoFocus = { Path.Combine("DerivedStyles", "ListGameItemTemplate.xaml") };
+            // the tile's ring is its container's, in ListGameItemStyle. An App's tile face only shows its name on focus;
+            // its ring is its container's, in My games & apps and Search.
+            string[] drawNoFocus = { Path.Combine("DerivedStyles", "ListGameItemTemplate.xaml"), "AppTiles.xaml" };
 
             var unglowing = ThemeAndExtensionXaml()
                 .Where(file => !drawNoFocus.Any(file.EndsWith))

@@ -6,20 +6,15 @@
     <local:DecodedImageConverter x:Key="Image" />
 
     <!--
-        An App, after the console's app tiles and as Home's game tiles are titled: its art above a solid black band holding
-        its name in white, at the bottom left, on one line. It fills its tile, which rounds its corners off.
-        A Microsoft Store app's icon is its package's tile art, so it covers the art edge to edge over the accent, as the
+        An App, after the console's app tiles and titled as Home's game tiles: its art fills its tile, which rounds its
+        corners off, and while the tile is focused a black band fades in over the art's foot holding its name in white.
+        A Microsoft Store app's icon is its package's tile art, so it fills the art edge to edge over the accent, as the
         console's do. Any other App's icon sits inset on white, a soft shadow behind it. With no icon, or one that can't be
         read, a generic app glyph in its place, as large: dark grey on white, white on the accent.
         The icon is decoded at twice the widest a tile gets, for the 4K screen's 2 pixels to a 1080p one, and no larger.
     -->
     <DataTemplate x:Key="AppTileArt">
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
             <Grid x:Name="Art" Background="White">
                 <!--
                     The shadow is drawn once into a picture, at the 4K screen's 2 pixels to a 1080p one, rather than again
@@ -43,8 +38,9 @@
                 </Viewbox>
             </Grid>
 
-            <Border Grid.Row="1" Background="Black">
-                <TextBlock Text="{Binding Name}" Margin="8" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+            <!-- As Home's game tiles: the name on up to two lines over a near-black band, so it reads over any art. -->
+            <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False" Background="#E6000000">
+                <TextBlock Text="{Binding Name}" Margin="8" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
                            FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
             </Border>
         </Grid>
@@ -52,10 +48,27 @@
             <DataTrigger Binding="{Binding IsStoreApp}" Value="True">
                 <Setter TargetName="Art" Property="Background" Value="{DynamicResource GlyphBrush}" />
                 <Setter TargetName="Shadowed" Property="Margin" Value="0" />
-                <Setter TargetName="Icon" Property="Stretch" Value="UniformToFill" />
                 <Setter TargetName="Shadowed" Property="CacheMode" Value="{x:Null}" />
                 <Setter TargetName="Icon" Property="Effect" Value="{x:Null}" />
                 <Setter TargetName="NoIconGlyph" Property="Foreground" Value="White" />
+            </DataTrigger>
+            <!-- The band fades in and out with the tile's focus, at Home's game tiles' pace. -->
+            <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity"
+                                             To="1" BeginTime="0:0:0.05" Duration="0:0:0.15" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.ExitActions>
             </DataTrigger>
             <DataTrigger Binding="{Binding Source, ElementName=Icon}" Value="{x:Null}">
                 <Setter TargetName="Shadowed" Property="Visibility" Value="Collapsed" />

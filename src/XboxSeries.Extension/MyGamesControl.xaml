@@ -180,7 +180,7 @@
             </Style>
 
             <!--
-                An App's tile: square, its face AppTileArt, the App's art over a black band holding its name. Square from its
+                An App's tile: square, its face AppTileArt, the App's art, its name on a black band while focused. Square from its
                 width, which the grid sets to a fifth of the row. As Games' grid tiles: 15 apart, its face clipped to rounded
                 corners, and ringed 4 px off the tile, its ring carrying the glow band.
             -->
