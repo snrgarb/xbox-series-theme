@@ -14,6 +14,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <local:HomeTiles />
+                <local:AppTiles />
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="Visibility" />
@@ -186,28 +187,10 @@
                 </Grid>
             </DataTemplate>
 
-            <!--
-                An App, as My games & apps' Apps tiles: square, filled with the accent, its icon centred and its name at the
-                bottom left; with no icon, or one that can't be read, a generic app glyph in its place.
-            -->
-            <DataTemplate x:Key="AppTile">
-                <Grid Height="240" Background="{DynamicResource GlyphBrush}">
-                    <Image x:Name="Icon" Margin="18,18,18,44"
-                           Source="{Binding Icon, Converter={StaticResource Image}, ConverterParameter=480}"
-                           Stretch="Uniform" RenderOptions.BitmapScalingMode="Fant" />
-                    <Viewbox x:Name="NoIcon" Margin="18,18,18,44" Visibility="Collapsed">
-                        <TextBlock Text="&#xECAA;" FontFamily="{DynamicResource XboxIconFont}" Foreground="White" />
-                    </Viewbox>
-                    <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="18"
-                               VerticalAlignment="Bottom" Margin="12,0,12,10" />
-                </Grid>
-                <DataTemplate.Triggers>
-                    <DataTrigger Binding="{Binding Source, ElementName=Icon}" Value="{x:Null}">
-                        <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
-                        <Setter TargetName="NoIcon" Property="Visibility" Value="Visible" />
-                    </DataTrigger>
-                </DataTemplate.Triggers>
-            </DataTemplate>
+            <!-- An App's tile: a tile 240 square, its face AppTileArt, as My games & apps' Apps tiles. -->
+            <Style x:Key="AppTile" TargetType="ListBoxItem" BasedOn="{StaticResource Tile}">
+                <Setter Property="Height" Value="240" />
+            </Style>
         </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
@@ -268,7 +251,7 @@
                 <StackPanel Visibility="{Binding ShowsApps, Converter={StaticResource Visibility}}" SizeChanged="OnRowSizeChanged">
                     <TextBlock Text="Apps" Style="{StaticResource HeaderText}" />
                     <ListBox x:Name="AppsRow" ItemsSource="{Binding Apps}" Style="{StaticResource TileRow}"
-                             ItemContainerStyle="{StaticResource Tile}" ItemTemplate="{StaticResource AppTile}" />
+                             ItemContainerStyle="{StaticResource AppTile}" ItemTemplate="{StaticResource AppTileArt}" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
