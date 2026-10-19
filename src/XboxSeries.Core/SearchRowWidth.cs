@@ -13,7 +13,7 @@ namespace XboxSeries.Core
         public const double Gap = 15;
         public const int MostTiles = 7;
 
-        /// <summary>The list's room round its tiles, which its negative margin cancels, for their rings and glow.</summary>
+        /// <summary>The list's room before its first tile, which its negative margin cancels, for the ring and glow.</summary>
         public const double Gutter = 24;
 
         /// <summary>How many whole tiles fit in the width the row has (the page's, less its margins): never less than 1.</summary>

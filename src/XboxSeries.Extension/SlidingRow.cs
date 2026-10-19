@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -87,6 +88,7 @@ namespace XboxSeries.Extension
             content.SetValue(StateProperty, state);
             content.AddHandler(FrameworkElement.RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler(OnRequestBringIntoView));
             content.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(OnKeyDown), true);
+            ((INotifyCollectionChanged)row.Items).CollectionChanged += state.OnItemsChanged;
         }
 
         /// <summary>Lets go of the row's requests, leaving it where its slide had got to.</summary>
@@ -101,6 +103,7 @@ namespace XboxSeries.Extension
             state.Content.ClearValue(StateProperty);
             state.Content.RemoveHandler(FrameworkElement.RequestBringIntoViewEvent, new RequestBringIntoViewEventHandler(OnRequestBringIntoView));
             state.Content.RemoveHandler(UIElement.KeyDownEvent, new KeyEventHandler(OnKeyDown));
+            ((INotifyCollectionChanged)row.Items).CollectionChanged -= state.OnItemsChanged;
             state.Stop();
         }
 
@@ -265,6 +268,19 @@ namespace XboxSeries.Extension
                 slide = animation;
                 slidingTo = to;
                 Scroller.BeginAnimation(AnimatedOffsetProperty, animation);
+            }
+
+            /// <summary>
+            /// A new list in the row, as when Search's text changes: it starts at its first tile, with no slide or offset
+            /// left over from the list before.
+            /// </summary>
+            public void OnItemsChanged(object sender, NotifyCollectionChangedEventArgs e)
+            {
+                if (e.Action == NotifyCollectionChangedAction.Reset)
+                {
+                    Stop();
+                    Scroller.ScrollToHorizontalOffset(0);
+                }
             }
 
             /// <summary>Stops any slide where it has got to, leaving the row there.</summary>

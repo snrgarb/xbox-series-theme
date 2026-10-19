@@ -2,8 +2,10 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
-    // Search's rows show only whole tiles, 7 at most, so no tile peeks in at the right edge: the page is 1080 tall but only
-    // as wide as the screen's aspect makes it, so on a narrower screen a row shows fewer.
+    /// <summary>
+    /// Search's rows show only whole tiles, 7 at most, so no tile peeks in at the right edge: the page is 1080 tall but only
+    /// as wide as the screen's aspect makes it, so on a narrower screen a row shows fewer.
+    /// </summary>
     public class SearchRowWidthTests
     {
         [Theory]

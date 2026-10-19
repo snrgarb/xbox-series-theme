@@ -41,6 +41,16 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_new_list_in_the_row_starts_at_its_beginning_with_no_slide_left_over()
+        {
+            var code = Code;
+
+            Assert.Matches(new Regex(@"\(\(INotifyCollectionChanged\)row\.Items\)\.CollectionChanged \+= state\.OnItemsChanged;"), code);
+            Assert.Matches(new Regex(@"\(\(INotifyCollectionChanged\)row\.Items\)\.CollectionChanged -= state\.OnItemsChanged;"), code);
+            Assert.Matches(new Regex(@"void OnItemsChanged\(.*?NotifyCollectionChangedAction\.Reset.*?Stop\(\);\s*Scroller\.ScrollToHorizontalOffset\(0\);", RegexOptions.Singleline), code);
+        }
+
+        [Fact]
         public void The_slide_scrolls_the_row_from_an_attached_animatable_offset()
         {
             var property = Regex.Match(Code, @"DependencyProperty (\w+) = DependencyProperty\.RegisterAttached\(\s*""\w+"",\s*typeof\(double\),\s*typeof\(SlidingRow\),\s*new PropertyMetadata\([^,]+,\s*(\w+)\)\)");
