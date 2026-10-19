@@ -32,6 +32,13 @@ namespace XboxSeries.Core
         /// Toast, "&lt;n&gt; achievements unlocked", with no icon, name or Score. ⓧ opens the Guide at Profile &amp; system.
         /// </summary>
         AchievementUnlocked,
+
+        /// <summary>
+        /// "Rare achievement unlocked - &lt;n&gt;%" as one unlock few players have is told of: the console's rare Toast, a
+        /// blue pill with a spinning diamond, paging from its header, Score and name to its <see cref="ToastState.Description"/>,
+        /// then the prompt, with a sound of its own. Several recorded together are an ordinary <see cref="AchievementUnlocked"/>.
+        /// </summary>
+        RareAchievementUnlocked,
     }
 
     /// <summary>
@@ -46,6 +53,8 @@ namespace XboxSeries.Core
         private string image;
         private string detail;
         private int? score;
+        private double? rarity;
+        private string description;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -127,6 +136,40 @@ namespace XboxSeries.Core
                 {
                     score = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Score)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// A rare achievement's rarity, the percentage of players who have it, for its header's "- &lt;n&gt;%"; null for any
+        /// other Toast. Like <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public double? Rarity
+        {
+            get => rarity;
+            internal set
+            {
+                if (rarity != value)
+                {
+                    rarity = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Rarity)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// A rare achievement's description, its Toast's second page; null for none and for any other Toast. Like
+        /// <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public string Description
+        {
+            get => description;
+            internal set
+            {
+                if (description != value)
+                {
+                    description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
                 }
             }
         }

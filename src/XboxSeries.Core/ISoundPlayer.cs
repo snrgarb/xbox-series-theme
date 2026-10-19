@@ -32,5 +32,8 @@ namespace XboxSeries.Core
 
         /// <summary>A Toast showed: a new notification, or a call ringing.</summary>
         Notification,
+
+        /// <summary>A rare achievement's Toast showed, with the console's chime and flourish, in place of <see cref="Notification"/>.</summary>
+        RareAchievement,
     }
 }

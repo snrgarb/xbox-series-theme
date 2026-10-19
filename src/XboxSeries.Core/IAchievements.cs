@@ -40,8 +40,9 @@ namespace XboxSeries.Core
     /// <summary>One achievement of a game.</summary>
     public sealed class Achievement
     {
-        public Achievement(string key, string name, string icon, double? rarity, DateTime? unlockedAt)
+        public Achievement(string key, string name, string icon, double? rarity, DateTime? unlockedAt, string description = null)
         {
+            Description = description;
             Key = key;
             Name = name;
             Icon = icon;
@@ -54,6 +55,9 @@ namespace XboxSeries.Core
 
         /// <summary>Its name, as the game shows it.</summary>
         public string Name { get; }
+
+        /// <summary>What it asks of the player, as the game words it; null for none.</summary>
+        public string Description { get; }
 
         /// <summary>A full path or URI to its unlocked icon; null for none.</summary>
         public string Icon { get; }
