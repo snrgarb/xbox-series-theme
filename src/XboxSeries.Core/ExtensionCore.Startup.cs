@@ -225,6 +225,8 @@ namespace XboxSeries.Core
             Toast.Text = "Hi " + profile.FirstName + "!";
             Toast.Kind = ToastKind.Greeting;
             Toast.Image = profile.Picture;
+            Toast.Detail = null;
+            Toast.Score = null;
             Toast.IsShown = true;
             sounds.Play(UiSound.Notification);
             greetingTimer = clock.After(ToastDuration, () =>
