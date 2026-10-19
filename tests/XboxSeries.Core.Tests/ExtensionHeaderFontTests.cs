@@ -29,7 +29,7 @@ namespace XboxSeries.Core.Tests
         // Home's Groups: each Group's heading, semibold as it was.
         [InlineData("GroupsControl.xaml", "Text={Binding Name}", "XboxHeaderFontSemibold")]
         // The Guide's tab headings and its flyouts' titles.
-        [InlineData("OverlayWindow.xaml", "Sets=Now Playing", "XboxHeaderFont")]
+        [InlineData("OverlayWindow.xaml", "Sets=Profile & system", "XboxHeaderFont")]
         [InlineData("OverlayWindow.xaml", "Text={Binding Flyout.Title}", "XboxHeaderFont")]
         // Dialogs' titles: the Tile menu's and prompts' panel, the wide dialog.
         [InlineData("MenuPanel.xaml", "Text={Binding Title}", "XboxHeaderFont")]

@@ -51,7 +51,7 @@
                 the profile card shows the account picture; Settings and Power are a smaller icon and title, each under a
                 divider. On the Discord tab in a call, the people in it with their avatars, then switches for Discord's
                 mute and deafen, also in the Audio flyout. In a flyout: notifications as cards with their text; Audio's
-                volume slider and mute switch. The
+                volume slider and mute switch, and under a divider at its foot what plays, as a card. The
                 focused entry is filled a little lighter and wears the tiles' green ring.
                 Each part that shows a picture gets it only from the trigger on the kind that shows it, so an entry
                 decodes its image once, for the one part showing, rather than once for every part it has.
@@ -142,10 +142,12 @@
                             </Border>
                         </Grid>
                         <!--
-                            Now Playing's card, as Windows' media flyout shows the media: the album art on a rounded square,
-                            over a grey one with a note for none (or art that won't load), beside the track, the artist
-                            in grey, and the app playing it after the play or pause mark. The art comes decoded and
-                            frozen from the extension, so it is bound as it is.
+                            The Audio flyout's Now Playing entry, under its mute switches and their divider, as Windows' media
+                            flyout shows the media: the album art on a rounded square, over a grey one with a note for none
+                            (or art that won't load), its left edge where the rows above have their icons, beside the track,
+                            the artist in grey, and the app playing it after the play or pause mark. It is in the Entry, under
+                            the Divider, so the divider above it shows as any entry's. The art comes decoded and frozen from
+                            the extension, so it is bound as it is.
                         -->
                         <Grid x:Name="Media" Margin="18,0,16,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
@@ -516,7 +518,10 @@
                         <Setter TargetName="Title" Property="FontSize" Value="22" />
                         <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
                     </DataTrigger>
-                    <!-- Now Playing: the card for what plays, or, with nothing, a line as quiet as the Discord tab's about voice. -->
+                    <!--
+                        The Audio flyout's Now Playing entry: the card for what plays, or, with no music app running, "No
+                        music app is running", a line as quiet as the Discord tab's about voice.
+                    -->
                     <DataTrigger Binding="{Binding Kind}" Value="NowPlaying">
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
@@ -875,9 +880,6 @@
                             <DataTemplate>
                                 <Grid Width="84" Height="102">
                                     <Path x:Name="Logo" Data="{StaticResource XboxLogo}" Fill="#FF8C8C8C" Width="33" Height="33" Stretch="Uniform" />
-                                    <!-- Now Playing's: Segoe Fluent Icons / MDL2 Assets' note, as its card's. -->
-                                    <TextBlock x:Name="TabGlyph" Text="&#xE8D6;" Style="{StaticResource GuideIcon}" FontSize="32"
-                                               Foreground="#FF8C8C8C" Visibility="Collapsed" />
                                     <Grid x:Name="Picture" Width="54" Height="54" Visibility="Collapsed">
                                         <Ellipse Fill="#FF4A4A4A" />
                                         <Ellipse>
@@ -895,10 +897,6 @@
                                         <Setter TargetName="Logo" Property="Data" Value="{StaticResource DiscordLogo}" />
                                         <Setter TargetName="Logo" Property="Width" Value="36" />
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Kind}" Value="NowPlaying">
-                                        <Setter TargetName="Logo" Property="Visibility" Value="Collapsed" />
-                                        <Setter TargetName="TabGlyph" Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
                                     <DataTrigger Binding="{Binding Kind}" Value="ProfileAndSystem">
                                         <Setter TargetName="Logo" Property="Visibility" Value="Collapsed" />
                                         <Setter TargetName="Picture" Property="Visibility" Value="Visible" />
@@ -906,7 +904,6 @@
                                     <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                         <Setter TargetName="Underline" Property="Visibility" Value="Visible" />
                                         <Setter TargetName="Logo" Property="Fill" Value="White" />
-                                        <Setter TargetName="TabGlyph" Property="Foreground" Value="White" />
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
@@ -981,7 +978,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- The heading: Discord's, Now Playing's or Profile & system's. The landing tab has none. -->
+                        <!-- The heading: Discord's or Profile & system's. The landing tab has none. -->
                         <TextBlock DockPanel.Dock="Top" FontSize="33" Margin="28,-4,0,12">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource GuideHeader}">
@@ -989,10 +986,6 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Tab}" Value="Discord">
                                             <Setter Property="Text" Value="Discord" />
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Tab}" Value="NowPlaying">
-                                            <Setter Property="Text" Value="Now Playing" />
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding Tab}" Value="ProfileAndSystem">
