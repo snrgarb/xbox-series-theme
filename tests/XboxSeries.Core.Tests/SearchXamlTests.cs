@@ -84,5 +84,37 @@ namespace XboxSeries.Core.Tests
             Assert.Contains(trigger.Elements(), s => (string)s.Attribute("TargetName") == "Glyph"
                                                      && (string)s.Attribute("Value") == "");
         }
+
+        private static XElement TileRow(XDocument doc) => StyleByKey(doc, "TileRow");
+
+        [Fact]
+        public void The_rows_slide_to_the_tile_taking_focus()
+        {
+            var row = TileRow(Load("SearchControl.xaml"));
+
+            Assert.Contains(row.Elements(), s => (string)s.Attribute("Property") == "local:SlidingRow.Slides"
+                                                 && (string)s.Attribute("Value") == "True");
+        }
+
+        [Fact]
+        public void The_rows_are_left_aligned_and_cut_to_whole_tiles()
+        {
+            var row = TileRow(Load("SearchControl.xaml"));
+            var width = row.Elements().Single(s => (string)s.Attribute("Property") == "Width");
+
+            Assert.Contains(row.Elements(), s => (string)s.Attribute("Property") == "HorizontalAlignment"
+                                                 && (string)s.Attribute("Value") == "Left");
+            Assert.Contains("Converter={StaticResource WholeTilesWidth}", (string)width.Attribute("Value"));
+            Assert.Contains("SearchRowWidth.ListWidth(", File.ReadAllText(Path.Combine(ExtensionDir, "SearchControl.xaml.cs")));
+        }
+
+        [Fact]
+        public void The_rows_list_clips_its_tiles_to_its_scroll_viewer()
+        {
+            // The ScrollViewer clips to its viewport, so the tile after the last shown is cut off, not covered.
+            var scroller = TileRow(Load("SearchControl.xaml")).Descendants().Single(e => e.Name.LocalName == "ScrollViewer");
+
+            Assert.NotEqual("False", (string)scroller.Attribute("ClipToBounds"));
+        }
     }
 }
