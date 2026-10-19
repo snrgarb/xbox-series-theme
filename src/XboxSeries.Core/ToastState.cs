@@ -22,6 +22,9 @@ namespace XboxSeries.Core
 
         /// <summary>"Ready to play" as a queued game finishes installing: the game's cover; ⓧ starts the game.</summary>
         Installed,
+
+        /// <summary>"X was uninstalled" as a game the extension uninstalled through its client is gone: the game's cover.</summary>
+        Uninstalled,
     }
 
     /// <summary>

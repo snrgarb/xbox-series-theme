@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// Port for games' downloads in their library's client (Steam's): how far each has got, installing a game without the
-    /// client's own windows, and the installs it runs that Playnite didn't start; and a launch the client holds on a
+    /// Port for games' downloads in their library's client (Steam's): how far each has got, installing and uninstalling a game
+    /// without the client's own windows, and the installs it runs that Playnite didn't start; and a launch the client holds on a
     /// question for the user, such as the game's EULA.
     /// </summary>
     public interface IDownloads
@@ -37,6 +37,21 @@ namespace XboxSeries.Core
         /// nothing while the client has any of it.
         /// </summary>
         void MarkCancelled(Guid gameId);
+
+        /// <summary>Whether <see cref="Uninstall"/> can uninstall the game: a Steam game, with Steam on this PC.</summary>
+        bool CanUninstall(Guid gameId);
+
+        /// <summary>Asks the client to uninstall the game, showing none of its own windows and asking nothing.</summary>
+        void Uninstall(Guid gameId);
+
+        /// <summary>
+        /// Once the client has uninstalled the game (it has no manifest for it, or one that reads uninstalled), marks it
+        /// not installed in Playnite, as Playnite's own uninstall would have; does nothing while the client still has it.
+        /// </summary>
+        void MarkUninstalled(Guid gameId);
+
+        /// <summary>The client still hadn't uninstalled the game when the core gave up following it: warned of in the log.</summary>
+        void UninstallUnfinished(Guid gameId);
 
         /// <summary>
         /// Whether the client's launch of the game waits on the user to answer a question in the client's own window,
