@@ -17,6 +17,9 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public DateTime Now { get; private set; }
 
+        /// <summary>How many timers are waiting to fall due.</summary>
+        public int Pending => timers.Count;
+
         public IDisposable After(TimeSpan delay, Action callback)
         {
             var timer = new Timer(Now + delay, callback, t => timers.Remove(t));

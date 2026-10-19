@@ -632,6 +632,8 @@ namespace XboxSeries.Core
             Detail = other.Detail;
             App = other.App;
             Art = other.Art;
+            Position = other.Position;
+            Duration = other.Duration;
         }
 
         private void Set<T>(ref T field, T value, string name)

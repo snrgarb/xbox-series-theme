@@ -56,6 +56,8 @@
                 Each part that shows a picture gets it only from the trigger on the kind that shows it, so an entry
                 decodes its image once, for the one part showing, rather than once for every part it has.
             -->
+            <!-- A Now Playing card's place in its track and its length, as 3:07, or past an hour 1:02:07. -->
+            <local:MediaTimeConverter x:Key="MediaTime" />
             <DataTemplate x:Key="GuideEntry">
                 <StackPanel>
                     <Border x:Name="Divider" Height="1" Margin="30,14,30,26" Background="#33FFFFFF" Visibility="Collapsed" />
@@ -169,13 +171,46 @@
                                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
                                 <TextBlock Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22" Foreground="#B3FFFFFF"
                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <!--
+                                    How far into the track it is, as the volume slider draws its level: the accent on a dim
+                                    track, thin, so the card keeps its height. Gone for a session with no length, as a live
+                                    stream's, as is its time beside the app.
+                                -->
+                                <ProgressBar x:Name="Progress" Minimum="0" Maximum="{Binding Duration.TotalSeconds, Mode=OneWay}"
+                                             Value="{Binding Position.TotalSeconds, Mode=OneWay}" Height="4" Margin="0,10,0,0"
+                                             Focusable="False">
+                                    <ProgressBar.Template>
+                                        <ControlTemplate TargetType="ProgressBar">
+                                            <Grid>
+                                                <Border x:Name="PART_Track" Background="#40FFFFFF" CornerRadius="2" />
+                                                <Border x:Name="PART_Indicator" Background="{DynamicResource GlyphLightBrush}"
+                                                        CornerRadius="2" HorizontalAlignment="Left" />
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </ProgressBar.Template>
+                                </ProgressBar>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
                                     <!-- Segoe Fluent Icons / MDL2 Assets: play while it plays, pause while it is paused. -->
                                     <TextBlock x:Name="PlayState" Text="&#xE769;" Style="{StaticResource GuideIcon}" FontSize="16"
                                                Foreground="#B3FFFFFF" Width="20" />
-                                    <TextBlock Text="{Binding App}" Style="{StaticResource GuideText}" FontSize="20" Foreground="#B3FFFFFF"
+                                    <TextBlock Grid.Column="1" Text="{Binding App}" Style="{StaticResource GuideText}" FontSize="20" Foreground="#B3FFFFFF"
                                                Margin="8,0,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
+                                    <!-- The time played and the track's length, as 1:05 / 3:20, past an hour 1:02:07. -->
+                                    <TextBlock x:Name="ProgressTime" Grid.Column="2" Style="{StaticResource GuideText}" FontSize="20"
+                                               Foreground="#B3FFFFFF" Margin="12,0,0,0" TextWrapping="NoWrap">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} / {1}">
+                                                <Binding Path="Position" Converter="{StaticResource MediaTime}" />
+                                                <Binding Path="Duration" Converter="{StaticResource MediaTime}" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </Grid>
                             </StackPanel>
                         </Grid>
                         <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
@@ -530,6 +565,11 @@
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsPlaying}" Value="True">
                         <Setter TargetName="PlayState" Property="Text" Value="&#xE768;" />
+                    </DataTrigger>
+                    <!-- A session with no length, as a live stream's, has no progress bar. -->
+                    <DataTrigger Binding="{Binding Duration}" Value="0:00:00">
+                        <Setter TargetName="Progress" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="ProgressTime" Property="Visibility" Value="Collapsed" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="NothingPlaying">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE8D6;" />
