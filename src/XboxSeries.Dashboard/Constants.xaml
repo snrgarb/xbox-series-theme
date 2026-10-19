@@ -93,6 +93,11 @@
     <SolidColorBrush x:Key="ControlBackgroundDarkBrush" Color="#FF2B2B2B" />
     <!-- A focused or pointed-at row is filled a little lighter, as the extension's menus fill theirs. -->
     <SolidColorBrush x:Key="XboxRowLitBrush" Color="#26FFFFFF" />
+    <!--
+        The focused row of the console's menus (the game menu's, and those of game clients, software tools and
+        extensions' commands): an opaque lighter grey across the panel's full width, inside the green ring.
+    -->
+    <SolidColorBrush x:Key="XboxRowFocusBrush" Color="#FF404040" />
     <!-- A button standing on its own, as a message box's or a prompt's: the console's grey tile. -->
     <SolidColorBrush x:Key="XboxTileBrush" Color="#FF3B3B3B" />
     <!-- Every text in Playnite's windows is set in this, directly or through its buttons' templates. -->
