@@ -174,6 +174,10 @@ namespace XboxSeries.Extension
                 BeginStartup();
                 startup?.SetPlayniteWindow(PlayniteWindow());
                 SystemEvents.PowerModeChanged += OnPowerModeChanged;
+
+                // The game menu's Uninstall, Manage game's too, goes through the core for a game its client can
+                // uninstall without its own windows. Desktop mode's menus are its own, and keep Playnite's.
+                GameMenuUninstall.Register(core);
             }
             else
             {
