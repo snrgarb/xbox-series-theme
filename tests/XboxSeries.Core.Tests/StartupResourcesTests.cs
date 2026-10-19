@@ -38,6 +38,17 @@ namespace XboxSeries.Core.Tests
             Assert.Contains("InheritanceBehavior = InheritanceBehavior.SkipToThemeNext;", window);
         }
 
+        // Skipping the application, the window passes no property value down either: a DataContext set on it reached
+        // some of its content but not Signing you in's gamertag and picture, which showed empty.
+        [Fact]
+        public void The_sequences_state_is_set_on_the_windows_content_not_the_window()
+        {
+            var window = File.ReadAllText(Path.Combine(ExtensionDir, "StartupWindow.xaml.cs"));
+
+            Assert.Contains("Layers.DataContext = startup;", window);
+            Assert.DoesNotContain(" DataContext = startup;", window);
+        }
+
         private static string FindRepoRoot()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);

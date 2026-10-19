@@ -62,7 +62,8 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Grid>
+    <!-- The sequence's state is set here rather than on the window, which passes nothing down to it (StartupWindow.xaml.cs). -->
+    <Grid x:Name="Layers">
         <!-- The green swirl, behind Who's playing today? and Signing you in, filling the screen whatever its aspect. -->
         <Grid x:Name="SwirlLayer" Opacity="0" Visibility="Hidden">
             <local:SwirlBackground />
