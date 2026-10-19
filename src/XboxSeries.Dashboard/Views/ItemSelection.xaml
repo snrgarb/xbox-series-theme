@@ -50,7 +50,12 @@
         <Setter Property="Foreground" Value="{DynamicResource XboxTextDimBrush}" />
     </Style>
 
-    <Style x:Key="ItemSelectionHeaderText" BasedOn="{StaticResource XboxPanelTitle}" TargetType="TextBlock">
+    <Style x:Key="ItemSelectionHeaderText" BasedOn="{StaticResource TextBlockBaseStyle}" TargetType="TextBlock">
+        <!-- XboxPanelTitle's look: a StaticResource can't reach it in Constants.xaml (see DashboardBoundaryTests). -->
+        <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         <Setter Property="VerticalAlignment" Value="Bottom" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="Margin" Value="30,0,30,12" />

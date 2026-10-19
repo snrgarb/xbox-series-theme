@@ -41,6 +41,41 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Dashboard_xaml_static_references_only_keys_its_own_file_or_Default_defines()
+        {
+            // Playnite loads each theme file on its own to check it before applying the theme, with only Default's
+            // resources about, and falls back to Default if any fails. So a StaticResource can't reach a Dashboard key
+            // (Xbox*) another file defines; it must be defined earlier in the same file, or be a DynamicResource.
+            XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
+            var unreachable = DashboardXaml().SelectMany(file =>
+            {
+                var defined = new System.Collections.Generic.HashSet<string>();
+                var missing = new System.Collections.Generic.List<string>();
+                foreach (var element in XDocument.Load(file).Descendants())
+                {
+                    foreach (var attribute in element.Attributes())
+                    {
+                        foreach (Match m in Regex.Matches(attribute.Value, @"\{StaticResource (Xbox\w+)\}"))
+                        {
+                            if (!defined.Contains(m.Groups[1].Value))
+                            {
+                                missing.Add($"{Path.GetFileName(file)}: {m.Groups[1].Value}");
+                            }
+                        }
+                    }
+                    var key = (string)element.Attribute(x + "Key");
+                    if (key != null)
+                    {
+                        defined.Add(key);
+                    }
+                }
+                return missing;
+            });
+
+            Assert.Empty(unreachable);
+        }
+
+        [Fact]
         public void Dashboard_never_references_extension_types()
         {
             foreach (var file in DashboardXaml())
