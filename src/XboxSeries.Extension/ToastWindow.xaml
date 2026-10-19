@@ -29,6 +29,7 @@
         into its place, where it stays as the Toast goes. Any other kind has its tile and text in
         their place from the start. It goes by growing to 1.1, then shrinking to 0.9 as it fades out. The banner is laid
         out at its final size throughout; only render transforms move (see ToastWindow.xaml.cs).
+        A rare achievement's Toast is not the banner but the console's blue pill, shown in its place (Rare).
     -->
     <Window.Resources>
         <ResourceDictionary>
@@ -229,6 +230,13 @@
                     </DockPanel>
                 </Grid>
             </Border>
+            <!--
+                A rare achievement's Toast in the banner's place: the console's blue pill with its spinning diamond, wider
+                than the banner and with a timeline of its own (RareAchievementToast.xaml). Shown, and the banner hidden,
+                for that kind alone.
+            -->
+            <local:RareAchievementToast x:Name="Rare" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
+                                        Visibility="Collapsed" />
         </Grid>
     </Viewbox>
 </Window>
