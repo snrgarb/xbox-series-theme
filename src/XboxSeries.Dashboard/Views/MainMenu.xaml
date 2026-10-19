@@ -21,138 +21,138 @@
     </Style>
 
     <DataTemplate x:Key="MainMenuHeaderTemplate">
-        <TextBlock Text="Playnite" Style="{StaticResource XboxPanelTitle}" Margin="30,48,30,24" />
+        <TextBlock Text="Playnite" Style="{DynamicResource XboxPanelTitle}" Margin="30,48,30,24" />
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuSettingsButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE713;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE713;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCSettingsLabel}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuLibUpdateButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE895;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE895;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuReloadLibrary}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuCancelLibUpdateButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE711;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE711;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuCancelLibraryUpdate}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuExitPlayniteButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xF3B1;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xF3B1;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCExitPlaynite}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuSwithDesktopButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE7F4;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE7F4;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCBackToDesktopMode}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuRandomGameButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE8B1;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE8B1;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuSelectRandomGame}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuShutdowButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE7E8;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE7E8;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuShutdownSystem}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuSuspendButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE708;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE708;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuSuspendSystem}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuHibernateButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE823;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE823;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuHibernateSystem}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuRestartButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE72C;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE72C;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuRestartSystem}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuHelpButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE897;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE897;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuHelpTitle}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuPatreonButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xEB51;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xEB51;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuPatreonSupport}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuKofiButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xEB51;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xEB51;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuKofiSupport}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuMinimizeButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE921;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE921;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMinimize}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuLockSystemButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE72E;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE72E;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuLockSystem}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuLogoutUserButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE748;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE748;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuLogoutUser}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuClientsButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE7FC;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE7FC;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuOpenClient}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuToolsButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE90F;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE90F;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuTools}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="MainMenuExtensionsButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xEA86;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xEA86;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCExtensions}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>

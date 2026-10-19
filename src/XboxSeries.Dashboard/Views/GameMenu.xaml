@@ -25,7 +25,12 @@
     </Style>
 
     <!-- The game's name, the menu's title, as the extension's tile menu titles its menu. -->
-    <Style x:Key="GameMenuHeaderText" BasedOn="{StaticResource XboxPanelTitle}" TargetType="TextBlock">
+    <Style x:Key="GameMenuHeaderText" BasedOn="{StaticResource TextBlockBaseStyle}" TargetType="TextBlock">
+        <!-- XboxPanelTitle's look: a StaticResource can't reach it in Constants.xaml (see DashboardBoundaryTests). -->
+        <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         <Setter Property="Margin" Value="30,0,30,12" />
     </Style>
 
@@ -35,77 +40,77 @@
 
     <DataTemplate x:Key="GameMenuPlayButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE768;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE768;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuInstallButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE896;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE896;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuFavoriesButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE734;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE734;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuVisibilityButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xED1A;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xED1A;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuHdrButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE793;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE793;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuRemoveButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE738;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE738;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuUninstallButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE74D;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE74D;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuCustomActionButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuCompletionStatusTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuSetFieldsTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE70F;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE70F;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuExtensionsTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xEA86;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xEA86;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>

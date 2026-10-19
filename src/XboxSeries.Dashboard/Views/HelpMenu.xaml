@@ -20,26 +20,26 @@
     </Style>
 
     <DataTemplate x:Key="HelpMenuHeaderTemplate">
-        <TextBlock Text="{DynamicResource LOCMenuHelpTitle}" Style="{StaticResource XboxPanelTitle}" Margin="30,48,30,24" />
+        <TextBlock Text="{DynamicResource LOCMenuHelpTitle}" Style="{DynamicResource XboxPanelTitle}" Margin="30,48,30,24" />
     </DataTemplate>
 
     <DataTemplate x:Key="HelpMenuRestartPlayniteButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE72C;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE72C;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCCrashRestartPlaynite}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="HelpMenuSafeModeButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE83D;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE83D;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCCrashRestartSafe}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="HelpMenuFeedbackButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xED15;" Style="{StaticResource XboxMenuIcon}" />
+            <TextBlock Text="&#xED15;" Style="{DynamicResource XboxMenuIcon}" />
             <TextBlock Text="{DynamicResource LOCMenuIssues}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>

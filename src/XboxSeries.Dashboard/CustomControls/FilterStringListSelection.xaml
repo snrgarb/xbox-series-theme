@@ -17,7 +17,7 @@
                                   x:Name="PART_ButtonBack">
                             <Button.Content>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE76B;" Style="{StaticResource XboxMenuIcon}" />
+                                    <TextBlock Text="&#xE76B;" Style="{DynamicResource XboxMenuIcon}" />
                                     <TextBlock Text="{Binding Title}" VerticalAlignment="Center"
                                                Style="{DynamicResource TextBlockBaseStyle}" />
                                 </StackPanel>

@@ -42,7 +42,7 @@
                                Grid.Row="1" Grid.Column="1" />
 
                         <TextBlock Name="PART_TextStatus" TextAlignment="Center"
-                                   Style="{StaticResource XboxPanelTitle}"
+                                   Style="{DynamicResource XboxPanelTitle}"
                                    HorizontalAlignment="Center" Margin="0,28,0,28"
                                    Grid.Row="2" Grid.Column="1" />
 
