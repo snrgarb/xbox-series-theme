@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using XboxSeries.Core.Tests.Fakes;
 using Xunit;
@@ -155,6 +156,25 @@ namespace XboxSeries.Core.Tests
 
             clock.Advance(TimeSpan.FromSeconds(5));
             Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void Home_is_revealed_as_Start_up_ends_on_start_and_on_waking_from_sleep()
+        {
+            var revealed = new List<bool>();
+            core.Home.Revealed += () => revealed.Add(core.IsStartupShown);
+
+            SignIn(0);
+            clock.Advance(TimeSpan.FromSeconds(2.9));
+            Assert.Empty(revealed);
+
+            clock.Advance(TimeSpan.FromSeconds(0.1));
+            Assert.Equal(new[] { false }, revealed);
+
+            clock.Advance(TimeSpan.FromSeconds(10));
+            core.OnStartupSignedIn(core.OnResumedFromSleep().Profiles[0]);
+            clock.Advance(TimeSpan.FromSeconds(3));
+            Assert.Equal(new[] { false, false }, revealed);
         }
 
         [Fact]

@@ -78,6 +78,7 @@ namespace XboxSeries.Extension
         {
             core.Home.PropertyChanged += OnHomeChanged;
             core.Home.ReturnedFromGame += OnReturnedFromGame;
+            core.Home.Revealed += OnRevealed;
             homeScreen.Changed += OnScreenChanged;
             HomeRows.Fly(this, !homeScreen.ShowsGroups, -HomeRows.FlyDistance, animate: false);
             growth.Start();
@@ -97,6 +98,7 @@ namespace XboxSeries.Extension
         {
             core.Home.PropertyChanged -= OnHomeChanged;
             core.Home.ReturnedFromGame -= OnReturnedFromGame;
+            core.Home.Revealed -= OnRevealed;
             homeScreen.Changed -= OnScreenChanged;
             growth.Stop();
             if (gameDetails != null)
@@ -130,6 +132,19 @@ namespace XboxSeries.Extension
             homeScreen.LastFocusedRow = this;
             homeScreen.Show(groups: false);
             FocusTileSoon();
+        }
+
+        /// <summary>
+        /// Start-up has ended and Home is revealed from black: the row flies up into place and the top bar's buttons drop
+        /// in after it, but only with the row the screen showing. Under the Groups, My games &amp; apps, Settings, Search
+        /// (which all hide the row) or a Game hub, Home stays as it was left, nothing hidden. Focus stays where it is.
+        /// </summary>
+        private void OnRevealed()
+        {
+            if (IsVisible && !homeScreen.ShowsGroups && gameDetails?.IsVisible != true)
+            {
+                HomeRows.Reveal(this);
+            }
         }
 
         private void OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
