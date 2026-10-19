@@ -23,7 +23,7 @@ namespace XboxSeries.Core
         public event Action<Guid> ReturnedFromGame;
 
         /// <summary>
-        /// Start-up has ended, on start or on waking from sleep, and Home is revealed from black as the Start-up window
+        /// Start-up has ended, on start or on waking from sleep, and Home is revealed from under its swirl as the Start-up window
         /// fades out: Home's rows fly up into place, then the top bar's buttons drop in. Raised on the UI thread, with
         /// <see cref="ExtensionCore.StartupEnded"/>.
         /// </summary>

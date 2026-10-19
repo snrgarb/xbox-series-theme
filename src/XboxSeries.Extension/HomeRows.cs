@@ -124,12 +124,12 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Home revealed from black as Start-up ends, as on the console: <paramref name="row"/> (the Recent row and the
+        /// Home revealed from under Start-up's swirl as it fades, as on the console: <paramref name="row"/> (the Recent row and the
         /// placeholder tiles under it) flies up into place from a little below, fading in, rises a little too high and
         /// drops back to settle; a moment after, the top bar's buttons (My games &amp; apps, Search and Settings) drop in
         /// from above the screen's top, fading in. Until then they are disabled as well as unseen, so that Up from the
         /// row can't focus one no one can see. Both start where they start at once, while the Start-up window still
-        /// covers Home black, so nothing at rest shows first. A <see cref="Fly"/> during it, as Down to the Groups,
+        /// covers Home, so nothing at rest shows first. A <see cref="Fly"/> during it, as Down to the Groups,
         /// takes the row over from wherever it has got to.
         /// </summary>
         /// <remarks>
