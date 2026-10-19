@@ -144,6 +144,22 @@
                             </Border>
                         </Grid>
                         <!--
+                            One of the Profile's recent achievements on Profile &amp; system: its icon on a rounded square, as the
+                            Toast shows it, over a grey one with the trophy for an achievement without one (or one that won't
+                            load). The trophy, U+1F3C6, isn't in the icon font, so it is in the body font, drawn from Segoe UI Symbol.
+                        -->
+                        <Grid x:Name="AchievementIcon" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
+                            <Border CornerRadius="4" Background="#FF4A4A4A">
+                                <TextBlock Text="&#x1F3C6;" Style="{StaticResource GuideText}" FontSize="26" Foreground="#B3FFFFFF"
+                                           HorizontalAlignment="Center" />
+                            </Border>
+                            <Border CornerRadius="4">
+                                <Border.Background>
+                                    <ImageBrush ImageSource="{Binding Tag, ElementName=AchievementIcon}" Stretch="UniformToFill" />
+                                </Border.Background>
+                            </Border>
+                        </Grid>
+                        <!--
                             The Audio flyout's Now Playing entry, under its mute switches and their divider, as Windows' media
                             flyout shows the media: the album art on a rounded square, over a grey one with a note for none
                             (or art that won't load), its left edge where the rows above have their icons, beside the track,
@@ -279,7 +295,7 @@
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
                             <TextBlock x:Name="Running" Text="Running" Style="{StaticResource GuideText}" FontSize="22"
                                        Foreground="#B3FFFFFF" Visibility="Collapsed" />
-                            <!-- Who is calling, under Answer. -->
+                            <!-- Who is calling, under Answer; a recent achievement's game, under its name. -->
                             <TextBlock x:Name="Calling" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22"
                                        Foreground="#B3FFFFFF" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
                             <!--
@@ -406,6 +422,44 @@
                         </Border>
                     </Grid>
                     <!--
+                        Under the profile card, Profile &amp; system's achievements: a divider, then the Profile's Score across
+                        every game beside how many achievements are unlocked, as "(trophy) 12,345 G   56 achievements", the
+                        recent unlocks following as entries of their own. Only under the profile card, and gone altogether
+                        while there are no totals (PlayniteAchievements not installed, or no achievements). It isn't an entry:
+                        focus goes from the card to the first recent unlock.
+                    -->
+                    <Border x:Name="AchievementsSection" Visibility="Collapsed">
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DataContext.Achievements, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Border Height="1" Margin="30,14,30,26" Background="#33FFFFFF" />
+                            <StackPanel Orientation="Horizontal" Margin="33,0,16,12">
+                                <TextBlock Text="&#x1F3C6;" Style="{StaticResource GuideText}" FontSize="22" Width="36" TextAlignment="Center" />
+                                <TextBlock Text="{Binding DataContext.Achievements.Score, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}, StringFormat={}{0:N0} G}"
+                                           Style="{StaticResource GuideText}" FontSize="22" Margin="12,0,0,0" />
+                                <TextBlock FontSize="22" Foreground="#B3FFFFFF" Margin="24,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
+                                            <Setter Property="Text" Value="{Binding DataContext.Achievements.Unlocked, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}, StringFormat={}{0:N0} achievements}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DataContext.Achievements.Unlocked, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}" Value="1">
+                                                    <Setter Property="Text" Value="1 achievement" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <!--
                         An Output or Input dropdown's open list, under its box and as wide, laid over the entries below
                         it rather than pushing them down: the Canvas takes no height, and the list sits on it at its own.
                         A box a little lighter than the flyout, each device a row of this template (so it has the
@@ -471,6 +525,7 @@
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Avatar" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="138" />
+                        <Setter TargetName="AchievementsSection" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
@@ -794,6 +849,22 @@
                         <Setter TargetName="Title" Property="FontSize" Value="25" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                         <Setter TargetName="Title" Property="Foreground" Value="#FF23A55A" />
+                    </DataTrigger>
+                    <!--
+                        A recent achievement, under the achievements' totals on Profile &amp; system: its icon, as a server's
+                        in the Servers flyout, its name over its game's in grey, as Answer's over the caller's. The section
+                        over it brings its own divider, so the first one's isn't drawn again. Focused as any entry is.
+                    -->
+                    <DataTrigger Binding="{Binding Kind}" Value="RecentAchievement">
+                        <Setter TargetName="AchievementIcon" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" />
+                        <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="AchievementIcon" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Calling" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Divider" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="Entry" Property="Height" Value="96" />
+                        <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
             </DataTemplate>
