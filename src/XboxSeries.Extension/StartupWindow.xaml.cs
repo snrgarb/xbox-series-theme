@@ -50,7 +50,7 @@ namespace XboxSeries.Extension
             InitializeComponent();
             this.core = core;
             this.silenceThemeSounds = silenceThemeSounds;
-            startup = core.Startup;
+            startup = new StartupState();
             DataContext = startup;
             startup.PropertyChanged += OnStartupChanged;
             SizeChanged += (_, __) => FitToScreen();
@@ -182,7 +182,6 @@ namespace XboxSeries.Extension
 
             ++videos;
             StopVideo();
-            core.OnBootVideoEnded();
         }
 
         /// <summary>

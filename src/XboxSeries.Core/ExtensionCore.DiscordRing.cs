@@ -258,7 +258,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void ShowRingToast(string caller, string image)
         {
-            if (Startup.IsShown || greetingTimer != null)
+            if (IsStartupShown || greetingTimer != null)
             {
                 waitingRingToast = () => ShowRingToast(caller, image);
                 return;

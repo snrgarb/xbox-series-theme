@@ -219,7 +219,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnResumedFromSleep();
 
-            Assert.True(core.Startup.IsShown);
+            Assert.True(core.IsStartupShown);
             Assert.False(core.Guide.IsOpen);
             Assert.False(windows.IsFrozen);
         }

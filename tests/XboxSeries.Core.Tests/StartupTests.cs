@@ -5,6 +5,11 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
+    /// <summary>
+    /// The core's side of the Start-up sequence: what it hands the sequence's thread to begin with, what it covers and
+    /// holds back while the sequence shows, and Signing you in's 3 s, then "Hi X!", once the sequence says who signed in.
+    /// What the sequence itself shows and does with the pad is in <see cref="StartupSequenceTests"/>.
+    /// </summary>
     public class StartupTests
     {
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 15, 20, 0, 0));
@@ -14,6 +19,7 @@ namespace XboxSeries.Core.Tests
         private readonly FakeUserAccount account = new FakeUserAccount { Name = "gabe", RealName = "Gabe Smith", Picture = @"C:\pics\gabe.png" };
         private readonly FakeLibrary library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12));
         private ExtensionCore core;
+        private int startupsEnded;
 
         public StartupTests()
         {
@@ -27,192 +33,80 @@ namespace XboxSeries.Core.Tests
                 new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), secrets, new FakeDownloads());
             core.OnLibraryChanged(library.Snapshot());
             core.OnNotificationsChanged(new Notification[0]);
+            core.StartupEnded += () => startupsEnded++;
         }
-
-        private StartupState Startup => core.Startup;
 
         [Fact]
         public void Nothing_shows_until_Playnite_starts_in_Fullscreen()
         {
-            Assert.Equal(StartupPhase.None, Startup.Phase);
-            Assert.False(Startup.IsShown);
+            Assert.False(core.IsStartupShown);
             Assert.Null(core.Status.Profile);
         }
 
         [Fact]
-        public void Starting_plays_the_chosen_boot_video()
+        public void Starting_hands_the_sequence_the_chosen_boot_video_and_the_profiles_focus_on_the_first()
         {
+            core.AddProfile("Ana");
             core.SetBootVideo(BootVideo.XboxOne);
 
-            core.OnStartup();
+            var plan = core.OnStartup();
 
-            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
-            Assert.True(Startup.IsShown);
-            Assert.Equal(BootVideo.XboxOne, Startup.BootVideo);
+            Assert.True(core.IsStartupShown);
+            Assert.Equal(BootVideo.XboxOne, plan.BootVideo);
+            Assert.True(plan.AskWhosPlaying);
+            Assert.Equal(core.Settings.StartUp.Profiles, plan.Profiles);
+            Assert.Equal("gabe", plan.LastProfile.Gamertag);
         }
 
         [Fact]
-        public void After_the_boot_video_Whos_playing_today_asks_focus_on_the_first_profile()
+        public void Starting_tells_the_sequence_when_Whos_playing_today_doesnt_ask()
         {
-            core.OnStartup();
+            core.SetAskWhosPlaying(false);
 
-            core.OnBootVideoEnded();
-
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-            Assert.Equal("gabe", Startup.FocusedProfile.Gamertag);
-            Assert.Equal(core.Settings.StartUp.Profiles, Startup.Profiles);
+            Assert.False(core.OnStartup().AskWhosPlaying);
         }
 
         [Fact]
-        public void With_the_boot_video_Off_Whos_playing_today_asks_at_once()
+        public void Starting_again_while_Start_up_shows_begins_nothing()
         {
-            core.SetBootVideo(BootVideo.Off);
-
             core.OnStartup();
 
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
+            Assert.Null(core.OnStartup());
+            Assert.True(core.IsStartupShown);
+        }
+
+        [Fact]
+        public void The_Guide_button_neither_opens_the_Guide_nor_Power_during_Start_up()
+        {
+            core.OnStartup();
+
+            TapGuide();
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed);
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.False(core.Guide.IsOpen);
+            Assert.False(core.Guide.IsOverlayShown);
+            Assert.Null(core.Guide.Dialog);
         }
 
         [Theory]
         [InlineData(ControllerButton.A)]
         [InlineData(ControllerButton.B)]
         [InlineData(ControllerButton.Start)]
-        [InlineData(ControllerButton.DPadLeft)]
-        public void Any_button_skips_the_boot_video(ControllerButton button)
-        {
-            core.OnStartup();
-
-            Tap(button);
-
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-        }
-
-        [Fact]
-        public void The_Guide_button_skips_the_boot_video_without_opening_the_Guide_or_Power()
-        {
-            core.OnStartup();
-
-            core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed);
-            clock.Advance(TimeSpan.FromSeconds(1));
-            core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
-            clock.Advance(TimeSpan.FromSeconds(1));
-
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-            Assert.False(core.Guide.IsOpen);
-            Assert.False(core.Guide.IsOverlayShown);
-        }
-
-        [Fact]
-        public void A_boot_video_running_past_20_s_ends_as_one_that_finished()
-        {
-            core.OnStartup();
-
-            clock.Advance(TimeSpan.FromSeconds(19.9));
-            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
-
-            clock.Advance(TimeSpan.FromSeconds(0.1));
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-        }
-
-        [Fact]
-        public void A_boot_video_ended_or_skipped_isnt_ended_again_by_the_deadline()
-        {
-            core.OnStartup();
-            core.OnBootVideoEnded();
-            Tap(ControllerButton.A);
-            clock.Advance(TimeSpan.FromSeconds(10));
-            core.OnStartup();
-
-            clock.Advance(TimeSpan.FromSeconds(10));
-            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
-
-            Tap(ControllerButton.B);
-            clock.Advance(TimeSpan.FromSeconds(20));
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-        }
-
-        [Fact]
-        public void The_A_that_skips_the_boot_video_doesnt_also_sign_in()
-        {
-            core.OnStartup();
-
-            Tap(ControllerButton.A);
-
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-        }
-
-        [Fact]
-        public void Left_and_right_move_along_the_profiles_with_the_Navigate_sound_held_at_either_end()
-        {
-            core.AddProfile("Ana");
-            core.AddProfile("Bo");
-            core.OnStartup();
-            core.OnBootVideoEnded();
-            sounds.Played.Clear();
-
-            Tap(ControllerButton.DPadLeft);
-            Assert.Equal("gabe", Startup.FocusedProfile.Gamertag);
-
-            Tap(ControllerButton.DPadRight);
-            Tap(ControllerButton.DPadRight);
-            Assert.Equal("Bo", Startup.FocusedProfile.Gamertag);
-
-            Tap(ControllerButton.DPadRight);
-            Assert.Equal("Bo", Startup.FocusedProfile.Gamertag);
-
-            Tap(ControllerButton.DPadLeft);
-            Assert.Equal("Ana", Startup.FocusedProfile.Gamertag);
-            Assert.Equal(new[] { UiSound.Navigate, UiSound.Navigate, UiSound.Navigate }, sounds.Played);
-        }
-
-        [Fact]
-        public void A_signs_the_focused_profile_in_with_the_Enter_and_Login_sounds()
-        {
-            core.AddProfile("Ana");
-            core.OnStartup();
-            core.OnBootVideoEnded();
-            Tap(ControllerButton.DPadRight);
-            sounds.Played.Clear();
-
-            Tap(ControllerButton.A);
-
-            Assert.Equal(StartupPhase.SigningIn, Startup.Phase);
-            Assert.Equal("Ana", Startup.SigningIn.Gamertag);
-            Assert.Equal("Ana", core.Status.Profile.Gamertag);
-            Assert.Equal(new[] { UiSound.Enter, UiSound.Login }, sounds.Played);
-        }
-
-        [Theory]
-        [InlineData(ControllerButton.B)]
-        [InlineData(ControllerButton.Start)]
         [InlineData(ControllerButton.DPadUp)]
-        public void Other_buttons_do_nothing_on_Whos_playing_today(ControllerButton button)
+        public void Other_buttons_do_nothing_during_Start_up(ControllerButton button)
         {
             core.OnStartup();
-            core.OnBootVideoEnded();
             sounds.Played.Clear();
 
             Tap(button);
 
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
+            Assert.True(core.IsStartupShown);
             Assert.Empty(sounds.Played);
             Assert.False(core.Guide.IsOpen);
-        }
-
-        [Fact]
-        public void The_Guide_button_neither_opens_the_Guide_nor_Power_on_Whos_playing_today()
-        {
-            core.OnStartup();
-            core.OnBootVideoEnded();
-
-            TapGuide();
-            core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed);
-            clock.Advance(TimeSpan.FromSeconds(1));
-            core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
-
-            Assert.False(core.Guide.IsOpen);
-            Assert.Null(core.Guide.Dialog);
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
+            Assert.Null(core.Status.Profile);
         }
 
         [Fact]
@@ -220,7 +114,6 @@ namespace XboxSeries.Core.Tests
         {
             core.FocusHomeTile(core.Home.RecentRow[0]);
             core.OnStartup();
-            core.OnBootVideoEnded();
 
             Tap(ControllerButton.Start);
 
@@ -228,20 +121,32 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Signing_in_signs_the_profile_in_at_once_with_no_sound_of_its_own()
+        {
+            core.AddProfile("Ana");
+            var plan = core.OnStartup();
+            sounds.Played.Clear();
+
+            core.OnStartupSignedIn(plan.Profiles[1]);
+
+            Assert.Equal("Ana", core.Status.Profile.Gamertag);
+            Assert.Empty(sounds.Played);
+        }
+
+        [Fact]
         public void Signing_in_shows_for_three_seconds_then_Home_with_Hi_and_the_first_name()
         {
-            core.OnStartup();
-            core.OnBootVideoEnded();
-            Tap(ControllerButton.A);
+            SignIn(0);
             sounds.Played.Clear();
 
             clock.Advance(TimeSpan.FromSeconds(2.9));
-            Assert.Equal(StartupPhase.SigningIn, Startup.Phase);
+            Assert.True(core.IsStartupShown);
+            Assert.Equal(0, startupsEnded);
             Assert.False(core.Toast.IsShown);
 
             clock.Advance(TimeSpan.FromSeconds(0.1));
-            Assert.Equal(StartupPhase.None, Startup.Phase);
-            Assert.False(Startup.IsShown);
+            Assert.False(core.IsStartupShown);
+            Assert.Equal(1, startupsEnded);
             Assert.True(core.Toast.IsShown);
             Assert.Equal("Hi Gabe!", core.Toast.Text);
             Assert.Equal(ToastKind.Greeting, core.Toast.Kind);
@@ -256,9 +161,7 @@ namespace XboxSeries.Core.Tests
         public void The_greeting_uses_the_gamertag_without_a_real_name()
         {
             core.SetProfileRealName(core.Settings.StartUp.Profiles[0].Id, "");
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.A);
+            SignIn(0);
 
             clock.Advance(TimeSpan.FromSeconds(3));
 
@@ -266,83 +169,72 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Not_asking_signs_the_last_profile_in_after_the_boot_video()
+        public void Signing_in_wears_the_cores_own_profile_of_that_id()
         {
             var ana = core.AddProfile("Ana");
-            core.AddProfile("Bo");
-            core.SetBootVideo(BootVideo.Off);
             core.OnStartup();
-            Tap(ControllerButton.DPadRight);
-            Tap(ControllerButton.A);
-            clock.Advance(TimeSpan.FromSeconds(10));
-            core.SetAskWhosPlaying(false);
-            core.SetBootVideo(BootVideo.Xbox);
 
-            NewCore();
-            core.OnStartup();
-            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
-            core.OnBootVideoEnded();
+            core.OnStartupSignedIn(new Profile(ana.Id, "Ana", "", null));
 
-            Assert.Equal(StartupPhase.SigningIn, Startup.Phase);
-            Assert.Equal(ana.Id, Startup.SigningIn.Id);
-            Assert.Equal(ana.Id, core.Status.Profile.Id);
+            Assert.Same(core.Settings.StartUp.Profiles[1], core.Status.Profile);
         }
 
         [Fact]
-        public void Not_asking_with_none_signed_in_before_signs_the_first_in()
+        public void Signing_in_twice_or_out_of_turn_changes_nothing()
         {
-            core.AddProfile("Ana");
-            core.SetAskWhosPlaying(false);
-            core.SetBootVideo(BootVideo.Off);
+            var ana = core.AddProfile("Ana");
+            core.OnStartupSignedIn(ana);
+            Assert.Null(core.Status.Profile);
+            Assert.False(core.IsStartupShown);
 
-            core.OnStartup();
+            SignIn(0);
+            clock.Advance(TimeSpan.FromSeconds(2));
+            core.OnStartupSignedIn(ana);
+            clock.Advance(TimeSpan.FromSeconds(1));
 
-            Assert.Equal(StartupPhase.SigningIn, Startup.Phase);
-            Assert.Equal("gabe", Startup.SigningIn.Gamertag);
+            Assert.Equal("gabe", core.Status.Profile.Gamertag);
+            Assert.Equal(1, startupsEnded);
+            Assert.Equal("Hi Gabe!", core.Toast.Text);
+
+            core.OnStartupSignedIn(ana);
+            clock.Advance(TimeSpan.FromSeconds(3));
+            Assert.Equal("gabe", core.Status.Profile.Gamertag);
+            Assert.Equal(1, startupsEnded);
         }
 
         [Fact]
-        public void Whos_playing_today_focuses_the_profile_signed_in_last()
+        public void The_profile_signed_in_is_the_last_next_time_Playnite_starts()
         {
             core.AddProfile("Ana");
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.DPadRight);
-            Tap(ControllerButton.A);
+            SignIn(1);
             clock.Advance(TimeSpan.FromSeconds(10));
 
             NewCore();
-            core.OnStartup();
 
-            Assert.Equal("Ana", Startup.FocusedProfile.Gamertag);
+            Assert.Equal("Ana", core.OnStartup().LastProfile.Gamertag);
         }
 
         [Fact]
-        public void Removing_the_profile_signed_in_last_focuses_the_first_next_time()
+        public void Removing_the_profile_signed_in_last_makes_the_first_the_last_next_time()
         {
             var ana = core.AddProfile("Ana");
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.DPadRight);
-            Tap(ControllerButton.A);
+            SignIn(1);
             clock.Advance(TimeSpan.FromSeconds(10));
 
             core.RemoveProfile(ana.Id);
             NewCore();
-            core.OnStartup();
 
-            Assert.Equal("gabe", Startup.FocusedProfile.Gamertag);
+            Assert.Equal("gabe", core.OnStartup().LastProfile.Gamertag);
         }
 
         [Fact]
         public void Playnite_notifications_arriving_during_Start_up_show_after_the_greeting()
         {
-            core.OnStartup();
+            var plan = core.OnStartup();
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
             Assert.False(core.Toast.IsShown);
 
-            core.OnBootVideoEnded();
-            Tap(ControllerButton.A);
+            core.OnStartupSignedIn(plan.Profiles[0]);
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated"), new Notification("b", "Update available") });
             Assert.False(core.Toast.IsShown);
 
@@ -362,9 +254,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void A_notification_arriving_during_the_greeting_waits_its_turn()
         {
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.A);
+            SignIn(0);
             clock.Advance(TimeSpan.FromSeconds(3));
 
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
@@ -377,9 +267,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void Tapping_the_Guide_button_during_the_greeting_opens_the_Guide_on_Profile_and_system()
         {
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.A);
+            SignIn(0);
             clock.Advance(TimeSpan.FromSeconds(3));
 
             TapGuide();
@@ -395,10 +283,7 @@ namespace XboxSeries.Core.Tests
         {
             var ana = core.AddProfile("Ana");
             core.SetProfilePicture(ana.Id, @"C:\Gamerpics\a.png");
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.DPadRight);
-            Tap(ControllerButton.A);
+            SignIn(1);
             clock.Advance(TimeSpan.FromSeconds(10));
 
             TapGuide();
@@ -413,9 +298,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void Editing_the_profile_signed_in_shows_on_the_status_area_and_the_Guide()
         {
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.A);
+            SignIn(0);
             clock.Advance(TimeSpan.FromSeconds(10));
             TapGuide();
             Tap(ControllerButton.RightShoulder);
@@ -437,9 +320,7 @@ namespace XboxSeries.Core.Tests
         public void Editing_another_profile_leaves_the_one_signed_in()
         {
             var ana = core.AddProfile("Ana");
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.A);
+            SignIn(0);
             var signedIn = core.Status.Profile;
 
             core.SetProfileGamertag(ana.Id, "Anabel");
@@ -451,20 +332,20 @@ namespace XboxSeries.Core.Tests
         public void Waking_from_sleep_asks_Whos_playing_today_again_without_the_boot_video_focus_on_the_last_profile()
         {
             core.AddProfile("Ana");
-            core.OnStartup();
-            core.OnBootVideoEnded();
-            Tap(ControllerButton.DPadRight);
-            Tap(ControllerButton.A);
+            SignIn(1);
             clock.Advance(TimeSpan.FromSeconds(10));
 
-            core.OnResumedFromSleep();
+            var plan = core.OnResumedFromSleep();
 
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
-            Assert.Equal("Ana", Startup.FocusedProfile.Gamertag);
+            Assert.True(core.IsStartupShown);
+            Assert.Equal(BootVideo.Off, plan.BootVideo);
+            Assert.True(plan.AskWhosPlaying);
+            Assert.Equal("Ana", plan.LastProfile.Gamertag);
 
-            Tap(ControllerButton.DPadLeft);
-            Tap(ControllerButton.A);
+            core.OnStartupSignedIn(plan.Profiles[0]);
             clock.Advance(TimeSpan.FromSeconds(3));
+            Assert.False(core.IsStartupShown);
+            Assert.Equal(2, startupsEnded);
             Assert.Equal("gabe", core.Status.Profile.Gamertag);
             Assert.Equal("Hi Gabe!", core.Toast.Text);
         }
@@ -474,10 +355,10 @@ namespace XboxSeries.Core.Tests
         {
             TapGuide();
 
-            core.OnResumedFromSleep();
+            Assert.NotNull(core.OnResumedFromSleep());
 
             Assert.False(core.Guide.IsOpen);
-            Assert.Equal(StartupPhase.WhosPlaying, Startup.Phase);
+            Assert.True(core.IsStartupShown);
         }
 
         [Fact]
@@ -485,19 +366,19 @@ namespace XboxSeries.Core.Tests
         {
             core.SetAskWhosPlaying(false);
 
-            core.OnResumedFromSleep();
+            Assert.Null(core.OnResumedFromSleep());
 
-            Assert.False(Startup.IsShown);
+            Assert.False(core.IsStartupShown);
         }
 
         [Fact]
-        public void Waking_from_sleep_during_Start_up_changes_nothing()
+        public void Waking_from_sleep_during_Start_up_begins_nothing()
         {
             core.OnStartup();
 
-            core.OnResumedFromSleep();
+            Assert.Null(core.OnResumedFromSleep());
 
-            Assert.Equal(StartupPhase.BootVideo, Startup.Phase);
+            Assert.True(core.IsStartupShown);
         }
 
         [Fact]
@@ -506,10 +387,10 @@ namespace XboxSeries.Core.Tests
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
             Assert.True(core.Toast.IsShown);
 
-            core.OnResumedFromSleep();
+            var plan = core.OnResumedFromSleep();
             Assert.False(core.Toast.IsShown);
 
-            Tap(ControllerButton.A);
+            core.OnStartupSignedIn(plan.LastProfile);
             clock.Advance(TimeSpan.FromSeconds(3));
             Assert.Equal("Hi Gabe!", core.Toast.Text);
             clock.Advance(TimeSpan.FromSeconds(5.5));
@@ -518,25 +399,9 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_boot_video_ending_twice_or_out_of_turn_changes_nothing()
-        {
-            core.OnBootVideoEnded();
-            Assert.False(Startup.IsShown);
-
-            core.OnStartup();
-            core.OnBootVideoEnded();
-            Tap(ControllerButton.A);
-            core.OnBootVideoEnded();
-
-            Assert.Equal(StartupPhase.SigningIn, Startup.Phase);
-        }
-
-        [Fact]
         public void The_pad_works_as_before_once_Start_up_has_finished()
         {
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
-            Tap(ControllerButton.A);
+            SignIn(0);
             clock.Advance(TimeSpan.FromSeconds(10));
 
             TapGuide();
@@ -558,12 +423,11 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void A_call_ringing_during_Start_up_shows_its_Toast_after_the_greeting()
         {
-            core.SetBootVideo(BootVideo.Off);
-            core.OnStartup();
+            var plan = core.OnStartup();
             core.DebugRing("Ana", @"C:\avatars\ana.png");
             Assert.False(core.Toast.IsShown);
 
-            Tap(ControllerButton.A);
+            core.OnStartupSignedIn(plan.LastProfile);
             clock.Advance(TimeSpan.FromSeconds(3));
             Assert.Equal(ToastKind.Greeting, core.Toast.Kind);
 
@@ -576,6 +440,9 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("Bo is calling", core.Toast.Text);
         }
 #endif
+
+        /// <summary>Playnite starts, and the sequence signs in the profile at <paramref name="index"/> in the plan.</summary>
+        private void SignIn(int index) => core.OnStartupSignedIn(core.OnStartup().Profiles[index]);
 
         private void Tap(ControllerButton button)
         {
