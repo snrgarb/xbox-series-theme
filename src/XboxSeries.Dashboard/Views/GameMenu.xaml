@@ -5,16 +5,18 @@
     the panel on either side with its glow about it.
 
     Playnite's window holds the rows in a ScrollViewer, whose content presenter clips to itself. So the panel's own
-    ScrollViewer reaches 28 past it on either side and 20 above and below, and the rows are inset back by the same less
-    the ring's overhang: nothing a row draws on focus is clipped. A row scrolled 20 into the band above or below shows
-    nothing there at rest, as its icon and label sit in its middle.
+    ScrollViewer reaches 36 past it on either side, room for the glow's blur, which fades out about 27 past the panel,
+    and 22 above and below, where the glow fades out by 19 past the ring. The rows are inset back by the same, less the
+    ring's overhang at the sides: nothing a row draws on focus is clipped. The bands above and below go no further: a
+    row scrolled out of the list shows its last or first 22 there, short of its icon and label, which would otherwise
+    show over the title or past the panel's foot.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Style x:Key="GameMenuButton" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
-        <!-- 20 in from the scroll area's sides, which stand 28 past the panel's: the row and its ring 8 past it. -->
-        <Setter Property="Margin" Value="20,0,20,0" />
+        <!-- 28 in from the scroll area's sides, which stand 36 past the panel's: the row and its ring 8 past it. -->
+        <Setter Property="Margin" Value="28,0,28,0" />
         <!-- The icon's 24 column centred 44 in from the panel's edge, 52 from the row's. -->
         <Setter Property="Padding" Value="40,0,0,0" />
         <Setter Property="Height" Value="72" />
@@ -27,8 +29,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ButtonEx">
                     <Grid Background="Transparent">
-                        <!-- The panel's full width: the ring's 4 and a 4 gap in from the row's edges. -->
-                        <Border x:Name="Fill" Margin="8,8,8,8" CornerRadius="2" Background="#FF404040" Visibility="Hidden" />
+                        <!-- The panel's full width, the ring's overhang in from the row's sides; 4 inside the ring's 4 above and below, 56 tall. -->
+                        <Border x:Name="Fill" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowFocusBrush}" Visibility="Hidden" />
                         <Border x:Name="Lit" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowLitBrush}" Visibility="Hidden" />
                         <TextBlock Style="{DynamicResource TextBlockBaseStyle}" FontSize="22"
                                    Foreground="{TemplateBinding Foreground}"
@@ -60,12 +62,15 @@
             </Setter.Value>
         </Setter>
         <Style.Resources>
-            <!-- The rows' icons, as Constants.xaml's but further off the label: the label 88 in from the panel's edge. -->
-            <Style x:Key="XboxMenuIcon" TargetType="TextBlock">
+            <!--
+                The rows' icons: a white 22 line glyph in a 24 column centred 44 in from the panel's edge, the label
+                32 off it, 88 in. Its own name, as Constants.xaml's XboxMenuIcon sets the label nearer.
+            -->
+            <Style x:Key="GameMenuIcon" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
-                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontSize" Value="22" />
                 <Setter Property="Width" Value="24" />
-                <Setter Property="Margin" Value="0,0,34,0" />
+                <Setter Property="Margin" Value="0,0,32,0" />
                 <Setter Property="TextAlignment" Value="Center" />
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
@@ -80,7 +85,7 @@
         <Style.Resources>
             <!-- The rows' scroll area, wider and taller than the panel so the focus ring and its glow stand past it. -->
             <Style TargetType="ScrollViewer">
-                <Setter Property="Margin" Value="-28,-20,-28,-20" />
+                <Setter Property="Margin" Value="-36,-22,-36,-22" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ScrollViewer">
@@ -92,15 +97,15 @@
             </Style>
             <!--
                 The rows' list: 7 whole rows at most, all that fit in Playnite's 648 high middle of the screen under the
-                title, so a longer list scrolls by whole rows and none is cut where the scroll area passes the panel.
-                Its panel gives back the scroll area's top and bottom.
+                title (the panel about 600 with it), so a longer list scrolls by whole rows and none is cut where the
+                scroll area passes the panel. Its panel gives back the scroll area's top and bottom.
             -->
             <Style TargetType="ItemsControlEx">
                 <Setter Property="MaxHeight" Value="504" />
                 <Setter Property="ItemsPanel">
                     <Setter.Value>
                         <ItemsPanelTemplate>
-                            <StackPanel Margin="0,20,0,20" />
+                            <StackPanel Margin="0,22,0,22" />
                         </ItemsPanelTemplate>
                     </Setter.Value>
                 </Setter>
@@ -110,7 +115,10 @@
 
     <!-- The game's name, the menu's title, on one line, trimmed to the panel. -->
     <Style x:Key="GameMenuHeaderText" BasedOn="{StaticResource TextBlockBaseStyle}" TargetType="TextBlock">
-        <!-- XboxPanelTitle's look: a StaticResource can't reach it in Constants.xaml (see DashboardBoundaryTests). -->
+        <!--
+            The console's title, larger than XboxPanelTitle's 28: the header font at 33, 36 under the panel's top and 24
+            over the first row. Set here, as a StaticResource can't reach Constants.xaml (see DashboardBoundaryTests).
+        -->
         <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
         <Setter Property="FontSize" Value="33" />
         <Setter Property="TextWrapping" Value="NoWrap" />
@@ -126,77 +134,77 @@
 
     <DataTemplate x:Key="GameMenuPlayButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE768;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE768;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuInstallButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE896;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE896;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuFavoriesButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE734;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE734;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuVisibilityButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xED1A;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xED1A;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuHdrButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE793;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE793;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuRemoveButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE738;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE738;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuUninstallButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE74D;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE74D;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuCustomActionButtonTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuCompletionStatusTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuSetFieldsTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE70F;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xE70F;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="GameMenuExtensionsTemplate">
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xEA86;" Style="{DynamicResource XboxMenuIcon}" />
+            <TextBlock Text="&#xEA86;" Style="{DynamicResource GameMenuIcon}" />
             <TextBlock Text="{Binding}" VerticalAlignment="Center" />
         </StackPanel>
     </DataTemplate>
