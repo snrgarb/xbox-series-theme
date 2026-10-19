@@ -19,7 +19,7 @@
         The Toast: a strip along the bottom of the screen, above every window, that never takes focus or the mouse, so
         a running game keeps its input. It shows a new Playnite notification, a DM ringing, or a game joining the queue, as the
         console shows its own: a wide, solid Xbox green banner low at the bottom centre, a square tile of lighter green on its left with
-        the image for the Toast's kind (the bell, a camera, Discord's mark, a download arrow; see ToastImages.xaml), or in
+        the image for the Toast's kind (the bell, a camera, Discord's mark, a download arrow, a play mark, a bin; see ToastImages.xaml), or in
         its place the Toast's own image, as the caller's avatar or a queued game's cover, bare on the banner,
         and large white text beside it that fades back and forth between the Toast's own line and "Press (Guide) to view",
         but for the start-up's "Hi X!" greeting, which only greets.
@@ -121,6 +121,9 @@
                                             <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Installed}">
                                                 <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Installed}" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Uninstalled}">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Uninstalled}" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </ContentControl.Style>
@@ -162,7 +165,10 @@
                                 <!-- The Guide button. -->
                                 <Path Data="{StaticResource SourceXbox}" Fill="White" Width="32" Height="32" Stretch="Uniform"
                                       Margin="12,2,12,0" VerticalAlignment="Center" />
-                                <!-- A Ready to play Toast's press starts its game. -->
+                                <!--
+                                    A Ready to play Toast's press starts its game; any other kind's, an "X was uninstalled"
+                                    one's among them, only opens the Guide, to view.
+                                -->
                                 <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
                                            VerticalAlignment="Center">
                                     <TextBlock.Style>
