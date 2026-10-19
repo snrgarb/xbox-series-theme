@@ -88,6 +88,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_install_notice_hides_once_a_category_opens_over_the_foot_of_the_page()
+        {
+            // An open category's rows reach down past the notice, which would show through between them.
+            var header = KeyedOf(Load(SettingsMenusPath), "SettingsMenuHeaderTemplate");
+            var notice = header.Descendants().Single(e => (string)e.Attribute(X + "Name") == "XboxInstallNotice");
+
+            Assert.Contains(notice.Descendants(), e => e.Name.LocalName == "DataTrigger"
+                && ((string)e.Attribute("Binding")).Contains("DataContext.IsSubMenuOpened")
+                && (string)e.Attribute("Value") == "True"
+                && e.Elements().Any(s => (string)s.Attribute("Property") == "Visibility" && (string)s.Attribute("Value") == "Collapsed"));
+        }
+
+        [Fact]
         public void With_no_category_open_a_header_of_gear_title_and_profile_shows_beside_the_rail()
         {
             var header = KeyedOf(Load(SettingsMenusPath), "SettingsMenuHeaderTemplate");

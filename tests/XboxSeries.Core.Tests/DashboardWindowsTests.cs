@@ -188,6 +188,23 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Playnites_other_windows_panels_are_the_extensions_panel_grey()
+        {
+            // Update, add-on updates, random game, licence and crash windows draw their panel in ControlBackgroundDarkBrush, Default's navy.
+            Assert.Equal(ColorOf("XboxPanelBrush"), ColorOf("ControlBackgroundDarkBrush"));
+        }
+
+        [Fact]
+        public void The_progress_window_shows_no_Playnite_logo()
+        {
+            var media = XDocument.Load(Path.Combine(DashboardDir, "Media.xaml"));
+            var header = media.Root.Elements().SingleOrDefault(e => (string)e.Attribute(X + "Key") == "ProgressHeaderStyle");
+
+            Assert.NotNull(header);
+            Assert.DoesNotContain(header.Descendants(), e => ((string)e.Attribute("Source") ?? "").Contains("applogo"));
+        }
+
+        [Fact]
         public void Playnites_windows_dim_the_screen_as_the_tile_menu_does()
         {
             // Playnite dims its main window by OverlayBrush while one of its windows is open.

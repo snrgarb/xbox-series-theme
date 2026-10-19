@@ -365,4 +365,12 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!--
+        The head of Playnite's progress window: Default's Playnite logo. The console shows only its spinner and what it
+        is doing, which the window draws under this (ProgressIndicator), so the head is left out.
+    -->
+    <Style x:Key="ProgressHeaderStyle" TargetType="ContentControl">
+        <Setter Property="Visibility" Value="Collapsed" />
+    </Style>
 </ResourceDictionary>

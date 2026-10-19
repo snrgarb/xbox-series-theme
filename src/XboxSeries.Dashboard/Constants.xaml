@@ -89,6 +89,8 @@
     <!-- The extension's menu panel grey, behind every menu and prompt of Playnite's and its filter panels. -->
     <SolidColorBrush x:Key="XboxPanelBrush" Color="#FF2B2B2B" />
     <SolidColorBrush x:Key="OverlayMenuBackgroundBrush" Color="#FF2B2B2B" />
+    <!-- Default's navy, the panel of Playnite's update, add-on update, random game, licence and crash windows. -->
+    <SolidColorBrush x:Key="ControlBackgroundDarkBrush" Color="#FF2B2B2B" />
     <!-- A focused or pointed-at row is filled a little lighter, as the extension's menus fill theirs. -->
     <SolidColorBrush x:Key="XboxRowLitBrush" Color="#26FFFFFF" />
     <!-- A button standing on its own, as a message box's or a prompt's: the console's grey tile. -->
