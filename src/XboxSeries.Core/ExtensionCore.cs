@@ -985,10 +985,6 @@ namespace XboxSeries.Core
             {
                 ShowDiscordTab();
             }
-            else if (tab == GuideTabKind.NowPlaying)
-            {
-                ShowNowPlayingTab();
-            }
             else
             {
                 ShowProfileTab();
@@ -997,13 +993,13 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The icons along the Guide's top, the Discord tab's among them from the first Connect until Disconnect, signed
-        /// in or not (<see cref="DiscordSettingsState.HasDiscordTab"/>), and Now Playing's always, before Profile &amp; system.
+        /// in or not (<see cref="DiscordSettingsState.HasDiscordTab"/>), before Profile &amp; system.
         /// </summary>
         private void RefreshTabs()
         {
             var kinds = Settings.Discord.HasDiscordTab
-                ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }
-                : new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem };
+                ? new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }
+                : new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem };
             Guide.Tabs = kinds
                 .Select(k => new GuideTab(k, k == Guide.Tab, k == GuideTabKind.ProfileAndSystem ? ProfilePicture : null))
                 .ToList();

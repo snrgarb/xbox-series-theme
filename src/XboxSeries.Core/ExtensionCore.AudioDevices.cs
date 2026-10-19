@@ -91,8 +91,10 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The open Audio flyout, as Windows and Discord report now: its entries take their new states in place, an open
-        /// list following the devices, focus staying where it was; when the entries themselves change, as a call begins
-        /// or ends, the flyout is rebuilt, any list closed first so focus lands on an entry still there.
+        /// list following the devices and the Now Playing card its play state, focus staying where it was; when the
+        /// entries themselves change, as a call begins or ends or a new track or app plays, the flyout is rebuilt, any
+        /// list closed first so focus lands on an entry still there: the same kind of entry, so a Now Playing entry
+        /// focused stays focused as it changes, and Windows' Mute for a Discord toggle gone with the call.
         /// </summary>
         private void RefreshAudioFlyout()
         {
@@ -113,7 +115,13 @@ namespace XboxSeries.Core
                 CloseDeviceList(dropdown);
             }
 
+            var wasDiscordToggle = Guide.FocusedItem?.Kind == GuideItemKind.DiscordMute || Guide.FocusedItem?.Kind == GuideItemKind.DiscordDeafen;
             var focus = FocusAfterRebuild(Guide.Flyout.Items, items);
+            if (wasDiscordToggle && focus.Kind != Guide.FocusedItem.Kind)
+            {
+                focus = items.First(i => i.Kind == GuideItemKind.Mute);
+            }
+
             Guide.Flyout = new GuideFlyout(GuideItemKind.Audio, "Audio", items);
             Guide.FocusedItem = focus;
         }

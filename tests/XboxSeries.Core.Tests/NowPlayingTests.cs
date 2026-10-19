@@ -1,111 +1,137 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
     /// <summary>
-    /// The Guide's Now Playing tab: what Windows' media flyout shows, from the current media session, following it live
-    /// as the extension signals a change.
+    /// The Audio flyout's Now Playing entry: what Windows' media flyout shows, from the current media session, under the
+    /// mute switches after a divider, following the session live as the extension signals a change.
     /// </summary>
     public class NowPlayingTests : DiscordTestsBase
     {
         private const string Spotify = "Spotify.exe";
 
         [Fact]
-        public void Without_Discord_Now_Playing_sits_between_the_landing_tab_and_Profile_and_system()
+        public void Without_Discord_there_is_no_Now_Playing_tab()
         {
             OpenGuide();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
-            Assert.Equal(GuideTabKind.Landing, Guide.Tab);
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
         }
 
         [Fact]
-        public void With_Discord_Now_Playing_sits_between_the_Discord_tab_and_Profile_and_system()
+        public void With_Discord_there_is_no_Now_Playing_tab()
         {
             ConnectFully();
             OpenGuide();
+
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
+        }
+
+        [Fact]
+        public void With_no_media_session_the_Audio_flyout_ends_saying_no_music_app_is_running_after_a_divider()
+        {
+            OpenAudio();
 
             Assert.Equal(
-                new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem },
-                Guide.Tabs.Select(t => t.Kind));
+                new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.NothingPlaying },
+                Flyout.Select(i => i.Kind));
+            var item = Flyout.Last();
+            Assert.Equal("No music app is running", item.Title);
+            Assert.True(item.HasDividerAbove);
         }
 
         [Fact]
-        public void RB_and_LB_move_through_Now_Playing()
-        {
-            ConnectFully();
-            OpenGuide();
-
-            Tap(ControllerButton.RightShoulder);
-            Tap(ControllerButton.RightShoulder);
-            Assert.Equal(GuideTabKind.NowPlaying, Guide.Tab);
-            Assert.Equal(new[] { false, false, true, false }, Guide.Tabs.Select(t => t.IsSelected));
-
-            Tap(ControllerButton.RightShoulder);
-            Assert.Equal(GuideTabKind.ProfileAndSystem, Guide.Tab);
-
-            Tap(ControllerButton.LeftShoulder);
-            Assert.Equal(GuideTabKind.NowPlaying, Guide.Tab);
-        }
-
-        [Fact]
-        public void With_no_media_session_the_tab_says_nothing_is_playing()
-        {
-            OpenNowPlaying();
-
-            var item = Assert.Single(Guide.Items);
-            Assert.Equal(GuideItemKind.NothingPlaying, item.Kind);
-            Assert.Equal("Nothing's playing", item.Title);
-            Assert.Same(item, Guide.FocusedItem);
-            Assert.Empty(Guide.Utilities);
-        }
-
-        [Fact]
-        public void A_playing_session_shows_its_track_artist_art_and_app_and_that_it_plays()
+        public void A_playing_session_shows_its_track_artist_art_and_app_and_that_it_plays_after_Mute()
         {
             var art = new object();
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true, art: art);
 
-            OpenNowPlaying();
+            OpenAudio();
 
-            var item = Assert.Single(Guide.Items);
+            var item = Flyout.Last();
+            Assert.Equal(GuideItemKind.Mute, Flyout[Flyout.Count - 2].Kind);
             Assert.Equal(GuideItemKind.NowPlaying, item.Kind);
             Assert.Equal("Blinding Lights", item.Title);
             Assert.Equal("The Weeknd", item.Detail);
             Assert.Equal("Spotify", item.App);
             Assert.Same(art, item.Art);
             Assert.True(item.IsPlaying);
-            Assert.Same(item, Guide.FocusedItem);
+            Assert.True(item.HasDividerAbove);
         }
 
         [Fact]
-        public void A_session_appearing_with_the_tab_open_shows_on_it()
+        public void In_a_call_it_comes_after_Discord_s_mute_and_deafen()
         {
-            OpenNowPlaying();
+            NotInCall();
+            Join(VoiceChannel("500", "Late night", "9", State(Me, "gabe")));
+
+            OpenAudio();
+
+            Assert.Equal(
+                new[]
+                {
+                    GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute,
+                    GuideItemKind.DiscordMute, GuideItemKind.DiscordDeafen, GuideItemKind.NothingPlaying,
+                },
+                Flyout.Select(i => i.Kind));
+        }
+
+        [Fact]
+        public void Down_reaches_it_like_any_entry()
+        {
+            OpenAudio();
+
+            FocusOn(GuideItemKind.NothingPlaying);
+
+            Assert.Same(Flyout.Last(), Guide.FocusedItem);
+        }
+
+        [Fact]
+        public void A_session_appearing_with_focus_on_nothing_playing_shows_its_card_focus_on_it()
+        {
+            OpenAudio();
+            FocusOn(GuideItemKind.NothingPlaying);
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
             core.OnMediaSessionChanged();
 
-            var item = Assert.Single(Guide.Items);
+            var item = Flyout.Last();
             Assert.Equal(GuideItemKind.NowPlaying, item.Kind);
             Assert.Equal("Blinding Lights", item.Title);
             Assert.Same(item, Guide.FocusedItem);
-            Assert.Equal(GuideTabKind.NowPlaying, Guide.Tab);
+            Assert.Equal(GuideItemKind.Audio, Guide.Flyout.Kind);
+        }
+
+        [Fact]
+        public void A_session_appearing_with_focus_elsewhere_in_the_flyout_leaves_focus_there()
+        {
+            OpenAudio();
+            FocusOn(GuideItemKind.Mute);
+
+            media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
+            core.OnMediaSessionChanged();
+
+            Assert.Equal(GuideItemKind.NowPlaying, Flyout.Last().Kind);
+            Assert.Equal(GuideItemKind.Mute, Guide.FocusedItem.Kind);
+            Assert.Contains(Guide.FocusedItem, Flyout);
         }
 
         [Fact]
         public void Pausing_and_playing_again_changes_the_play_state_in_place()
         {
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            OpenNowPlaying();
-            var item = Guide.Items.Single();
+            OpenAudio();
+            FocusOn(GuideItemKind.NowPlaying);
+            var items = Flyout;
+            var item = items.Last();
 
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: false);
             core.OnMediaSessionChanged();
 
-            Assert.Same(item, Guide.Items.Single());
+            Assert.Same(items, Flyout);
             Assert.False(item.IsPlaying);
             Assert.Same(item, Guide.FocusedItem);
 
@@ -116,36 +142,39 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_new_track_or_another_app_playing_shows_in_place_of_the_last()
+        public void A_new_track_or_another_app_playing_shows_in_place_of_the_last_focus_on_it()
         {
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            OpenNowPlaying();
+            OpenAudio();
+            FocusOn(GuideItemKind.NowPlaying);
 
             media.Current = new MediaSession("MSEdge", "Lo-fi beats", "Lofi Girl", isPlaying: true);
             core.OnMediaSessionChanged();
 
-            var item = Assert.Single(Guide.Items);
+            var item = Flyout.Last();
             Assert.Equal("Lo-fi beats", item.Title);
             Assert.Equal("Edge", item.App);
             Assert.Same(item, Guide.FocusedItem);
+            Assert.Single(Flyout, i => i.Kind == GuideItemKind.NowPlaying);
         }
 
         [Fact]
-        public void The_session_closing_falls_back_to_nothing_playing()
+        public void The_session_closing_falls_back_to_no_music_app_is_running_focus_on_it()
         {
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            OpenNowPlaying();
+            OpenAudio();
+            FocusOn(GuideItemKind.NowPlaying);
 
             media.Current = null;
             core.OnMediaSessionChanged();
 
-            var item = Assert.Single(Guide.Items);
+            var item = Flyout.Last();
             Assert.Equal(GuideItemKind.NothingPlaying, item.Kind);
             Assert.Same(item, Guide.FocusedItem);
         }
 
         [Fact]
-        public void A_change_with_the_Guide_on_another_tab_or_closed_leaves_it_be_and_shows_when_the_tab_opens()
+        public void A_change_with_the_Audio_flyout_shut_or_the_Guide_closed_leaves_things_be_and_shows_when_it_opens()
         {
             OpenGuide();
             var landing = Guide.Items;
@@ -154,10 +183,8 @@ namespace XboxSeries.Core.Tests
             core.OnMediaSessionChanged();
 
             Assert.Same(landing, Guide.Items);
+            Assert.Null(Guide.Flyout);
             Assert.Equal(GuideTabKind.Landing, Guide.Tab);
-
-            Tap(ControllerButton.RightShoulder);
-            Assert.Equal("Blinding Lights", Guide.Items.Single().Title);
 
             Tap(ControllerButton.B);
             clock.Advance(TimeSpan.FromSeconds(2));
@@ -165,19 +192,25 @@ namespace XboxSeries.Core.Tests
             core.OnMediaSessionChanged();
 
             Assert.False(Guide.IsOpen);
+
+            media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
+            OpenAudio();
+            Assert.Equal("Blinding Lights", Flyout.Last().Title);
         }
 
         [Fact]
-        public void A_on_the_tab_does_nothing()
+        public void A_on_it_does_nothing()
         {
             media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
-            OpenNowPlaying();
+            OpenAudio();
+            FocusOn(GuideItemKind.NowPlaying);
             sounds.Played.Clear();
 
             Tap(ControllerButton.A);
 
             Assert.True(Guide.IsOpen);
-            Assert.Equal(GuideTabKind.NowPlaying, Guide.Tab);
+            Assert.Equal(GuideItemKind.Audio, Guide.Flyout.Kind);
+            Assert.Same(Flyout.Last(), Guide.FocusedItem);
             Assert.Empty(sounds.Played);
         }
 
@@ -198,17 +231,36 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(name, MediaSession.FriendlyAppName(appId));
         }
 
-        private void OpenNowPlaying()
+        private IReadOnlyList<GuideItem> Flyout => Guide.Flyout.Items;
+
+        /// <summary>Opens the Guide and, from the landing tab's utilities, the Audio flyout.</summary>
+        private void OpenAudio()
         {
             OpenGuide();
-            while (Guide.Tab != GuideTabKind.NowPlaying && Guide.Tab != GuideTabKind.ProfileAndSystem)
+            foreach (var _ in Guide.Items)
             {
-                Tap(ControllerButton.RightShoulder);
+                Tap(ControllerButton.DPadDown);
             }
 
-            if (Guide.Tab != GuideTabKind.NowPlaying)
+            Tap(ControllerButton.DPadRight);
+            Tap(ControllerButton.A);
+            if (Guide.Flyout?.Kind != GuideItemKind.Audio)
             {
-                throw new InvalidOperationException("The Now Playing tab didn't open.");
+                throw new InvalidOperationException("The Audio flyout didn't open.");
+            }
+        }
+
+        /// <summary>Down through the flyout until focus is on the entry of <paramref name="kind"/>.</summary>
+        private void FocusOn(GuideItemKind kind)
+        {
+            for (var i = 0; Guide.FocusedItem.Kind != kind; i++)
+            {
+                if (i > Flyout.Count)
+                {
+                    throw new InvalidOperationException($"Down never reached {kind}.");
+                }
+
+                Tap(ControllerButton.DPadDown);
             }
         }
     }

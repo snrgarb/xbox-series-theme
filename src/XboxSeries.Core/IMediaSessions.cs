@@ -1,7 +1,7 @@
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// Port for Windows' media sessions: the one Windows' media flyout shows, which the Guide's Now Playing tab shows.
+    /// Port for Windows' media sessions: the one Windows' media flyout shows, which the Guide's Audio flyout shows as its Now Playing entry.
     /// When the current session changes, or what it is playing or whether it plays, the extension calls
     /// <see cref="ExtensionCore.OnMediaSessionChanged"/> on the UI thread, only as a sign to read <see cref="Current"/> again.
     /// </summary>

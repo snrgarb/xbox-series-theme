@@ -296,7 +296,7 @@ namespace XboxSeries.Core.Tests
 
             OpenUtility(GuideItemKind.Audio);
 
-            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, Flyout.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.NothingPlaying }, Flyout.Select(i => i.Kind));
             Assert.Equal(36, Flyout[2].Level);
             Assert.True(Flyout[3].IsOn);
             Assert.Equal(GuideItemKind.AudioOutput, core.Guide.FocusedItem.Kind);
