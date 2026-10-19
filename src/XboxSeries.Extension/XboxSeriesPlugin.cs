@@ -25,6 +25,7 @@ namespace XboxSeries.Extension
         private readonly GamingInputController controller = new GamingInputController();
         private readonly WindowsAudio audio = new WindowsAudio();
         private readonly WindowsMediaSessions mediaSessions = new WindowsMediaSessions();
+        private readonly PlayniteAchievementsSource achievements;
         private readonly DiscordPipe discordPipe = new DiscordPipe();
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private bool libraryPushed;
@@ -65,11 +66,15 @@ namespace XboxSeries.Extension
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
             var downloads = new SteamDownloads(api);
+
+            // PlayniteAchievements may load after us: the source finds it only once started.
+            achievements = new PlayniteAchievementsSource(api);
 #if DEBUG
             steamDownloads = downloads;
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
-                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions);
+                discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions,
+                achievements: achievements);
             core.StartupEnded += () => startup?.End();
 
             // Home's elements, its top bar's status area, My games & apps, Settings, the Game hub's Install, Search, text entry and the hint bar, placed by
@@ -210,6 +215,12 @@ namespace XboxSeries.Extension
             mediaSessions.Changed += () => OnUiThread(core.OnMediaSessionChanged);
             mediaSessions.ArtFetched += (request, art) => OnUiThread(() => core.OnMediaArt(request, art));
             StartupTiming.Time("Starting the media sessions", mediaSessions.Start);
+
+            // PlayniteAchievements, every plugin loaded by now: its changes and live unlocks arrive on the UI thread, and
+            // one change once its games are first read, which the core takes as where it starts announcing unlocks.
+            achievements.Changed += core.OnAchievementsChanged;
+            achievements.Unlocked += core.OnAchievementUnlocked;
+            StartupTiming.Time("Starting the achievements", () => achievements.Start(PlayniteApi.MainView.UIDispatcher));
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
             // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with
@@ -241,6 +252,7 @@ namespace XboxSeries.Extension
             discordPipe.Close();
             audio.Dispose();
             mediaSessions.Dispose();
+            achievements.Dispose();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
             PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
