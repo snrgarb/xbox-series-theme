@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace XboxSeries.Core
@@ -48,6 +49,9 @@ namespace XboxSeries.Core
         /// </summary>
         public Guid? OpenedFromGame { get; internal set; }
 
+        /// <summary>The Guide category: its behaviour options, the Now Playing source for now.</summary>
+        public GuideSettingsState Guide { get; } = new GuideSettingsState();
+
         /// <summary>The Discord category: the Connect checklist, the Client ID and Secret, and the status line.</summary>
         public DiscordSettingsState Discord { get; } = new DiscordSettingsState();
 
@@ -55,6 +59,55 @@ namespace XboxSeries.Core
         public StartUpSettingsState StartUp { get; } = new StartUpSettingsState();
 
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+    }
+
+    /// <summary>Settings' Guide category, shared by every profile.</summary>
+    public sealed class GuideSettingsState : INotifyPropertyChanged
+    {
+        /// <summary>The Now Playing source that follows Windows' current media session.</summary>
+        public const string AnySource = "Any";
+
+        /// <summary>The Now Playing source chosen at first.</summary>
+        public const string DefaultSource = "Spotify";
+
+        private string nowPlayingSource = DefaultSource;
+        private IReadOnlyList<string> nowPlayingSources = new[] { AnySource, DefaultSource };
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>
+        /// The app, as people know it, whose media session the Audio flyout's Now Playing card follows while it has one,
+        /// else Windows' current; <see cref="AnySource"/> for Windows' current always.
+        /// </summary>
+        public string NowPlayingSource
+        {
+            get => nowPlayingSource;
+            internal set
+            {
+                if (nowPlayingSource != value)
+                {
+                    nowPlayingSource = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NowPlayingSource)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// The dropdown's choices: <see cref="AnySource"/>, Spotify, then every other app that has had a media session
+        /// this run, by the name people know it by.
+        /// </summary>
+        public IReadOnlyList<string> NowPlayingSources
+        {
+            get => nowPlayingSources;
+            internal set
+            {
+                if (nowPlayingSources != value)
+                {
+                    nowPlayingSources = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NowPlayingSources)));
+                }
+            }
+        }
     }
 
     /// <summary>The Settings rail's categories, in its order. Playnite's own entries below its divider are actions, not categories.</summary>

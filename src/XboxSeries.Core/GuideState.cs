@@ -343,6 +343,24 @@ namespace XboxSeries.Core
         /// does nothing on it.
         /// </summary>
         NothingPlaying,
+
+        /// <summary>
+        /// Previous, first of the Now Playing card's <see cref="GuideItem.Controls"/>: A asks the app to go back, unless it
+        /// isn't <see cref="GuideItem.IsEnabled"/>.
+        /// </summary>
+        MediaPrevious,
+
+        /// <summary>
+        /// Play/Pause, the middle of the Now Playing card's <see cref="GuideItem.Controls"/>, Pause while it
+        /// <see cref="GuideItem.IsPlaying"/>: A asks the app to play or pause, unless it isn't <see cref="GuideItem.IsEnabled"/>.
+        /// </summary>
+        MediaPlayPause,
+
+        /// <summary>
+        /// Next, last of the Now Playing card's <see cref="GuideItem.Controls"/>: A asks the app to skip, unless it isn't
+        /// <see cref="GuideItem.IsEnabled"/>.
+        /// </summary>
+        MediaNext,
     }
 
     /// <summary>One entry on a Guide tab.</summary>
@@ -355,6 +373,10 @@ namespace XboxSeries.Core
         private bool isMuted;
         private bool isDeafened;
         private bool isPlaying;
+        private bool isEnabled = true;
+        private TimeSpan position;
+        private TimeSpan duration;
+        private IReadOnlyList<GuideItem> controls;
         private string title;
         private string detail;
         private string app;
@@ -496,6 +518,37 @@ namespace XboxSeries.Core
         {
             get => isPlaying;
             internal set => Set(ref isPlaying, value, nameof(IsPlaying));
+        }
+
+        /// <summary>
+        /// A Now Playing card's row of controls under it, Previous, Play/Pause and Next, focus among them; null for other
+        /// entries.
+        /// </summary>
+        public IReadOnlyList<GuideItem> Controls
+        {
+            get => controls;
+            internal set => Set(ref controls, value, nameof(Controls));
+        }
+
+        /// <summary>Whether A does anything on the entry: false for a Now Playing control the app has turned off, shown dimmed.</summary>
+        public bool IsEnabled
+        {
+            get => isEnabled;
+            internal set => Set(ref isEnabled, value, nameof(IsEnabled));
+        }
+
+        /// <summary>How far into its track a Now Playing card is.</summary>
+        public TimeSpan Position
+        {
+            get => position;
+            internal set => Set(ref position, value, nameof(Position));
+        }
+
+        /// <summary>A Now Playing card's track's length; zero for none, when it has no progress bar.</summary>
+        public TimeSpan Duration
+        {
+            get => duration;
+            internal set => Set(ref duration, value, nameof(Duration));
         }
 
         /// <summary>The Windows device an <see cref="GuideItemKind.AudioDevice"/> entry stands for; null for other entries.</summary>

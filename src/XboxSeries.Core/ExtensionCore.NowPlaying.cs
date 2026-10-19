@@ -35,18 +35,21 @@ namespace XboxSeries.Core
         /// <summary>The Now Playing entry, behind a divider: the current session's card, or "No music app is running" with none.</summary>
         private GuideItem NowPlayingItem()
         {
-            var session = mediaSessions.Current;
+            var session = ShownSession();
             if (session == null)
             {
                 return new GuideItem(GuideItemKind.NothingPlaying, "No music app is running", hasDividerAbove: true);
             }
 
-            return new GuideItem(GuideItemKind.NowPlaying, session.Title, hasDividerAbove: true, detail: session.Artist)
+            var card = new GuideItem(GuideItemKind.NowPlaying, session.Title, hasDividerAbove: true, detail: session.Artist)
             {
                 App = session.App,
-                Art = session.Art,
                 IsPlaying = session.IsPlaying,
+                Controls = MediaControls(session),
             };
+            ShowArt(card, session);
+            ShowTimeline(card, session);
+            return card;
         }
     }
 }
