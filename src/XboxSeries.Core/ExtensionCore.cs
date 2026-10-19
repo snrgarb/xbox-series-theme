@@ -219,6 +219,7 @@ namespace XboxSeries.Core
             library = snapshot;
             FollowInstalls(previous);
             ToastFinishedInstalls(previous);
+            ToastFinishedUninstalls();
             RefreshQueue();
             RefreshRecentlyInstalled();
             RefreshHome();
