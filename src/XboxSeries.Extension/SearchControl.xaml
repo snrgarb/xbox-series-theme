@@ -17,7 +17,6 @@
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="Visibility" />
-            <local:WholeTilesWidthConverter x:Key="WholeTilesWidth" />
 
             <!-- The console's Search colours, sampled from its capture, so approximate. -->
             <SolidColorBrush x:Key="BoxBrush" Color="#FF2E3136" />
@@ -79,7 +78,6 @@
             <Style x:Key="TileRow" TargetType="ListBox">
                 <Setter Property="Margin" Value="-24,-24,-24,6" />
                 <Setter Property="HorizontalAlignment" Value="Left" />
-                <Setter Property="Width" Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=StackPanel}, Converter={StaticResource WholeTilesWidth}}" />
                 <Setter Property="local:SlidingRow.Slides" Value="True" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
@@ -257,17 +255,17 @@
         <ScrollViewer x:Name="Results" Grid.Row="1" Margin="0,36,0,0" Focusable="False"
                       VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="74,0,74,24">
-                <StackPanel Visibility="{Binding ShowsRecentlyAdded, Converter={StaticResource Visibility}}">
+                <StackPanel Visibility="{Binding ShowsRecentlyAdded, Converter={StaticResource Visibility}}" SizeChanged="OnRowSizeChanged">
                     <TextBlock Text="Recently added" Style="{StaticResource HeaderText}" />
                     <ListBox x:Name="RecentRow" ItemsSource="{Binding RecentlyAdded}" Style="{StaticResource TileRow}"
                              ItemContainerStyle="{StaticResource Tile}" ItemTemplate="{StaticResource GameTile}" />
                 </StackPanel>
-                <StackPanel Visibility="{Binding ShowsGames, Converter={StaticResource Visibility}}">
+                <StackPanel Visibility="{Binding ShowsGames, Converter={StaticResource Visibility}}" SizeChanged="OnRowSizeChanged">
                     <TextBlock Text="Games" Style="{StaticResource HeaderText}" />
                     <ListBox x:Name="GamesRow" ItemsSource="{Binding Games}" Style="{StaticResource TileRow}"
                              ItemContainerStyle="{StaticResource Tile}" ItemTemplate="{StaticResource GameTile}" />
                 </StackPanel>
-                <StackPanel Visibility="{Binding ShowsApps, Converter={StaticResource Visibility}}">
+                <StackPanel Visibility="{Binding ShowsApps, Converter={StaticResource Visibility}}" SizeChanged="OnRowSizeChanged">
                     <TextBlock Text="Apps" Style="{StaticResource HeaderText}" />
                     <ListBox x:Name="AppsRow" ItemsSource="{Binding Apps}" Style="{StaticResource TileRow}"
                              ItemContainerStyle="{StaticResource Tile}" ItemTemplate="{StaticResource AppTile}" />
