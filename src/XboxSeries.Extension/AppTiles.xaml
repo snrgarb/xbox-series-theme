@@ -38,8 +38,8 @@
                 </Viewbox>
             </Grid>
 
-            <!-- As Home's game tiles: the name on up to two lines over a near-black band, so it reads over any art. -->
-            <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False" Background="#E6000000">
+            <!-- As Home's game tiles: the name on up to two lines over a black band, solid, as their near-black reads grey over white. -->
+            <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False" Background="Black">
                 <TextBlock Text="{Binding Name}" Margin="8" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
                            FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
             </Border>
