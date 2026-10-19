@@ -17,6 +17,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <BooleanToVisibilityConverter x:Key="Visibility" />
+            <local:WholeTilesWidthConverter x:Key="WholeTilesWidth" />
 
             <!-- The console's Search colours, sampled from its capture, so approximate. -->
             <SolidColorBrush x:Key="BoxBrush" Color="#FF2E3136" />
@@ -69,11 +70,17 @@
             </Style>
 
             <!--
-                A row of tiles, scrolled sideways as focus moves along it, built only as far as it is seen. The tiles sit 24 in
-                from the list's edges, which its margin cancels, so their rings and glow aren't cut off there.
+                A row of tiles, slid sideways as focus moves along it, built only as far as it is seen. The tiles sit 24 in
+                from the list's edges, which its margin cancels, so their rings and glow aren't cut off there. It shows only
+                whole tiles, 7 at most, as many as the width its row has (the page's, less its 74 either side) fits: the
+                list ends where the next tile begins, which its ScrollViewer cuts off, while the last shown's ring fits in
+                the gap before it.
             -->
             <Style x:Key="TileRow" TargetType="ListBox">
                 <Setter Property="Margin" Value="-24,-24,-24,6" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="Width" Value="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=StackPanel}, Converter={StaticResource WholeTilesWidth}}" />
+                <Setter Property="local:SlidingRow.Slides" Value="True" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
                 <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Hidden" />
