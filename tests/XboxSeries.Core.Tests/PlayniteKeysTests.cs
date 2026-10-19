@@ -59,6 +59,30 @@ namespace XboxSeries.Core.Tests
             Assert.Contains("PlayniteInput.PlayniteButtonOf(e)", body);
         }
 
+        [Fact]
+        public void Playnites_view_host_opens_Search_on_Y_and_none_of_its_own_filters_or_presets()
+        {
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "PlayniteViewHost.cs"));
+
+            Assert.Matches(@"binding\.Command == search\)\s*\{\s*binding\.Command = new RelayCommand\(core\.SearchFromHome\);", code);
+            Assert.Matches(@"binding\.Command == filters \|\| binding\.Command == presetPicker\)\s*\{\s*viewHost\.InputBindings\.Remove\(binding\);", code);
+            Assert.Matches(@"binding\.Command == previousPreset \|\| binding\.Command == nextPreset\)\s*\{\s*binding\.Command = FullLibraryOnly\(binding\.Command, core\);", code);
+            Assert.Contains("() => core.MyGames.ShowsFullLibrary && command.CanExecute(null)", code);
+            Assert.Contains("FullscreenCommand(\"OpenSearchCommand\")", code);
+            Assert.Contains("FullscreenCommand(\"ToggleFiltersCommand\")", code);
+            Assert.Contains("FullscreenCommand(\"SelectFilterPresetCommand\")", code);
+            Assert.Contains("FullscreenCommand(\"PrevFilterViewCommand\")", code);
+            Assert.Contains("FullscreenCommand(\"NextFilterViewCommand\")", code);
+        }
+
+        [Fact]
+        public void Search_takes_over_Playnites_view_host_as_it_loads()
+        {
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "SearchControl.xaml.cs"));
+
+            Assert.Matches(@"viewHost = HomeRows\.FindPart\(this, ""PART_ViewHost""\);\s*if \(viewHost != null\)\s*\{\s*PlayniteViewHost\.TakeOver\(viewHost, core\);", code);
+        }
+
         private static string FindRepoRoot()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);

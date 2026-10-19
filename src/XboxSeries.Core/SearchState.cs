@@ -116,5 +116,8 @@ namespace XboxSeries.Core
 
         /// <summary>Y on My games &amp; apps' Games: B goes back to Games, focus on the game it was on.</summary>
         MyGames,
+
+        /// <summary>Y on Home, in place of Playnite's own keyboard: B goes to Home, as from the Guide.</summary>
+        Home,
     }
 }
