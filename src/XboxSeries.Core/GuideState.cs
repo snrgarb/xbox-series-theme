@@ -355,6 +355,10 @@ namespace XboxSeries.Core
         private bool isMuted;
         private bool isDeafened;
         private bool isPlaying;
+        private string title;
+        private string detail;
+        private string app;
+        private object art;
         private IReadOnlyList<string> occupants;
         private string selection;
         private IReadOnlyList<GuideItem> options;
@@ -363,11 +367,11 @@ namespace XboxSeries.Core
             GuideItemKind kind, string title, Guid? gameId = null, bool hasDividerAbove = false, string image = null, string source = null,
             string detail = null, bool isDirectMessage = false)
         {
-            Detail = detail;
+            this.detail = detail;
             IsDirectMessage = isDirectMessage;
             Source = source;
             Kind = kind;
-            Title = title;
+            this.title = title;
             GameId = gameId;
             HasDividerAbove = hasDividerAbove;
             Image = image;
@@ -376,7 +380,13 @@ namespace XboxSeries.Core
         public event PropertyChangedEventHandler PropertyChanged;
 
         public GuideItemKind Kind { get; }
-        public string Title { get; }
+
+        /// <summary>The entry's name; a Now Playing card's track, changing in place as another plays.</summary>
+        public string Title
+        {
+            get => title;
+            private set => Set(ref title, value, nameof(Title));
+        }
 
         /// <summary>The game this entry stands for, or null for Home and My games &amp; apps.</summary>
         public Guid? GameId { get; }
@@ -394,7 +404,11 @@ namespace XboxSeries.Core
         public string Source { get; }
 
         /// <summary>A second line under the title: the server's name on a voice channel's shortcut; null for none.</summary>
-        public string Detail { get; }
+        public string Detail
+        {
+            get => detail;
+            private set => Set(ref detail, value, nameof(Detail));
+        }
 
         /// <summary>True for a DM's or group DM's shortcut, pictured on a disc; false for a voice channel's and other entries.</summary>
         public bool IsDirectMessage { get; }
@@ -462,12 +476,20 @@ namespace XboxSeries.Core
         public bool IsExpanded => options != null;
 
         /// <summary>The app playing a Now Playing card's media, as people know it, such as Spotify; null for other entries.</summary>
-        public string App { get; internal set; }
+        public string App
+        {
+            get => app;
+            internal set => Set(ref app, value, nameof(App));
+        }
 
         /// <summary>
         /// A Now Playing card's album art, decoded by the extension and ready to show; null for none, and for other entries.
         /// </summary>
-        public object Art { get; internal set; }
+        public object Art
+        {
+            get => art;
+            internal set => Set(ref art, value, nameof(Art));
+        }
 
         /// <summary>Whether a Now Playing card's media is playing, rather than paused.</summary>
         public bool IsPlaying
@@ -534,13 +556,14 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Whether <paramref name="other"/>, built afresh, is this same entry, so that this one can take its state
-        /// in place rather than be replaced.
+        /// in place rather than be replaced. A Now Playing card stays the same card as another track or app plays.
         /// </summary>
         internal bool IsSameEntry(GuideItem other) =>
-            Kind == other.Kind && Title == other.Title && GameId == other.GameId && HasDividerAbove == other.HasDividerAbove
-            && Image == other.Image && Source == other.Source && Detail == other.Detail && IsDirectMessage == other.IsDirectMessage
+            Kind == other.Kind && (Kind == GuideItemKind.NowPlaying || (Title == other.Title && Detail == other.Detail))
+            && GameId == other.GameId && HasDividerAbove == other.HasDividerAbove
+            && Image == other.Image && Source == other.Source && IsDirectMessage == other.IsDirectMessage
             && UserId == other.UserId
-            && ChannelId == other.ChannelId && GuildId == other.GuildId && App == other.App && Art == other.Art;
+            && ChannelId == other.ChannelId && GuildId == other.GuildId;
 
         /// <summary>Takes the changeable state of <paramref name="other"/>, the same entry built afresh.</summary>
         internal void TakeStateFrom(GuideItem other)
@@ -552,11 +575,15 @@ namespace XboxSeries.Core
             IsMuted = other.IsMuted;
             IsDeafened = other.IsDeafened;
             IsPlaying = other.IsPlaying;
+            Title = other.Title;
+            Detail = other.Detail;
+            App = other.App;
+            Art = other.Art;
         }
 
-        private void Set(ref bool field, bool value, string name)
+        private void Set<T>(ref T field, T value, string name)
         {
-            if (field == value)
+            if (EqualityComparer<T>.Default.Equals(field, value))
             {
                 return;
             }

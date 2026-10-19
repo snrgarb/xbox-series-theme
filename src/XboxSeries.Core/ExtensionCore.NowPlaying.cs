@@ -9,16 +9,27 @@ namespace XboxSeries.Core
     {
         /// <summary>
         /// Windows' current media session changed, or what it plays or whether it plays: an open Audio flyout shows it
-        /// now, as it follows a device change, the card taking a new play state in place, focus staying where it was;
-        /// otherwise nothing, the flyout reading the session afresh as it opens. Only a sign to read the port again.
-        /// Called on the UI thread.
+        /// now, the card taking a new track, app or play state in place, so the rest of the flyout, an open device list
+        /// and focus are left as they were; a music app starting or the last one going swaps the card and "No music app
+        /// is running" as a device change rebuilds the flyout. Otherwise nothing, the flyout reading the session afresh
+        /// as it opens. Only a sign to read the port again. Called on the UI thread.
         /// </summary>
         public void OnMediaSessionChanged()
         {
-            if (Guide.IsOpen && Guide.Flyout?.Kind == GuideItemKind.Audio)
+            if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
             {
-                RefreshAudioFlyout();
+                return;
             }
+
+            var shown = Guide.Flyout.Items[Guide.Flyout.Items.Count - 1];
+            var wanted = NowPlayingItem();
+            if (shown.IsSameEntry(wanted))
+            {
+                shown.TakeStateFrom(wanted);
+                return;
+            }
+
+            RefreshAudioFlyout();
         }
 
         /// <summary>The Now Playing entry, behind a divider: the current session's card, or "No music app is running" with none.</summary>

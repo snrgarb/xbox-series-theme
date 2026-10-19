@@ -87,7 +87,7 @@ Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'
 _Avoid_: status bar, tray
 
 **Utility**:
-One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own), Audio (Windows' default output and input device, each a dropdown, then master volume and mute, and in a **Call** Discord's mute and deafen) and Search. Selecting Notifications or Audio opens it in a **Flyout**; Search brings Playnite to the front on **Search**.
+One of the buttons along the bottom of the **Guide**'s landing tab: Notifications (Playnite's own), Audio (Windows' default output and input device, each a dropdown, then master volume and mute, in a **Call** Discord's mute and deafen, and last **Now Playing**) and Search. Selecting Notifications or Audio opens it in a **Flyout**; Search brings Playnite to the front on **Search**.
 _Avoid_: widget, quick setting
 
 **Flyout**:
