@@ -164,12 +164,10 @@ namespace XboxSeries.Core.Tests
         [InlineData("Views/MessageBox.xaml", "MessageBoxBorder")]
         [InlineData("Views/ItemSelection.xaml", "ItemSelectionBorder")]
         [InlineData("Views/GameMenu.xaml", "GameMenuBorder")]
-        [InlineData("Views/CustomMenus.xaml", "GameClientsBorder")]
-        [InlineData("Views/CustomMenus.xaml", "SoftwareToolsBorder")]
-        [InlineData("Views/CustomMenus.xaml", "ExtensionsBorder")]
         [InlineData("Views/MainMenu.xaml", "MainMenuBorder")]
         [InlineData("Views/HelpMenu.xaml", "HelpMenuBorder")]
         [InlineData("Views/NotificationsMenu.xaml", "NotificationsMenuBorder")]
+        // The menus of game clients, software tools and extensions' commands draw theirs inside (A_console_menus_panel_is_450_wide).
         public void Each_menu_and_prompt_is_the_extensions_dark_panel(string file, string key)
         {
             var style = StyleOf(file, key);
@@ -225,40 +223,167 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("{DynamicResource XboxTextBrush}", Setter(style, "Foreground"));
         }
 
-        // The game menu, drawn as the console's tile menu: a 450 wide panel whose focused row's green ring stands 8 past
-        // the panel on either side. Playnite's window puts the rows in a ScrollViewer, whose content presenter clips to
-        // itself, so the theme widens the scroll area past the panel (GameMenuBorder's ScrollViewer) and insets the rows
-        // back by the same less the overhang.
+        // The console's menus, which Playnite's game menu and its menus of game clients, software tools and extensions'
+        // commands are drawn as (and the extension's MenuPanel.xaml): a 450 wide panel, rows 72 apart, the focused row's
+        // 72 tall green ring standing 8 past the panel on either side round a fill the panel's full width. Playnite's
+        // windows put the rows in a ScrollViewer, whose content presenter clips to itself, so the theme widens the scroll
+        // area past the panel and insets the rows back: the ring and its glow are never clipped.
         private const int RingOverhang = 8;
-        private const int GlowRoom = 20;
+        // How far the glow's blur reaches past the panel at the sides (the ring's 8, the band's 3.5 and the blur's 17,
+        // with room to spare), and past the ring above and below, as rendered: it has faded out by 19.
+        private const int GlowRoomSides = 33;
+        private const int GlowRoomEnds = 20;
+        // The first ink of a row's 22 icon and label, from either of its edges: a row scrolled out of the list shows
+        // this much of itself in the band above or below before any of its icon or label shows.
+        private const int RowInkInset = 22;
 
-        [Fact]
-        public void The_game_menus_focus_ring_stands_past_the_panel_on_both_sides()
+        // Each menu: its file, its rows' style and its panel's style.
+        public static IEnumerable<object[]> ConsoleMenus => new[]
         {
-            var scroll = Thickness(Setter(GameMenuScrollViewer(), "Margin"));
-            var row = Thickness(Setter(StyleOf("Views/GameMenu.xaml", "GameMenuButton"), "Margin"));
-            var ring = Thickness((string)GameMenuRowPart("FocusRing").Attribute("Margin") ?? "0");
+            new object[] { "Views/GameMenu.xaml", "GameMenuButton", "GameMenuBorder" },
+            new object[] { "Views/CustomMenus.xaml", "GameClientMenuButton", "GameClientsBorder" },
+            new object[] { "Views/CustomMenus.xaml", "SoftwareToolMenuButton", "SoftwareToolsBorder" },
+            new object[] { "Views/CustomMenus.xaml", "ExtensionMenuButton", "ExtensionsBorder" },
+        };
 
-            // Left and right: how far the ring's outer edge lies outside the panel's edge.
-            Assert.Equal(RingOverhang, -scroll[0] - row[0] - ring[0]);
-            Assert.Equal(RingOverhang, -scroll[2] - row[2] - ring[2]);
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_focus_ring_stands_8_past_the_panel_on_both_sides(string file, string rowKey, string borderKey)
+        {
+            var row = Thickness(Setter(Resolved(file, rowKey), "Margin"));
+            var ring = Thickness((string)RowPart(file, rowKey, "FocusRing").Attribute("Margin") ?? "0");
+            var panel = PanelInset(file, borderKey);
+
+            Assert.Equal(RingOverhang, panel[0] - row[0] - ring[0]);
+            Assert.Equal(RingOverhang, panel[2] - row[2] - ring[2]);
+        }
+
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_focus_ring_is_the_rows_full_72_with_its_glow(string file, string rowKey, string borderKey)
+        {
+            var style = Resolved(file, rowKey);
+            var row = Thickness(Setter(style, "Margin") ?? "0");
+            var ring = RowPart(file, rowKey, "FocusRing");
+            var ringMargin = Thickness((string)ring.Attribute("Margin") ?? "0");
+
+            Assert.Equal("72", Setter(style, "Height"));
+            Assert.Equal(0, row[1] + row[3]);
+            Assert.Equal(0, ringMargin[1] + ringMargin[3]);
+            Assert.Equal("4", (string)ring.Attribute("BorderThickness"));
+            Assert.Equal("7", (string)ring.Attribute("CornerRadius"));
+            Assert.Equal("Hidden", (string)ring.Attribute("Visibility"));
+            var cache = ring.Elements().Single();
+            Assert.Equal("{DynamicResource XboxFocusGlowCache}", (string)cache.Attribute("Style"));
+            Assert.Equal("{DynamicResource XboxFocusGlow}", (string)cache.Elements().Single().Attribute("Style"));
+            Assert.True(ShownOnFocus(file, rowKey, "FocusRing"), $"{rowKey}: no ring on focus");
+        }
+
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_focused_row_is_filled_lighter_across_the_panels_full_width(string file, string rowKey, string borderKey)
+        {
+            var fill = RowPart(file, rowKey, "Fill");
+
+            Assert.Equal("{DynamicResource XboxRowFocusBrush}", (string)fill.Attribute("Background"));
+            // Its sides are the panel's, the ring's overhang in from the row's; its top and bottom 4 inside the ring's 4: 56 tall.
+            Assert.Equal(new[] { RingOverhang, 8, RingOverhang, 8 }, Thickness((string)fill.Attribute("Margin")));
+            Assert.Equal("Hidden", (string)fill.Attribute("Visibility"));
+            Assert.True(ShownOnFocus(file, rowKey, "Fill"), $"{rowKey}: no fill on focus");
         }
 
         [Fact]
-        public void The_game_menus_focused_row_is_filled_lighter_across_the_panels_full_width()
+        public void The_focused_rows_fill_is_a_named_grey()
         {
-            var fill = GameMenuRowPart("Fill");
-            var margin = Thickness((string)fill.Attribute("Margin"));
+            Assert.Equal("#FF404040", ColorOf("XboxRowFocusBrush"));
+        }
 
-            Assert.Equal("#FF404040", (string)fill.Attribute("Background"));
-            // Its sides are the panel's: the ring's overhang in from the row's edges, the ring 4 and a 4 gap inside them.
-            Assert.Equal(RingOverhang, margin[0]);
-            Assert.Equal(RingOverhang, margin[2]);
-            Assert.Equal("4", (string)GameMenuRowPart("FocusRing").Attribute("BorderThickness"));
-            Assert.Equal("Hidden", (string)fill.Attribute("Visibility"));
-            Assert.Contains(GameMenuRowTemplate().Descendants(), s => s.Name.LocalName == "Setter"
-                && (string)s.Attribute("TargetName") == "Fill" && (string)s.Attribute("Value") == "Visible"
-                && (string)s.Parent.Attribute("Property") == "IsFocused");
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_icons_centre_44_in_and_its_labels_start_88_in(string file, string rowKey, string borderKey)
+        {
+            var padding = Thickness(Setter(Resolved(file, rowKey), "Padding"));
+            foreach (var icon in Icons(file, rowKey))
+            {
+                var width = int.Parse((string)icon.Attribute("Width"));
+                var margin = Thickness((string)icon.Attribute("Margin"));
+
+                // From the panel's edge, which is the ring's overhang in from the row's.
+                Assert.Equal(44 * 2, 2 * (padding[0] - RingOverhang) + width);
+                Assert.Equal(88, padding[0] - RingOverhang + width + margin[2]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_labels_are_22(string file, string rowKey, string borderKey)
+        {
+            Assert.Contains(RowTemplate(file, rowKey).Descendants(),
+                e => (string)e.Attribute("FontSize") == "22" || (string)e.Attribute("TextElement.FontSize") == "22");
+        }
+
+        [Fact]
+        public void The_game_menus_icons_are_its_own_22_glyphs_not_a_shadow_of_the_shared_icon_style()
+        {
+            var doc = XDocument.Load(Path.Combine(DashboardDir, "Views", "GameMenu.xaml"));
+            var own = StyleOf("Views/GameMenu.xaml", "GameMenuButton").Descendants()
+                .SingleOrDefault(e => (string)e.Attribute(X + "Key") == "GameMenuIcon");
+
+            Assert.DoesNotContain(doc.Descendants(), e => (string)e.Attribute(X + "Key") == "XboxMenuIcon");
+            Assert.NotNull(own);
+            Assert.Equal("22", Setter(own, "FontSize"));
+            var uses = doc.Descendants().Where(e => ((string)e.Attribute("Style") ?? "").Contains("MenuIcon")).ToList();
+            Assert.NotEmpty(uses);
+            Assert.All(uses, e => Assert.Equal("{DynamicResource GameMenuIcon}", (string)e.Attribute("Style")));
+        }
+
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_panel_is_450_wide_with_corners_of_6(string file, string rowKey, string borderKey)
+        {
+            var drawn = DrawnPanel(file, borderKey);
+
+            Assert.Equal(450, PanelWidth(file, rowKey, borderKey));
+            Assert.Equal("6", drawn != null ? (string)drawn.Attribute("CornerRadius") : Setter(StyleOf(file, borderKey), "CornerRadius"));
+            Assert.Equal("{DynamicResource XboxPanelBrush}", drawn != null ? (string)drawn.Attribute("Background") : Setter(StyleOf(file, borderKey), "Background"));
+        }
+
+        [Theory]
+        [MemberData(nameof(ConsoleMenus))]
+        public void A_console_menus_scroll_area_holds_all_of_the_glow_and_none_of_a_row_scrolled_out(string file, string rowKey, string borderKey)
+        {
+            Assert.DoesNotContain(XDocument.Load(Path.Combine(DashboardDir, file)).Descendants(), e => (string)e.Attribute("ClipToBounds") == "True"
+                || ((string)e.Attribute("Property") == "ClipToBounds" && (string)e.Attribute("Value") == "True"));
+
+            var panel = PanelInset(file, borderKey);
+            var list = ItemsPanel(file, borderKey);
+            var rows = Thickness((string)list.Attribute("Margin") ?? Setter(list, "Margin"));
+
+            Assert.True(panel[0] >= GlowRoomSides && panel[2] >= GlowRoomSides, "room for the glow beside the ring");
+            // The rows start and end where the panel's rows do: the scroll area's band above and below given back.
+            Assert.Equal(panel[1], rows[1]);
+            Assert.Equal(panel[3], rows[3]);
+            // Room for the glow above the first row and below the last, but too little for a scrolled-out row's icon or
+            // label to show over the title or past the panel's foot.
+            Assert.InRange(rows[1], GlowRoomEnds, RowInkInset);
+            Assert.InRange(rows[3], GlowRoomEnds, RowInkInset);
+            Assert.Contains(ScrollViewerStyle(file, borderKey).Descendants(), e => e.Name.LocalName == "ScrollContentPresenter"
+                && (string)e.Attribute(X + "Name") == "PART_ScrollContentPresenter");
+        }
+
+        [Theory]
+        // Playnite's 648 high middle of the screen, less the game's name over the rows: 7 rows.
+        [InlineData("Views/GameMenu.xaml", "GameMenuBorder", 504)]
+        // Its 810 high middle, with no title: 11 rows.
+        [InlineData("Views/CustomMenus.xaml", "GameClientsBorder", 792)]
+        [InlineData("Views/CustomMenus.xaml", "SoftwareToolsBorder", 792)]
+        [InlineData("Views/CustomMenus.xaml", "ExtensionsBorder", 792)]
+        public void A_long_console_menu_scrolls_by_whole_rows_inside_the_panel(string file, string borderKey, int height)
+        {
+            var list = Resolved(file, borderKey).Elements().Single(e => e.Name.LocalName == "Style.Resources")
+                .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ItemsControlEx");
+
+            Assert.Equal(height.ToString(), Setter(list, "MaxHeight"));
         }
 
         [Fact]
@@ -266,69 +391,101 @@ namespace XboxSeries.Core.Tests
         {
             var title = StyleOf("Views/GameMenu.xaml", "GameMenuHeaderText");
 
+            Assert.Equal("{DynamicResource XboxHeaderFont}", Setter(title, "FontFamily"));
+            Assert.Equal("33", Setter(title, "FontSize"));
+            Assert.Equal("28,36,28,24", Setter(title, "Margin"));
             Assert.Equal("NoWrap", Setter(title, "TextWrapping"));
             Assert.Equal("CharacterEllipsis", Setter(title, "TextTrimming"));
             // A long name is trimmed to the panel rather than widening it: the panel less the title's 28 each side.
             Assert.Equal("394", Setter(title, "MaxWidth"));
-            Assert.Equal(28, Thickness(Setter(title, "Margin"))[0]);
         }
 
-        [Fact]
-        public void The_game_menus_rows_stand_72_apart()
+        // A menu's panel's edges in from the scroll area's: left, top, right, bottom. The game menu's panel is its Border,
+        // the scroll area reaching past it; Playnite fixes the other menus' Border at 500 wide, so their 450 panel is drawn
+        // inside the scroll area, behind the rows.
+        private static int[] PanelInset(string file, string borderKey)
         {
-            var row = StyleOf("Views/GameMenu.xaml", "GameMenuButton");
-            var margin = Thickness(Setter(row, "Margin"));
-
-            Assert.Equal(72, int.Parse(Setter(row, "Height")) + margin[1] + margin[3]);
+            var drawn = DrawnPanel(file, borderKey);
+            return drawn != null ? Thickness((string)drawn.Attribute("Margin"))
+                : Thickness(Setter(ScrollViewerStyle(file, borderKey), "Margin")).Select(m => -m).ToArray();
         }
 
-        [Fact]
-        public void Nothing_in_the_game_menu_clips_the_focused_rows_ring_or_glow()
+        private static XElement DrawnPanel(string file, string borderKey) =>
+            ScrollViewerStyle(file, borderKey).Descendants().SingleOrDefault(e => (string)e.Attribute(X + "Name") == "Panel");
+
+        private static int PanelWidth(string file, string rowKey, string borderKey)
         {
-            var doc = XDocument.Load(Path.Combine(DashboardDir, "Views", "GameMenu.xaml"));
-            Assert.DoesNotContain(doc.Descendants(), e => (string)e.Attribute("ClipToBounds") == "True"
-                || ((string)e.Attribute("Property") == "ClipToBounds" && (string)e.Attribute("Value") == "True"));
-
-            // The scroll area reaches past the ring on every side by the glow's room, and the rows' panel gives back the
-            // top and bottom, so the rows sit where Playnite lays them while their ring and glow stay inside the clip.
-            var scroll = Thickness(Setter(GameMenuScrollViewer(), "Margin"));
-            var row = Thickness(Setter(StyleOf("Views/GameMenu.xaml", "GameMenuButton"), "Margin"));
-            var panel = GameMenuItemsPanel();
-            var inset = Thickness((string)panel.Attribute("Margin"));
-
-            Assert.True(row[0] >= GlowRoom && row[2] >= GlowRoom, "room for the glow beside the ring");
-            Assert.Equal(-scroll[1], inset[1]);
-            Assert.Equal(-scroll[3], inset[3]);
-            Assert.True(inset[1] >= GlowRoom && inset[3] >= GlowRoom, "room for the glow above and below the end rows");
-            Assert.Contains(GameMenuScrollViewer().Descendants(), e => e.Name.LocalName == "ScrollContentPresenter");
+            var scroll = Thickness(Setter(ScrollViewerStyle(file, borderKey), "Margin"));
+            var drawn = DrawnPanel(file, borderKey);
+            if (drawn != null)
+            {
+                // Playnite's Border is 500 wide; the scroll area reaches past it and the panel is inset in that.
+                var inset = Thickness((string)drawn.Attribute("Margin"));
+                return 500 - scroll[0] - scroll[2] - inset[0] - inset[2];
+            }
+            // The Border is as wide as its rows: the row's least width and its margins, less the scroll area's reach.
+            var style = Resolved(file, rowKey);
+            var row = Thickness(Setter(style, "Margin"));
+            return int.Parse(Setter(style, "MinWidth")) + row[0] + row[2] + scroll[0] + scroll[2];
         }
 
-        [Fact]
-        public void A_long_game_menu_scrolls_by_whole_rows_inside_the_panel()
-        {
-            // The scroll area reaches past the panel, so a row cut by its end would show over the dimmed screen. Its list
-            // is as tall as whole rows, as many as fit in Playnite's 648 high middle of the screen under the title.
-            var list = StyleOf("Views/GameMenu.xaml", "GameMenuBorder").Elements().Single(e => e.Name.LocalName == "Style.Resources")
-                .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ItemsControlEx");
-
-            Assert.Equal("504", Setter(list, "MaxHeight"));
-        }
-
-        private static XElement GameMenuScrollViewer() =>
-            StyleOf("Views/GameMenu.xaml", "GameMenuBorder").Elements().Single(e => e.Name.LocalName == "Style.Resources")
+        private static XElement ScrollViewerStyle(string file, string borderKey) =>
+            Resolved(file, borderKey).Elements().Single(e => e.Name.LocalName == "Style.Resources")
                 .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ScrollViewer");
 
-        private static XElement GameMenuItemsPanel() =>
-            StyleOf("Views/GameMenu.xaml", "GameMenuBorder").Elements().Single(e => e.Name.LocalName == "Style.Resources")
-                .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ItemsControlEx")
-                .Descendants().Single(e => e.Name.LocalName == "StackPanel");
+        // What insets the rows: the game menu's own StackPanel, or, where Playnite sets the rows' panel itself, an implicit
+        // style on the presenter in Playnite's list template.
+        private static XElement ItemsPanel(string file, string borderKey)
+        {
+            var resources = Resolved(file, borderKey).Elements().Single(e => e.Name.LocalName == "Style.Resources");
+            return resources.Descendants().SingleOrDefault(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ItemsPresenter")
+                ?? resources.Descendants().Single(e => e.Name.LocalName == "StackPanel");
+        }
 
-        private static XElement GameMenuRowTemplate() =>
-            StyleOf("Views/GameMenu.xaml", "GameMenuButton").Descendants().Single(e => e.Name.LocalName == "ControlTemplate");
+        // The icons of a menu's rows, each with its Width and Margin: the game menu's icon style, or each content
+        // template's 24 wide icon.
+        private static IEnumerable<XElement> Icons(string file, string rowKey)
+        {
+            var style = StyleOf(file, rowKey);
+            var own = style.Descendants().SingleOrDefault(e => (string)e.Attribute(X + "Key") == "GameMenuIcon");
+            if (own != null)
+            {
+                return new[] { new XElement("Icon", new XAttribute("Width", Setter(own, "Width")), new XAttribute("Margin", Setter(own, "Margin"))) };
+            }
+            var icons = style.Descendants().Where(e => (string)e.Attribute("Width") == "24" && e.Attribute("Margin") != null).ToList();
+            Assert.NotEmpty(icons);
+            return icons;
+        }
 
-        private static XElement GameMenuRowPart(string name) =>
-            GameMenuRowTemplate().Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
+        private static bool ShownOnFocus(string file, string rowKey, string part) =>
+            RowTemplate(file, rowKey).Descendants().Any(s => s.Name.LocalName == "Setter"
+                && (string)s.Attribute("TargetName") == part && (string)s.Attribute("Value") == "Visible"
+                && (string)s.Parent.Attribute("Property") == "IsFocused");
 
+        // A style with the setters of the style it's based on in the same file under its own.
+        private static XElement Resolved(string file, string key)
+        {
+            var style = StyleOf(file, key);
+            var basedOn = (string)style.Attribute("BasedOn") ?? "";
+            if (!basedOn.StartsWith("{StaticResource Xbox"))
+            {
+                return style;
+            }
+            var parent = Resolved(file, basedOn.Substring("{StaticResource ".Length).TrimEnd('}'));
+            var own = style.Elements().Where(s => s.Name.LocalName == "Setter").Select(s => (string)s.Attribute("Property")).ToList();
+            var resources = style.Elements().Any(e => e.Name.LocalName == "Style.Resources")
+                ? Enumerable.Empty<XElement>() : parent.Elements().Where(e => e.Name.LocalName == "Style.Resources");
+            return new XElement(style.Name, style.Attributes(),
+                parent.Elements().Where(s => s.Name.LocalName == "Setter" && !own.Contains((string)s.Attribute("Property"))),
+                resources, style.Elements());
+        }
+
+        private static XElement RowTemplate(string file, string rowKey) =>
+            Resolved(file, rowKey).Elements().Single(s => s.Name.LocalName == "Setter" && (string)s.Attribute("Property") == "Template")
+                .Descendants().Single(e => e.Name.LocalName == "ControlTemplate");
+
+        private static XElement RowPart(string file, string rowKey, string name) =>
+            RowTemplate(file, rowKey).Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
         // A Thickness as left, top, right, bottom, from one, two or four values.
         private static int[] Thickness(string value)
         {
