@@ -41,8 +41,11 @@ namespace XboxSeries.Extension
                 {
                     core.DebugNotify("Library updated");
                     core.DebugNotify("Screenshot failed 0x82323018");
-                    core.DebugNotify("Achievement unlocked");
+                    core.DebugNotify("Controller disconnected");
                 }),
+                new DebugBox("Achievement", "", () => core.DebugAchievementsUnlocked(1, false)),
+                new DebugBox("Rare achievement", "", () => core.DebugAchievementsUnlocked(1, true)),
+                new DebugBox("Three achievements", "", () => core.DebugAchievementsUnlocked(3, false)),
                 new DebugBox("Call", "", () => core.DebugRing("Jakob", null)),
                 new DebugBox("Call with avatar", "", () => core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/0.png")),
                 new DebugBox("Call, avatar fails", "", () => core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/does-not-exist.png")),
