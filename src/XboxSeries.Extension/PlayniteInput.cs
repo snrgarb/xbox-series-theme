@@ -47,6 +47,29 @@ namespace XboxSeries.Extension
         public static ControllerInput? PadButtonOf(KeyEventArgs e) =>
             e.GetType().GetProperty("Button")?.GetValue(e) as ControllerInput?;
 
+        /// <summary>
+        /// The pad button behind a key event, counting the real keys Playnite's view host binds to the same commands as
+        /// its pad buttons, pressed with no modifier: Y its keyboard to filter by name, as the pad's Y; F its filters, as
+        /// RS; F2 and F3 the previous and next filter preset, as LB and RB. Null for any other real key.
+        /// </summary>
+        public static ControllerInput? PlayniteButtonOf(KeyEventArgs e)
+        {
+            var pad = PadButtonOf(e);
+            if (pad != null || Keyboard.Modifiers != ModifierKeys.None)
+            {
+                return pad;
+            }
+
+            switch (e.Key)
+            {
+                case Key.Y: return ControllerInput.Y;
+                case Key.F: return ControllerInput.RightStick;
+                case Key.F2: return ControllerInput.LeftShoulder;
+                case Key.F3: return ControllerInput.RightShoulder;
+                default: return null;
+            }
+        }
+
 #if DEBUG
         /// <summary>
         /// Debug builds only: keys standing in for pad buttons in the Guide and the tile menu, for testing without a

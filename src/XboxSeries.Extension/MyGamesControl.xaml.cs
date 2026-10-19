@@ -524,10 +524,17 @@ namespace XboxSeries.Extension
             button == ControllerInput.Y || button == ControllerInput.RightStick
             || (!core.MyGames.ShowsFullLibrary && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder));
 
+        /// <summary>
+        /// The pad button behind a key event, Playnite's keys for its own buttons counted as those buttons; but not in the
+        /// name box, whose letters are typed: a key handled there would never become the text.
+        /// </summary>
+        private ControllerInput? PlayniteButtonOf(KeyEventArgs e) =>
+            e.OriginalSource == NameBox ? PlayniteInput.PadButtonOf(e) : PlayniteInput.PlayniteButtonOf(e);
+
         /// <summary>Playnite's own buttons on the page, those the page's parts don't answer themselves, do nothing.</summary>
         private void OnPageKeyDown(object sender, KeyEventArgs e)
         {
-            if (core.MyGames.IsShown && IsPlaynitesOwn(PlayniteInput.PadButtonOf(e)))
+            if (core.MyGames.IsShown && IsPlaynitesOwn(PlayniteButtonOf(e)))
             {
                 e.Handled = true;
             }
@@ -583,7 +590,7 @@ namespace XboxSeries.Extension
         /// </summary>
         private void OnMainListKeyDown(object sender, KeyEventArgs e)
         {
-            var button = PlayniteInput.PadButtonOf(e);
+            var button = PlayniteButtonOf(e);
             if (!core.MyGames.IsShown || !IsPlaynitesOwn(button))
             {
                 return;
@@ -674,7 +681,7 @@ namespace XboxSeries.Extension
         /// <summary>A on the tabs: the tab focused is already the one showing. Y opens the name box.</summary>
         private void OnTabsKeyDown(object sender, KeyEventArgs e)
         {
-            var button = PlayniteInput.PadButtonOf(e);
+            var button = PlayniteButtonOf(e);
             if (button == ControllerInput.A)
             {
                 e.Handled = true;
@@ -757,7 +764,7 @@ namespace XboxSeries.Extension
         /// <summary>The pad's A opens the Sort dropdown or, on Filter, the name box; Y opens the name box from anywhere on the row.</summary>
         private void OnLibraryBarKeyDown(object sender, KeyEventArgs e)
         {
-            var button = PlayniteInput.PadButtonOf(e);
+            var button = PlayniteButtonOf(e);
             if (button == ControllerInput.A && e.OriginalSource == SortButton)
             {
                 e.Handled = true;

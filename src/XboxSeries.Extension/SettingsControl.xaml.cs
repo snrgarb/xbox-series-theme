@@ -401,7 +401,7 @@ namespace XboxSeries.Extension
         /// </summary>
         private void OnPageKeyDown(object sender, KeyEventArgs e)
         {
-            var button = PlayniteInput.PadButtonOf(e);
+            var button = PlayniteInput.PlayniteButtonOf(e);
             if (core.Settings.IsShown
                 && (button == ControllerInput.LeftShoulder || button == ControllerInput.RightShoulder
                     || button == ControllerInput.Y || button == ControllerInput.RightStick))
