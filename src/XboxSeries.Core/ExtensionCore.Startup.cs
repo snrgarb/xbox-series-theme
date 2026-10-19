@@ -77,6 +77,7 @@ namespace XboxSeries.Core
                 signingInTimer = null;
                 IsStartupShown = false;
                 StartupEnded?.Invoke();
+                Home.Reveal();
                 Greet(Status.Profile ?? signedIn);
             });
         }
