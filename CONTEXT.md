@@ -143,8 +143,12 @@ The **Discord tab**'s last entry, a **Flyout** of the user's Discord servers, th
 _Avoid_: guilds (Discord's API name), browse
 
 **Now Playing**:
-The last entry of the Guide's Audio **Flyout**, under the mute switches after a divider, showing the media Windows' flyout shows: the track's title and artist, its album art, the app playing it, by the name people know it by, and whether it plays or is paused, following Windows' current media session live while the flyout shows. It is always there; with no media playing it says "No music app is running". A on it does nothing. There is no Now Playing tab.
+The last entry of the Guide's Audio **Flyout**, under the mute switches after a divider, showing the media Windows' flyout shows: the track's title and artist, its album art, the app playing it, by the name people know it by, whether it plays or is paused, and a thin bar of how far into the track it is (hidden for media with no length, as a live stream), following its session live while the flyout shows. The session is the **Now Playing source**'s while that app has one, else Windows' current. Under the card sit Previous, Play/Pause and Next, which ask the app and show nothing changed until it says so; one the app has turned off is dimmed. It is always there; with no media playing it says "No music app is running", with no controls. There is no Now Playing tab.
 _Avoid_: media player, music
+
+**Now Playing source**:
+The option on **Settings**' Guide category naming the app **Now Playing** follows: Any (Windows' current media session), Spotify (the default), or any other app that has had a media session since Playnite started. Shared by every **Profile**.
+_Avoid_: media source, player setting
 
 **Guide button**:
 The Xbox logo button in the centre of an Xbox controller.

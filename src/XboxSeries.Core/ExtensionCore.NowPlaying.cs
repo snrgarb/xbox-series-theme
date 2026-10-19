@@ -1,14 +1,15 @@
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Audio flyout's Now Playing entry, last, under the mute switches after a divider: what Windows' media flyout
-    /// shows, from Windows' current media session, the track, its art, the app playing it and whether it plays, or "No
+    /// The Audio flyout's Now Playing entry, last, under the mute switches after a divider: the card for the media
+    /// session it follows, Settings' Now Playing source's while it has one, else Windows' current, with the track, its
+    /// art, the app playing it, whether it plays and how far into the track it is, and its controls under it; or "No
     /// music app is running" with none. It follows the session live while the flyout shows.
     /// </summary>
     public sealed partial class ExtensionCore
     {
         /// <summary>
-        /// Windows' current media session changed, or what it plays or whether it plays: once the changes have settled
+        /// A media session came or went, or what one plays, whether it plays or where it is in its track changed: once the changes have settled
         /// (<see cref="AfterMediaSettles"/>), an open Audio flyout shows the last of them (<see cref="ShowNowPlaying"/>).
         /// Otherwise nothing, the flyout reading the session afresh as it opens. Only a sign to read the port again.
         /// Called on the UI thread.
@@ -48,7 +49,22 @@ namespace XboxSeries.Core
             RefreshAudioFlyout();
         }
 
-        /// <summary>The Now Playing entry, behind a divider: the current session's card, or "No music app is running" with none.</summary>
+        /// <summary>The open Audio flyout's Now Playing card, last; null with the Guide closed, another flyout or no music app.</summary>
+        private GuideItem ShownNowPlayingCard()
+        {
+            if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
+            {
+                return null;
+            }
+
+            var last = Guide.Flyout.Items[Guide.Flyout.Items.Count - 1];
+            return last.Kind == GuideItemKind.NowPlaying ? last : null;
+        }
+
+        /// <summary>
+        /// The Now Playing entry, behind a divider: the card of the session it follows (<see cref="ShownSession"/>), or
+        /// "No music app is running" with none.
+        /// </summary>
         private GuideItem NowPlayingItem()
         {
             var session = ShownSession();

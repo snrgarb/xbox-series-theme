@@ -40,13 +40,8 @@ namespace XboxSeries.Core
         private void TickTimeline()
         {
             timelineTimer = null;
-            if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
-            {
-                return;
-            }
-
-            var shown = Guide.Flyout.Items[Guide.Flyout.Items.Count - 1];
-            if (shown.Kind != GuideItemKind.NowPlaying)
+            var shown = ShownNowPlayingCard();
+            if (shown == null)
             {
                 return;
             }
