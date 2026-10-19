@@ -116,18 +116,6 @@ namespace XboxSeries.Core
         /// </summary>
         private bool IsArtShowing => nowPlayingArt != null && ShownNowPlayingCard()?.Art == nowPlayingArt;
 
-        /// <summary>The open Audio flyout's Now Playing card; null with the Guide closed, another flyout or no music app.</summary>
-        private GuideItem ShownNowPlayingCard()
-        {
-            if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
-            {
-                return null;
-            }
-
-            var last = Guide.Flyout.Items[Guide.Flyout.Items.Count - 1];
-            return last.Kind == GuideItemKind.NowPlaying ? last : null;
-        }
-
         /// <summary><paramref name="art"/> as <paramref name="track"/>'s, on the card showing it if the flyout is open.</summary>
         private void ShowLoadedArt(object art, string track)
         {

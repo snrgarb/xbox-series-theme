@@ -30,14 +30,8 @@ namespace XboxSeries.Core
             };
         }
 
-        /// <summary>The open Audio flyout's Now Playing card, last, while it shows one; else null.</summary>
-        private GuideItem ShownCard =>
-            Guide.Flyout?.Kind == GuideItemKind.Audio && Guide.Flyout.Items.LastOrDefault()?.Kind == GuideItemKind.NowPlaying
-                ? Guide.Flyout.Items.Last()
-                : null;
-
         /// <summary>Whether <paramref name="item"/> is one of the shown card's controls.</summary>
-        private bool IsMediaControl(GuideItem item) => item != null && ShownCard?.Controls?.Contains(item) == true;
+        private bool IsMediaControl(GuideItem item) => item != null && ShownNowPlayingCard()?.Controls?.Contains(item) == true;
 
         /// <summary>
         /// Moves focus onto, along or off the card's row: down from the card onto Play/Pause, up from the row back to the
@@ -46,7 +40,7 @@ namespace XboxSeries.Core
         /// </summary>
         private bool MoveAmongMediaControls(ControllerButton direction)
         {
-            var card = ShownCard;
+            var card = ShownNowPlayingCard();
             var focused = Guide.FocusedItem;
             if (card?.Controls == null)
             {

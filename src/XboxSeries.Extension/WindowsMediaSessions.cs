@@ -312,7 +312,7 @@ namespace XboxSeries.Extension
                 }
                 catch (Exception e) when (!(e is OutOfMemoryException))
                 {
-                    logger.Warn($"Now Playing: the media session of {NameOf(session)} went as it was read ({e.Message}); leaving it out");
+                    logger.Warn($"Now Playing: the media session of {ReadAppId(session)} went as it was read ({e.Message}); leaving it out");
                     return null;
                 }
             }
@@ -372,7 +372,7 @@ namespace XboxSeries.Extension
                     foreach (var next in all.Where(s => s != null && !followed.ContainsKey(s)))
                     {
                         // Followed before it is subscribed to, so that if its app closes midway, what was subscribed is let go.
-                        var app = NameOf(next);
+                        var app = ReadAppId(next);
                         followed[next] = app;
                         next.MediaPropertiesChanged += onMediaChanged;
                         next.PlaybackInfoChanged += onPlaybackChanged;
@@ -439,11 +439,11 @@ namespace XboxSeries.Extension
                     }
                 }
 
-                return NameOf(changed);
+                return ReadAppId(changed);
             }
 
             /// <summary>The session's app id, or "an app" when its app has gone and it can't be asked.</summary>
-            private static string NameOf(GlobalSystemMediaTransportControlsSession session)
+            private static string ReadAppId(GlobalSystemMediaTransportControlsSession session)
             {
                 try
                 {
