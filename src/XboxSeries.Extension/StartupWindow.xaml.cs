@@ -55,12 +55,21 @@ namespace XboxSeries.Extension
         /// <summary>Counts the videos played, so only the one playing ends the boot video, once.</summary>
         private int videos;
 
+        /// <param name="themeResources">The theme's resources the window uses, copied on the UI thread for this one.</param>
         /// <param name="readPad">The buttons pad 1 holds down now, read on this thread.</param>
         /// <param name="playniteWindow">Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one; any thread may ask.</param>
         /// <param name="activatePlaynite">Activates Playnite's window in WPF, on Playnite's own thread, as the foreground goes back to it.</param>
-        public StartupWindow(StartupSequence sequence, Func<IReadOnlyCollection<ControllerButton>> readPad, Func<IntPtr> playniteWindow, Action activatePlaynite)
+        public StartupWindow(StartupSequence sequence, IReadOnlyDictionary<string, object> themeResources, Func<IReadOnlyCollection<ControllerButton>> readPad, Func<IntPtr> playniteWindow, Action activatePlaynite)
         {
+            // Playnite's application resources belong to its UI thread: the window looks only in its own, which hold
+            // the theme's copied for this thread (StartupResources), then in the system's.
+            InheritanceBehavior = InheritanceBehavior.SkipToThemeNext;
             InitializeComponent();
+            foreach (var resource in themeResources)
+            {
+                Resources[resource.Key] = resource.Value;
+            }
+
             this.sequence = sequence;
             this.readPad = readPad;
             this.playniteWindow = playniteWindow;
