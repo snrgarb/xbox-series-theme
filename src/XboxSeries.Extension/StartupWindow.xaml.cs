@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -15,14 +16,15 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// The Start-up sequence's window. It follows the core's <see cref="StartupState"/> and holds no logic: shown over the
-    /// monitor Playnite's window is on while <see cref="StartupState.IsShown"/>, holding the foreground so no key reaches
-    /// Home behind it, and fading out to reveal Home once the sequence ends, the foreground handed back to Playnite's
-    /// window. The pad drives the sequence through the core's controller callback, whatever window is in front, so every
-    /// key here is marked handled; the keyboard's own arrows, Enter, Space and Escape stand in for the pad's, and a click
-    /// on a profile signs it in. A boot video that is missing or can't play ends as one that finished would; the core
-    /// ends one that runs long. While it shows, Playnite's own navigation sound is silenced, as Home takes its first focus
-    /// behind it, and comes back once it has gone.
+    /// The Start-up sequence's window, made on the sequence's own thread (<see cref="StartupThread"/>), so it draws and
+    /// answers the pad whatever Playnite's UI thread is doing; it touches nothing of that thread. It follows the
+    /// <see cref="StartupSequence"/>'s <see cref="StartupState"/> and holds no logic: shown over the monitor Playnite's
+    /// window is on while <see cref="StartupState.IsShown"/>, holding the foreground so no key reaches Home behind it,
+    /// and fading out to reveal Home once the sequence ends, the foreground handed back to Playnite's window. While it
+    /// shows it reads pad 1 itself, every frame, through Windows.Gaming.Input, since Playnite's controller callback waits
+    /// on its UI thread; every key here is marked handled, and the keyboard's own arrows, Enter, Space and Escape stand
+    /// in for the pad's. A click on a profile signs it in. A boot video that is missing or can't play ends as one that
+    /// finished would; the sequence ends one that runs long.
     /// </summary>
     public partial class StartupWindow : Window
     {
@@ -32,29 +34,43 @@ namespace XboxSeries.Extension
         /// <summary>The swirl's fade in, as the boot video gives way to Who's playing today?.</summary>
         private static readonly Duration SwirlInDuration = TimeSpan.FromMilliseconds(300);
 
+        /// <summary>How often the pad is read while the window shows: about every frame.</summary>
+        private static readonly TimeSpan PadInterval = TimeSpan.FromMilliseconds(16);
+
         private static readonly ILogger logger = LogManager.GetLogger();
 
-        private readonly ExtensionCore core;
+        private readonly StartupSequence sequence;
         private readonly StartupState startup;
-        private readonly Action<bool> silenceThemeSounds;
+        private readonly Func<IReadOnlyCollection<ControllerButton>> readPad;
+        private readonly Func<IntPtr> playniteWindow;
+        private readonly Action activatePlaynite;
         private readonly DispatcherTimer fade;
+        private readonly DispatcherTimer pad;
         private DateTime fadeStarted;
         private bool closing;
+
+        /// <summary>The pad's buttons at its last reading, kept only to log each press's time early on.</summary>
+        private IReadOnlyCollection<ControllerButton> padWasDown = new ControllerButton[0];
 
         /// <summary>Counts the videos played, so only the one playing ends the boot video, once.</summary>
         private int videos;
 
-        /// <param name="silenceThemeSounds">Silences Playnite's own navigation and activation sounds (true), or puts them back (false).</param>
-        public StartupWindow(ExtensionCore core, Action<bool> silenceThemeSounds)
+        /// <param name="readPad">The buttons pad 1 holds down now, read on this thread.</param>
+        /// <param name="playniteWindow">Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one; any thread may ask.</param>
+        /// <param name="activatePlaynite">Activates Playnite's window in WPF, on Playnite's own thread, as the foreground goes back to it.</param>
+        public StartupWindow(StartupSequence sequence, Func<IReadOnlyCollection<ControllerButton>> readPad, Func<IntPtr> playniteWindow, Action activatePlaynite)
         {
             InitializeComponent();
-            this.core = core;
-            this.silenceThemeSounds = silenceThemeSounds;
-            startup = new StartupState();
+            this.sequence = sequence;
+            this.readPad = readPad;
+            this.playniteWindow = playniteWindow;
+            this.activatePlaynite = activatePlaynite;
+            startup = sequence.State;
             DataContext = startup;
             startup.PropertyChanged += OnStartupChanged;
             SizeChanged += (_, __) => FitToScreen();
             Deactivated += (_, __) => KeepForeground();
+            ContentRendered += (_, __) => StartupTiming.Log("Start-up window's first frame, on its own thread,");
             Video.MediaEnded += (_, __) => EndVideo(videos);
             Video.MediaFailed += (_, e) =>
             {
@@ -65,19 +81,22 @@ namespace XboxSeries.Extension
             // A timer, not an animation: the fade is the window's own alpha, which only Windows draws.
             fade = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(15) };
             fade.Tick += (_, __) => StepFade();
-            InputManager.Current.PreProcessInput += OnPreProcessInput;
+            pad = new DispatcherTimer(DispatcherPriority.Input) { Interval = PadInterval };
+            pad.Tick += (_, __) => ReadPad();
         }
 
-        /// <summary>The window as Playnite closes; anything else closing it, as Alt+F4, is refused.</summary>
+        /// <summary>The fade out has finished and the window has hidden, or it ended without ever showing: the sequence is over.</summary>
+        public event Action FadedOut;
+
+        /// <summary>The window closed, the sequence over or Playnite closing; anything else closing it, as Alt+F4, is refused.</summary>
         public void Shutdown()
         {
             closing = true;
             startup.PropertyChanged -= OnStartupChanged;
-            InputManager.Current.PreProcessInput -= OnPreProcessInput;
             fade.Stop();
+            pad.Stop();
             StopVideo();
             HideSwirl();
-            silenceThemeSounds(false);
             Close();
         }
 
@@ -85,6 +104,18 @@ namespace XboxSeries.Extension
         public void Follow()
         {
             OnStartupChanged(this, new PropertyChangedEventArgs(nameof(StartupState.Phase)));
+        }
+
+        /// <summary>
+        /// A real key held back from Home on Playnite's UI thread while the sequence shows, handed over to do here what it
+        /// would have done in this window.
+        /// </summary>
+        public void OnHeldBackKey(Key key, bool down, bool repeat)
+        {
+            if ((!down || !repeat) && ButtonFor(key) is ControllerButton button)
+            {
+                sequence.OnButton(button, down ? ButtonState.Pressed : ButtonState.Released);
+            }
         }
 
         private void FitToScreen()
@@ -103,7 +134,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            // A boot video chosen again counts only while one plays; Settings choosing one changes nothing here.
+            // A boot video chosen again counts only while one plays.
             var videoChanged = e.PropertyName == nameof(StartupState.BootVideo) && startup.Phase == StartupPhase.BootVideo;
             if (e.PropertyName != nameof(StartupState.Phase) && !videoChanged)
             {
@@ -182,6 +213,7 @@ namespace XboxSeries.Extension
 
             ++videos;
             StopVideo();
+            sequence.OnBootVideoEnded();
         }
 
         /// <summary>
@@ -221,14 +253,13 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Covers the monitor Playnite's window is on, in physical pixels, opaque again if it was fading, and takes the
-        /// foreground so no key reaches Home behind it, silencing Playnite's own navigation sound as Home's focus moves.
+        /// Covers the monitor Playnite's window is on, in physical pixels, opaque again if it was fading, takes the
+        /// foreground so no key reaches Home behind it, and starts reading the pad.
         /// </summary>
         private void ShowOverPlaynite()
         {
             fade.Stop();
-            silenceThemeSounds(true);
-            var playnite = PlayniteWindow();
+            var playnite = playniteWindow();
             var bounds = NativeMethods.MonitorBoundsOf(playnite != IntPtr.Zero ? playnite : NativeMethods.GetForegroundWindow());
             Show();
             var handle = new WindowInteropHelper(this).Handle;
@@ -242,6 +273,7 @@ namespace XboxSeries.Extension
                 bounds.Bottom - bounds.Top,
                 NativeMethods.SWP_SHOWWINDOW);
             TakeForeground(handle);
+            pad.Start();
         }
 
         private void TakeForeground(IntPtr handle)
@@ -278,24 +310,53 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Hands the foreground back to Playnite's window at once, so Home has the keys, and fades out over it, hiding at
-        /// the end unless the sequence has shown again since.
+        /// Pad 1's buttons, read here every frame and handed to the sequence, which finds the presses and releases in
+        /// them. For the first seconds after the sequence shows, each press is logged with its time, to show presses
+        /// answered while Playnite's UI thread is still busy.
+        /// </summary>
+        private void ReadPad()
+        {
+            var down = readPad();
+            if (StartupTiming.IsEarly)
+            {
+                foreach (var button in down.Except(padWasDown))
+                {
+                    StartupTiming.Log($"Pad {button} pressed, read on the Start-up thread,");
+                }
+            }
+
+            padWasDown = down;
+            sequence.OnPadReading(down);
+        }
+
+        /// <summary>
+        /// Stops reading the pad, hands the foreground back to Playnite's window at once, so Home has the keys, and fades
+        /// out over it, hiding at the end. A window that never showed is done with at once.
         /// </summary>
         private void FadeOut()
         {
-            if (!IsVisible || fade.IsEnabled)
+            pad.Stop();
+            if (fade.IsEnabled)
             {
                 return;
             }
 
-            var playnite = PlayniteWindow();
+            if (!IsVisible)
+            {
+                FadedOut?.Invoke();
+                return;
+            }
+
+            var playnite = playniteWindow();
             if (playnite != IntPtr.Zero)
             {
-                Application.Current.MainWindow?.Activate();
+                // Windows' foreground at once, from here; WPF's own active window on Playnite's thread when it gets to it.
                 if (NativeMethods.GetForegroundWindow() != playnite)
                 {
                     NativeMethods.BringToForeground(playnite);
                 }
+
+                activatePlaynite();
             }
 
             fadeStarted = DateTime.UtcNow;
@@ -317,16 +378,7 @@ namespace XboxSeries.Extension
             Hide();
             HideSwirl();
             SetOpaque(handle);
-
-            // Only now, with Home in front and focused again behind the fade, so its focus coming back makes no sound.
-            silenceThemeSounds(false);
-        }
-
-        /// <summary>Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one.</summary>
-        private IntPtr PlayniteWindow()
-        {
-            var main = Application.Current?.MainWindow;
-            return main == null || main == this ? IntPtr.Zero : new WindowInteropHelper(main).Handle;
+            FadedOut?.Invoke();
         }
 
         // The fade is the window's own alpha, set on it as a layered window only while it fades, so the boot video and
@@ -343,43 +395,12 @@ namespace XboxSeries.Extension
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
-            // Playnite routes controller input here as key events. The sequence is driven by Playnite's controller
-            // callback instead, so every key, Alt+F4 too, is marked handled and Home behind never reacts.
+            // The pad is read from Windows.Gaming.Input, so every key, Playnite's own for the pad and Alt+F4 too, is
+            // marked handled; the real keys standing in for the pad's buttons drive the sequence.
             e.Handled = true;
             if (!e.IsRepeat && ButtonFor(e) is ControllerButton button)
             {
-                core.OnControllerButton(button, ButtonState.Pressed);
-            }
-        }
-
-        /// <summary>
-        /// A key or pad button on its way to Home while the sequence shows: it never gets there. Playnite's window takes
-        /// the foreground as it first shows, and the UI thread can be too busy to take it back before a press arrives,
-        /// which would land on Home's focused tile, as A on the Recent row's first game opening its Game hub. A real
-        /// key does here what it would have done in this window; a pad button reaches the core through its callback.
-        /// </summary>
-        private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
-        {
-            if (!startup.IsShown || !(e.StagingItem.Input is KeyEventArgs key)
-                || !(Keyboard.FocusedElement is DependencyObject focused) || Window.GetWindow(focused) == this
-                || Window.GetWindow(focused) != Application.Current?.MainWindow)
-            {
-                return;
-            }
-
-            e.Cancel();
-            if (key.RoutedEvent == Keyboard.PreviewKeyDownEvent)
-            {
-                logger.Info($"Held back {key.Key} from Home during Start-up");
-                OnPreviewKeyDown(key);
-            }
-            else if (key.RoutedEvent == Keyboard.PreviewKeyUpEvent)
-            {
-                OnPreviewKeyUp(key);
-            }
-            else if (PlayniteInput.PadButtonOf(key) is Playnite.SDK.Events.ControllerInput pad && key.RoutedEvent == Keyboard.KeyDownEvent)
-            {
-                logger.Info($"Held back pad {pad} from Home during Start-up");
+                sequence.OnButton(button, ButtonState.Pressed);
             }
         }
 
@@ -388,23 +409,20 @@ namespace XboxSeries.Extension
             e.Handled = true;
             if (ButtonFor(e) is ControllerButton button)
             {
-                core.OnControllerButton(button, ButtonState.Released);
+                sequence.OnButton(button, ButtonState.Released);
             }
         }
 
+        /// <summary>Null for Playnite's own key events for the pad's buttons: the pad is read from the pad itself.</summary>
+        private static ControllerButton? ButtonFor(KeyEventArgs e) => PlayniteInput.PadButtonOf(e) != null ? null : ButtonFor(e.Key);
+
         /// <summary>
         /// The pad button a real key stands in for, so the sequence can be got through without a pad: the arrows move
-        /// along the profiles, Enter and Space are A, Escape is B, and any of them skips the boot video. Null for the
-        /// pad's own key events, which reach the core through its controller callback already, and for any other key.
+        /// along the profiles, Enter and Space are A, Escape is B, and any of them skips the boot video. Null for any other key.
         /// </summary>
-        private static ControllerButton? ButtonFor(KeyEventArgs e)
+        private static ControllerButton? ButtonFor(Key key)
         {
-            if (PlayniteInput.PadButtonOf(e) != null)
-            {
-                return null;
-            }
-
-            switch (e.Key)
+            switch (key)
             {
                 case Key.Left: return ControllerButton.DPadLeft;
                 case Key.Right: return ControllerButton.DPadRight;
@@ -414,7 +432,7 @@ namespace XboxSeries.Extension
             }
 
 #if DEBUG
-            return PlayniteInput.DebugButtonFor(e.Key);
+            return PlayniteInput.DebugButtonFor(key);
 #else
             return null;
 #endif
@@ -445,8 +463,8 @@ namespace XboxSeries.Extension
 
         private void Tap(ControllerButton button)
         {
-            core.OnControllerButton(button, ButtonState.Pressed);
-            core.OnControllerButton(button, ButtonState.Released);
+            sequence.OnButton(button, ButtonState.Pressed);
+            sequence.OnButton(button, ButtonState.Released);
         }
     }
 
