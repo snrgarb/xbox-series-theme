@@ -35,27 +35,43 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Now_Playing_has_a_glyph_for_its_tab_icon_a_heading_and_a_card_with_the_art_as_the_extension_decoded_it()
+        public void Now_Playing_is_an_entry_in_the_Audio_flyout_not_a_tab_with_its_own_icon_or_heading()
         {
             var overlay = Overlay();
             var tabTemplate = overlay.Descendants().Single(e => e.Name.LocalName == "ItemsControl" && (string)e.Attribute("ItemsSource") == "{Binding Tabs}")
                 .Descendants().Single(e => e.Name.LocalName == "DataTemplate");
-            var tabTrigger = KindTrigger(tabTemplate, "NowPlaying");
-            Assert.Contains(tabTrigger.Elements(), s => (string)s.Attribute("TargetName") == "TabGlyph" && (string)s.Attribute("Value") == "Visible");
-            Assert.Contains(tabTrigger.Elements(), s => (string)s.Attribute("TargetName") == "Logo" && (string)s.Attribute("Value") == "Collapsed");
+            Assert.Null(KindTriggerOrNull(tabTemplate, "NowPlaying"));
+            Assert.DoesNotContain(overlay.Descendants(), e => (string)e.Attribute(X + "Name") == "TabGlyph");
+            Assert.DoesNotContain(overlay.Descendants(), e => e.Name.LocalName == "Setter" && (string)e.Attribute("Value") == "Now Playing");
+            Assert.DoesNotContain(overlay.Descendants(), e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == "{Binding Tab}" && (string)e.Attribute("Value") == "NowPlaying");
 
-            Assert.Contains(overlay.Descendants(), e => e.Name.LocalName == "Setter" && (string)e.Attribute("Value") == "Now Playing");
-
+            // The card, with the art as the extension decoded it, and the quiet line for no music app.
             var entry = GuideEntryTemplate();
             var card = KindTrigger(entry, "NowPlaying");
             Assert.Contains(card.Elements(), s => (string)s.Attribute("TargetName") == "Media" && (string)s.Attribute("Value") == "Visible");
             Assert.Contains(entry.Descendants(), e => e.Name.LocalName == "ImageBrush" && (string)e.Attribute("ImageSource") == "{Binding Art}");
             Assert.NotNull(KindTrigger(entry, "NothingPlaying"));
+
+            // The card is in the Entry, under the Divider, and neither kind hides the divider, so HasDividerAbove shows it.
+            var media = entry.Descendants().Single(e => (string)e.Attribute(X + "Name") == "Media");
+            Assert.Contains(media.Ancestors(), a => (string)a.Attribute(X + "Name") == "Entry");
+            Assert.Contains(entry.Descendants(), e => (string)e.Attribute(X + "Name") == "Divider");
+            foreach (var kind in new[] { "NowPlaying", "NothingPlaying" })
+            {
+                Assert.DoesNotContain(KindTrigger(entry, kind).Elements(), s => (string)s.Attribute("TargetName") == "Divider");
+            }
+            var divider = entry.Elements().Single(e => e.Name.LocalName == "DataTemplate.Triggers").Elements()
+                .Single(t => (string)t.Attribute("Binding") == "{Binding HasDividerAbove}");
+            Assert.Contains(divider.Elements(), s => (string)s.Attribute("TargetName") == "Divider" && (string)s.Attribute("Value") == "Visible");
         }
 
         private static XElement KindTrigger(XElement template, string kind) =>
+            KindTriggerOrNull(template, kind) ?? throw new InvalidOperationException($"No trigger for {kind}");
+
+        private static XElement KindTriggerOrNull(XElement template, string kind) =>
             template.Elements().Single(e => e.Name.LocalName == "DataTemplate.Triggers").Elements()
-                .Single(t => (string)t.Attribute("Binding") == "{Binding Kind}" && (string)t.Attribute("Value") == kind);
+                .SingleOrDefault(t => (string)t.Attribute("Binding") == "{Binding Kind}" && (string)t.Attribute("Value") == kind);
 
         private static XDocument Overlay() =>
             XDocument.Load(Path.Combine(FindRepoRoot(), "src", "XboxSeries.Extension", "OverlayWindow.xaml"));
