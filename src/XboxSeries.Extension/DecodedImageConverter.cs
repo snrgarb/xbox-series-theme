@@ -17,12 +17,17 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
 
         /// <summary>
-        /// The images loaded from URLs, by width and URL, for as long as Playnite runs; one that fails to download or
+        /// The images loaded from URLs, by width and URL, for as long as their thread runs; one that fails to download or
         /// decode is dropped, to be tried again when next shown. Only URLs: a library's covers and backgrounds, from
-        /// local files, would add up to too much memory kept. The converter only runs on the UI thread, so a plain
-        /// dictionary does.
+        /// local files, would add up to too much memory kept. Each thread keeps its own, as Playnite's UI thread and the
+        /// Start-up sequence's: an image still downloading can't be frozen, so it can't be shown on another thread than
+        /// the one that made it, and a plain dictionary per thread needs no lock.
         /// </summary>
-        private static readonly Dictionary<string, BitmapImage> loaded = new Dictionary<string, BitmapImage>();
+        [ThreadStatic]
+        private static Dictionary<string, BitmapImage> loadedOnThisThread;
+
+        private static Dictionary<string, BitmapImage> Loaded =>
+            loadedOnThisThread ?? (loadedOnThisThread = new Dictionary<string, BitmapImage>());
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
             Load(value as string, parameter == null ? 0 : System.Convert.ToInt32(parameter, CultureInfo.InvariantCulture));
@@ -39,7 +44,7 @@ namespace XboxSeries.Extension
 
             var isUrl = path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || path.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
             var key = decodeWidth.ToString(CultureInfo.InvariantCulture) + " " + path;
-            if (isUrl && loaded.TryGetValue(key, out var kept))
+            if (isUrl && Loaded.TryGetValue(key, out var kept))
             {
                 return kept;
             }
@@ -56,19 +61,19 @@ namespace XboxSeries.Extension
                 // fails stays empty, so whatever is drawn under it shows instead. It can't be frozen until then.
                 image.DownloadFailed += (s, e) =>
                 {
-                    loaded.Remove(key);
+                    Loaded.Remove(key);
                     logger.Warn(e.ErrorException, $"Can't download image {path}");
                 };
                 image.DecodeFailed += (s, e) =>
                 {
-                    loaded.Remove(key);
+                    Loaded.Remove(key);
                     logger.Warn(e.ErrorException, $"Can't decode image {path}");
                 };
 
                 // Kept before it starts, so that a failure, however soon it comes, drops it.
                 if (isUrl)
                 {
-                    loaded[key] = image;
+                    Loaded[key] = image;
                 }
 
                 image.EndInit();
@@ -81,7 +86,7 @@ namespace XboxSeries.Extension
             }
             catch (Exception e)
             {
-                loaded.Remove(key);
+                Loaded.Remove(key);
                 logger.Warn(e, $"Can't load image {path}");
                 return null;
             }
