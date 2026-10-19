@@ -135,7 +135,7 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Start-up has ended and Home is revealed from black: the row flies up into place and the top bar's buttons drop
+        /// Start-up has ended and Home is revealed from under its swirl: the row flies up into place and the top bar's buttons drop
         /// in after it, but only with the row the screen showing. Under the Groups, My games &amp; apps, Settings, Search
         /// (which all hide the row) or a Game hub, Home stays as it was left, nothing hidden. Focus stays where it is.
         /// </summary>
