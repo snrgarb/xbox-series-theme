@@ -8,13 +8,28 @@ namespace XboxSeries.Core
     public sealed partial class ExtensionCore
     {
         /// <summary>
-        /// Windows' current media session changed, or what it plays or whether it plays: an open Audio flyout shows it
-        /// now, the card taking a new track, app or play state in place, so the rest of the flyout, an open device list
-        /// and focus are left as they were; a music app starting or the last one going swaps the card and "No music app
-        /// is running" as a device change rebuilds the flyout. Otherwise nothing, the flyout reading the session afresh
-        /// as it opens. Only a sign to read the port again. Called on the UI thread.
+        /// Windows' current media session changed, or what it plays or whether it plays: once the changes have settled
+        /// (<see cref="AfterMediaSettles"/>), an open Audio flyout shows the last of them (<see cref="ShowNowPlaying"/>).
+        /// Otherwise nothing, the flyout reading the session afresh as it opens. Only a sign to read the port again.
+        /// Called on the UI thread.
         /// </summary>
         public void OnMediaSessionChanged()
+        {
+            if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
+            {
+                return;
+            }
+
+            AfterMediaSettles(ShowNowPlaying);
+        }
+
+        /// <summary>
+        /// The open Audio flyout shows the media session as it is now, the card taking a new track, app or play state in
+        /// place, so the rest of the flyout, an open device list and focus are left as they were; a music app starting or
+        /// the last one going swaps the card and "No music app is running" as a device change rebuilds the flyout. Nothing
+        /// with the Guide closed or another flyout showing.
+        /// </summary>
+        private void ShowNowPlaying()
         {
             if (!Guide.IsOpen || Guide.Flyout?.Kind != GuideItemKind.Audio)
             {
