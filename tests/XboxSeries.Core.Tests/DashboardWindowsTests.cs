@@ -225,6 +225,118 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("{DynamicResource XboxTextBrush}", Setter(style, "Foreground"));
         }
 
+        // The game menu, drawn as the console's tile menu: a 450 wide panel whose focused row's green ring stands 8 past
+        // the panel on either side. Playnite's window puts the rows in a ScrollViewer, whose content presenter clips to
+        // itself, so the theme widens the scroll area past the panel (GameMenuBorder's ScrollViewer) and insets the rows
+        // back by the same less the overhang.
+        private const int RingOverhang = 8;
+        private const int GlowRoom = 20;
+
+        [Fact]
+        public void The_game_menus_focus_ring_stands_past_the_panel_on_both_sides()
+        {
+            var scroll = Thickness(Setter(GameMenuScrollViewer(), "Margin"));
+            var row = Thickness(Setter(StyleOf("Views/GameMenu.xaml", "GameMenuButton"), "Margin"));
+            var ring = Thickness((string)GameMenuRowPart("FocusRing").Attribute("Margin") ?? "0");
+
+            // Left and right: how far the ring's outer edge lies outside the panel's edge.
+            Assert.Equal(RingOverhang, -scroll[0] - row[0] - ring[0]);
+            Assert.Equal(RingOverhang, -scroll[2] - row[2] - ring[2]);
+        }
+
+        [Fact]
+        public void The_game_menus_focused_row_is_filled_lighter_across_the_panels_full_width()
+        {
+            var fill = GameMenuRowPart("Fill");
+            var margin = Thickness((string)fill.Attribute("Margin"));
+
+            Assert.Equal("#FF404040", (string)fill.Attribute("Background"));
+            // Its sides are the panel's: the ring's overhang in from the row's edges, the ring 4 and a 4 gap inside them.
+            Assert.Equal(RingOverhang, margin[0]);
+            Assert.Equal(RingOverhang, margin[2]);
+            Assert.Equal("4", (string)GameMenuRowPart("FocusRing").Attribute("BorderThickness"));
+            Assert.Equal("Hidden", (string)fill.Attribute("Visibility"));
+            Assert.Contains(GameMenuRowTemplate().Descendants(), s => s.Name.LocalName == "Setter"
+                && (string)s.Attribute("TargetName") == "Fill" && (string)s.Attribute("Value") == "Visible"
+                && (string)s.Parent.Attribute("Property") == "IsFocused");
+        }
+
+        [Fact]
+        public void The_game_menus_title_is_the_games_name_on_one_trimmed_line()
+        {
+            var title = StyleOf("Views/GameMenu.xaml", "GameMenuHeaderText");
+
+            Assert.Equal("NoWrap", Setter(title, "TextWrapping"));
+            Assert.Equal("CharacterEllipsis", Setter(title, "TextTrimming"));
+            // A long name is trimmed to the panel rather than widening it: the panel less the title's 28 each side.
+            Assert.Equal("394", Setter(title, "MaxWidth"));
+            Assert.Equal(28, Thickness(Setter(title, "Margin"))[0]);
+        }
+
+        [Fact]
+        public void The_game_menus_rows_stand_72_apart()
+        {
+            var row = StyleOf("Views/GameMenu.xaml", "GameMenuButton");
+            var margin = Thickness(Setter(row, "Margin"));
+
+            Assert.Equal(72, int.Parse(Setter(row, "Height")) + margin[1] + margin[3]);
+        }
+
+        [Fact]
+        public void Nothing_in_the_game_menu_clips_the_focused_rows_ring_or_glow()
+        {
+            var doc = XDocument.Load(Path.Combine(DashboardDir, "Views", "GameMenu.xaml"));
+            Assert.DoesNotContain(doc.Descendants(), e => (string)e.Attribute("ClipToBounds") == "True"
+                || ((string)e.Attribute("Property") == "ClipToBounds" && (string)e.Attribute("Value") == "True"));
+
+            // The scroll area reaches past the ring on every side by the glow's room, and the rows' panel gives back the
+            // top and bottom, so the rows sit where Playnite lays them while their ring and glow stay inside the clip.
+            var scroll = Thickness(Setter(GameMenuScrollViewer(), "Margin"));
+            var row = Thickness(Setter(StyleOf("Views/GameMenu.xaml", "GameMenuButton"), "Margin"));
+            var panel = GameMenuItemsPanel();
+            var inset = Thickness((string)panel.Attribute("Margin"));
+
+            Assert.True(row[0] >= GlowRoom && row[2] >= GlowRoom, "room for the glow beside the ring");
+            Assert.Equal(-scroll[1], inset[1]);
+            Assert.Equal(-scroll[3], inset[3]);
+            Assert.True(inset[1] >= GlowRoom && inset[3] >= GlowRoom, "room for the glow above and below the end rows");
+            Assert.Contains(GameMenuScrollViewer().Descendants(), e => e.Name.LocalName == "ScrollContentPresenter");
+        }
+
+        [Fact]
+        public void A_long_game_menu_scrolls_by_whole_rows_inside_the_panel()
+        {
+            // The scroll area reaches past the panel, so a row cut by its end would show over the dimmed screen. Its list
+            // is as tall as whole rows, as many as fit in Playnite's 648 high middle of the screen under the title.
+            var list = StyleOf("Views/GameMenu.xaml", "GameMenuBorder").Elements().Single(e => e.Name.LocalName == "Style.Resources")
+                .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ItemsControlEx");
+
+            Assert.Equal("504", Setter(list, "MaxHeight"));
+        }
+
+        private static XElement GameMenuScrollViewer() =>
+            StyleOf("Views/GameMenu.xaml", "GameMenuBorder").Elements().Single(e => e.Name.LocalName == "Style.Resources")
+                .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ScrollViewer");
+
+        private static XElement GameMenuItemsPanel() =>
+            StyleOf("Views/GameMenu.xaml", "GameMenuBorder").Elements().Single(e => e.Name.LocalName == "Style.Resources")
+                .Elements().Single(e => e.Name.LocalName == "Style" && (string)e.Attribute("TargetType") == "ItemsControlEx")
+                .Descendants().Single(e => e.Name.LocalName == "StackPanel");
+
+        private static XElement GameMenuRowTemplate() =>
+            StyleOf("Views/GameMenu.xaml", "GameMenuButton").Descendants().Single(e => e.Name.LocalName == "ControlTemplate");
+
+        private static XElement GameMenuRowPart(string name) =>
+            GameMenuRowTemplate().Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
+
+        // A Thickness as left, top, right, bottom, from one, two or four values.
+        private static int[] Thickness(string value)
+        {
+            var parts = value.Split(',').Select(int.Parse).ToArray();
+            return parts.Length == 1 ? new[] { parts[0], parts[0], parts[0], parts[0] }
+                : parts.Length == 2 ? new[] { parts[0], parts[1], parts[0], parts[1] } : parts;
+        }
+
         [Fact]
         public void Every_Dashboard_file_defines_each_key_once()
         {
