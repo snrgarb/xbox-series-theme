@@ -16,10 +16,11 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Adapter: Windows' current media session, the one its media flyout shows, through the Global System Media
-    /// Transport Controls (Windows.Media.Control). It follows the session Windows names current, and what it plays,
-    /// from <see cref="Start"/> until <see cref="Dispose"/>, raising <see cref="Changed"/> on a thread of its own as any
-    /// of that changes. On Windows older than 10 1809, which hasn't the API, it does nothing and there is never a session.
+    /// Adapter: Windows' media sessions, every app's and the current one its media flyout shows, through the Global
+    /// System Media Transport Controls (Windows.Media.Control). It follows every session, which Windows names current,
+    /// and what each plays, from <see cref="Start"/> until <see cref="Dispose"/>, raising <see cref="Changed"/> on a
+    /// thread of its own as any of that changes. On Windows older than 10 1809, which hasn't the API, it does nothing and
+    /// there is never a session.
     /// </summary>
     internal sealed class WindowsMediaSessions : IMediaSessions, IDisposable
     {
@@ -33,7 +34,9 @@ namespace XboxSeries.Extension
 
         private volatile MediaSession current;
 
-        /// <summary>Raised, on a thread of its own, when <see cref="Current"/> has changed.</summary>
+        private volatile IReadOnlyList<MediaSession> sessions = new MediaSession[0];
+
+        /// <summary>Raised, on a thread of its own, when <see cref="Current"/> or <see cref="Sessions"/> has changed.</summary>
         public event Action Changed;
 
         /// <summary>
@@ -44,8 +47,7 @@ namespace XboxSeries.Extension
 
         public MediaSession Current => current;
 
-        // Stub (#75): every app's session, read and followed.
-        public IReadOnlyList<MediaSession> Sessions => current == null ? new MediaSession[0] : new[] { current };
+        public IReadOnlyList<MediaSession> Sessions => sessions;
 
         public void Send(MediaCommand command, string appId)
         {
@@ -65,7 +67,7 @@ namespace XboxSeries.Extension
         /// </summary>
         public void FetchArt(string appId, int request) => follower?.FetchArt(appId, request, (r, art) => ArtFetched?.Invoke(r, art));
 
-        /// <summary>Starts following Windows' current media session, where Windows has the API.</summary>
+        /// <summary>Starts following Windows' media sessions, where Windows has the API.</summary>
         public void Start()
         {
             if (!IsSupported())
@@ -105,12 +107,17 @@ namespace XboxSeries.Extension
             follower.Refresh("start");
         }
 
-        /// <summary>The session as just read: <see cref="Current"/>, and <see cref="Changed"/> raised if it differs.</summary>
-        private void Publish(MediaSession session)
+        /// <summary>
+        /// The sessions as just read: <see cref="Current"/> and <see cref="Sessions"/>, and <see cref="Changed"/> raised
+        /// if either differs. Called by one refresh at a time.
+        /// </summary>
+        private void Publish(MediaSession session, IReadOnlyList<MediaSession> all)
         {
             var last = current;
+            var lastAll = sessions;
             current = session;
-            if (!Same(last, session))
+            sessions = all;
+            if (!Same(last, session) || lastAll.Count != all.Count || lastAll.Where((s, i) => !Same(s, all[i])).Any())
             {
                 Changed?.Invoke();
             }
@@ -125,10 +132,11 @@ namespace XboxSeries.Extension
                     && a.HasArt == b.HasArt;
 
         /// <summary>
-        /// Follows Windows' current media session. Every refresh, whatever asked for it, runs alone and in turn, off the
-        /// UI thread: it picks the session Windows names current, moves the handlers onto it from the last, the last's
-        /// unsubscribed first, and reads it. A session whose app closes as it is read throws; that is logged, the session
-        /// dropped and the current one picked again.
+        /// Follows every one of Windows' media sessions. Every refresh, whatever asked for it, runs alone and in turn, off
+        /// the UI thread: it lists the sessions, lets go of those gone, subscribes to those new, and reads each, noting
+        /// the one Windows names current. A session whose app closes as it is read throws; that is logged and the session
+        /// left out, the sessions changing bringing another refresh. Should the list itself fail, every session is let go
+        /// and listed again.
         /// </summary>
         private sealed class Follower : IDisposable
         {
@@ -138,7 +146,7 @@ namespace XboxSeries.Extension
             /// </summary>
             private const int ArtWidth = 180;
 
-            private readonly Action<MediaSession> publish;
+            private readonly Action<MediaSession, IReadOnlyList<MediaSession>> publish;
 
             /// <summary>Lets one refresh run at a time, so the handlers are only ever moved by one.</summary>
             private readonly SemaphoreSlim turn = new SemaphoreSlim(1, 1);
@@ -155,22 +163,23 @@ namespace XboxSeries.Extension
             /// <summary>Windows' session manager, asked for once and kept; null until it has answered.</summary>
             private GlobalSystemMediaTransportControlsSessionManager manager;
 
-            /// <summary>The session whose handlers are subscribed; null for none.</summary>
-            private GlobalSystemMediaTransportControlsSession session;
-            private string sessionApp;
+            /// <summary>Every session whose handlers are subscribed, with its app's id, for the log.</summary>
+            private readonly Dictionary<GlobalSystemMediaTransportControlsSession, string> followed =
+                new Dictionary<GlobalSystemMediaTransportControlsSession, string>();
+
             private bool disposed;
 
-            public Follower(Action<MediaSession> publish)
+            public Follower(Action<MediaSession, IReadOnlyList<MediaSession>> publish)
             {
                 this.publish = publish;
                 onCurrentChanged = (_, __) => Refresh("the current media session changed");
                 onSessionsChanged = (_, __) => Refresh("media sessions came or went");
-                onMediaChanged = (_, __) => Refresh($"{sessionApp} changed what it plays");
-                onPlaybackChanged = (_, __) => Refresh($"{sessionApp} played, paused or stopped");
-                onTimelineChanged = (_, __) => Refresh($"{sessionApp} moved in its track");
+                onMediaChanged = (changed, __) => Refresh($"{AppOf(changed)} changed what it plays");
+                onPlaybackChanged = (changed, __) => Refresh($"{AppOf(changed)} played, paused or stopped");
+                onTimelineChanged = (changed, __) => Refresh($"{AppOf(changed)} moved in its track");
             }
 
-            /// <summary>Reads the current session again, in turn, off the calling thread. Never throws.</summary>
+            /// <summary>Reads the sessions again, in turn, off the calling thread. Never throws.</summary>
             public void Refresh(string why)
             {
                 logger.Info($"Now Playing: {why}");
@@ -187,10 +196,10 @@ namespace XboxSeries.Extension
                     }
 
                     disposed = true;
-                    Unfollow();
+                    UnfollowAll();
                     if (manager != null)
                     {
-                        Unsubscribe(() =>
+                        Unsubscribe("Windows' session manager", () =>
                         {
                             manager.CurrentSessionChanged -= onCurrentChanged;
                             manager.SessionsChanged -= onSessionsChanged;
@@ -216,13 +225,13 @@ namespace XboxSeries.Extension
                 }
                 catch (Exception e) when (!(e is OutOfMemoryException))
                 {
-                    logger.Error(e, "Now Playing couldn't read Windows' media session");
+                    logger.Error(e, "Now Playing couldn't read Windows' media sessions");
                 }
             }
 
             private async Task RefreshNow()
             {
-                // Twice at most: once more, from a fresh pick, if the session went as it was read.
+                // Twice at most: once more, every session listed afresh, if listing them failed.
                 for (var attempt = 0; attempt < 2; attempt++)
                 {
                     if (IsDisposed)
@@ -237,34 +246,74 @@ namespace XboxSeries.Extension
                             return;
                         }
 
-                        var next = manager?.GetCurrentSession();
-                        if (!Follow(next))
+                        var all = manager?.GetSessions()?.ToList() ?? new List<GlobalSystemMediaTransportControlsSession>();
+                        var currentSession = manager?.GetCurrentSession();
+                        if (!Follow(all))
                         {
                             return;
                         }
 
-                        var read = next == null ? null : await Read(next).ConfigureAwait(false);
+                        var reads = new List<MediaSession>();
+                        MediaSession currentRead = null;
+                        foreach (var each in all)
+                        {
+                            var read = await ReadOrSkip(each).ConfigureAwait(false);
+                            if (read == null)
+                            {
+                                continue;
+                            }
+
+                            reads.Add(read);
+                            if (ReferenceEquals(each, currentSession))
+                            {
+                                currentRead = read;
+                            }
+                        }
+
+                        // The current session as a separate wrapper of the same one: matched by its app.
+                        if (currentRead == null && currentSession != null)
+                        {
+                            var currentApp = AppOf(currentSession);
+                            currentRead = reads.FirstOrDefault(r => r.AppId == currentApp);
+                        }
+
                         if (!IsDisposed)
                         {
-                            publish(read);
+                            publish(currentRead, reads);
                         }
 
                         return;
                     }
                     catch (Exception e) when (!(e is OutOfMemoryException))
                     {
-                        // As an app closes mid-call: its session is gone, so it is dropped and the current one picked again.
-                        logger.Warn($"Now Playing: the media session of {sessionApp} went as it was read ({e.Message}); picking again");
+                        logger.Warn($"Now Playing: Windows' media sessions couldn't be listed ({e.Message}); listing them again");
                         lock (sync)
                         {
-                            Unfollow();
+                            UnfollowAll();
                         }
                     }
                 }
 
                 if (!IsDisposed)
                 {
-                    publish(null);
+                    publish(null, new MediaSession[0]);
+                }
+            }
+
+            /// <summary>
+            /// What <paramref name="session"/> plays now; null when its app closed as it was read, which is logged, the
+            /// sessions changing bringing another refresh.
+            /// </summary>
+            private async Task<MediaSession> ReadOrSkip(GlobalSystemMediaTransportControlsSession session)
+            {
+                try
+                {
+                    return await Read(session).ConfigureAwait(false);
+                }
+                catch (Exception e) when (!(e is OutOfMemoryException))
+                {
+                    logger.Warn($"Now Playing: the media session of {NameOf(session)} went as it was read ({e.Message}); leaving it out");
+                    return null;
                 }
             }
 
@@ -303,10 +352,10 @@ namespace XboxSeries.Extension
             }
 
             /// <summary>
-            /// Moves the session handlers onto <paramref name="next"/>, off the last session first, unless it is the
-            /// same one; false once disposed, when nothing is subscribed.
+            /// Moves the session handlers onto <paramref name="all"/>: those followed but no longer listed are let go,
+            /// and those listed but not yet followed subscribed to; false once disposed, when nothing is subscribed.
             /// </summary>
-            private bool Follow(GlobalSystemMediaTransportControlsSession next)
+            private bool Follow(IReadOnlyList<GlobalSystemMediaTransportControlsSession> all)
             {
                 lock (sync)
                 {
@@ -315,53 +364,59 @@ namespace XboxSeries.Extension
                         return false;
                     }
 
-                    if (ReferenceEquals(next, session))
+                    foreach (var gone in followed.Keys.Where(f => !all.Any(s => ReferenceEquals(s, f))).ToList())
                     {
-                        return true;
+                        Unfollow(gone);
                     }
 
-                    Unfollow();
-                    if (next == null)
+                    foreach (var next in all.Where(s => s != null && !followed.ContainsKey(s)))
+                    {
+                        // Followed before it is subscribed to, so that if its app closes midway, what was subscribed is let go.
+                        var app = NameOf(next);
+                        followed[next] = app;
+                        next.MediaPropertiesChanged += onMediaChanged;
+                        next.PlaybackInfoChanged += onPlaybackChanged;
+                        next.TimelinePropertiesChanged += onTimelineChanged;
+                        logger.Info($"Now Playing: following the media session of {app}");
+                    }
+
+                    if (followed.Count == 0)
                     {
                         logger.Info("Now Playing: no media session");
-                        return true;
                     }
 
-                    // Followed before it is subscribed to, so that if its app closes midway, what was subscribed is let go.
-                    session = next;
-                    sessionApp = next.SourceAppUserModelId;
-                    var app = sessionApp;
-                    next.MediaPropertiesChanged += onMediaChanged;
-                    next.PlaybackInfoChanged += onPlaybackChanged;
-                    next.TimelinePropertiesChanged += onTimelineChanged;
-                    logger.Info($"Now Playing: following the media session of {app}");
                     return true;
                 }
             }
 
-            /// <summary>Unsubscribes from the session followed, if any. Called holding <see cref="sync"/>.</summary>
-            private void Unfollow()
+            /// <summary>Unsubscribes from <paramref name="last"/>, a session followed. Called holding <see cref="sync"/>.</summary>
+            private void Unfollow(GlobalSystemMediaTransportControlsSession last)
             {
-                var last = session;
-                session = null;
-                if (last == null)
-                {
-                    return;
-                }
-
-                Unsubscribe(() =>
+                var app = followed[last];
+                followed.Remove(last);
+                Unsubscribe(app, () =>
                 {
                     last.MediaPropertiesChanged -= onMediaChanged;
                     last.PlaybackInfoChanged -= onPlaybackChanged;
                     last.TimelinePropertiesChanged -= onTimelineChanged;
                 });
+                logger.Info($"Now Playing: no longer following the media session of {app}");
+            }
+
+            /// <summary>Unsubscribes from every session followed. Called holding <see cref="sync"/>.</summary>
+            private void UnfollowAll()
+            {
+                foreach (var last in followed.Keys.ToList())
+                {
+                    Unfollow(last);
+                }
             }
 
             /// <summary>
             /// Unsubscribes, a session or the manager whose app has already gone included: Windows has dropped the
             /// handlers with it, so a failure here is no error.
             /// </summary>
-            private void Unsubscribe(Action unsubscribe)
+            private void Unsubscribe(string app, Action unsubscribe)
             {
                 try
                 {
@@ -369,7 +424,34 @@ namespace XboxSeries.Extension
                 }
                 catch (Exception e) when (!(e is OutOfMemoryException))
                 {
-                    logger.Info($"Now Playing: {sessionApp} had gone as its media session was let go ({e.Message})");
+                    logger.Info($"Now Playing: {app} had gone as its media session was let go ({e.Message})");
+                }
+            }
+
+            /// <summary>The app id of a session followed, for the log, as noted when it was followed; else read from it.</summary>
+            private string AppOf(GlobalSystemMediaTransportControlsSession changed)
+            {
+                lock (sync)
+                {
+                    if (changed != null && followed.TryGetValue(changed, out var app))
+                    {
+                        return app;
+                    }
+                }
+
+                return NameOf(changed);
+            }
+
+            /// <summary>The session's app id, or "an app" when its app has gone and it can't be asked.</summary>
+            private static string NameOf(GlobalSystemMediaTransportControlsSession session)
+            {
+                try
+                {
+                    return session?.SourceAppUserModelId ?? "an app";
+                }
+                catch (Exception e) when (!(e is OutOfMemoryException))
+                {
+                    return "an app";
                 }
             }
 
