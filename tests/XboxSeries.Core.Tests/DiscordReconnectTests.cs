@@ -45,7 +45,7 @@ namespace XboxSeries.Core.Tests
             Assert.Empty(sounds.Played);
 
             Tap(ControllerButton.RightShoulder);
-            Assert.Equal(GuideTabKind.NowPlaying, Guide.Tab);
+            Assert.Equal(GuideTabKind.ProfileAndSystem, Guide.Tab);
             Tap(ControllerButton.LeftShoulder);
             Tap(ControllerButton.LeftShoulder);
             Assert.Equal(GuideTabKind.Landing, Guide.Tab);
@@ -129,7 +129,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnDiscordClosed();
 
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.Discord, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.Discord, Guide.Tab);
             var line = Assert.Single(Guide.Items);
             Assert.Equal((GuideItemKind.DiscordUnavailable, "Discord isn't running"), (line.Kind, line.Title));
@@ -382,7 +382,7 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromMinutes(10));
 
             Assert.Equal(1, transport.OpenCount);
-            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.NowPlaying, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
+            Assert.Equal(new[] { GuideTabKind.Landing, GuideTabKind.ProfileAndSystem }, Guide.Tabs.Select(t => t.Kind));
             Assert.Equal(GuideTabKind.Landing, Guide.Tab);
             Assert.Equal("Not connected", Discord.StatusText);
         }

@@ -192,8 +192,6 @@ namespace XboxSeries.Core
         /// <summary>The Discord tab, in the console's Parties &amp; chats slot: only there while Discord is connected.</summary>
         Discord,
 
-        /// <summary>Now Playing: the media Windows' flyout shows. Always there.</summary>
-        NowPlaying,
         ProfileAndSystem,
     }
 
@@ -334,13 +332,16 @@ namespace XboxSeries.Core
         DiscordVoiceChannel,
 
         /// <summary>
-        /// The Now Playing tab's card for Windows' current media session: the track as its title, the artist as its
-        /// <see cref="GuideItem.Detail"/>, its <see cref="GuideItem.Art"/>, the <see cref="GuideItem.App"/> playing it and
-        /// whether it <see cref="GuideItem.IsPlaying"/>. A does nothing on it.
+        /// The Audio flyout's Now Playing card for Windows' current media session, last, under the mute switches after a
+        /// divider: the track as its title, the artist as its <see cref="GuideItem.Detail"/>, its <see cref="GuideItem.Art"/>,
+        /// the <see cref="GuideItem.App"/> playing it and whether it <see cref="GuideItem.IsPlaying"/>. A does nothing on it.
         /// </summary>
         NowPlaying,
 
-        /// <summary>The Now Playing tab's only line with no media session: "Nothing's playing". A does nothing on it.</summary>
+        /// <summary>
+        /// The Audio flyout's Now Playing entry with no media session, in the card's place: "No music app is running". A
+        /// does nothing on it.
+        /// </summary>
         NothingPlaying,
     }
 

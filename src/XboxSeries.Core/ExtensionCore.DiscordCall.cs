@@ -357,7 +357,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The Audio flyout: the Output and Input dropdowns, Windows' volume and mute, then, in a call, the user's Discord
-        /// mute and deafen.
+        /// mute and deafen, and last, under the mute switches after a divider, the Now Playing entry.
         /// </summary>
         private IReadOnlyList<GuideItem> AudioItems()
         {
@@ -370,6 +370,7 @@ namespace XboxSeries.Core
                 items.Add(new GuideItem(GuideItemKind.DiscordDeafen, "Deafen in Discord") { IsOn = discordSelfDeaf });
             }
 
+            items.Add(NowPlayingItem());
             return items;
         }
 

@@ -143,7 +143,7 @@ The **Discord tab**'s last entry, a **Flyout** of the user's Discord servers, th
 _Avoid_: guilds (Discord's API name), browse
 
 **Now Playing**:
-The Guide tab, after the **Discord tab** and before Profile & system, showing and controlling the media Windows' flyout shows: the track's title and artist, its album art, the app playing it, by the name people know it by, and whether it plays or is paused, following Windows' current media session live. It is always there; with no media playing it says "Nothing's playing".
+The last entry of the Guide's Audio **Flyout**, under the mute switches after a divider, showing the media Windows' flyout shows: the track's title and artist, its album art, the app playing it, by the name people know it by, and whether it plays or is paused, following Windows' current media session live while the flyout shows. It is always there; with no media playing it says "No music app is running". A on it does nothing. There is no Now Playing tab.
 _Avoid_: media player, music
 
 **Guide button**:

@@ -41,7 +41,7 @@ namespace XboxSeries.Extension
         {
             if (!IsSupported())
             {
-                logger.Info("Windows has no media sessions to follow (it needs Windows 10 1809); Now Playing says nothing's playing");
+                logger.Info("Windows has no media sessions to follow (it needs Windows 10 1809); Now Playing says no music app is running");
                 return;
             }
 

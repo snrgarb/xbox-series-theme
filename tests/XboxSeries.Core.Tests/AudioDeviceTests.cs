@@ -33,7 +33,7 @@ namespace XboxSeries.Core.Tests
 
             OpenAudio();
 
-            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, Flyout.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.NothingPlaying }, Flyout.Select(i => i.Kind));
             Assert.Equal(new[] { "Output", "Input" }, Flyout.Take(2).Select(i => i.Title));
             Assert.Equal("Headphones", Output.Selection);
             Assert.Equal("Microphone", Input.Selection);

@@ -201,8 +201,8 @@ namespace XboxSeries.Extension
             controller.Changed += () => OnUiThread(core.OnControllersChanged);
             audio.DevicesChanged += () => OnUiThread(core.OnAudioDevicesChanged);
 
-            // Windows' media sessions, for Now Playing, followed from here: what the flyout shows is ready before the
-            // Guide first opens. Their changes arrive on threads of their own.
+            // Windows' media sessions, for the Audio flyout's Now Playing, followed from here: what it shows is ready
+            // before the Guide first opens. Their changes arrive on threads of their own.
             mediaSessions.Changed += () => OnUiThread(core.OnMediaSessionChanged);
             StartupTiming.Time("Starting the media sessions", mediaSessions.Start);
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);

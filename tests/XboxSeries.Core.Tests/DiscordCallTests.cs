@@ -457,7 +457,7 @@ namespace XboxSeries.Core.Tests
 
             OpenAudio();
 
-            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, core.Guide.Flyout.Items.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.NothingPlaying }, core.Guide.Flyout.Items.Select(i => i.Kind));
         }
 
         [Fact]
@@ -469,9 +469,9 @@ namespace XboxSeries.Core.Tests
 
             var items = core.Guide.Flyout.Items;
             Assert.Equal(
-                new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.DiscordMute, GuideItemKind.DiscordDeafen },
+                new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.DiscordMute, GuideItemKind.DiscordDeafen, GuideItemKind.NothingPlaying },
                 items.Select(i => i.Kind));
-            Assert.Equal(new[] { false, true }, items.Skip(4).Select(i => i.IsOn));
+            Assert.Equal(new[] { false, true }, items.Skip(4).Take(2).Select(i => i.IsOn));
 
             FocusOn(GuideItemKind.DiscordMute);
             Tap(ControllerButton.A);
@@ -495,7 +495,7 @@ namespace XboxSeries.Core.Tests
             Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = "500" });
             Reply("GET_CHANNEL", Channel("500", "Late night", 2, State(Me, "gabe")));
 
-            Assert.Equal(6, core.Guide.Flyout.Items.Count);
+            Assert.Equal(7, core.Guide.Flyout.Items.Count);
             Assert.Equal(GuideItemKind.Audio, core.Guide.Flyout.Kind);
             Assert.Equal(GuideItemKind.Mute, core.Guide.FocusedItem.Kind);
             Assert.Contains(core.Guide.FocusedItem, core.Guide.Flyout.Items);
@@ -510,7 +510,7 @@ namespace XboxSeries.Core.Tests
 
             Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null });
 
-            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute }, core.Guide.Flyout.Items.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.AudioOutput, GuideItemKind.AudioInput, GuideItemKind.Volume, GuideItemKind.Mute, GuideItemKind.NothingPlaying }, core.Guide.Flyout.Items.Select(i => i.Kind));
             Assert.Equal(GuideItemKind.Mute, core.Guide.FocusedItem.Kind);
         }
 
@@ -545,7 +545,7 @@ namespace XboxSeries.Core.Tests
             Dispatch("VOICE_CHANNEL_SELECT", new JObject { ["channel_id"] = null });
 
             var output = core.Guide.Flyout.Items[0];
-            Assert.Equal(4, core.Guide.Flyout.Items.Count);
+            Assert.Equal(5, core.Guide.Flyout.Items.Count);
             Assert.False(output.IsExpanded);
             Assert.Same(output, core.Guide.FocusedItem);
 
