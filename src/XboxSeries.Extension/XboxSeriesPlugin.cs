@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 using System.Reflection;
+using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using Playnite.SDK;
@@ -28,7 +30,20 @@ namespace XboxSeries.Extension
         private bool libraryPushed;
         private ToastWindow toastWindow;
         private LaunchScreenWindow launchScreenWindow;
-        private StartupWindow startupWindow;
+
+        /// <summary>Whether Fullscreen's Start-up sequence has begun, which it does once.</summary>
+        private bool startupBegun;
+
+        /// <summary>The Start-up sequence running on its own thread, until its window has faded out; null otherwise.</summary>
+        private StartupThread startup;
+
+        // Home's build, for the Start-up timing: how many elements, when the first and last were asked for, and the time
+        // spent making ours and pushing the library, in stopwatch ticks.
+        private int homeElements;
+        private long firstHomeElementAt;
+        private long lastHomeElementAt;
+        private long homeElementTicks;
+        private long homePushTicks;
 #if DEBUG
         private DebugGuideHotkey debugGuideHotkey;
         private SteamDownloads steamDownloads;
@@ -55,6 +70,7 @@ namespace XboxSeries.Extension
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions);
+            core.StartupEnded += () => startup?.End();
 
             // Home's elements, its top bar's status area, My games & apps, Settings, the Game hub's Install, Search, text entry and the hint bar, placed by
             // the Dashboard as ContentControls named XboxSeries_<element>.
@@ -71,15 +87,30 @@ namespace XboxSeries.Extension
             // window made, seconds before OnApplicationStarted: the Start-up sequence covers the screen from here, so
             // Home is never seen before it.
             BeginStartup();
+            lastHomeElementAt = StartupTiming.Now;
+            if (homeElements++ == 0)
+            {
+                firstHomeElementAt = lastHomeElementAt;
+                StartupTiming.Log($"Home's first element, {args.Name},");
+            }
 
             // Playnite builds Home before it raises OnApplicationStarted, and can take seconds between the two. The
             // database is already loaded by then, so Home's elements start from it rather than showing empty until then.
             if (!libraryPushed && PlayniteApi.Database.IsOpen)
             {
-                PushLibrary();
+                StartupTiming.Sum(ref homePushTicks, () =>
+                {
+                    PushLibrary();
+                    return true;
+                });
             }
 
-            switch (args.Name)
+            return StartupTiming.Sum(ref homeElementTicks, () => MakeElement(args.Name));
+        }
+
+        private Control MakeElement(string name)
+        {
+            switch (name)
             {
                 case "Hero": return new HeroControl(core.Home);
                 case "RecentRow": return new RecentRowControl(core, homeScreen);
@@ -101,15 +132,29 @@ namespace XboxSeries.Extension
             }
         }
 
+        /// <summary>Home's build so far, for the Start-up timing.</summary>
+        private void LogHomeBuild(string when)
+        {
+            StartupTiming.Log($"Home's build, {when}: {homeElements} elements, the first at {firstHomeElementAt} ms and the last at "
+                + $"{lastHomeElementAt} ms, {StartupTiming.Ms(homeElementTicks)} ms making ours and "
+                + $"{StartupTiming.Ms(homePushTicks)} ms pushing the library; now");
+        }
+
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
+            var started = System.Diagnostics.Stopwatch.StartNew();
+            StartupTiming.Log("Our OnApplicationStarted began");
+            LogHomeBuild("as OnApplicationStarted began");
+
             // Created here, on the UI thread, which owns the Overlay and runs the core. The Toast's may be already, for
             // the Start-up sequence's greeting.
-            var overlay = new OverlayWindow(core);
+            OverlayWindow overlay = null;
+            StartupTiming.Time("Making the Overlay", () => overlay = new OverlayWindow(core));
             windows.Overlay = overlay;
 
             // Made and laid out once the UI thread is idle, so the Guide's first open is as quick as the rest.
-            PlayniteApi.MainView.UIDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(overlay.Prewarm));
+            PlayniteApi.MainView.UIDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+                StartupTiming.Time("Prewarming the Overlay", overlay.Prewarm)));
             toastWindow = toastWindow ?? new ToastWindow(core.Toast);
 
             // Beneath the Toast's and the Overlay, which it keeps above it as it shows, so Toasts and the Guide show over it.
@@ -124,8 +169,10 @@ namespace XboxSeries.Extension
             {
                 host.RestoreLeftUserFilter();
 
-                // Begun with Home's first element, unless the theme has none of them.
+                // Begun with Home's first element, unless the theme has none of them; Playnite's window may have had
+                // no handle yet when it began.
                 BeginStartup();
+                startup?.SetPlayniteWindow(PlayniteWindow());
                 SystemEvents.PowerModeChanged += OnPowerModeChanged;
             }
             else
@@ -134,7 +181,7 @@ namespace XboxSeries.Extension
                 sounds.Play(UiSound.Login);
             }
 
-            PushLibrary();
+            StartupTiming.Time("Pushing the library", PushLibrary);
             GameHubFocusSounds.Register(sounds);
 
             // Database events can arrive on background threads; the core only runs on the UI thread.
@@ -157,7 +204,7 @@ namespace XboxSeries.Extension
             // Windows' media sessions, for Now Playing, followed from here: what the flyout shows is ready before the
             // Guide first opens. Their changes arrive on threads of their own.
             mediaSessions.Changed += () => OnUiThread(core.OnMediaSessionChanged);
-            mediaSessions.Start();
+            StartupTiming.Time("Starting the media sessions", mediaSessions.Start);
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
             // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with
@@ -165,8 +212,9 @@ namespace XboxSeries.Extension
             discordPipe.FrameReceived += (opcode, json) => OnUiThread(() => core.OnDiscordFrame(opcode, json));
             discordPipe.Closed += () => OnUiThread(core.OnDiscordClosed);
             discordOAuth.TokenResponded += (status, body) => OnUiThread(() => core.OnDiscordTokenResponse(status, body));
-            core.OnApplicationStarted();
+            StartupTiming.Time("Signing in to Discord with the saved tokens", core.OnApplicationStarted);
             logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
+            StartupTiming.Log($"Our OnApplicationStarted took {started.ElapsedMilliseconds} ms, ending");
         }
 
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
@@ -178,7 +226,13 @@ namespace XboxSeries.Extension
             windows.Overlay?.Close();
             toastWindow?.Close();
             launchScreenWindow?.Close();
-            startupWindow?.Shutdown();
+            if (startup != null)
+            {
+                startup.Shutdown();
+                startup = null;
+                sounds.SilenceThemeSounds(false);
+            }
+
             discordPipe.Close();
             audio.Dispose();
             mediaSessions.Dispose();
@@ -237,36 +291,104 @@ namespace XboxSeries.Extension
             if (button == ControllerButton.Guide)
             {
                 logger.Info($"Guide button {state} at {at:HH:mm:ss.fff}");
+
+                // The Start-up sequence reads the pad itself, but Windows.Gaming.Input never sees the Guide button. The
+                // core, which it reaches too, swallows it meanwhile.
+                startup?.Press(button.Value, state);
             }
 
             OnUiThread(() => core.OnControllerButton(button.Value, state, at));
         }
 
         /// <summary>
-        /// The Start-up sequence, once, in Fullscreen only: its window, and the Toast's for its greeting, made before the
-        /// core begins it, so they show its first phase.
+        /// The Start-up sequence, once, in Fullscreen only, on a thread of its own; the Toast's window, for its greeting,
+        /// made here on the UI thread.
         /// </summary>
         private void BeginStartup()
         {
-            if (startupWindow != null || PlayniteApi.ApplicationInfo.Mode != ApplicationMode.Fullscreen)
+            if (startupBegun || PlayniteApi.ApplicationInfo.Mode != ApplicationMode.Fullscreen)
             {
                 return;
             }
 
-            startupWindow = new StartupWindow(core, sounds.SilenceThemeSounds);
+            startupBegun = true;
+            StartupTiming.Begin("Start-up shown");
+
+            // When the UI thread first has nothing left to do: the end of the freeze Start-up used to share.
+            PlayniteApi.MainView.UIDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
+            {
+                StartupTiming.Log("The UI thread's first idle after Start-up showed");
+                LogHomeBuild("at the UI thread's first idle");
+            }));
             toastWindow = toastWindow ?? new ToastWindow(core.Toast);
-            core.OnStartup();
-            startupWindow.Follow();
+            ShowStartup(core.OnStartup());
         }
 
-        /// <summary>Windows woke from sleep: Who's playing today? again. Raised on a thread of its own.</summary>
+        /// <summary>Windows woke from sleep: Who's playing today? again, if it asks. Raised on a thread of its own.</summary>
         private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
             if (e.Mode == PowerModes.Resume)
             {
-                OnUiThread(() => core.OnResumedFromSleep());
+                OnUiThread(() =>
+                {
+                    var plan = core.OnResumedFromSleep();
+                    if (plan != null)
+                    {
+                        StartupTiming.Begin("Start-up shown on waking from sleep");
+                        ShowStartup(plan);
+                    }
+                });
             }
         }
+
+        /// <summary>
+        /// A Start-up sequence on a thread of its own, from the core's plan; none for no plan. Playnite's own navigation
+        /// and activation sounds are silenced first, here on the UI thread, before Home takes its first focus behind it,
+        /// and come back once its window has faded out. A sequence still fading out as another begins, as on waking just
+        /// after one, finishes without bringing them back.
+        /// </summary>
+        private void ShowStartup(StartupPlan plan)
+        {
+            if (plan == null)
+            {
+                return;
+            }
+
+            sounds.SilenceThemeSounds(true);
+            StartupThread shown = null;
+            shown = new StartupThread(
+                plan,
+                PlayniteApi.MainView.UIDispatcher,
+                controller,
+                sounds,
+                PlayniteWindow(),
+                () => core.IsStartupShown,
+                core.OnStartupSignedIn,
+                () =>
+                {
+                    if (startup == shown)
+                    {
+                        startup = null;
+                        sounds.SilenceThemeSounds(false);
+                    }
+                });
+            startup = shown;
+            if (PlayniteWindow() == IntPtr.Zero && Application.Current?.MainWindow is Window main && !IsOurs(main))
+            {
+                // Made but without a handle yet: handed over as soon as it has one.
+                main.SourceInitialized += (_, __) => shown.SetPlayniteWindow(new WindowInteropHelper(main).Handle);
+            }
+        }
+
+        /// <summary>Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one. On the UI thread.</summary>
+        private static IntPtr PlayniteWindow()
+        {
+            var main = Application.Current?.MainWindow;
+            return main == null || IsOurs(main) ? IntPtr.Zero : new WindowInteropHelper(main).Handle;
+        }
+
+        /// <summary>One of the extension's own windows, as the Toast's, which WPF makes its main window when it is the first made.</summary>
+        private static bool IsOurs(Window window) => window.GetType().Assembly == typeof(XboxSeriesPlugin).Assembly;
 
         private void OnUiThread(Action action)
         {
