@@ -59,12 +59,13 @@ namespace XboxSeries.Core.Tests
 
         // Measured on the console's My games capture (L1-games.png, 720 tall), times 1.5 for the 1080-tall page.
         [Fact]
-        public void The_bar_is_the_consoles_opaque_near_black_rectangle_with_small_rounded_corners()
+        public void The_bar_is_the_consoles_near_black_rectangle_slightly_see_through_with_small_rounded_corners()
         {
             var bar = Bar();
             var background = (string)bar.Attribute("Background");
 
-            Assert.Matches("^#FF[0-9A-F]{6}$", background);
+            // 85% opaque, so a little of the page shows through, as through Home's title bands.
+            Assert.Matches("^#D9[0-9A-F]{6}$", background);
             Assert.All(new[] { 3, 5, 7 }, i => Assert.True(int.Parse(background.Substring(i, 2), NumberStyles.HexNumber) < 0x10));
             Assert.Equal("6", (string)bar.Attribute("CornerRadius"));
             Assert.Equal("63", (string)bar.Attribute("Height"));

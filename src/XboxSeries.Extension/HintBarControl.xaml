@@ -4,8 +4,9 @@
              xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
              Focusable="False" IsHitTestVisible="False">
     <!--
-        The hint bar, placed by the Dashboard over the whole page, the Game hub included: an opaque near-black rectangle
-        with small rounded corners in the bottom-right corner, as the console's, holding the core's hints left to right
+        The hint bar, placed by the Dashboard over the whole page, the Game hub included: a near-black rectangle, 85%
+        opaque so a little of the page shows through, with small rounded corners in the bottom-right corner, as the
+        console's, holding the core's hints left to right
         (HomeState.Hints), each a pad button's glyph in a ring and what it does: More options, Menu's three lines in a
         white ring, while what has focus has a menu. Sized from the console's My games capture (L1-games, 720 tall) times
         1.5 for the 1080-tall page: 63 tall, 60 in from the right and 52 up from the bottom, 36 rings and 25 labels.
@@ -15,7 +16,7 @@
     -->
     <Border x:Name="Bar" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,60,52"
             Height="63" Padding="16,0,20,0" CornerRadius="6"
-            Background="#FF030303" Visibility="Hidden">
+            Background="#D9030303" Visibility="Hidden">
         <!-- Each hint stands 26 from the one before it; the first's gap is taken back. -->
         <ItemsControl x:Name="Hints" Focusable="False" VerticalAlignment="Center" Margin="-26,0,0,0">
             <ItemsControl.ItemsPanel>
