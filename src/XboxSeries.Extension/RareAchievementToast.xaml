@@ -1,0 +1,250 @@
+<UserControl x:Class="XboxSeries.Extension.RareAchievementToast"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:XboxSeries.Extension"
+             Width="778" Height="128" Focusable="False" IsTabStop="False" IsHitTestVisible="False">
+    <!--
+        A rare achievement's Toast, as the console's (Xbox One's circle-and-pill Toast, still the rare one's on Series): a
+        blue pill 778 by 128, fully rounded, with a brighter circle flush at its left holding a spinning diamond. It comes in
+        as a circle alone at the pill's centre, popping in with the white Xbox logo, which turns to the diamond flying out
+        from inside the gem; then the pill unfurls from behind the circle, which rides its left end out, and its text fades
+        in. It pages: the header, "Rare achievement unlocked - 1%", over the Score badge, the Score and the achievement's
+        name; pushed up for the achievement's description, on at most two lines (skipped without one); then cut to "Press
+        (Guide) to view", centred, as the Guide button opens the Guide at Profile & system. A band of light sweeps across
+        the pill once on each of the first two pages. It goes as the pill collapses back into the circle, which turns dark
+        with the logo, rings bright, and shrinks to a dot. The timeline is in RareAchievementToast.xaml.cs; everything moves
+        by transforms and opacity alone, and the diamond is drawn here, in vectors (CrownFacets and PavilionFacets).
+        Its DataContext is the ToastState; it ignores the Toast's image, as the console shows the diamond whatever the
+        achievement's icon.
+    -->
+    <UserControl.Resources>
+        <!--
+            One of the eight slices of the diamond's crown, from an edge of its table (23 either side of its middle, at the
+            top) down to the girdle (40 either side, 26 below): the star facet hanging from the table edge and a bezel
+            either side, in the gem's whites, greys and pale blues, with a white glint over each (Tag "Glint <angle>": it
+            flashes as the slice turns past that angle from facing us) and a shade over the slice (Tag "Shade"), darkening
+            it as it turns away. The code lays five of these side by side around the gem and turns them (squashing,
+            skewing and moving each to where the slice would be seen), so the diamond spins without a picture.
+        -->
+        <DataTemplate x:Key="CrownFacets">
+            <Canvas>
+                <Path Data="M -23,0 L 0,13 L 0,26 L -40,26 Z" Fill="#CBD9E6" />
+                <Path Data="M 23,0 L 40,26 L 0,26 L 0,13 Z" Fill="#9FBAD3" />
+                <Path Data="M -23,0 L 23,0 L 0,13 Z" Fill="#7FAEDB" />
+                <Path Data="M -23,0 L 0,13 L 0,26 L -40,26 Z" Fill="White" Tag="Glint -30" />
+                <Path Data="M 23,0 L 40,26 L 0,26 L 0,13 Z" Fill="White" Tag="Glint 35" />
+                <Path Data="M -23,0 L 23,0 L 0,13 Z" Fill="White" Tag="Glint 5" />
+                <Path Data="M -23,0 L 23,0 L 40,26 L -40,26 Z" Fill="#123F66" Tag="Shade" />
+                <Path Data="M -23,0 L 0,13 L 23,0 M 0,13 L 0,26" Stroke="#B3FFFFFF" StrokeThickness="0.7" />
+            </Canvas>
+        </DataTemplate>
+
+        <!--
+            The matching slice of the pavilion, from the girdle (40 either side) down to the culet (53 below): a lower
+            girdle facet either side of its middle and the main facet between them reaching to the point, the main one the
+            deeper blue the gem shows through its middle; with glints and a shade as the crown's.
+        -->
+        <DataTemplate x:Key="PavilionFacets">
+            <Canvas>
+                <Path Data="M -40,0 L 0,0 L 0,24 Z" Fill="#E2EAF2" />
+                <Path Data="M 0,0 L 40,0 L 0,24 Z" Fill="#B4C8DA" />
+                <Path Data="M -40,0 L 0,24 L 40,0 L 0,53 Z" Fill="#4F8AC2" />
+                <Path Data="M -40,0 L 0,0 L 0,24 Z" Fill="White" Tag="Glint -20" />
+                <Path Data="M 0,0 L 40,0 L 0,24 Z" Fill="White" Tag="Glint 25" />
+                <Path Data="M -40,0 L 0,24 L 40,0 L 0,53 Z" Fill="White" Tag="Glint -5" />
+                <Path Data="M -40,0 L 40,0 L 0,53 Z" Fill="#123F66" Tag="Shade" />
+                <Path Data="M -40,0 L 0,24 L 40,0 M 0,0 L 0,24" Stroke="#B3FFFFFF" StrokeThickness="0.7" />
+            </Canvas>
+        </DataTemplate>
+
+        <!-- The body text, as the console's: Segoe UI at about 28.5 (a cap height of 20), on lines 45 apart. -->
+        <Style x:Key="RareText" TargetType="TextBlock">
+            <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid x:Name="Pill" Width="778" Height="128">
+        <!--
+            The pill: two round ends and the span between them, all the pill's blue. It unfurls from the circle at its
+            centre by moving its ends out as the span widens, so the ends stay round; it is hidden while the circle shows
+            alone.
+        -->
+        <Grid x:Name="Body" Opacity="0">
+            <Rectangle x:Name="Span" Margin="64,0" Fill="#0F4E7E" RenderTransformOrigin="0.5,0.5">
+                <Rectangle.RenderTransform>
+                    <ScaleTransform x:Name="SpanWidth" ScaleX="0" />
+                </Rectangle.RenderTransform>
+            </Rectangle>
+            <Ellipse x:Name="LeftEnd" Width="128" Height="128" HorizontalAlignment="Left" Fill="#0F4E7E">
+                <Ellipse.RenderTransform>
+                    <TranslateTransform x:Name="LeftEndShift" X="325" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse x:Name="RightEnd" Width="128" Height="128" HorizontalAlignment="Right" Fill="#0F4E7E">
+                <Ellipse.RenderTransform>
+                    <TranslateTransform x:Name="RightEndShift" X="-325" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+        </Grid>
+
+        <!--
+            The shine: a soft band of white at 20% at its brightest, leaning "/" as the console's, swept left to right
+            across the pill, clipped to it, under the text and the circle.
+        -->
+        <Grid>
+            <Grid.Clip>
+                <RectangleGeometry Rect="0,0,778,128" RadiusX="64" RadiusY="64" />
+            </Grid.Clip>
+            <Rectangle x:Name="Shine" Width="560" HorizontalAlignment="Left" Opacity="0">
+                <Rectangle.Fill>
+                    <LinearGradientBrush MappingMode="Absolute" StartPoint="93,-34" EndPoint="467,162">
+                        <GradientStop Offset="0" Color="#00FFFFFF" />
+                        <GradientStop Offset="0.2" Color="#06FFFFFF" />
+                        <GradientStop Offset="0.35" Color="#1AFFFFFF" />
+                        <GradientStop Offset="0.5" Color="#33FFFFFF" />
+                        <GradientStop Offset="0.65" Color="#1AFFFFFF" />
+                        <GradientStop Offset="0.8" Color="#06FFFFFF" />
+                        <GradientStop Offset="1" Color="#00FFFFFF" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+                <Rectangle.RenderTransform>
+                    <TranslateTransform x:Name="ShineShift" X="-95" />
+                </Rectangle.RenderTransform>
+            </Rectangle>
+        </Grid>
+
+        <!--
+            The text, in a column from 26 past the circle to the pill's radius short of its right end, clipped to the
+            pill's height so a page pushed up leaves at its top and the next comes in from its bottom. It fades in as the
+            pill unfurls, drifting a little left into place.
+        -->
+        <Grid x:Name="Pages" Margin="153,4,62,4" ClipToBounds="True" Opacity="0">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="PagesDrift" X="4" />
+            </Grid.RenderTransform>
+
+            <!-- Page 1: the header, then the Score badge, the Score and the name. -->
+            <StackPanel x:Name="Page1" VerticalAlignment="Center" Margin="0,0,0,2">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform x:Name="Page1Shift" />
+                </StackPanel.RenderTransform>
+                <TextBlock x:Name="Header" Style="{StaticResource RareText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
+                           FontSize="28.5" Foreground="White" TextTrimming="CharacterEllipsis"><Run Text="{Binding Text, Mode=OneWay}" /><Run Text="{Binding Rarity, Mode=OneWay, StringFormat='{} - {0:0.#}%', TargetNullValue=''}" /></TextBlock>
+                <DockPanel x:Name="ScoreLine" Height="45">
+                    <!-- The Score badge: a white disc with the "G" cut in, in the pill's blue; gone without a Score. -->
+                    <Grid x:Name="Badge" DockPanel.Dock="Left" Width="33.5" Height="33.5" Margin="0,1,11,0" VerticalAlignment="Center">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Score}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Ellipse Fill="#FCFFFF" />
+                        <TextBlock Text="G" FontFamily="{DynamicResource XboxFontSemibold}" FontSize="22" Foreground="#0F4E7E"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1" />
+                    </Grid>
+                    <TextBlock x:Name="Score" DockPanel.Dock="Left" Text="{Binding Score, StringFormat={}{0} -}"
+                               LineHeight="45" FontFamily="{DynamicResource XboxFont}" FontSize="28.5" Foreground="White" Margin="0,0,9,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource RareText}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Score}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock x:Name="AchievementName" Text="{Binding Detail}" Style="{StaticResource RareText}" LineHeight="45"
+                               FontFamily="{DynamicResource XboxFont}" FontSize="28.5" Foreground="White" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+            </StackPanel>
+
+            <!-- Page 2: the achievement's description, on at most two lines. It waits below, unseen, until pushed in. -->
+            <TextBlock x:Name="Description" Text="{Binding Description}" Style="{StaticResource RareText}" LineHeight="45" MaxHeight="90"
+                       FontFamily="{DynamicResource XboxFont}" FontSize="28.5" Foreground="White"
+                       TextWrapping="Wrap" TextTrimming="WordEllipsis" Opacity="0" Margin="0,0,0,2">
+                <TextBlock.RenderTransform>
+                    <TranslateTransform x:Name="Page2Shift" Y="58" />
+                </TextBlock.RenderTransform>
+            </TextBlock>
+
+            <!-- Page 3: the prompt, alone and centred. -->
+            <StackPanel x:Name="Prompt" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0">
+                <TextBlock Text="Press" Style="{StaticResource RareText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
+                           FontSize="28.5" Foreground="White" />
+                <!-- The Guide button. -->
+                <Path Data="{DynamicResource SourceXbox}" Fill="White" Width="34" Height="34" Stretch="Uniform" Margin="16,2,22,0"
+                      VerticalAlignment="Center" />
+                <TextBlock Text="to view" Style="{StaticResource RareText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
+                           FontSize="28.5" Foreground="White" />
+            </StackPanel>
+        </Grid>
+
+        <!--
+            The circle, a pixel inside the pill's left end and riding it, starting at the pill's centre. From the bottom:
+            the dark halo, the bright ring and the dark disc the going shows; the bright circle; the Xbox logo; and the gem,
+            clipped first to a disc inside the circle and then to the circle as the diamond flies out.
+        -->
+        <Grid x:Name="Circle" Width="126" Height="126" HorizontalAlignment="Left" Margin="1,0,0,0" VerticalAlignment="Center"
+              RenderTransformOrigin="0.5,0.5" Opacity="0">
+            <Grid.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="CircleScale" ScaleX="0.4" ScaleY="0.4" />
+                    <TranslateTransform x:Name="CircleShift" X="325" />
+                </TransformGroup>
+            </Grid.RenderTransform>
+            <Ellipse x:Name="Halo" Fill="#0B3456" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <ScaleTransform x:Name="HaloScale" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse x:Name="Ring" Fill="#0D7FC9" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <ScaleTransform x:Name="RingScale" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse x:Name="Dark" Fill="#0F5180" RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <ScaleTransform x:Name="DarkScale" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse x:Name="Bright" Fill="#0D7FC9" Opacity="0" />
+            <Path x:Name="Logo" Data="{DynamicResource SourceXbox}" Fill="White" Width="70" Height="70" Stretch="Uniform" Opacity="0"
+                  RenderTransformOrigin="0.5,0.5">
+                <Path.RenderTransform>
+                    <ScaleTransform x:Name="LogoScale" />
+                </Path.RenderTransform>
+            </Path>
+            <Grid x:Name="Gem" Opacity="0">
+                <Grid.Clip>
+                    <EllipseGeometry Center="63,63" RadiusX="43.5" RadiusY="43.5">
+                        <EllipseGeometry.Transform>
+                            <ScaleTransform x:Name="GemOpening" CenterX="63" CenterY="63" />
+                        </EllipseGeometry.Transform>
+                    </EllipseGeometry>
+                </Grid.Clip>
+                <!-- The inside of the gem, close up, as the logo gives way: a pale disc the diamond flies out of. -->
+                <Ellipse x:Name="Inside" Width="87" Height="87">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush GradientOrigin="0.35,0.3">
+                            <GradientStop Offset="0" Color="#F4F8FB" />
+                            <GradientStop Offset="0.7" Color="#C9D6E1" />
+                            <GradientStop Offset="1" Color="#A9BBCB" />
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <!-- The diamond, 80 by 79, table up, its five visible slices of crown and pavilion added by the code. -->
+                <Canvas x:Name="Diamond" Width="80" Height="79" RenderTransformOrigin="0.5,0.5">
+                    <Canvas.RenderTransform>
+                        <ScaleTransform x:Name="DiamondZoom" ScaleX="3" ScaleY="3" />
+                    </Canvas.RenderTransform>
+                </Canvas>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
