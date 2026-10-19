@@ -47,9 +47,16 @@ namespace XboxSeries.Extension
         // Stub (#75): every app's session, read and followed.
         public IReadOnlyList<MediaSession> Sessions => current == null ? new MediaSession[0] : new[] { current };
 
-        // Stub (#73): asks the app to carry out the command.
         public void Send(MediaCommand command, string appId)
         {
+            var following = follower;
+            if (following == null)
+            {
+                logger.Warn($"Now Playing: no media sessions to ask {appId} to {command}");
+                return;
+            }
+
+            following.Send(command, appId);
         }
 
         /// <summary>
@@ -437,13 +444,7 @@ namespace XboxSeries.Extension
                     object art = null;
                     try
                     {
-                        GlobalSystemMediaTransportControlsSessionManager asked;
-                        lock (sync)
-                        {
-                            asked = manager;
-                        }
-
-                        var playing = asked?.GetSessions().FirstOrDefault(s => s.SourceAppUserModelId == appId);
+                        var playing = SessionOf(appId);
                         if (playing != null)
                         {
                             var properties = await playing.TryGetMediaPropertiesAsync().AsTask().ConfigureAwait(false);
@@ -460,6 +461,56 @@ namespace XboxSeries.Extension
                         answer(request, art);
                     }
                 });
+            }
+
+            /// <summary>
+            /// Asks the app with <paramref name="appId"/>, by its session among Windows' sessions now, to carry out
+            /// <paramref name="command"/>, off the calling thread. Never throws: an app that refuses, has no session or
+            /// closes as it is asked is logged, and what it does shows only as its session changes.
+            /// </summary>
+            public void Send(MediaCommand command, string appId)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var target = SessionOf(appId);
+                        if (target == null)
+                        {
+                            logger.Warn($"Now Playing: {appId} has no media session to {command}");
+                            return;
+                        }
+
+                        var asked = command == MediaCommand.Previous ? target.TrySkipPreviousAsync()
+                            : command == MediaCommand.Next ? target.TrySkipNextAsync()
+                            : target.TryTogglePlayPauseAsync();
+                        if (await asked.AsTask().ConfigureAwait(false))
+                        {
+                            logger.Info($"Now Playing: asked {appId} to {command}");
+                        }
+                        else
+                        {
+                            logger.Warn($"Now Playing: {appId} refused to {command}");
+                        }
+                    }
+                    catch (Exception e) when (!(e is OutOfMemoryException))
+                    {
+                        // As the app closes mid-command.
+                        logger.Warn($"Now Playing: {appId} failed to {command} ({e.Message})");
+                    }
+                });
+            }
+
+            /// <summary>The session of <paramref name="appId"/> among Windows' sessions now; null for none, or no manager yet.</summary>
+            private GlobalSystemMediaTransportControlsSession SessionOf(string appId)
+            {
+                GlobalSystemMediaTransportControlsSessionManager asked;
+                lock (sync)
+                {
+                    asked = manager;
+                }
+
+                return asked?.GetSessions().FirstOrDefault(s => s.SourceAppUserModelId == appId);
             }
         }
     }
