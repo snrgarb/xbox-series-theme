@@ -8,8 +8,8 @@ namespace XboxSeries.Core.Tests
 {
     /// <summary>
     /// Achievements from PlayniteAchievements: the Achievement unlocked Toast, only for the game running now or the one
-    /// that just exited and never for the first read or an older session's, several recorded together as one, and the
-    /// Profile's totals and recent unlocks on Profile &amp; system.
+    /// that just exited and never for the first read or an older session's, several recorded together as one, a rare one alone as the
+    /// rare Toast, and the Profile's totals and recent unlocks on Profile &amp; system.
     /// </summary>
     public class AchievementsTests
     {
@@ -44,7 +44,7 @@ namespace XboxSeries.Core.Tests
             core.OnGameStarted(hades);
             clock.Advance(TimeSpan.FromMinutes(5));
 
-            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 4, icon: "blessed.png"));
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 20, icon: "blessed.png"));
             clock.Advance(TimeSpan.FromSeconds(1));
 
             Assert.True(core.Toast.IsShown);
@@ -52,7 +52,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("Achievement unlocked", core.Toast.Text);
             Assert.Equal("blessed.png", core.Toast.Image);
             Assert.Equal("Blessed", core.Toast.Detail);
-            Assert.Equal(50, core.Toast.Score);
+            Assert.Equal(20, core.Toast.Score);
         }
 
         [Fact]
@@ -269,7 +269,7 @@ namespace XboxSeries.Core.Tests
             core.OnGameStarted(hades);
             clock.Advance(TimeSpan.FromSeconds(1));
 
-            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 0.5));
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 30));
             clock.Advance(TimeSpan.FromSeconds(1));
 
             Assert.Equal(ToastKind.Notification, core.Toast.Kind);
@@ -277,7 +277,7 @@ namespace XboxSeries.Core.Tests
 
             clock.Advance(TimeSpan.FromSeconds(3.5));
             Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
-            Assert.Equal(100, core.Toast.Score);
+            Assert.Equal(15, core.Toast.Score);
 
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated"), new Notification("b", "Update available") });
             clock.Advance(TimeSpan.FromSeconds(5.5));
@@ -482,6 +482,158 @@ namespace XboxSeries.Core.Tests
             Assert.DoesNotContain(core.Guide.Items, i => i.Kind == GuideItemKind.RecentAchievement);
         }
 
+        [Theory]
+        [InlineData(0.5, true)]
+        [InlineData(9.9, true)]
+        [InlineData(10.0, false)]
+        [InlineData(40.0, false)]
+        [InlineData(null, false)]
+        public void An_unlock_fewer_than_10_percent_of_players_have_is_rare_and_one_of_unknown_rarity_never(double? rarity, bool rare)
+        {
+            core.OnGameStarted(hades);
+
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: rarity));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(rare ? ToastKind.RareAchievementUnlocked : ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.Equal(rare ? "Rare achievement unlocked" : "Achievement unlocked", core.Toast.Text);
+            Assert.Equal(rare ? rarity : null, core.Toast.Rarity);
+        }
+
+        [Fact]
+        public void A_rare_unlock_shows_the_rare_Toast_with_its_rarity_icon_name_Score_and_description()
+        {
+            Baseline();
+            core.OnGameStarted(hades);
+            clock.Advance(TimeSpan.FromMinutes(5));
+
+            core.OnAchievementUnlocked(hades, Unlocked("waves", "Two's Good, but I Want Three", rarity: 1, icon: "three.png", description: "Earned at least 2 stars on 15 different maps"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
+            Assert.Equal("Rare achievement unlocked", core.Toast.Text);
+            Assert.Equal(1, core.Toast.Rarity);
+            Assert.Equal("three.png", core.Toast.Image);
+            Assert.Equal("Two's Good, but I Want Three", core.Toast.Detail);
+            Assert.Equal(100, core.Toast.Score);
+            Assert.Equal("Earned at least 2 stars on 15 different maps", core.Toast.Description);
+        }
+
+        [Fact]
+        public void A_rare_unlock_found_by_a_read_shows_the_rare_Toast_too()
+        {
+            Baseline();
+            core.OnGameStarted(hades);
+            clock.Advance(TimeSpan.FromMinutes(5));
+            Record(hades, Unlocked("escape", "Escaped", rarity: 3, description: "Escape the Underworld"));
+
+            core.OnAchievementsChanged();
+
+            Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
+            Assert.Equal(3, core.Toast.Rarity);
+            Assert.Equal("Escape the Underworld", core.Toast.Description);
+        }
+
+        [Fact]
+        public void An_ordinary_unlock_has_no_rarity_or_description_on_its_Toast()
+        {
+            core.OnGameStarted(hades);
+
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40, description: "Get a boon"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.Null(core.Toast.Rarity);
+            Assert.Null(core.Toast.Description);
+        }
+
+        [Fact]
+        public void The_rare_Toast_plays_the_rare_sound_in_place_of_the_notification_sound()
+        {
+            core.OnGameStarted(hades);
+            sounds.Played.Clear();
+
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 2));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { UiSound.RareAchievement }, sounds.Played);
+        }
+
+        [Fact]
+        public void The_rare_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_the_usual_gap()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 2));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            clock.Advance(TimeSpan.FromSeconds(8.49));
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
+
+            clock.Advance(TimeSpan.FromSeconds(0.01));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+        }
+
+        [Fact]
+        public void Several_unlocks_together_are_one_ordinary_Toast_with_their_count_even_with_a_rare_one_among_them()
+        {
+            core.OnGameStarted(hades);
+            clock.Advance(TimeSpan.FromMinutes(5));
+            sounds.Played.Clear();
+
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 0.2, description: "Escape the Underworld"));
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.Equal("2 achievements unlocked", core.Toast.Text);
+            Assert.Null(core.Toast.Rarity);
+            Assert.Null(core.Toast.Description);
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+
+            clock.Advance(TimeSpan.FromSeconds(5));
+            Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void The_next_Toast_after_a_rare_one_has_no_rarity_or_description()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 2, description: "Escape the Underworld"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            clock.Advance(TimeSpan.FromSeconds(9));
+
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+            Assert.Null(core.Toast.Rarity);
+            Assert.Null(core.Toast.Description);
+            Assert.Null(core.Toast.Detail);
+            Assert.Null(core.Toast.Score);
+        }
+
+        [Fact]
+        public void The_Guide_button_during_the_rare_Toast_opens_the_Guide_at_Profile_and_system()
+        {
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 2));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Tap(ControllerButton.Guide);
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.Equal(GuideTabKind.ProfileAndSystem, core.Guide.Tab);
+            Assert.False(core.Toast.IsShown);
+        }
+
         /// <summary>The first read after start-up, with nothing recorded: the baseline later reads are told against.</summary>
         private void Baseline() => core.OnAchievementsChanged();
 
@@ -493,8 +645,8 @@ namespace XboxSeries.Core.Tests
             achievements.Recorded.AddRange(recorded.Select(r => new GameAchievements(r.Key, r.Value)));
         }
 
-        private Achievement Unlocked(string key, string name, double? rarity = 20, string icon = null, DateTime? at = null) =>
-            new Achievement(key, name, icon ?? key + ".png", rarity, at ?? clock.Now);
+        private Achievement Unlocked(string key, string name, double? rarity = 20, string icon = null, DateTime? at = null, string description = null) =>
+            new Achievement(key, name, icon ?? key + ".png", rarity, at ?? clock.Now, description);
 
         private static Achievement Locked(string key, string name) => new Achievement(key, name, key + ".png", 20, null);
 

@@ -12,13 +12,16 @@ namespace XboxSeries.Core.Tests
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0));
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
         private readonly FakePlayniteHost playnite;
+        private readonly FakeSoundPlayer sounds = new FakeSoundPlayer();
+        private readonly FakeAchievements achievements = new FakeAchievements();
         private readonly ExtensionCore core;
 
         public DebugMenuTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(),
-                new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+            core = new ExtensionCore(clock, windows, playnite, sounds, new FakeDrives(),
+                new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads(),
+                achievements: achievements);
             core.OnNotificationsChanged(new Notification[0]);
         }
 
@@ -96,6 +99,80 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(GuideTabKind.Landing, core.Guide.Tab);
             Assert.DoesNotContain(core.Guide.Items, i => i.Kind == GuideItemKind.DiscordIncomingCall);
             Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void A_test_unlock_shows_the_Achievement_unlocked_Toast_with_a_made_up_name_and_its_Score_with_no_game_running()
+        {
+            core.DebugAchievementsUnlocked(1, rare: false);
+
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.Equal("Achievement unlocked", core.Toast.Text);
+            Assert.Equal("Two's Good, but I Want Three", core.Toast.Detail);
+            Assert.Equal(15, core.Toast.Score);
+            Assert.Null(core.Toast.Image);
+            Assert.Null(core.Toast.Rarity);
+            Assert.Null(core.Toast.Description);
+        }
+
+        [Fact]
+        public void A_test_rare_unlock_shows_the_rare_Toast_at_1_percent_with_its_description_and_sound()
+        {
+            core.DebugAchievementsUnlocked(1, rare: true);
+
+            Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
+            Assert.Equal("Rare achievement unlocked", core.Toast.Text);
+            Assert.Equal(1, core.Toast.Rarity);
+            Assert.Equal("Two's Good, but I Want Three", core.Toast.Detail);
+            Assert.Equal(100, core.Toast.Score);
+            Assert.Equal("Earned at least 2 stars on 15 different maps in Frontier Defense", core.Toast.Description);
+            Assert.Null(core.Toast.Image);
+            Assert.Equal(UiSound.RareAchievement, sounds.Played.Last());
+
+            clock.Advance(TimeSpan.FromSeconds(8.5));
+            Assert.False(core.Toast.IsShown);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Several_test_unlocks_show_one_Toast_with_their_count(bool rare)
+        {
+            core.DebugAchievementsUnlocked(3, rare);
+
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.Equal("3 achievements unlocked", core.Toast.Text);
+            Assert.Null(core.Toast.Detail);
+            Assert.Null(core.Toast.Score);
+        }
+
+        [Fact]
+        public void A_test_unlock_waits_its_turn_behind_a_Toast_showing()
+        {
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            core.DebugAchievementsUnlocked(1, rare: true);
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+
+            clock.Advance(TimeSpan.FromSeconds(5.5));
+            Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
+        }
+
+        [Fact]
+        public void Test_unlocks_never_count_in_the_Profiles_totals_or_its_last_unlocks()
+        {
+            var game = Guid.NewGuid();
+            achievements.Recorded.Add(new GameAchievements(game, new[] { new Achievement("boon", "Blessed", null, 20, clock.Now.AddDays(-1)) }));
+            core.OnAchievementsChanged();
+
+            core.DebugAchievementsUnlocked(1, rare: true);
+            core.DebugAchievementsUnlocked(2, rare: false);
+            clock.Advance(TimeSpan.FromSeconds(20));
+            core.OnAchievementsChanged();
+
+            Assert.Equal(20, core.Guide.Achievements.Score);
+            Assert.Equal(1, core.Guide.Achievements.Unlocked);
         }
     }
 }
