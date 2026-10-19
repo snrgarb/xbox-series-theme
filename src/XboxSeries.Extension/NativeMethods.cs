@@ -86,6 +86,9 @@ namespace XboxSeries.Extension
         [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
         [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
 
+        /// <summary>Puts the PC to sleep, or hibernates it; false, with the error in GetLastWin32Error, when Windows won't.</summary>
+        [DllImport("powrprof.dll", SetLastError = true)] public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
+
         /// <summary>
         /// Hands <paramref name="window"/> the foreground, restoring it first if it's minimised. Returns whether Windows
         /// accepted: another process's window only comes to the front once its own thread handles the activation, so
