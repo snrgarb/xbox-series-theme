@@ -62,7 +62,8 @@ namespace XboxSeries.Extension
         public StartupWindow(StartupSequence sequence, IReadOnlyDictionary<string, object> themeResources, Func<IReadOnlyCollection<ControllerButton>> readPad, Func<IntPtr> playniteWindow, Action activatePlaynite)
         {
             // Playnite's application resources belong to its UI thread: the window looks only in its own, which hold
-            // the theme's copied for this thread (StartupResources), then in the system's.
+            // the theme's copied for this thread (StartupResources), then in the system's. It passes no property value
+            // down either, its DataContext neither, so that is set on its content.
             InheritanceBehavior = InheritanceBehavior.SkipToThemeNext;
             InitializeComponent();
             foreach (var resource in themeResources)
@@ -75,7 +76,7 @@ namespace XboxSeries.Extension
             this.playniteWindow = playniteWindow;
             this.activatePlaynite = activatePlaynite;
             startup = sequence.State;
-            DataContext = startup;
+            Layers.DataContext = startup;
             startup.PropertyChanged += OnStartupChanged;
             SizeChanged += (_, __) => FitToScreen();
             Deactivated += (_, __) => KeepForeground();
