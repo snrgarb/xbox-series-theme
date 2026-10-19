@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -230,7 +231,7 @@ namespace XboxSeries.Extension
                     Later(Sleep);
                     break;
                 case PowerCommand.ExitPlaynite:
-                    Later(QuitPlaynite);
+                    Later(ExitPlaynite);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(command), command, null);
@@ -255,7 +256,7 @@ namespace XboxSeries.Extension
         {
             if (!NativeMethods.SetSuspendState(hibernate: false, forceCritical: true, disableWakeEvent: false))
             {
-                logger.Error($"Couldn't put the PC to sleep: error {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
+                logger.Error($"Couldn't put the PC to sleep: error {Marshal.GetLastWin32Error()}");
             }
         }
 
@@ -263,20 +264,35 @@ namespace XboxSeries.Extension
         /// Not in the SDK: Playnite's own exit, <c>PlayniteApplication.Current.Quit()</c>, which saves settings and releases
         /// resources first. On a Playnite build without it, the WPF shutdown, after which Playnite still releases them.
         /// </summary>
-        private static void QuitPlaynite()
+        private static void ExitPlaynite()
         {
-            var type = Type.GetType("Playnite.PlayniteApplication, Playnite");
-            var app = type?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-            var quit = type?.GetMethod("Quit", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
-            if (app != null && quit != null)
+            try
             {
-                quit.Invoke(app, new object[] { true });
-                return;
+                var app = PlayniteApplication();
+                var quit = app?.GetType().GetMethod("Quit", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
+                if (quit != null)
+                {
+                    quit.Invoke(app, new object[] { true });
+                    return;
+                }
+
+                logger.Warn("Can't quit as Playnite does: this Playnite build has no PlayniteApplication.Current.Quit");
+            }
+            catch (Exception e)
+            {
+                logger.Error(e, "Couldn't quit as Playnite does");
             }
 
-            logger.Warn("Can't quit as Playnite does: this Playnite build has no PlayniteApplication.Current.Quit");
             Application.Current?.Shutdown();
         }
+
+        /// <summary>Not in the SDK: Playnite's <c>PlayniteApplication.Current</c>, which the WPF application only wraps. Null on a build without it.</summary>
+        private static object PlayniteApplication() =>
+            AppDomain.CurrentDomain.GetAssemblies()
+                .Select(a => a.GetType("Playnite.PlayniteApplication", throwOnError: false))
+                .FirstOrDefault(t => t != null)
+                ?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static)
+                ?.GetValue(null);
 
         /// <summary>
         /// Not in the SDK: one of the commands Fullscreen's own menus run, from its main view model. Null, and logged,
@@ -432,10 +448,7 @@ namespace XboxSeries.Extension
         {
             try
             {
-                var app = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(a => a.GetType("Playnite.PlayniteApplication", throwOnError: false))
-                    .FirstOrDefault(t => t != null);
-                var current = app?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+                var current = PlayniteApplication();
                 var settings = current?.GetType().GetProperty("AppSettings")?.GetValue(current);
                 var save = settings?.GetType().GetMethod("SaveSettings", Type.EmptyTypes);
                 if (save == null)
