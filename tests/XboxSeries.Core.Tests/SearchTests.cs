@@ -666,6 +666,107 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Y_on_Home_opens_the_page_empty_with_the_keyboard_up()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 1));
+            core.OnLibraryChanged(library.Snapshot());
+            core.FocusHomeTile(core.Home.RecentRow[0]);
+
+            core.SearchFromHome();
+
+            Assert.True(core.Search.IsShown);
+            Assert.Equal(SearchOrigin.Home, core.Search.OpenedFrom);
+            Assert.True(core.Search.IsKeyboardShown);
+            Assert.Equal(string.Empty, Keyboard.Text);
+
+            Tap(ControllerButton.A);
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void B_on_the_page_opened_by_Y_on_Home_puts_the_keyboard_away_then_goes_back_to_Home()
+        {
+            core.SearchFromHome();
+
+            core.LeaveSearch();
+            Assert.True(core.Search.IsShown);
+
+            core.LeaveSearch();
+            Assert.False(core.Search.IsShown);
+            Assert.False(core.MyGames.IsShown);
+        }
+
+        [Fact]
+        public void Y_on_Home_with_the_Guide_up_opens_nothing()
+        {
+            Tap(ControllerButton.Guide);
+
+            core.SearchFromHome();
+
+            Assert.False(core.Search.IsShown);
+        }
+
+        [Fact]
+        public void Y_on_Home_with_a_tile_menu_up_opens_nothing()
+        {
+            var library = new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 1));
+            core.OnLibraryChanged(library.Snapshot());
+            core.FocusHomeTile(core.Home.RecentRow[0]);
+            Tap(ControllerButton.Start);
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.NotNull(core.Home.TileMenu);
+
+            core.SearchFromHome();
+
+            Assert.False(core.Search.IsShown);
+        }
+
+        [Fact]
+        public void Y_on_Home_with_text_entry_up_opens_nothing()
+        {
+            core.OpenSettings();
+            core.TypeDiscordClientId();
+            Assert.True(core.TextEntry.IsShown);
+
+            core.SearchFromHome();
+
+            Assert.False(core.Search.IsShown);
+        }
+
+        [Theory]
+        [InlineData("MyGames")]
+        [InlineData("Settings")]
+        [InlineData("Search")]
+        public void Y_reaching_Home_from_a_page_in_its_place_opens_nothing(string page)
+        {
+            switch (page)
+            {
+                case "MyGames":
+                    core.OpenMyGames(MyGamesItem.PlayHistory);
+                    break;
+                case "Settings":
+                    core.OpenSettings();
+                    break;
+                default:
+                    core.OpenSearch();
+                    Type("hal");
+                    break;
+            }
+
+            core.SearchFromHome();
+
+            Assert.Equal(page == "MyGames", core.MyGames.IsShown);
+            Assert.Equal(page == "Settings", core.Settings.IsShown);
+            Assert.Equal(page == "Search", core.Search.IsShown);
+            Assert.NotEqual(SearchOrigin.Home, core.Search.OpenedFrom);
+            if (page == "Search")
+            {
+                Assert.Equal("hal", Keyboard.Text);
+            }
+        }
+
+        [Fact]
         public void B_on_the_page_opened_from_the_Guide_goes_to_Home()
         {
             FocusGuideSearch();

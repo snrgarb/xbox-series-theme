@@ -58,6 +58,18 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// Y on Home, which Playnite would answer with its own keyboard: Search, empty, the keyboard up. Not with a page in
+        /// Home's place, which answers Y itself, nor with a menu, text entry or the Guide over it.
+        /// </summary>
+        public void SearchFromHome()
+        {
+            if (!MyGames.IsShown && !Settings.IsShown && !Search.IsShown && !TextEntry.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            {
+                ShowSearch(SearchOrigin.Home);
+            }
+        }
+
         /// <summary>The game on Games that Y opened Search from, which B goes back to.</summary>
         private Guid? searchReturnGame;
 

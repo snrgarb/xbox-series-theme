@@ -65,10 +65,11 @@ namespace XboxSeries.Extension
             core.Search.Keyboard.PropertyChanged += OnKeyboardChanged;
             ShowText();
 
-            // Playnite's own pad B reaches whatever has focus on the page.
+            // Playnite's own pad B reaches whatever has focus on the page. Its Y, on Home, opens this page.
             viewHost = HomeRows.FindPart(this, "PART_ViewHost");
             if (viewHost != null)
             {
+                PlayniteViewHost.TakeOver(viewHost, core);
                 viewHost.KeyDown += OnViewHostKeyDown;
             }
 

@@ -238,7 +238,7 @@ namespace XboxSeries.Extension
         /// Not in the SDK: one of the commands Fullscreen's own menus run, from its main view model. Null, and logged,
         /// on a Playnite build without it.
         /// </summary>
-        private static ICommand FullscreenCommand(string name)
+        internal static ICommand FullscreenCommand(string name)
         {
             var model = Application.Current?.MainWindow?.DataContext;
             if (model?.GetType().GetProperty(name)?.GetValue(model) is ICommand command)
