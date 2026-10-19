@@ -31,6 +31,9 @@ namespace XboxSeries.Extension
         /// <summary>The category last shown, for which way along the rail focus moved to the next.</summary>
         private SettingsCategory shownCategory;
 
+        /// <summary>The Now Playing source's choices its open list shows, in its order; empty while it is closed.</summary>
+        private List<string> shownSources = new List<string>();
+
         internal SettingsControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -172,7 +175,14 @@ namespace XboxSeries.Extension
 
             Header.Text = category == SettingsCategory.Personalisation ? PersonalisationPane.Title : category.ToString();
 
+            // Left or closed, the Guide's dropdown is closed for next time.
+            if (category != SettingsCategory.Guide || !core.Settings.IsShown)
+            {
+                CloseNowPlayingSources();
+            }
+
             PersonalisationPane.Visibility = category == SettingsCategory.Personalisation ? Visibility.Visible : Visibility.Collapsed;
+            GuidePane.Visibility = category == SettingsCategory.Guide ? Visibility.Visible : Visibility.Collapsed;
             DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
 #if DEBUG
             // As Personalisation's, the Debug menu's pages each have their own header and start again on its boxes.
@@ -219,8 +229,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Up and down move through the rail, over the divider, and stay put at its ends: Home is hidden behind the page.
-        /// The pad's A opens Playnite's entries. Right or A on Personalisation or Discord moves into its options; Left and
-        /// Right go nowhere else yet: the other categories have no options to move into.
+        /// The pad's A opens Playnite's entries. Right or A on Personalisation, Guide or Discord moves into its options;
+        /// Left and Right go nowhere else: Playnite's entries have no options to move into.
         /// </summary>
         private void OnRailKeyDown(object sender, KeyEventArgs e)
         {
@@ -231,6 +241,11 @@ namespace XboxSeries.Extension
             {
                 e.Handled = true;
                 PersonalisationPane.FocusFirst();
+            }
+            else if (e.OriginalSource == GuideItem && (pad == ControllerInput.A || e.Key == Key.Right))
+            {
+                e.Handled = true;
+                NowPlayingSourceBox.Focus();
             }
             else if (e.OriginalSource == DiscordItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
@@ -258,6 +273,137 @@ namespace XboxSeries.Extension
             {
                 e.Handled = true;
             }
+        }
+
+        /// <summary>
+        /// The pad in the Guide's options. On the Now Playing source's box: A opens its list, Left or B goes back to the
+        /// rail's Guide. In the open list: up and down move through the choices, staying put at its ends, A chooses the
+        /// one focused and B closes it unchanged, focus going back to the box either way.
+        /// </summary>
+        private void OnGuidePaneKeyDown(object sender, KeyEventArgs e)
+        {
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (e.OriginalSource == NowPlayingSourceBox)
+            {
+                if (pad == ControllerInput.A)
+                {
+                    e.Handled = true;
+                    OpenNowPlayingSources();
+                }
+                else if (pad == ControllerInput.B || e.Key == Key.Left)
+                {
+                    // Handled here, before the page's B takes it back to where Settings was opened from.
+                    e.Handled = true;
+                    GuideItem.Focus();
+                }
+                else if (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Right)
+                {
+                    e.Handled = true;
+                }
+
+                return;
+            }
+
+            var options = NowPlayingSourceOptions.Children.OfType<Button>().ToList();
+            var here = options.IndexOf(e.OriginalSource as Button);
+            if (here < 0)
+            {
+                return;
+            }
+
+            if (pad == ControllerInput.A)
+            {
+                e.Handled = true;
+                ChooseNowPlayingSource(here);
+            }
+            else if (pad == ControllerInput.B)
+            {
+                // Handled here, before the page's B takes it back to where Settings was opened from.
+                e.Handled = true;
+                CloseNowPlayingSources();
+                NowPlayingSourceBox.Focus();
+            }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+                options[Math.Max(0, Math.Min(options.Count - 1, here + (e.Key == Key.Up ? -1 : 1)))].Focus();
+            }
+            else if (e.Key == Key.Left || e.Key == Key.Right)
+            {
+                e.Handled = true;
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnGuidePaneKeyDown.
+        private void OnNowPlayingSourceBoxClick(object sender, RoutedEventArgs e)
+        {
+            if (NowPlayingSourceList.Visibility == Visibility.Visible)
+            {
+                CloseNowPlayingSources();
+            }
+            else
+            {
+                OpenNowPlayingSources();
+            }
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnGuidePaneKeyDown.
+        private void OnNowPlayingSourceOptionClick(object sender, RoutedEventArgs e)
+        {
+            ChooseNowPlayingSource(NowPlayingSourceOptions.Children.IndexOf((UIElement)sender));
+        }
+
+        /// <summary>
+        /// Opens the Now Playing source's list under its box, a row for each of the core's choices as they are now, the
+        /// one chosen ticked and focused.
+        /// </summary>
+        private void OpenNowPlayingSources()
+        {
+            var state = core.Settings.Guide;
+            shownSources = state.NowPlayingSources.ToList();
+            NowPlayingSourceOptions.Children.Clear();
+            Button chosen = null;
+            foreach (var source in shownSources)
+            {
+                var option = new Button
+                {
+                    Style = (Style)FindResource("DropOption"),
+                    Content = new TextBlock { Text = source, Style = (Style)FindResource("Text") },
+                    Tag = source == state.NowPlayingSource ? "Selected" : null,
+                };
+                option.Click += OnNowPlayingSourceOptionClick;
+                NowPlayingSourceOptions.Children.Add(option);
+                if (source == state.NowPlayingSource)
+                {
+                    chosen = option;
+                }
+            }
+
+            NowPlayingSourceBox.Tag = "Open";
+            NowPlayingSourceList.Visibility = Visibility.Visible;
+            (chosen ?? NowPlayingSourceOptions.Children.OfType<Button>().FirstOrDefault())?.Focus();
+        }
+
+        /// <summary>The choice at <paramref name="index"/> in the open list: the core takes and saves it, and the list closes onto its box.</summary>
+        private void ChooseNowPlayingSource(int index)
+        {
+            if (index < 0 || index >= shownSources.Count)
+            {
+                return;
+            }
+
+            core.SetNowPlayingSource(shownSources[index]);
+            CloseNowPlayingSources();
+            NowPlayingSourceBox.Focus();
+        }
+
+        /// <summary>Closes the Now Playing source's list, if open, leaving focus to the caller.</summary>
+        private void CloseNowPlayingSources()
+        {
+            NowPlayingSourceBox.Tag = null;
+            NowPlayingSourceList.Visibility = Visibility.Collapsed;
+            NowPlayingSourceOptions.Children.Clear();
+            shownSources = new List<string>();
         }
 
         /// <summary>

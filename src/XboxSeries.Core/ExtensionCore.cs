@@ -195,6 +195,7 @@ namespace XboxSeries.Core
             LoadShortcuts();
             LoadRecentServers();
             LoadStartUp();
+            LoadGuideSettings();
             WatchHints();
         }
 
