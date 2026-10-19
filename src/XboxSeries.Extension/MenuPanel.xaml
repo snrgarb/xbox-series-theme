@@ -7,10 +7,12 @@
         a dark grey panel with softly rounded corners, the title top left in the regular weight, then full-width rows of
         a white line icon and a label, with no fill at rest. The focused row is filled a little lighter and wears the
         Home tiles' green focus ring. Shared by the Guide and the tile menu, so the two can't drift apart. Sized at 1080p,
-        measured on the console's Menu on Call of Duty (720 capture, scaled by 1.5): the panel 450 wide, the title on one
-        line cut short with an ellipsis, rows 72 apart with the icon centred 44 in and the label 88 in. The focused row's
-        fill runs the panel's full width, and its ring stands 8 out past the panel on both sides, so nothing here or above
-        it may clip (MenuPanelXamlTests).
+        measured on the console's Menu on Call of Duty (720 capture, scaled by 1.5): the panel 450 wide with corners of 6,
+        the title in the header font at 33 on one line cut short with an ellipsis, rows 72 apart with the icon centred 44
+        in and the label 88 in, and Customise 21 further down, starting the console's settings group. The focused row's
+        fill runs the panel's full width and is 56 tall; its ring is the row's full 72, so 8 out past the panel on both
+        sides, and nothing here or above it may clip. The panel ends at the last row's foot, 36 under its centre, so the
+        last ring stays inside it (MenuPanelXamlTests; the theme's GameMenu.xaml uses the same numbers).
         Collapsed when there is no Dialog, and for a wide one, which WideDialogPanel draws.
     -->
     <UserControl.Style>
@@ -26,14 +28,14 @@
         </Style>
     </UserControl.Style>
 
-    <Border Width="450" Padding="0,0,0,0" Background="#FF2B2B2B" CornerRadius="6">
+    <Border Width="450" Background="#FF2B2B2B" CornerRadius="6">
         <Border.Effect>
             <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.5" Color="Black" />
         </Border.Effect>
         <StackPanel>
             <!-- A menu's title (the game's name) on one line, cut short as the console's; a prompt's question wraps, to be read whole. -->
-            <TextBlock Text="{Binding Title}" Margin="28,33,28,26"
-                       FontFamily="{DynamicResource XboxHeaderFont}" FontSize="34" Foreground="White">
+            <TextBlock Text="{Binding Title}" Margin="28,36,28,24"
+                       FontFamily="{DynamicResource XboxHeaderFont}" FontSize="33" Foreground="White">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="TextWrapping" Value="NoWrap" />
@@ -62,8 +64,9 @@
             <ItemsControl ItemsSource="{Binding Options}" Focusable="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Grid Height="72" MouseEnter="OnOptionMouseEnter" MouseLeftButtonUp="OnOptionClick">
-                            <Border x:Name="Row" Margin="0,7" CornerRadius="2" Background="Transparent" />
+                        <Grid x:Name="Option" Height="72" MouseEnter="OnOptionMouseEnter" MouseLeftButtonUp="OnOptionClick">
+                            <!-- The focused fill: the panel's full width, 56 tall, 4 inside the ring top and bottom. -->
+                            <Border x:Name="Row" Margin="0,8" CornerRadius="2" Background="Transparent" />
                             <StackPanel Orientation="Horizontal" Margin="32,0,20,0" VerticalAlignment="Center">
                                 <TextBlock x:Name="Icon" Width="24" FontFamily="{DynamicResource XboxIconFont}" FontSize="22"
                                            Foreground="White" TextAlignment="Center" VerticalAlignment="Center" />
@@ -71,10 +74,10 @@
                                            FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White" />
                             </StackPanel>
                             <!--
-                                As the console's: 4 thick, 76 tall, standing 4 off the fill all round, so 8 out past the panel's
-                                left and right edges, carrying the glow band.
+                                As the console's: the row's full 72 tall, 4 thick, standing 4 off the fill all round, so 8 out
+                                past the panel's left and right edges and never below its foot, carrying the glow band.
                             -->
-                            <Border x:Name="FocusRing" Margin="-8,-2" BorderThickness="4" CornerRadius="7"
+                            <Border x:Name="FocusRing" Margin="-8,0" BorderThickness="4" CornerRadius="7"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                                 <Border Style="{DynamicResource XboxFocusGlowCache}">
                                     <Border Style="{DynamicResource XboxFocusGlow}" />
@@ -109,9 +112,14 @@
                             <DataTrigger Binding="{Binding Icon}" Value="Remove">
                                 <Setter TargetName="Icon" Property="Text" Value="&#xE74D;" />
                             </DataTrigger>
-                            <!-- Customise, as the tile menu's Customise Home and Customise games & apps: Personalize's brush. -->
+                            <!--
+                                Customise, as the tile menu's Customise Home and Customise games & apps: Personalize's brush.
+                                It starts the console's settings group, set 21 further down with no line; the whole row moves,
+                                so its ring keeps its height.
+                            -->
                             <DataTrigger Binding="{Binding Icon}" Value="Customise">
                                 <Setter TargetName="Icon" Property="Text" Value="&#xE771;" />
+                                <Setter TargetName="Option" Property="Margin" Value="0,21,0,0" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>

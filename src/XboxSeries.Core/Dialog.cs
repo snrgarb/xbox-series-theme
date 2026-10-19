@@ -16,13 +16,12 @@ namespace XboxSeries.Core
         /// <summary>How many tiles a row of a wide dialog holds, as on the console.</summary>
         public const int Columns = 3;
 
-        private readonly bool isPrompt;
         private DialogOption focusedOption;
 
         internal Dialog(string title, string message, bool isPrompt, Action decline, params DialogOption[] options)
         {
             Title = title;
-            this.isPrompt = isPrompt;
+            IsPrompt = isPrompt;
             Message = message;
             Decline = decline;
             Options = options;
@@ -58,7 +57,7 @@ namespace XboxSeries.Core
         public bool IsWide => CloseOption != null;
 
         /// <summary>A question to answer ("Quit X and start Y?") rather than a menu of what can be done with something.</summary>
-        public bool IsPrompt => isPrompt;
+        public bool IsPrompt { get; }
 
         /// <summary>A wide dialog's tiles, row by row; none for a menu or prompt.</summary>
         public IReadOnlyList<DialogOption> Tiles { get; }
@@ -70,7 +69,7 @@ namespace XboxSeries.Core
         /// The sound as an option is chosen. Menus and prompts open and close alike, but a prompt asks about what just
         /// happened, so any answer closes it, while a menu offers what can be done, so a choice goes on with it.
         /// </summary>
-        internal UiSound ChooseSound => isPrompt ? UiSound.PromptClose : UiSound.Enter;
+        internal UiSound ChooseSound => IsPrompt ? UiSound.PromptClose : UiSound.Enter;
 
         /// <summary>The option with focus. Each option's <see cref="DialogOption.IsFocused"/> follows it.</summary>
         public DialogOption FocusedOption

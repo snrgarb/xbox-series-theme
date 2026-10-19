@@ -19,12 +19,21 @@ namespace XboxSeries.Core.Tests
         private readonly XDocument menu = XDocument.Load(Path.Combine(ExtensionDir, "MenuPanel.xaml"));
 
         [Fact]
-        public void The_focus_ring_stands_about_8_past_the_panels_left_and_right_edges()
+        public void The_panel_is_450_wide_with_corners_of_6()
+        {
+            var panel = PanelBorder();
+
+            Assert.Equal("450", (string)panel.Attribute("Width"));
+            Assert.Equal("6", (string)panel.Attribute("CornerRadius"));
+        }
+
+        [Fact]
+        public void The_focus_ring_stands_8_past_the_panels_left_and_right_edges()
         {
             var (left, right) = HorizontalInsetFromPanel(Named("FocusRing"));
 
-            Assert.InRange(left, -10, -6);
-            Assert.InRange(right, -10, -6);
+            Assert.Equal(-8, left);
+            Assert.Equal(-8, right);
         }
 
         [Fact]
@@ -38,17 +47,38 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_ring_is_about_76_tall_with_a_gap_of_4_to_6_round_the_fill()
+        public void The_ring_is_the_rows_full_72_height_4_thick_with_corners_of_7()
         {
-            var row = RowTemplateRoot();
+            var ring = Named("FocusRing");
+            var margin = Thickness(ring, "Margin");
+
+            Assert.Equal(72, RowHeight() - margin.Top - margin.Bottom);
+            Assert.Equal((4.0, 4.0, 4.0, 4.0), Thickness(ring, "BorderThickness"));
+            Assert.Equal("7", (string)ring.Attribute("CornerRadius"));
+        }
+
+        [Fact]
+        public void The_fill_is_56_tall_standing_4_inside_the_ring_all_round()
+        {
             var ring = Thickness(Named("FocusRing"), "Margin");
             var fill = Thickness(Named("Row"), "Margin");
             var thickness = Thickness(Named("FocusRing"), "BorderThickness");
-            var height = double.Parse((string)row.Attribute("Height"));
 
-            Assert.InRange(height - ring.Top - ring.Bottom, 74, 78);
-            Assert.InRange(fill.Top - ring.Top - thickness.Top, 4, 6);
-            Assert.InRange(fill.Left - ring.Left - thickness.Left, 4, 6);
+            Assert.Equal(56, RowHeight() - fill.Top - fill.Bottom);
+            Assert.Equal(4, fill.Top - ring.Top - thickness.Top);
+            Assert.Equal(4, fill.Bottom - ring.Bottom - thickness.Bottom);
+            Assert.Equal(4, fill.Left - ring.Left - thickness.Left);
+            Assert.Equal(4, fill.Right - ring.Right - thickness.Right);
+        }
+
+        [Fact]
+        public void The_panel_ends_at_the_last_rows_foot_so_the_last_ring_never_hangs_below_it()
+        {
+            // The last row's centre then sits 36 above the panel's bottom edge, the console's ~35.
+            var padding = Thickness(PanelBorder(), "Padding");
+
+            Assert.Equal(0, padding.Bottom);
+            Assert.True(Thickness(Named("FocusRing"), "Margin").Bottom >= 0);
         }
 
         [Fact]
@@ -57,7 +87,47 @@ namespace XboxSeries.Core.Tests
             var row = RowTemplateRoot();
             var margin = Thickness(row, "Margin");
 
-            Assert.Equal(72, double.Parse((string)row.Attribute("Height")) + margin.Top + margin.Bottom);
+            Assert.Equal(72, RowHeight() + margin.Top + margin.Bottom);
+        }
+
+        [Fact]
+        public void Customise_starts_the_settings_group_21_further_down_its_ring_moving_with_its_row()
+        {
+            var row = RowTemplateRoot();
+            var trigger = menu.Descendants().Single(e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == "{Binding Icon}" && (string)e.Attribute("Value") == "Customise");
+            var gap = trigger.Elements().Single(s => (string)s.Attribute("TargetName") == (string)row.Attribute(X + "Name")
+                && (string)s.Attribute("Property") == "Margin");
+
+            Assert.Equal("0,21,0,0", (string)gap.Attribute("Value"));
+            Assert.Equal(72.0, RowHeight());
+        }
+
+        [Fact]
+        public void The_icon_is_centred_44_in_and_the_label_starts_88_in()
+        {
+            var icon = Named("Icon");
+            var label = menu.Descendants().Single(e => (string)e.Attribute("Text") == "{Binding Label}");
+            var (iconLeft, _) = HorizontalInsetFromPanel(icon);
+            var iconWidth = double.Parse((string)icon.Attribute("Width"));
+            // The label follows the icon in a horizontal StackPanel.
+            var labelLeft = iconLeft + iconWidth + Thickness(icon, "Margin").Right + Thickness(label, "Margin").Left;
+
+            Assert.Equal(44, iconLeft + iconWidth / 2);
+            Assert.Equal(88, labelLeft);
+            Assert.Equal("22", (string)icon.Attribute("FontSize"));
+            Assert.Equal("22", (string)label.Attribute("FontSize"));
+            Assert.Equal("{DynamicResource XboxFont}", (string)label.Attribute("FontFamily"));
+        }
+
+        [Fact]
+        public void The_title_is_the_header_font_at_33_set_28_in_36_down_and_24_above_the_rows()
+        {
+            var title = Title();
+
+            Assert.Equal("{DynamicResource XboxHeaderFont}", (string)title.Attribute("FontFamily"));
+            Assert.Equal("33", (string)title.Attribute("FontSize"));
+            Assert.Equal("28,36,28,24", (string)title.Attribute("Margin"));
         }
 
         [Fact]
@@ -120,6 +190,8 @@ namespace XboxSeries.Core.Tests
 
         private XElement RowTemplateRoot() =>
             menu.Descendants().Single(e => e.Name.LocalName == "DataTemplate").Elements().First(e => !e.Name.LocalName.Contains("."));
+
+        private double RowHeight() => double.Parse((string)RowTemplateRoot().Attribute("Height"));
 
         private XElement Named(string name) => menu.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
 
