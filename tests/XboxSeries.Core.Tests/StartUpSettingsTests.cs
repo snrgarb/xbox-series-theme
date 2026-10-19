@@ -49,7 +49,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("Gabe Smith", profile.RealName);
             Assert.Equal(@"C:\pics\gabe.png", profile.Picture);
             Assert.False(string.IsNullOrEmpty(profile.Id));
-            Assert.Equal(StartUp.Profiles, core.Startup.Profiles);
+            Assert.Equal(StartUp.Profiles, core.OnStartup().Profiles);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("", added.RealName);
             Assert.Equal(@"C:\pics\gabe.png", added.Picture);
             Assert.Equal(new[] { "gabe", "Ana" }, StartUp.Profiles.Select(p => p.Gamertag));
-            Assert.Equal(StartUp.Profiles, core.Startup.Profiles);
+            Assert.Equal(StartUp.Profiles, core.OnStartup().Profiles);
 
             NewCore();
 
@@ -164,7 +164,7 @@ namespace XboxSeries.Core.Tests
 
             core.SetProfilePicture(id, @"C:\Gamerpics\b.png");
             Assert.Equal(@"C:\Gamerpics\b.png", StartUp.Profiles[0].Picture);
-            Assert.Equal(StartUp.Profiles, core.Startup.Profiles);
+            Assert.Equal(StartUp.Profiles, core.OnStartup().Profiles);
 
             NewCore();
             Assert.Equal(@"C:\Gamerpics\b.png", StartUp.Profiles[0].Picture);
@@ -212,7 +212,7 @@ namespace XboxSeries.Core.Tests
             core.RemoveProfile(ana.Id);
 
             Assert.Equal(new[] { "gabe", "Bo" }, StartUp.Profiles.Select(p => p.Gamertag));
-            Assert.Equal(StartUp.Profiles, core.Startup.Profiles);
+            Assert.Equal(StartUp.Profiles, core.OnStartup().Profiles);
             NewCore();
             Assert.Equal(new[] { "gabe", "Bo" }, StartUp.Profiles.Select(p => p.Gamertag));
         }

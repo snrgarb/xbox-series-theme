@@ -180,8 +180,20 @@ namespace XboxSeries.Core.Tests
 
             core.OnStartup();
 
-            Assert.True(core.Startup.IsShown);
+            Assert.True(core.IsStartupShown);
             Assert.Empty(core.Home.Hints);
+        }
+
+        [Fact]
+        public void The_hint_comes_back_once_Signing_you_in_has_shown()
+        {
+            core.FocusHomeTile(GroupTile("Tunic"));
+            core.OnStartupSignedIn(core.OnStartup().LastProfile);
+
+            clock.Advance(TimeSpan.FromSeconds(3));
+
+            Assert.False(core.IsStartupShown);
+            Assert.Equal(new[] { "More options" }, HintTexts());
         }
 
         // My games & apps (#67)

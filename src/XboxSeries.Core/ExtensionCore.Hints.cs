@@ -63,7 +63,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void RefreshHints()
         {
-            var covered = Home.TileMenu != null || ActiveDialog != null || Guide.IsOverlayShown || Startup.IsShown;
+            var covered = Home.TileMenu != null || ActiveDialog != null || Guide.IsOverlayShown || IsStartupShown;
             if (focusedTile != hintedTile)
             {
                 hintedTile = focusedTile;
@@ -82,7 +82,6 @@ namespace XboxSeries.Core
             Home.PropertyChanged += refresh;
             Guide.PropertyChanged += refresh;
             MyGames.PropertyChanged += refresh;
-            Startup.PropertyChanged += refresh;
         }
     }
 }

@@ -20,18 +20,15 @@ namespace XboxSeries.Core
         /// <summary>How long Signing you in shows before "Hi X!" and Home.</summary>
         private static readonly TimeSpan SigningInDuration = TimeSpan.FromSeconds(3);
 
-        /// <summary>The longest any boot video is let run before the sequence goes on without it; each is under 15 s.</summary>
-        private static readonly TimeSpan BootVideoDeadline = TimeSpan.FromSeconds(20);
-
         private List<Profile> profiles = new List<Profile>();
 
         /// <summary>The profile signed in last, whom Who's playing today? focuses and, when it doesn't ask, signs in; null for the first.</summary>
         private string lastProfileId;
 
+        /// <summary>Signing you in's <see cref="SigningInDuration"/>, while it shows; null otherwise.</summary>
         private IDisposable signingInTimer;
 
-        /// <summary>The boot video's deadline, while it plays; null otherwise.</summary>
-        private IDisposable bootVideoTimer;
+        private bool isStartupShown;
 
         /// <summary>The greeting's Toast showing, until it goes; null otherwise.</summary>
         private IDisposable greetingTimer;
@@ -39,64 +36,68 @@ namespace XboxSeries.Core
         /// <summary>The call's Toast, held back while Start-up or the greeting shows, to show as the greeting goes; null for none.</summary>
         private Action waitingRingToast;
 
-        /// <summary>The Start-up sequence, shown full screen over Playnite.</summary>
-        public StartupState Startup { get; } = new StartupState();
-
-        /// <summary>Whether a Start-up sequence covers the screen, from its beginning until Signing you in has shown.</summary>
-        public bool IsStartupShown => Startup.IsShown;
+        /// <summary>
+        /// Whether a Start-up sequence covers the screen, from its beginning until Signing you in has shown. The sequence
+        /// runs on a thread of its own; while it shows, the buttons Playnite hands the core reach nothing.
+        /// </summary>
+        public bool IsStartupShown
+        {
+            get => isStartupShown;
+            private set
+            {
+                if (isStartupShown != value)
+                {
+                    isStartupShown = value;
+                    RefreshHints();
+                }
+            }
+        }
 
         /// <summary>Signing you in has shown: the Start-up window fades out to Home as "Hi X!" shows. Raised on the UI thread.</summary>
         public event Action StartupEnded;
 
-        /// <summary>The sequence's thread signed a profile in, marshalled to the UI thread.</summary>
+        /// <summary>
+        /// The sequence's thread signed a profile in, marshalled to the UI thread: the core's own profile of that id is
+        /// signed in at once, on the status area and saved as the last; the sequence has played the sign-in sound. After
+        /// <see cref="SigningInDuration"/> Start-up ends and Home shows with "Hi X!". Out of turn, it changes nothing.
+        /// </summary>
         public void OnStartupSignedIn(Profile profile)
         {
-            StartupEnded?.Invoke();
+            if (!IsStartupShown || signingInTimer != null || profile == null)
+            {
+                return;
+            }
+
+            var signedIn = profiles.FirstOrDefault(p => p.Id == profile.Id) ?? profile;
+            Status.Profile = signedIn;
+            lastProfileId = signedIn.Id;
+            SaveStartUp();
+            signingInTimer = clock.After(SigningInDuration, () =>
+            {
+                signingInTimer = null;
+                IsStartupShown = false;
+                StartupEnded?.Invoke();
+                Greet(Status.Profile ?? signedIn);
+            });
         }
 
         private StartupPlan StartupPlan(BootVideo video) =>
             new StartupPlan(video, Settings.StartUp.AskWhosPlaying, profiles.ToList(), LastProfile);
 
         /// <summary>
-        /// Playnite started in Fullscreen: the sequence begins with the chosen boot video, or Who's playing today? with
-        /// it Off. A video that runs past <see cref="BootVideoDeadline"/> ends as one that finished, so nothing it shows
-        /// can hold Playnite up.
+        /// Playnite started in Fullscreen: Start-up covers the screen, and the plan its sequence begins with, the chosen
+        /// boot video first, is handed to the sequence's thread. Null while Start-up already shows.
         /// </summary>
         public StartupPlan OnStartup()
         {
-            if (Startup.IsShown)
+            if (IsStartupShown)
             {
                 return null;
             }
 
             CoverForStartup();
-            Startup.BootVideo = Settings.StartUp.BootVideo;
-            if (Startup.BootVideo == BootVideo.Off)
-            {
-                AfterBootVideo();
-            }
-            else
-            {
-                Startup.Phase = StartupPhase.BootVideo;
-                bootVideoTimer = clock.After(BootVideoDeadline, () =>
-                {
-                    bootVideoTimer = null;
-                    OnBootVideoEnded();
-                });
-            }
-
+            IsStartupShown = true;
             return StartupPlan(Settings.StartUp.BootVideo);
-        }
-
-        /// <summary>The boot video finished, or couldn't play: the sequence goes on.</summary>
-        public void OnBootVideoEnded()
-        {
-            if (Startup.Phase == StartupPhase.BootVideo)
-            {
-                bootVideoTimer?.Dispose();
-                bootVideoTimer = null;
-                AfterBootVideo();
-            }
         }
 
         /// <summary>
@@ -105,13 +106,13 @@ namespace XboxSeries.Core
         /// </summary>
         public StartupPlan OnResumedFromSleep()
         {
-            if (!Settings.StartUp.AskWhosPlaying || Startup.IsShown)
+            if (!Settings.StartUp.AskWhosPlaying || IsStartupShown)
             {
                 return null;
             }
 
             CoverForStartup();
-            AskWhosPlaying();
+            IsStartupShown = true;
             return StartupPlan(BootVideo.Off);
         }
 
@@ -214,81 +215,6 @@ namespace XboxSeries.Core
             Toast.IsShown = false;
         }
 
-        /// <summary>After the boot video, or at once with it Off: Who's playing today? if it asks, else the last profile signs in.</summary>
-        private void AfterBootVideo()
-        {
-            if (Settings.StartUp.AskWhosPlaying)
-            {
-                AskWhosPlaying();
-            }
-            else
-            {
-                SignIn(LastProfile);
-            }
-        }
-
-        /// <summary>Who's playing today?, focus on the profile signed in last.</summary>
-        private void AskWhosPlaying()
-        {
-            Startup.SigningIn = null;
-            Startup.FocusedProfile = LastProfile;
-            Startup.Phase = StartupPhase.WhosPlaying;
-        }
-
-        /// <summary>
-        /// A button while Start-up shows, which nothing else sees: any press skips the boot video; on Who's playing
-        /// today?, left and right move along the profiles, held at either end, and A signs the focused one in. B and the
-        /// Guide button do nothing: someone has to sign in.
-        /// </summary>
-        private void OnStartupButton(ControllerButton button, ButtonState state)
-        {
-            if (state != ButtonState.Pressed)
-            {
-                return;
-            }
-
-            if (Startup.Phase == StartupPhase.BootVideo)
-            {
-                OnBootVideoEnded();
-            }
-            else if (Startup.Phase == StartupPhase.WhosPlaying && (button == ControllerButton.DPadLeft || button == ControllerButton.DPadRight))
-            {
-                var index = profiles.FindIndex(p => p.Id == Startup.FocusedProfile?.Id);
-                var next = profiles[Clamp(index + (button == ControllerButton.DPadLeft ? -1 : 1), profiles.Count)];
-                if (next != Startup.FocusedProfile)
-                {
-                    sounds.Play(UiSound.Navigate);
-                    Startup.FocusedProfile = next;
-                }
-            }
-            else if (Startup.Phase == StartupPhase.WhosPlaying && button == ControllerButton.A)
-            {
-                sounds.Play(UiSound.Enter);
-                SignIn(Startup.FocusedProfile ?? LastProfile);
-            }
-        }
-
-        /// <summary>
-        /// Signing you in: the profile is signed in at once, on the status area and saved as the last, with the console's
-        /// sign-in sound; after <see cref="SigningInDuration"/> Home shows with "Hi X!".
-        /// </summary>
-        private void SignIn(Profile profile)
-        {
-            Startup.SigningIn = profile;
-            Startup.Phase = StartupPhase.SigningIn;
-            Status.Profile = profile;
-            lastProfileId = profile.Id;
-            SaveStartUp();
-            sounds.Play(UiSound.Login);
-            signingInTimer?.Dispose();
-            signingInTimer = clock.After(SigningInDuration, () =>
-            {
-                signingInTimer = null;
-                Startup.Phase = StartupPhase.None;
-                Greet(Status.Profile ?? profile);
-            });
-        }
-
         /// <summary>
         /// The greeting's Toast, "Hi X!" with the profile's picture and the notification sound, for as long as a
         /// notification's; the call's Toast and Playnite's notifications held back meanwhile follow it.
@@ -374,7 +300,10 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>A profile edited: the new one takes its place, and wherever it shows; an unknown id changes nothing.</summary>
+        /// <summary>
+        /// A profile edited: the new one takes its place, and wherever it shows; an unknown id changes nothing. Start-up
+        /// never shows meanwhile: it covers Settings, where profiles are edited.
+        /// </summary>
         private void ReplaceProfile(string id, Func<Profile, Profile> edit)
         {
             var index = profiles.FindIndex(p => p.Id == id);
@@ -386,16 +315,6 @@ namespace XboxSeries.Core
             var edited = edit(profiles[index]);
             profiles[index] = edited;
             ProfilesChanged();
-            if (Startup.FocusedProfile?.Id == id)
-            {
-                Startup.FocusedProfile = edited;
-            }
-
-            if (Startup.SigningIn?.Id == id)
-            {
-                Startup.SigningIn = edited;
-            }
-
             if (Status.Profile?.Id == id)
             {
                 Status.Profile = edited;
@@ -430,13 +349,8 @@ namespace XboxSeries.Core
             ShowProfiles();
         }
 
-        /// <summary>Settings and Who's playing today? show the profiles as they are now.</summary>
-        private void ShowProfiles()
-        {
-            var list = profiles.ToList();
-            Settings.StartUp.Profiles = list;
-            Startup.Profiles = list;
-        }
+        /// <summary>Settings shows the profiles as they are now; a Start-up sequence is handed them as it begins.</summary>
+        private void ShowProfiles() => Settings.StartUp.Profiles = profiles.ToList();
 
         /// <summary>What the secret store keeps of the Start up options.</summary>
         private sealed class SavedStartUp

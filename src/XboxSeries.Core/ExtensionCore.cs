@@ -282,7 +282,7 @@ namespace XboxSeries.Core
         private void ShowNextToast()
         {
             toastTimer = null;
-            if (waitingToasts.Count == 0 || ringToastTimer != null || greetingTimer != null || Startup.IsShown)
+            if (waitingToasts.Count == 0 || ringToastTimer != null || greetingTimer != null || IsStartupShown)
             {
                 return;
             }
@@ -501,7 +501,7 @@ namespace XboxSeries.Core
                     });
                 }
             }
-            else if (!Startup.IsShown)
+            else if (!IsStartupShown)
             {
                 playnite.BringToFront(DashboardPage.Home);
             }
@@ -586,10 +586,10 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnControllerButton(ControllerButton button, ButtonState state, DateTime at)
         {
-            // Start-up has the pad to itself, the Guide button too; a button held from before it lets go as usual.
-            if (Startup.IsShown && (state == ButtonState.Pressed || button == ControllerButton.Guide))
+            // Start-up has the pad to itself, the Guide button too, on its own thread; a button held from before it lets
+            // go as usual.
+            if (IsStartupShown && (state == ButtonState.Pressed || button == ControllerButton.Guide))
             {
-                OnStartupButton(button, state);
                 return;
             }
 
