@@ -17,9 +17,8 @@ namespace XboxSeries.Extension
         // own Uninstall (steam://uninstall, the Steam plugin's route) removes the game's folder and manifest and keeps
         // what Steam holds for the account, its cloud saves among them; what -complete takes beyond that Valve doesn't
         // say, so it's left off until a game uninstalled without it is seen to leave something behind that matters.
-        // -console is the issue's (#79) form, which the forum's workaround for app_uninstall uses; the Debug menu's
-        // Uninstall trial goes without it, so should -console bring the client's Console page up over the theme, that
-        // trial is the form to compare with.
+        // -console is the issue's (#79) form, which the forum's workaround for app_uninstall uses: seen on the TV to
+        // raise no window, no confirmation and no Console page.
         private readonly SteamCommand uninstalls = new SteamCommand("uninstall", "app_uninstall", "-silent -console +app_uninstall");
 
         private bool uninstallMarkWarned;
@@ -57,12 +56,8 @@ namespace XboxSeries.Extension
         /// Otherwise <c>-silent -console +app_uninstall</c> goes to steam.exe, which passes it to the running client
         /// and exits, or starts Steam with it, <c>-silent</c> keeping the main window down as it does for an install,
         /// though its sign-in or update windows can still show. Steam's open windows are sent to the tray first and
-        /// Playnite is kept in front after, as for an install. Whether this route raises a confirmation, or the
-        /// client's window or Console page, is unknown.
-        /// </para>
-        /// <para>
-        /// Neither route has been tried on the TV yet: what each raises is for the user to check by hand, and to
-        /// record here once seen.
+        /// Playnite is kept in front after, as for an install. Tried on the TV, this route raised no Steam window, no
+        /// confirmation and no Console page, and Playnite kept the foreground.
         /// </para>
         /// </summary>
         public void Uninstall(Guid gameId)
