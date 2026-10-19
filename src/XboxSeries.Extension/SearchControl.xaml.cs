@@ -505,3 +505,16 @@ namespace XboxSeries.Extension
             && ((binding.Key >= Key.A && binding.Key <= Key.Z) || (binding.Key >= Key.D0 && binding.Key <= Key.D9) || binding.Key == Key.Space);
     }
 }
+
+namespace XboxSeries.Extension
+{
+    /// <summary>A row of Search's tiles' width, from the width its row has, cut to whole tiles: <see cref="SearchRowWidth"/>.</summary>
+    internal sealed class WholeTilesWidthConverter : System.Windows.Data.IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
+            SearchRowWidth.ListWidth(value is double available ? available : 0);
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+}
