@@ -106,29 +106,29 @@ namespace XboxSeries.Extension
             private readonly ExtensionCore core;
             private readonly Guid gameId;
             private readonly ICommand close;
-            private readonly ICommand playnites;
+            private readonly ICommand playniteUninstall;
 
-            public SilentUninstallCommand(ExtensionCore core, Guid gameId, ICommand close, ICommand playnites)
+            public SilentUninstallCommand(ExtensionCore core, Guid gameId, ICommand close, ICommand playniteUninstall)
             {
                 this.core = core;
                 this.gameId = gameId;
                 this.close = close;
-                this.playnites = playnites;
+                this.playniteUninstall = playniteUninstall;
             }
 
             public event EventHandler CanExecuteChanged
             {
-                add => playnites.CanExecuteChanged += value;
-                remove => playnites.CanExecuteChanged -= value;
+                add => playniteUninstall.CanExecuteChanged += value;
+                remove => playniteUninstall.CanExecuteChanged -= value;
             }
 
-            public bool CanExecute(object parameter) => playnites.CanExecute(parameter);
+            public bool CanExecute(object parameter) => playniteUninstall.CanExecute(parameter);
 
             public void Execute(object parameter)
             {
                 if (!core.CanUninstallSilently(gameId))
                 {
-                    playnites.Execute(parameter);
+                    playniteUninstall.Execute(parameter);
                     return;
                 }
 

@@ -10,6 +10,9 @@ namespace XboxSeries.Core
     /// </summary>
     public sealed partial class ExtensionCore
     {
+        /// <summary>The Uninstalled Toast's line, after the game's name.</summary>
+        private const string WasUninstalled = " was uninstalled";
+
         /// <summary>How often a game being uninstalled is marked uninstalled again, until the client has finished with it.</summary>
         private static readonly TimeSpan UninstallPoll = TimeSpan.FromSeconds(1);
 
@@ -33,8 +36,9 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Whether Playnite's game menu's Uninstall uninstalls the game through its client without the client's own
-        /// windows, in place of Playnite's own Uninstall: an installed game its client can uninstall, not running and
-        /// not already being uninstalled. Any other game keeps Playnite's own Uninstall.
+        /// windows, in place of Playnite's own Uninstall: an installed game its client can uninstall, not running. One
+        /// already being uninstalled stays here too, so pressing Uninstall again before the client is done asks nothing
+        /// rather than fall back on Playnite's, which raises the client's own dialog. Any other game keeps Playnite's.
         /// </summary>
         public bool CanUninstallSilently(Guid gameId)
         {
@@ -45,17 +49,17 @@ namespace XboxSeries.Core
                 && game.Installed
                 && !game.Installing
                 && gameId != runningGame
-                && !uninstallsAsked.ContainsKey(gameId)
                 && downloads.CanUninstall(gameId);
         }
 
         /// <summary>
         /// The game menu's Uninstall, for a game <see cref="CanUninstallSilently"/>: asks its client to uninstall it,
-        /// follows it until the client has, and then tells of it with a "X was uninstalled" Toast.
+        /// follows it until the client has, and then tells of it with a "X was uninstalled" Toast. One already being
+        /// uninstalled is asked once only.
         /// </summary>
         public void UninstallGame(Guid gameId)
         {
-            if (!CanUninstallSilently(gameId))
+            if (!CanUninstallSilently(gameId) || uninstallsAsked.ContainsKey(gameId))
             {
                 return;
             }
@@ -121,7 +125,7 @@ namespace XboxSeries.Core
             foreach (var finished in library.Games.Where(g => !g.Installed && uninstallsAsked.ContainsKey(g.Id)).ToList())
             {
                 uninstallsAsked.Remove(finished.Id);
-                EnqueueToast(new WaitingToast($"{finished.Name} was uninstalled", ToastKind.Uninstalled, finished.CoverImage));
+                EnqueueToast(new WaitingToast(finished.Name + WasUninstalled, ToastKind.Uninstalled, finished.CoverImage));
             }
 
             FollowUninstalls();

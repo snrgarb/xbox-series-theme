@@ -24,11 +24,18 @@ namespace XboxSeries.Extension
 
         private bool uninstallMarkWarned;
 
+        /// <summary>
+        /// Only for a game Steam has a manifest for: <see cref="MarkUninstalled"/> takes no manifest for Steam having
+        /// finished, so a game whose manifest can't be found (its library unplugged, or missing from
+        /// libraryfolders.vdf) would read uninstalled a second after asking, whatever Steam did. Playnite's own
+        /// Uninstall stands for it.
+        /// </summary>
         public bool CanUninstall(Guid gameId)
         {
             try
             {
-                return AppIdOf(gameId) != null && SteamExe() != null;
+                var appId = AppIdOf(gameId);
+                return appId != null && SteamExe() != null && ManifestOf(appId.Value) != null;
             }
             catch (Exception e) when (IsReadFailure(e))
             {
