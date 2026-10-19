@@ -89,6 +89,7 @@ namespace XboxSeries.Core
         private readonly IAudio audio;
         private readonly IController controller;
         private readonly IMediaSessions mediaSessions;
+        private readonly IAchievements achievements;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private IReadOnlyList<Notification> notifications = new Notification[0];
 
@@ -175,9 +176,11 @@ namespace XboxSeries.Core
             IDiscordOAuth discordOAuth,
             ISecretStore secrets,
             IDownloads downloads,
-            IMediaSessions mediaSessions = null)
+            IMediaSessions mediaSessions = null,
+            IAchievements achievements = null)
         {
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
+            this.achievements = achievements ?? NoAchievements.Instance;
             this.downloads = downloads;
             this.discord = discord;
             this.discordOAuth = discordOAuth;
