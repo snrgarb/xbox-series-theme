@@ -1757,13 +1757,13 @@ namespace XboxSeries.Core
             if (item == null || item.Kind == GuideItemKind.Profile || item.Kind == GuideItemKind.Notification || item.Kind == GuideItemKind.Volume
                 || item.Kind == GuideItemKind.DiscordAccount || item.Kind == GuideItemKind.DiscordIdle || item.Kind == GuideItemKind.DiscordUnavailable
                 || item.Kind == GuideItemKind.DiscordChannel || item.Kind == GuideItemKind.DiscordParticipant
-                || item.Kind == GuideItemKind.NowPlaying || item.Kind == GuideItemKind.NothingPlaying || IsEmptyDropdown(item))
+                || item.Kind == GuideItemKind.NowPlaying || item.Kind == GuideItemKind.NothingPlaying || IsEmptyDropdown(item) || !item.IsEnabled)
             {
                 return;
             }
 
             sounds.Play(UiSound.Enter);
-            if (SelectDiscordAction(item))
+            if (SelectDiscordAction(item) || SelectMediaControl(item))
             {
                 return;
             }
@@ -1945,6 +1945,10 @@ namespace XboxSeries.Core
                     Guide.FocusedItem = Step(OpenDropdown.Options, Guide.FocusedItem, by);
                 }
             }
+            else if (Guide.Flyout != null && MoveAmongMediaControls(direction))
+            {
+                // Onto, along or off the Now Playing card's row of controls.
+            }
             else if (vertical)
             {
                 Guide.FocusedItem = Step(entries, Guide.FocusedItem, by);
@@ -2010,11 +2014,11 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Whether the mouse can reach <paramref name="item"/>: an open dropdown's devices, otherwise an open flyout's
-        /// entries, otherwise the tab's and its utilities.
+        /// entries and the Now Playing card's controls, otherwise the tab's and its utilities.
         /// </summary>
         private bool IsShowing(GuideItem item) =>
             OpenDropdown != null ? OpenDropdown.Options.Contains(item)
-            : Guide.Flyout != null ? Guide.Flyout.Items.Contains(item)
+            : Guide.Flyout != null ? Guide.Flyout.Items.Contains(item) || IsMediaControl(item)
             : Guide.Items.Contains(item) || Guide.Utilities.Contains(item);
 
         /// <summary>A click on an entry. No pad button is held, so focus goes on at once.</summary>

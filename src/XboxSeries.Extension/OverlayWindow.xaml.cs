@@ -387,6 +387,9 @@ namespace XboxSeries.Extension
         {
 #if DEBUG
             core.ChooseItem((GuideItem)((FrameworkElement)sender).DataContext);
+
+            // A Now Playing control's click is its own, not also the card's around it.
+            e.Handled = true;
 #endif
         }
 
