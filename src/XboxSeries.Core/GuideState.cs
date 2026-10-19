@@ -20,6 +20,7 @@ namespace XboxSeries.Core
         private GuideFlyout flyout;
         private GuideItem focusedItem;
         private Dialog dialog;
+        private ProfileAchievements achievements;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -142,6 +143,16 @@ namespace XboxSeries.Core
             internal set => Set(ref dialog, value, nameof(Dialog));
         }
 
+        /// <summary>
+        /// The Profile's achievement totals on Profile &amp; system, from this PC's library, so the same for every Profile;
+        /// null while PlayniteAchievements isn't installed or has no achievements, when the tab has no achievements section.
+        /// </summary>
+        public ProfileAchievements Achievements
+        {
+            get => achievements;
+            internal set => Set(ref achievements, value, nameof(Achievements));
+        }
+
         private void Set<T>(ref T field, T value, string name)
         {
             if (EqualityComparer<T>.Default.Equals(field, value))
@@ -182,6 +193,22 @@ namespace XboxSeries.Core
 
         /// <summary>Whether its entries are still being asked of Discord: it has none yet, and shows that they're coming.</summary>
         public bool IsLoading { get; }
+    }
+
+    /// <summary>The achievement totals on Profile &amp; system; its last few unlocks are the tab's <see cref="GuideItemKind.RecentAchievement"/> entries.</summary>
+    public sealed class ProfileAchievements
+    {
+        internal ProfileAchievements(int score, int unlocked)
+        {
+            Score = score;
+            Unlocked = unlocked;
+        }
+
+        /// <summary>The Score of every achievement unlocked, across all games.</summary>
+        public int Score { get; }
+
+        /// <summary>How many achievements are unlocked, across all games.</summary>
+        public int Unlocked { get; }
     }
 
     /// <summary>A Guide tab, in the order they sit along its top.</summary>
@@ -235,6 +262,14 @@ namespace XboxSeries.Core
         RunningGame,
         RecentGame,
         Profile,
+
+        /// <summary>
+        /// One of the last few achievements unlocked, newest first, on Profile &amp; system under the profile card, the first
+        /// under a divider: its name as the title, its game's name as its <see cref="GuideItem.Detail"/>, its icon as its
+        /// image. Only there while <see cref="GuideState.Achievements"/> is. A does nothing on it.
+        /// </summary>
+        RecentAchievement,
+
         Settings,
         Power,
 

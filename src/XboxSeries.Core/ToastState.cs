@@ -25,6 +25,13 @@ namespace XboxSeries.Core
 
         /// <summary>"X was uninstalled" as a game the extension uninstalled through its client is gone: the game's cover.</summary>
         Uninstalled,
+
+        /// <summary>
+        /// "Achievement unlocked" as the game running now, or the one that just exited, unlocks one: the achievement's icon,
+        /// its name as <see cref="ToastState.Detail"/> and its <see cref="ToastState.Score"/>. Several recorded together are one
+        /// Toast, "&lt;n&gt; achievements unlocked", with no icon, name or Score. ⓧ opens the Guide at Profile &amp; system.
+        /// </summary>
+        AchievementUnlocked,
     }
 
     /// <summary>
@@ -37,6 +44,8 @@ namespace XboxSeries.Core
         private bool isShown;
         private ToastKind kind;
         private string image;
+        private string detail;
+        private int? score;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -84,6 +93,40 @@ namespace XboxSeries.Core
                 {
                     image = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Image)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// A second line under <see cref="Text"/>: an Achievement unlocked Toast's achievement name; null for none. Like
+        /// <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public string Detail
+        {
+            get => detail;
+            internal set
+            {
+                if (detail != value)
+                {
+                    detail = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Detail)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// An Achievement unlocked Toast's achievement's Score, shown beside <see cref="Detail"/>; null for none. Like
+        /// <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public int? Score
+        {
+            get => score;
+            internal set
+            {
+                if (score != value)
+                {
+                    score = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Score)));
                 }
             }
         }
