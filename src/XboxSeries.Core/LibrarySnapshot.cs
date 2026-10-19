@@ -198,6 +198,12 @@ namespace XboxSeries.Core
         /// <summary>The directory the App starts in; null for the one its path is in.</summary>
         public string WorkingDirectory { get; }
 
+        /// <summary>
+        /// Whether the App is a Microsoft Store app, as Playnite imports one: started by explorer.exe on
+        /// shell:AppsFolder\&lt;package family&gt;!&lt;app id&gt;, its icon the package's tile art.
+        /// </summary>
+        public bool IsStoreApp => false;
+
         /// <summary>Whether two Apps would show and start the same: same id, name, path, arguments, icon and working directory.</summary>
         internal static bool Same(App a, App b) =>
             a.Id == b.Id
