@@ -81,7 +81,9 @@ namespace XboxSeries.Extension
             InputManager.Current.PreProcessInput += OnPreProcessInput;
             guarding = true;
 
-            var thread = new Thread(() => Run(plan, pad, sounds))
+            // Copied here, as only this thread may read them.
+            var themeResources = StartupResources.Copy();
+            var thread = new Thread(() => Run(plan, pad, sounds, themeResources))
             {
                 IsBackground = true,
                 Name = "XboxSeries Start-up",
@@ -125,7 +127,7 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>The Start-up thread: the sequence begun, its window made to show it, and its dispatcher run until it ends.</summary>
-        private void Run(StartupPlan plan, GamingInputController pad, ISoundPlayer sounds)
+        private void Run(StartupPlan plan, GamingInputController pad, ISoundPlayer sounds, IReadOnlyDictionary<string, object> themeResources)
         {
             var here = Dispatcher.CurrentDispatcher;
 
@@ -141,7 +143,7 @@ namespace XboxSeries.Extension
                 sequence = new StartupSequence(new DispatcherClock(here), sounds);
                 sequence.SignedIn += TellSignedIn;
                 sequence.Begin(plan);
-                window = new StartupWindow(sequence, pad.ButtonsDown, () => playniteWindow, ActivatePlaynite);
+                window = new StartupWindow(sequence, themeResources, pad.ButtonsDown, () => playniteWindow, ActivatePlaynite);
                 window.FadedOut += () =>
                 {
                     window.Shutdown();

@@ -51,7 +51,6 @@ namespace XboxSeries.Extension
         {
             Focusable = false;
             IsHitTestVisible = false;
-            SetResourceReference(TailBrushProperty, "GlyphLightBrush");
             // Shown before it is loaded, it starts once loaded; loaded again while still shown, it starts again.
             IsVisibleChanged += (_, __) => UpdateSpinning();
             Loaded += (_, __) => UpdateSpinning();
@@ -135,6 +134,20 @@ namespace XboxSeries.Extension
             {
                 RepeatBehavior = RepeatBehavior.Forever,
             });
+        }
+
+        /// <summary>
+        /// The theme's GlyphLightBrush for the tail unless one is set, looked up only now, in its window: looked up as it
+        /// is made, with no window yet, it comes from Playnite's application resources, which belong to the UI thread,
+        /// where the Start-up window, on a thread of its own, has a copy of its own (StartupResources).
+        /// </summary>
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
+            if (ReadLocalValue(TailBrushProperty) == DependencyProperty.UnsetValue)
+            {
+                SetResourceReference(TailBrushProperty, "GlyphLightBrush");
+            }
         }
 
         protected override void OnRender(DrawingContext drawingContext)
