@@ -163,6 +163,23 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Whos_playing_today_says_where_the_focused_profile_is_in_the_row_so_the_row_can_centre_it()
+        {
+            sequence.Begin(Plan(BootVideo.Off, last: ana));
+            Assert.Equal(1, State.FocusedIndex);
+
+            Tap(ControllerButton.DPadRight);
+            Assert.Equal(2, State.FocusedIndex);
+
+            Tap(ControllerButton.DPadRight);
+            Assert.Equal(2, State.FocusedIndex);
+
+            Tap(ControllerButton.DPadLeft);
+            Tap(ControllerButton.DPadLeft);
+            Assert.Equal(0, State.FocusedIndex);
+        }
+
+        [Fact]
         public void A_signs_the_focused_profile_in_with_the_Enter_and_Login_sounds()
         {
             sequence.Begin(Plan(BootVideo.Off));
