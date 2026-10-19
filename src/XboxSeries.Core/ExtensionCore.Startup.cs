@@ -42,16 +42,31 @@ namespace XboxSeries.Core
         /// <summary>The Start-up sequence, shown full screen over Playnite.</summary>
         public StartupState Startup { get; } = new StartupState();
 
+        /// <summary>Whether a Start-up sequence covers the screen, from its beginning until Signing you in has shown.</summary>
+        public bool IsStartupShown => Startup.IsShown;
+
+        /// <summary>Signing you in has shown: the Start-up window fades out to Home as "Hi X!" shows. Raised on the UI thread.</summary>
+        public event Action StartupEnded;
+
+        /// <summary>The sequence's thread signed a profile in, marshalled to the UI thread.</summary>
+        public void OnStartupSignedIn(Profile profile)
+        {
+            StartupEnded?.Invoke();
+        }
+
+        private StartupPlan StartupPlan(BootVideo video) =>
+            new StartupPlan(video, Settings.StartUp.AskWhosPlaying, profiles.ToList(), LastProfile);
+
         /// <summary>
         /// Playnite started in Fullscreen: the sequence begins with the chosen boot video, or Who's playing today? with
         /// it Off. A video that runs past <see cref="BootVideoDeadline"/> ends as one that finished, so nothing it shows
         /// can hold Playnite up.
         /// </summary>
-        public void OnStartup()
+        public StartupPlan OnStartup()
         {
             if (Startup.IsShown)
             {
-                return;
+                return null;
             }
 
             CoverForStartup();
@@ -69,6 +84,8 @@ namespace XboxSeries.Core
                     OnBootVideoEnded();
                 });
             }
+
+            return StartupPlan(Settings.StartUp.BootVideo);
         }
 
         /// <summary>The boot video finished, or couldn't play: the sequence goes on.</summary>
@@ -86,15 +103,16 @@ namespace XboxSeries.Core
         /// Windows woke from sleep: Who's playing today? asks again, if it asks, without the boot video. The Guide, and
         /// any Toast, go first.
         /// </summary>
-        public void OnResumedFromSleep()
+        public StartupPlan OnResumedFromSleep()
         {
             if (!Settings.StartUp.AskWhosPlaying || Startup.IsShown)
             {
-                return;
+                return null;
             }
 
             CoverForStartup();
             AskWhosPlaying();
+            return StartupPlan(BootVideo.Off);
         }
 
         /// <summary>Settings' Boot video page: the generation that plays at start, or Off. Saved at once.</summary>

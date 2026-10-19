@@ -264,7 +264,7 @@ namespace XboxSeries.Extension
         {
             if (e.Mode == PowerModes.Resume)
             {
-                OnUiThread(core.OnResumedFromSleep);
+                OnUiThread(() => core.OnResumedFromSleep());
             }
         }
 

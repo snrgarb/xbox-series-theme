@@ -33,6 +33,30 @@ namespace XboxSeries.Core
     }
 
     /// <summary>
+    /// What a Start-up sequence begins with, as the core hands it to the sequence's own thread: the boot video (Off on
+    /// waking from sleep), whether Who's playing today? asks, the profiles, and the one signed in last, whom it focuses
+    /// and, when it doesn't ask, signs in.
+    /// </summary>
+    public sealed class StartupPlan
+    {
+        public StartupPlan(BootVideo bootVideo, bool askWhosPlaying, IReadOnlyList<Profile> profiles, Profile lastProfile)
+        {
+            BootVideo = bootVideo;
+            AskWhosPlaying = askWhosPlaying;
+            Profiles = profiles;
+            LastProfile = lastProfile;
+        }
+
+        public BootVideo BootVideo { get; }
+
+        public bool AskWhosPlaying { get; }
+
+        public IReadOnlyList<Profile> Profiles { get; }
+
+        public Profile LastProfile { get; }
+    }
+
+    /// <summary>
     /// One person who plays on this PC: a gamertag, a real name and a picture. It is identity only; the Bundle's options
     /// are shared by every profile.
     /// </summary>
