@@ -12,7 +12,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// PlayniteAchievements' members, reached by reflection on its plugin instance, as checked against its source
     /// (v4.1): PlayniteAchievementsPlugin's AchievementDataService, CacheManager and RefreshRuntime, and its static
-    /// AchievementUnlocked event.
+    /// AchievementUnlocked event. AchievementDetail's and AchievementUnlockedEventArgs' Description is optional: a
+    /// version without it still binds, its achievements with no description.
     /// </summary>
     internal sealed partial class PlayniteAchievementsSource
     {
@@ -195,6 +196,13 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
+        /// What the achievement asks of the player, from PlayniteAchievements' Description, trimmed; null when it has
+        /// none, as for a hidden achievement it keeps no description of, or when its version has no Description at all.
+        /// </summary>
+        internal static string Description(string description) =>
+            string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+
+        /// <summary>
         /// A full path or URI to the icon, from one of PlayniteAchievements' icon paths: any display prefix it added
         /// ("cachebust|token|", "gray:") taken off, and a path relative to its data directory made full; null for none.
         /// </summary>
@@ -255,6 +263,7 @@ namespace XboxSeries.Extension
             // AchievementDetail's
             private readonly PropertyInfo apiName;
             private readonly PropertyInfo displayName;
+            private readonly PropertyInfo description;
             private readonly PropertyInfo unlockedIconPath;
             private readonly PropertyInfo globalPercent;
             private readonly PropertyInfo unlockTimeUtc;
@@ -292,6 +301,7 @@ namespace XboxSeries.Extension
 
                 apiName = Property(detailType, "ApiName", typeof(string));
                 displayName = Property(detailType, "DisplayName", typeof(string));
+                description = Optional(detailType, "Description", typeof(string));
                 unlockedIconPath = Property(detailType, "UnlockedIconPath", typeof(string));
                 globalPercent = Property(detailType, "GlobalPercentUnlocked", typeof(double?));
                 unlockTimeUtc = Property(detailType, "UnlockTimeUtc", typeof(DateTime?));
@@ -398,7 +408,8 @@ namespace XboxSeries.Extension
                     string.IsNullOrWhiteSpace(name) ? key : name,
                     Icon(members.IconPath?.GetValue(e) as string, dataDirectory),
                     Rarity(members.GlobalPercent?.GetValue(e) as double?),
-                    UnlockedAt(true, members.UnlockTimeUtc?.GetValue(e) as DateTime?) is DateTime at && at != DateTime.MinValue ? at : DateTime.Now);
+                    UnlockedAt(true, members.UnlockTimeUtc?.GetValue(e) as DateTime?) is DateTime at && at != DateTime.MinValue ? at : DateTime.Now,
+                    Description(members.Description?.GetValue(e) as string));
                 return true;
             }
 
@@ -473,7 +484,8 @@ namespace XboxSeries.Extension
                         string.IsNullOrWhiteSpace(name) ? key : name,
                         Icon(unlockedIconPath.GetValue(detail) as string, dataDirectory),
                         Rarity(globalPercent.GetValue(detail) as double?),
-                        UnlockedAt(Get<bool>(unlocked, detail), unlockTimeUtc.GetValue(detail) as DateTime?)));
+                        UnlockedAt(Get<bool>(unlocked, detail), unlockTimeUtc.GetValue(detail) as DateTime?),
+                        Description(description?.GetValue(detail) as string)));
                 }
 
                 return mapped.Count == 0 ? null : new GameAchievements(id.Value, mapped);
@@ -591,6 +603,7 @@ namespace XboxSeries.Extension
                 PlayniteGameId = Find("PlayniteGameId");
                 ApiName = Find("ApiName");
                 DisplayName = Find("DisplayName");
+                Description = Find("Description");
                 IconPath = Find("IconPath");
                 GlobalPercent = Find("GlobalPercent");
                 UnlockTimeUtc = Find("UnlockTimeUtc");
@@ -608,6 +621,7 @@ namespace XboxSeries.Extension
             public PropertyInfo PlayniteGameId { get; }
             public PropertyInfo ApiName { get; }
             public PropertyInfo DisplayName { get; }
+            public PropertyInfo Description { get; }
             public PropertyInfo IconPath { get; }
             public PropertyInfo GlobalPercent { get; }
             public PropertyInfo UnlockTimeUtc { get; }
