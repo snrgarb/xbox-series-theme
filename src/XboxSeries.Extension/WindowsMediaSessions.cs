@@ -40,9 +40,16 @@ namespace XboxSeries.Extension
         // Stub (#75): every app's session, read and followed.
         public IReadOnlyList<MediaSession> Sessions => current == null ? new MediaSession[0] : new[] { current };
 
-        // Stub (#73): asks the app to carry out the command.
         public void Send(MediaCommand command, string appId)
         {
+            var following = follower;
+            if (following == null)
+            {
+                logger.Warn($"Now Playing: no media sessions to ask {appId} to {command}");
+                return;
+            }
+
+            following.Send(command, appId);
         }
 
         // Stub (#74): reads and decodes the app's art, answering through ArtFetched.
@@ -425,6 +432,57 @@ namespace XboxSeries.Extension
                     logger.Warn($"Now Playing: couldn't decode the album art ({e.Message})");
                     return null;
                 }
+            }
+
+            /// <summary>
+            /// Asks the app with <paramref name="appId"/>, by its session among Windows' sessions now, to carry out
+            /// <paramref name="command"/>, off the calling thread. Never throws: an app that refuses, has no session or
+            /// closes as it is asked is logged, and what it does shows only as its session changes.
+            /// </summary>
+            public void Send(MediaCommand command, string appId)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var sessions = manager;
+                        GlobalSystemMediaTransportControlsSession target = null;
+                        if (sessions != null)
+                        {
+                            foreach (var candidate in sessions.GetSessions())
+                            {
+                                if (candidate.SourceAppUserModelId == appId)
+                                {
+                                    target = candidate;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (target == null)
+                        {
+                            logger.Warn($"Now Playing: {appId} has no media session to {command}");
+                            return;
+                        }
+
+                        var asked = command == MediaCommand.Previous ? target.TrySkipPreviousAsync()
+                            : command == MediaCommand.Next ? target.TrySkipNextAsync()
+                            : target.TryTogglePlayPauseAsync();
+                        if (await asked.AsTask().ConfigureAwait(false))
+                        {
+                            logger.Info($"Now Playing: asked {appId} to {command}");
+                        }
+                        else
+                        {
+                            logger.Warn($"Now Playing: {appId} refused to {command}");
+                        }
+                    }
+                    catch (Exception e) when (!(e is OutOfMemoryException))
+                    {
+                        // As the app closes mid-command.
+                        logger.Warn($"Now Playing: {appId} failed to {command} ({e.Message})");
+                    }
+                });
             }
         }
     }

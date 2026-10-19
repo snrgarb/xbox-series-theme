@@ -433,7 +433,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Where focus goes as <paramref name="shown"/> is replaced by <paramref name="wanted"/>: the same kind of entry,
-        /// for the same person, channel or server, else the entry now at the same place.
+        /// for the same person, channel or server, else the entry now at the same place; from a Now Playing card's control,
+        /// the same control of the new card, else the entry in the card's place.
         /// </summary>
         private GuideItem FocusAfterRebuild(IReadOnlyList<GuideItem> shown, IReadOnlyList<GuideItem> wanted)
         {
@@ -446,6 +447,11 @@ namespace XboxSeries.Core
             if (focused == null)
             {
                 return wanted[0];
+            }
+
+            if (IsMediaControl(focused))
+            {
+                return MediaControlFocusAfterRebuild(focused, wanted);
             }
 
             return wanted.FirstOrDefault(i => i.Kind == focused.Kind && i.UserId == focused.UserId && i.ChannelId == focused.ChannelId

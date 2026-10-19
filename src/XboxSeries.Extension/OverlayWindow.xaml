@@ -147,13 +147,17 @@
                             (or art that won't load), its left edge where the rows above have their icons, beside the track,
                             the artist in grey, and the app playing it after the play or pause mark. It is in the Entry, under
                             the Divider, so the divider above it shows as any entry's. The art comes decoded and frozen from
-                            the extension, so it is bound as it is.
+                            the extension, so it is bound as it is. Under it, the card's row of Previous, Play/Pause and Next.
                         -->
                         <Grid x:Name="Media" Margin="18,0,16,0" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="150" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
                             <Grid Width="120" Height="120" VerticalAlignment="Center">
                                 <Border CornerRadius="4" Background="#FF4A4A4A">
                                     <TextBlock Text="&#xE8D6;" Style="{StaticResource GuideIcon}" FontSize="44" Foreground="#B3FFFFFF" HorizontalAlignment="Center" />
@@ -177,6 +181,63 @@
                                                Margin="8,0,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </StackPanel>
+                            <!--
+                                The card's controls, centred under it as Windows' media flyout has them: each a rounded square
+                                with its glyph, lit and ringed with the Guide's glow while it has focus as an entry is, and
+                                dimmed while the app has it turned off. Pointed at and clicked as an entry is; the click is
+                                the control's, not the card's.
+                            -->
+                            <ItemsControl x:Name="MediaControls" Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Controls}"
+                                          HorizontalAlignment="Center" Margin="0,0,0,16" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="72" Height="52" Margin="10,0" Background="Transparent"
+                                              MouseEnter="OnEntryMouseEnter" MouseLeftButtonUp="OnEntryClick">
+                                            <Border x:Name="ControlFill" CornerRadius="4" Background="#14FFFFFF" />
+                                            <!-- Segoe Fluent Icons / MDL2 Assets: previous, play while paused or pause while playing, next. -->
+                                            <TextBlock x:Name="ControlGlyph" Style="{StaticResource GuideIcon}" FontSize="22"
+                                                       HorizontalAlignment="Center" />
+                                            <Border x:Name="ControlRing" Margin="-8" BorderThickness="4" CornerRadius="12"
+                                                    BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                                <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                                </Border>
+                                            </Border>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Kind}" Value="MediaPrevious">
+                                                <Setter TargetName="ControlGlyph" Property="Text" Value="&#xE892;" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="MediaPlayPause">
+                                                <Setter TargetName="ControlGlyph" Property="Text" Value="&#xE768;" />
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding Kind}" Value="MediaPlayPause" />
+                                                    <Condition Binding="{Binding IsPlaying}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="ControlGlyph" Property="Text" Value="&#xE769;" />
+                                            </MultiDataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="MediaNext">
+                                                <Setter TargetName="ControlGlyph" Property="Text" Value="&#xE893;" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                <Setter TargetName="ControlGlyph" Property="Opacity" Value="0.35" />
+                                                <Setter TargetName="ControlFill" Property="Opacity" Value="0.5" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsFocused}" Value="True">
+                                                <Setter TargetName="ControlFill" Property="Background" Value="#26FFFFFF" />
+                                                <Setter TargetName="ControlRing" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Grid>
                         <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
                             <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
@@ -526,7 +587,8 @@
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Text" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Media" Property="Visibility" Value="Visible" />
-                        <Setter TargetName="Entry" Property="Height" Value="150" />
+                        <!-- The card's 150, and under it its row of controls, 52, with 16 below. -->
+                        <Setter TargetName="Entry" Property="Height" Value="218" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsPlaying}" Value="True">
                         <Setter TargetName="PlayState" Property="Text" Value="&#xE768;" />
