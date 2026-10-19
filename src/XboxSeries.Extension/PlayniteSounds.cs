@@ -30,6 +30,7 @@ namespace XboxSeries.Extension
             [UiSound.Login] = new[] { "Login.wav" },
             [UiSound.PowerOff] = new[] { "PowerOff.wav" },
             [UiSound.Notification] = new[] { "Notification.wav" },
+            [UiSound.RareAchievement] = new[] { "RareAchievement.wav" },
         };
 
         private readonly Engine engine;
