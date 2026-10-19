@@ -57,6 +57,9 @@ namespace XboxSeries.Core
         /// <summary>Whether this is drawn wide, with <see cref="Tiles"/> and a <see cref="CloseOption"/>.</summary>
         public bool IsWide => CloseOption != null;
 
+        /// <summary>A question to answer ("Quit X and start Y?") rather than a menu of what can be done with something.</summary>
+        public bool IsPrompt => isPrompt;
+
         /// <summary>A wide dialog's tiles, row by row; none for a menu or prompt.</summary>
         public IReadOnlyList<DialogOption> Tiles { get; }
 
