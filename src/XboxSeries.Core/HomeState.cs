@@ -22,6 +22,13 @@ namespace XboxSeries.Core
         /// </summary>
         public event Action<Guid> ReturnedFromGame;
 
+        /// <summary>
+        /// Start-up has ended, on start or on waking from sleep, and Home is revealed from black as the Start-up window
+        /// fades out: Home's rows fly up into place, then the top bar's buttons drop in. Raised on the UI thread, with
+        /// <see cref="ExtensionCore.StartupEnded"/>.
+        /// </summary>
+        public event Action Revealed;
+
         /// <summary>The Recent row's game tiles, left to right. The Play history tile follows them.</summary>
         public IReadOnlyList<HomeTile> RecentRow
         {
@@ -74,6 +81,8 @@ namespace XboxSeries.Core
         }
 
         internal void ReturnFromGame(Guid gameId) => ReturnedFromGame?.Invoke(gameId);
+
+        internal void Reveal() => Revealed?.Invoke();
 
         private void Set<T>(ref T field, T value, string name)
         {
