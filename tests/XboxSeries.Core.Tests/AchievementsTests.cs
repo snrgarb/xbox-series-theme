@@ -386,6 +386,25 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Before_the_first_read_a_live_unlock_shows_its_Toast_but_no_totals_built_from_it_alone()
+        {
+            Record(hades, Unlocked("boon", "Blessed", at: Start.AddDays(-5)));
+            core.OnGameStarted(hades);
+            clock.Advance(TimeSpan.FromMinutes(5));
+
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            OpenProfileTab();
+
+            Assert.Equal("Escaped", core.Toast.Detail);
+            Assert.Null(core.Guide.Achievements);
+            Assert.DoesNotContain(core.Guide.Items, i => i.Kind == GuideItemKind.RecentAchievement);
+
+            core.OnAchievementsChanged();
+            Assert.Equal(2, core.Guide.Achievements.Unlocked);
+        }
+
+        [Fact]
         public void A_read_with_Profile_and_system_showing_updates_its_totals_and_entries_in_place_focus_kept()
         {
             Record(hades, Unlocked("boon", "Blessed", at: Start.AddDays(-5)));
