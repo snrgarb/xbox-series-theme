@@ -97,7 +97,19 @@ namespace XboxSeries.Extension
             {
                 // Another Toast cutting in, as a call over a notification: on its line first too, its tile placed or sliding
                 // in again as its kind has it. The core sets the text and then the kind, so this runs for each, the kind's last.
+                if (IsRare)
+                {
+                    PlayRare();
+                    return;
+                }
+
+                // The banner grows in afresh only over a rare achievement's pill, which hid it.
+                var overRare = StopRare();
                 CycleText();
+                if (overRare)
+                {
+                    GrowIn();
+                }
                 ComeIn();
                 return;
             }
@@ -110,16 +122,66 @@ namespace XboxSeries.Extension
             if (toast.IsShown)
             {
                 ShowOverForeground();
+                if (IsRare)
+                {
+                    PlayRare();
+                    return;
+                }
 
                 // On the Toast's line first, each time it shows, and from the start of the grow, even mid-going.
+                StopRare();
                 CycleText();
                 GrowIn();
                 ComeIn();
+            }
+            else if (Rare.Visibility == Visibility.Visible)
+            {
+                GoRare();
             }
             else
             {
                 Go();
             }
+        }
+
+        private bool IsRare => toast.Kind == ToastKind.RareAchievementUnlocked;
+
+        /// <summary>A rare achievement's pill in place of the banner, from its start, the banner hidden where it was.</summary>
+        private void PlayRare()
+        {
+            goings++;
+            textCycle.Stop(this);
+            Card.BeginAnimation(OpacityProperty, null);
+            Card.Opacity = 0;
+            Rare.Visibility = Visibility.Visible;
+            Rare.Play();
+        }
+
+        /// <summary>The rare achievement's pill gone for the banner, if it was showing: whether it was.</summary>
+        private bool StopRare()
+        {
+            if (Rare.Visibility != Visibility.Visible)
+            {
+                return false;
+            }
+
+            Rare.Stop();
+            Rare.Visibility = Visibility.Collapsed;
+            return true;
+        }
+
+        /// <summary>The rare achievement's pill going its own way; then the window hiding if the Toast hasn't shown again.</summary>
+        private void GoRare()
+        {
+            var going = ++goings;
+            Rare.Go(() =>
+            {
+                if (going == goings && !toast.IsShown)
+                {
+                    StopRare();
+                    Hide();
+                }
+            });
         }
 
         /// <summary>
