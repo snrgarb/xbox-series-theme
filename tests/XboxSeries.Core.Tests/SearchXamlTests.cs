@@ -109,12 +109,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_rows_list_clips_its_tiles_to_its_scroll_viewer()
+        public void The_rows_measurements_are_those_their_width_is_worked_out_from()
         {
-            // The ScrollViewer clips to its viewport, so the tile after the last shown is cut off, not covered.
-            var scroller = TileRow(Load("SearchControl.xaml")).Descendants().Single(e => e.Name.LocalName == "ScrollViewer");
+            // Every place a row rests at is a whole number of tiles along. Its ScrollViewer starts a gap in from the list,
+            // so a tile slid off to the left is cut off before the gutter, while the first tile shown, the gutter in, keeps
+            // its ring, 8 out from it; its panel's viewport is then whole tiles wide, so it scrolls no further than one.
+            var doc = Load("SearchControl.xaml");
+            var scroller = TileRow(doc).Descendants().Single(e => e.Name.LocalName == "ScrollViewer");
+            var presenter = scroller.Elements().Single(e => e.Name.LocalName == "ItemsPresenter");
+            var tile = StyleByKey(doc, "Tile");
 
-            Assert.NotEqual("False", (string)scroller.Attribute("ClipToBounds"));
+            Assert.Equal(SearchRowWidth.Gap + ",0,0,0", (string)scroller.Attribute("Margin"));
+            Assert.Equal((SearchRowWidth.Gutter - SearchRowWidth.Gap) + "," + SearchRowWidth.Gutter + ",0," + SearchRowWidth.Gutter, (string)presenter.Attribute("Margin"));
+            Assert.True(SearchRowWidth.Gutter - 8 >= SearchRowWidth.Gap);
+            Assert.Contains(tile.Elements(), s => (string)s.Attribute("Property") == "Width" && (string)s.Attribute("Value") == SearchRowWidth.TileWidth.ToString());
+            Assert.Contains(tile.Elements(), s => (string)s.Attribute("Property") == "Margin" && (string)s.Attribute("Value") == "0,0," + SearchRowWidth.Gap + ",0");
         }
     }
 }

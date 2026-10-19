@@ -71,7 +71,7 @@
 
             <!--
                 A row of tiles, slid sideways as focus moves along it, built only as far as it is seen. The tiles sit 24 in
-                from the list's edges, which its margin cancels, so their rings and glow aren't cut off there. It shows only
+                from the list's left, top and bottom, which its margin cancels, so their rings and glow aren't cut off there. It shows only
                 whole tiles, 7 at most, as many as the width its row has (the page's, less its 74 either side) fits: the
                 list ends where the next tile begins, which its ScrollViewer cuts off, while the last shown's ring fits in
                 the gap before it.
@@ -99,8 +99,13 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ListBox">
-                            <ScrollViewer Focusable="False">
-                                <ItemsPresenter Margin="24" />
+                            <!--
+                                The ScrollViewer starts a gap in, so a tile slid off to the left is cut off there while the
+                                first shown keeps its ring; the tiles' panel is whole tiles wide, so the row only ever rests
+                                a whole number of tiles along.
+                            -->
+                            <ScrollViewer Focusable="False" Margin="15,0,0,0">
+                                <ItemsPresenter Margin="9,24,0,24" />
                             </ScrollViewer>
                         </ControlTemplate>
                     </Setter.Value>
