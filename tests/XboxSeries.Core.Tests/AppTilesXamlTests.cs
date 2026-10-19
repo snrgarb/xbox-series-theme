@@ -28,8 +28,7 @@ namespace XboxSeries.Core.Tests
             var band = name.Parent;
 
             Assert.Equal("TitleBand", (string)band.Attribute(X + "Name"));
-            // Solid: Home's 90% black reads black over dark covers, but grey over an App's white.
-            Assert.Equal("Black", (string)band.Attribute("Background"));
+            Assert.Equal("#E6000000", (string)band.Attribute("Background"));
             Assert.Equal("Bottom", (string)band.Attribute("VerticalAlignment"));
             Assert.Null(band.Attribute("Grid.Row"));
             Assert.Equal("White", (string)name.Attribute("Foreground"));
