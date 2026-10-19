@@ -261,14 +261,14 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Not in the SDK: Playnite's own exit, <c>PlayniteApplication.Current.Quit()</c>, which saves settings and releases
-        /// resources first; the WPF application is that PlayniteApplication. On a Playnite build without it, the WPF
-        /// shutdown, after which Playnite still releases them.
+        /// resources first. On a Playnite build without it, the WPF shutdown, after which Playnite still releases them.
         /// </summary>
         private static void QuitPlaynite()
         {
-            var app = Application.Current;
-            var quit = app?.GetType().GetMethod("Quit", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
-            if (quit != null)
+            var type = Type.GetType("Playnite.PlayniteApplication, Playnite");
+            var app = type?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            var quit = type?.GetMethod("Quit", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(bool) }, null);
+            if (app != null && quit != null)
             {
                 quit.Invoke(app, new object[] { true });
                 return;
