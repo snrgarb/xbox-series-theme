@@ -204,6 +204,7 @@ namespace XboxSeries.Extension
             // Windows' media sessions, for the Audio flyout's Now Playing, followed from here: what it shows is ready
             // before the Guide first opens. Their changes arrive on threads of their own.
             mediaSessions.Changed += () => OnUiThread(core.OnMediaSessionChanged);
+            mediaSessions.ArtFetched += (request, art) => OnUiThread(() => core.OnMediaArt(request, art));
             StartupTiming.Time("Starting the media sessions", mediaSessions.Start);
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
