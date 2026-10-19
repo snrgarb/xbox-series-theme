@@ -58,9 +58,12 @@ namespace XboxSeries.Extension
         private DateTime steamGamesRead;
         private volatile bool steamGamesStale = true;
         private bool watchingLibrary;
-        private bool installWarned;
         private bool installingWarned;
         private bool markWarned;
+
+        // What Install asks the running client: app_install into its console over CEF, or -silent +app_install handed
+        // to steam.exe, followed by the app id either way.
+        private readonly SteamCommand installs = new SteamCommand("install", "app_install", "-silent +app_install");
 
         public bool CanInstall(Guid gameId)
         {
@@ -70,7 +73,7 @@ namespace XboxSeries.Extension
             }
             catch (Exception e) when (IsReadFailure(e))
             {
-                WarnOnce(ref installWarned, e, "Couldn't find Steam to install with");
+                WarnOnce(ref installs.Warned, e, "Couldn't find Steam to install with");
                 return false;
             }
         }
@@ -103,7 +106,7 @@ namespace XboxSeries.Extension
             }
             catch (Exception e) when (IsReadFailure(e))
             {
-                WarnOnce(ref installWarned, e, $"Couldn't find Steam to install game {gameId} with");
+                WarnOnce(ref installs.Warned, e, $"Couldn't find Steam to install game {gameId} with");
                 return;
             }
 
@@ -115,34 +118,41 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// <see cref="Install"/> for an app id, which <paramref name="what"/> names in the log: the console over CEF
-        /// first, then steam.exe should that not take. Returns at the first await, called on the UI thread, and carries
-        /// on there, as the fallback's timers need; nothing it does is let out of it, as nothing could catch it.
+        /// first, then steam.exe should that not take, as <see cref="AskSteamApp"/> does for every command.
         /// </summary>
-        private async void InstallApp(string exe, uint appId, string what)
+        private void InstallApp(string exe, uint appId, string what) => AskSteamApp(exe, appId, installs, what);
+
+        /// <summary>
+        /// Asks the running client to run <paramref name="command"/> on an app, which <paramref name="what"/> names in
+        /// the log: the console over CEF first, then steam.exe should that not take. Returns at the first await,
+        /// called on the UI thread, and carries on there, as the fallback's timers need; nothing it does is let out of
+        /// it, as nothing could catch it.
+        /// </summary>
+        private async void AskSteamApp(string exe, uint appId, SteamCommand command, string what)
         {
             try
             {
-                if (await AskSteamConsole(appId, what))
+                if (await AskSteamConsole(appId, command, what))
                 {
                     return;
                 }
 
-                InstallThroughSteamExe(exe, appId, what);
+                AskThroughSteamExe(exe, appId, command, what);
             }
             catch (Exception e)
             {
-                logger.Error(e, $"Couldn't ask Steam to install app {appId} for {what}");
+                logger.Error(e, $"Couldn't ask Steam to {command.Verb} app {appId} for {what}");
             }
         }
 
         /// <summary>
-        /// Types <c>app_install</c> into the running client's console over its CEF debugger; whether the command
+        /// Types the command's console form into the running client's console over its CEF debugger; whether it
         /// reached it, as the console says nothing back worth reading. False, with the reason in the log, when Steam
         /// isn't running, the user hasn't its debugger on, or the debugger couldn't be reached or answered otherwise,
-        /// so the install goes through steam.exe instead; true, too, when the connection was lost once the command
+        /// so the command goes through steam.exe instead; true, too, when the connection was lost once the command
         /// was sent, as it may already have taken.
         /// </summary>
-        private async Task<bool> AskSteamConsole(uint appId, string what)
+        private async Task<bool> AskSteamConsole(uint appId, SteamCommand command, string what)
         {
             if (!IsSteamRunning())
             {
@@ -159,19 +169,19 @@ namespace XboxSeries.Extension
             string answer;
             try
             {
-                answer = await EvaluateInSteam("SteamClient.Console.ExecCommand('app_install " + appId + "'); 'asked'");
+                answer = await EvaluateInSteam("SteamClient.Console.ExecCommand('" + command.Console + " " + appId + "'); 'asked'");
             }
             catch (Exception e) when (e is WebSocketException || e is OperationCanceledException)
             {
-                // The command was sent, so Steam may well be installing already: asking again through steam.exe would
-                // raise the window this route exists to avoid, for an install that's likely under way.
-                logger.Warn(e, $"Lost Steam's console over CEF after asking it to install app {appId} for {what}; not asking again through steam.exe");
+                // The command was sent, so Steam may well be at it already: asking again through steam.exe would
+                // raise the window this route exists to avoid, for a command that's likely taken.
+                logger.Warn(e, $"Lost Steam's console over CEF after asking it to {command.Verb} app {appId} for {what}; not asking again through steam.exe");
                 return true;
             }
 
             if (answer == "asked")
             {
-                logger.Info($"Asked Steam to install app {appId} for {what} through its console over CEF");
+                logger.Info($"Asked Steam to {command.Verb} app {appId} for {what} through its console over CEF");
                 return true;
             }
 
@@ -182,26 +192,28 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// <see cref="InstallApp"/>'s fallback: <c>-silent +app_install</c> handed to steam.exe, after Steam's open
-        /// windows have gone to the tray, and Playnite kept in front for a while after.
+        /// <see cref="AskSteamApp"/>'s fallback: the command's steam.exe arguments, such as <c>-silent +app_install</c>,
+        /// handed to steam.exe after Steam's open windows have gone to the tray, and Playnite kept in front for a while
+        /// after.
         /// </summary>
-        private void InstallThroughSteamExe(string exe, uint appId, string what)
+        private void AskThroughSteamExe(string exe, uint appId, SteamCommand command, string what)
         {
+            var arguments = $"{command.Arguments} {appId}";
             if (!IsSteamRunning())
             {
-                AskSteam(exe, $"-silent +app_install {appId}", what, ref installWarned);
+                AskSteam(exe, arguments, what, ref command.Warned);
                 return;
             }
 
             var open = SteamWindows();
             if (open.Count == 0)
             {
-                AskSteam(exe, $"-silent +app_install {appId}", what, ref installWarned);
+                AskSteam(exe, arguments, what, ref command.Warned);
                 KeepPlayniteInFront();
                 return;
             }
 
-            logger.Info($"Sending Steam's {open.Count} open window(s) to the tray before asking it to install app {appId}");
+            logger.Info($"Sending Steam's {open.Count} open window(s) to the tray before asking it to {command.Verb} app {appId}");
             foreach (var window in open)
             {
                 NativeMethods.PostMessage(window, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
@@ -217,10 +229,35 @@ namespace XboxSeries.Extension
                 }
 
                 timer.Stop();
-                AskSteam(exe, $"-silent +app_install {appId}", what, ref installWarned);
+                AskSteam(exe, arguments, what, ref command.Warned);
                 KeepPlayniteInFront();
             };
             timer.Start();
+        }
+
+        /// <summary>
+        /// A command the running client is asked to run on an app, followed by the app's id: <see cref="Console"/> as
+        /// it's typed into the client's console over CEF, and <see cref="Arguments"/> as it's handed to steam.exe
+        /// instead, with <see cref="Verb"/> naming it in the log, where a failure to ask is warned of once for each
+        /// command, through <see cref="Warned"/>.
+        /// </summary>
+        private sealed class SteamCommand
+        {
+            public SteamCommand(string verb, string console, string arguments)
+            {
+                Verb = verb;
+                Console = console;
+                Arguments = arguments;
+            }
+
+            public string Verb { get; }
+
+            public string Console { get; }
+
+            public string Arguments { get; }
+
+            // A field, so it can go by ref to WarnOnce and AskSteam.
+            public bool Warned;
         }
 
         /// <summary>
@@ -299,7 +336,7 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                logger.Info("Steam came to the front as it took the install; sending it back to the tray");
+                logger.Info("Steam came to the front as it took the command; sending it back to the tray");
                 NativeMethods.PostMessage(front, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
                 NativeMethods.BringToForeground(playniteWindow);
             };
