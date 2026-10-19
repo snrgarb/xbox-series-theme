@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,6 +36,12 @@ namespace XboxSeries.Extension
         /// <summary>Raised, on a thread of its own, when <see cref="Current"/> has changed.</summary>
         public event Action Changed;
 
+        /// <summary>
+        /// Raised, on a thread of its own, with the art a <see cref="FetchArt"/> asked for, by its request number: a
+        /// frozen bitmap, or null for none.
+        /// </summary>
+        public event Action<int, object> ArtFetched;
+
         public MediaSession Current => current;
 
         // Stub (#75): every app's session, read and followed.
@@ -45,10 +52,11 @@ namespace XboxSeries.Extension
         {
         }
 
-        // Stub (#74): reads and decodes the app's art, answering through ArtFetched.
-        public void FetchArt(string appId, int request)
-        {
-        }
+        /// <summary>
+        /// Reads and decodes the art of the app with <paramref name="appId"/>, off the calling thread, answering through
+        /// <see cref="ArtFetched"/>; never where Windows hasn't the API, as there is never a session to ask for it.
+        /// </summary>
+        public void FetchArt(string appId, int request) => follower?.FetchArt(appId, request, (r, art) => ArtFetched?.Invoke(r, art));
 
         /// <summary>Starts following Windows' current media session, where Windows has the API.</summary>
         public void Start()
@@ -104,9 +112,10 @@ namespace XboxSeries.Extension
         private static bool Same(MediaSession a, MediaSession b) =>
             a == null || b == null
                 ? a == b
-                : a.AppId == b.AppId && a.Title == b.Title && a.Artist == b.Artist && a.IsPlaying == b.IsPlaying && a.Art == b.Art
+                : a.AppId == b.AppId && a.Title == b.Title && a.Artist == b.Artist && a.IsPlaying == b.IsPlaying
                     && a.CanTogglePlayPause == b.CanTogglePlayPause && a.CanGoPrevious == b.CanGoPrevious && a.CanGoNext == b.CanGoNext
-                    && a.Position == b.Position && a.Duration == b.Duration && a.LastUpdated == b.LastUpdated;
+                    && a.Position == b.Position && a.Duration == b.Duration && a.LastUpdated == b.LastUpdated
+                    && a.HasArt == b.HasArt;
 
         /// <summary>
         /// Follows Windows' current media session. Every refresh, whatever asked for it, runs alone and in turn, off the
@@ -143,10 +152,6 @@ namespace XboxSeries.Extension
             private GlobalSystemMediaTransportControlsSession session;
             private string sessionApp;
             private bool disposed;
-
-            /// <summary>The art last decoded, for the track it was decoded for, so play and pause don't decode it again.</summary>
-            private object art;
-            private string artTrack;
 
             public Follower(Action<MediaSession> publish)
             {
@@ -361,7 +366,7 @@ namespace XboxSeries.Extension
                 }
             }
 
-            /// <summary>What <paramref name="playing"/> plays now, its art decoded when the track is new.</summary>
+            /// <summary>What <paramref name="playing"/> plays now; its art is fetched apart (<see cref="FetchArt"/>).</summary>
             private async Task<MediaSession> Read(GlobalSystemMediaTransportControlsSession playing)
             {
                 var app = playing.SourceAppUserModelId;
@@ -375,22 +380,15 @@ namespace XboxSeries.Extension
                 var title = properties?.Title;
                 var artist = properties?.Artist;
 
-                // An app often tells of a track before its art: the art is read again until it has some.
-                var track = app + "\n" + title + "\n" + artist + "\n" + properties?.AlbumTitle;
-                if (track != artTrack || art == null)
-                {
-                    art = await Decode(properties?.Thumbnail).ConfigureAwait(false);
-                    artTrack = track;
-                }
-
                 return new MediaSession(
-                    app, title, artist, isPlaying, art,
+                    app, title, artist, isPlaying,
                     canTogglePlayPause: controls?.IsPlayPauseToggleEnabled ?? false,
                     canGoPrevious: controls?.IsPreviousEnabled ?? false,
                     canGoNext: controls?.IsNextEnabled ?? false,
                     position: position < TimeSpan.Zero ? TimeSpan.Zero : position,
                     duration: duration < TimeSpan.Zero ? TimeSpan.Zero : duration,
-                    lastUpdated: timeline?.LastUpdatedTime.LocalDateTime ?? default);
+                    lastUpdated: timeline?.LastUpdatedTime.LocalDateTime ?? default,
+                    hasArt: properties?.Thumbnail != null);
             }
 
             /// <summary>The art, a frozen bitmap decoded at <see cref="ArtWidth"/>; null for none, or art that won't decode.</summary>
@@ -425,6 +423,43 @@ namespace XboxSeries.Extension
                     logger.Warn($"Now Playing: couldn't decode the album art ({e.Message})");
                     return null;
                 }
+            }
+
+            /// <summary>
+            /// Reads and decodes the art the session of <paramref name="appId"/> shows now, off the calling thread, and
+            /// gives it to <paramref name="answer"/> with <paramref name="request"/>: null for none, the app gone, or
+            /// art that won't decode. Never throws; nothing once disposed.
+            /// </summary>
+            public void FetchArt(string appId, int request, Action<int, object> answer)
+            {
+                Task.Run(async () =>
+                {
+                    object art = null;
+                    try
+                    {
+                        GlobalSystemMediaTransportControlsSessionManager asked;
+                        lock (sync)
+                        {
+                            asked = manager;
+                        }
+
+                        var playing = asked?.GetSessions().FirstOrDefault(s => s.SourceAppUserModelId == appId);
+                        if (playing != null)
+                        {
+                            var properties = await playing.TryGetMediaPropertiesAsync().AsTask().ConfigureAwait(false);
+                            art = await Decode(properties?.Thumbnail).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception e) when (!(e is OutOfMemoryException))
+                    {
+                        logger.Warn($"Now Playing: couldn't read the album art of {appId} ({e.Message})");
+                    }
+
+                    if (!IsDisposed)
+                    {
+                        answer(request, art);
+                    }
+                });
             }
         }
     }

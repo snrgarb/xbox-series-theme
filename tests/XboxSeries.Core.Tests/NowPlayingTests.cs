@@ -47,9 +47,10 @@ namespace XboxSeries.Core.Tests
         public void A_playing_session_shows_its_track_artist_art_and_app_and_that_it_plays_after_Mute()
         {
             var art = new object();
-            media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true, art: art);
+            media.Current = new MediaSession(Spotify, "Blinding Lights", "The Weeknd", isPlaying: true);
 
             OpenAudio();
+            core.OnMediaArt(media.ArtFetches.Last().Request, art);
 
             var item = Flyout.Last();
             Assert.Equal(GuideItemKind.Mute, Flyout[Flyout.Count - 2].Kind);
@@ -151,8 +152,10 @@ namespace XboxSeries.Core.Tests
             var item = Flyout.Last();
             var art = new object();
 
-            media.Current = new MediaSession("MSEdge", "Lo-fi beats", "Lofi Girl", isPlaying: true, art: art);
+            media.Current = new MediaSession("MSEdge", "Lo-fi beats", "Lofi Girl", isPlaying: true);
             MediaChanged();
+            Assert.Equal("MSEdge", media.ArtFetches.Last().AppId);
+            core.OnMediaArt(media.ArtFetches.Last().Request, art);
 
             Assert.Same(item, Flyout.Last());
             Assert.Equal("Lo-fi beats", item.Title);
