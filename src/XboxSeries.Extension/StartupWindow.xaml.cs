@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Playnite.SDK;
@@ -28,8 +29,20 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class StartupWindow : Window
     {
-        /// <summary>The fade out that reveals Home.</summary>
-        private static readonly TimeSpan FadeDuration = TimeSpan.FromMilliseconds(300);
+        /// <summary>
+        /// The swirl's fade out that reveals Home, quick, so Home's own rows flying in, begun on Playnite's UI thread at
+        /// the same moment, show through it as it lifts.
+        /// </summary>
+        private static readonly TimeSpan FadeDuration = TimeSpan.FromMilliseconds(250);
+
+        /// <summary>Each profile's width in Who's playing today?'s row, as StartupWindow.xaml lays it out.</summary>
+        private const double ProfileWidth = 420;
+
+        /// <summary>
+        /// The row's slide to centre a newly focused profile: a touch longer than the 0.15 s its ring takes to grow, easing
+        /// out, so the two land together.
+        /// </summary>
+        private static readonly Duration SlideDuration = TimeSpan.FromMilliseconds(220);
 
         /// <summary>The swirl's fade in, as the boot video gives way to Who's playing today?.</summary>
         private static readonly Duration SwirlInDuration = TimeSpan.FromMilliseconds(300);
@@ -138,9 +151,9 @@ namespace XboxSeries.Extension
 
         private void OnStartupChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(StartupState.FocusedProfile))
+            if (e.PropertyName == nameof(StartupState.FocusedIndex))
             {
-                ScrollFocusedIntoView();
+                SlideToFocused(animate: startup.Phase == StartupPhase.WhosPlaying);
                 return;
             }
 
@@ -171,7 +184,7 @@ namespace XboxSeries.Extension
                 ShowOverPlaynite();
                 if (phase == StartupPhase.WhosPlaying)
                 {
-                    ScrollFocusedIntoView();
+                    SlideToFocused(animate: false);
                 }
             }
             else
@@ -248,18 +261,25 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Keeps the focused profile on screen, for a row wider than it, once its picture is laid out.
+        /// Slides Who's playing today?'s row sideways so the focused profile's centre is at the screen's: the row hangs
+        /// from a profile-wide slot centred on the screen, so it moves left a profile's width for each place along. A
+        /// focus moved while it shows eases there; one set as it first shows, or before, is there at once, so nothing jumps.
         /// </summary>
-        private void ScrollFocusedIntoView()
+        private void SlideToFocused(bool animate)
         {
-            var focused = startup.FocusedProfile;
-            if (focused == null)
+            var to = -ProfileWidth * startup.FocusedIndex;
+            if (animate)
             {
-                return;
+                Slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(to, SlideDuration)
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                });
             }
-
-            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
-                (ProfileRow.ItemContainerGenerator.ContainerFromItem(focused) as FrameworkElement)?.BringIntoView()));
+            else
+            {
+                Slide.BeginAnimation(TranslateTransform.XProperty, null);
+                Slide.X = to;
+            }
         }
 
         /// <summary>
@@ -269,6 +289,7 @@ namespace XboxSeries.Extension
         private void ShowOverPlaynite()
         {
             fade.Stop();
+            Root.Visibility = Visibility.Visible;
             var playnite = playniteWindow();
             var bounds = NativeMethods.MonitorBoundsOf(playnite != IntPtr.Zero ? playnite : NativeMethods.GetForegroundWindow());
             Show();
@@ -341,7 +362,9 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Stops reading the pad, hands the foreground back to Playnite's window at once, so Home has the keys, and fades
-        /// out over it, hiding at the end. A window that never showed is done with at once.
+        /// out over it, hiding at the end. The profile, spinner and text go at once, leaving only the swirl, still turning,
+        /// to lift off Home, so nothing of Signing you in hangs over Home's rows flying in, and nothing goes black. A window
+        /// that never showed is done with at once.
         /// </summary>
         private void FadeOut()
         {
@@ -369,6 +392,7 @@ namespace XboxSeries.Extension
                 activatePlaynite();
             }
 
+            Root.Visibility = Visibility.Hidden;
             fadeStarted = DateTime.UtcNow;
             SetAlpha(new WindowInteropHelper(this).Handle, 255);
             fade.Start();

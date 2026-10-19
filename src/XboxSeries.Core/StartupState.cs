@@ -104,6 +104,7 @@ namespace XboxSeries.Core
         private BootVideo bootVideo;
         private IReadOnlyList<Profile> profiles = new Profile[0];
         private Profile focusedProfile;
+        private int focusedIndex;
         private Profile signingIn;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -142,6 +143,16 @@ namespace XboxSeries.Core
         {
             get => focusedProfile;
             internal set => Set(ref focusedProfile, value, nameof(FocusedProfile));
+        }
+
+        /// <summary>
+        /// Where <see cref="FocusedProfile"/> is in <see cref="Profiles"/>, counting from 0 on the left, set before it, so
+        /// the row can slide sideways to put it at the screen's centre, as the console does.
+        /// </summary>
+        public int FocusedIndex
+        {
+            get => focusedIndex;
+            internal set => Set(ref focusedIndex, value, nameof(FocusedIndex));
         }
 
         /// <summary>The profile Signing you in shows.</summary>

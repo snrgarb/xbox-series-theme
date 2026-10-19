@@ -106,7 +106,7 @@ namespace XboxSeries.Core
                 if (next != State.FocusedProfile)
                 {
                     sounds.Play(UiSound.Navigate);
-                    State.FocusedProfile = next;
+                    Focus(next);
                 }
             }
             else if (State.Phase == StartupPhase.WhosPlaying && button == ControllerButton.A)
@@ -167,13 +167,20 @@ namespace XboxSeries.Core
             if (plan.AskWhosPlaying)
             {
                 State.SigningIn = null;
-                State.FocusedProfile = plan.LastProfile;
+                Focus(plan.LastProfile);
                 State.Phase = StartupPhase.WhosPlaying;
             }
             else
             {
                 SignIn(plan.LastProfile);
             }
+        }
+
+        /// <summary>Focuses a profile on Who's playing today?, its place in the row first, so the row slides as it grows.</summary>
+        private void Focus(Profile profile)
+        {
+            State.FocusedIndex = Math.Max(0, State.Profiles.ToList().FindIndex(p => p.Id == profile?.Id));
+            State.FocusedProfile = profile;
         }
 
         /// <summary>
