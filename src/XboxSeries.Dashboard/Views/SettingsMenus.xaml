@@ -176,6 +176,10 @@
                                 <DataTrigger Binding="{PluginStatus Plugin=XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b, Status=Installed}" Value="True">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
+                                <!-- An open category's rows reach down past it. -->
+                                <DataTrigger Binding="{Binding DataContext.IsSubMenuOpened, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
