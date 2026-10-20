@@ -9,9 +9,10 @@ using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
-    // The view's side of the Idle screen's dim. The window isn't run here (it was shown over a harness's windows, its
-    // fade forced from a stand-in IdleState); these checks guard what it is: a slight black over the whole screen that
-    // never takes focus, the foreground or the mouse, above the Overlay and the Launch screen's and beneath the Toast's.
+    // The view's side of the Idle screen's dim. The window isn't run here (it was shown over a harness's windows with
+    // the core's timers, and woken through IdleInput as Playnite routes the pad); these checks guard what it is: a slight
+    // black over the whole screen that never takes focus, the foreground or the mouse, above the Overlay and the Launch
+    // screen's and beneath the Toast's.
     public class IdleDimXamlTests
     {
         private static readonly string ExtensionDir = Path.Combine(RepoRoot, "src", "XboxSeries.Extension");
