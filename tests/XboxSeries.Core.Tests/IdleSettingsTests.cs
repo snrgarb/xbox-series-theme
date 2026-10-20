@@ -56,5 +56,56 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal(new TimeSpan?[] { null }, Idle.ShowThingsAfterSteps);
         }
+
+        [Fact]
+        public void Show_things_after_can_t_be_set_below_Dim_after()
+        {
+            core.SetShowThingsAfter(Minutes(1));
+
+            Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void Show_things_after_can_be_set_to_Dim_after()
+        {
+            core.SetShowThingsAfter(Minutes(2));
+
+            Assert.Equal(Minutes(2), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void Raising_Dim_after_past_Show_things_after_raises_Show_things_after_with_it()
+        {
+            core.SetDimAfter(Minutes(30));
+
+            Assert.Equal(Minutes(30), Idle.DimAfter);
+            Assert.Equal(Minutes(30), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void Dim_after_on_Never_puts_Show_things_after_on_Never_too()
+        {
+            core.SetDimAfter(null);
+
+            Assert.Null(Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void Lowering_Dim_after_leaves_Show_things_after_as_it_was()
+        {
+            core.SetDimAfter(Minutes(1));
+
+            Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void A_time_that_isn_t_a_step_is_refused()
+        {
+            core.SetDimAfter(Minutes(3));
+            core.SetShowThingsAfter(Minutes(7));
+
+            Assert.Equal(Minutes(2), Idle.DimAfter);
+            Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
+        }
     }
 }

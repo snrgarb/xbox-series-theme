@@ -66,14 +66,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Dim_after_Never_goes_straight_to_showing_things()
+        public void Dim_after_Never_turns_the_Idle_screen_off()
         {
             core.SetDimAfter(null);
 
-            Wait(4.99);
+            Wait(60);
+
             Assert.Equal(IdleStage.Awake, core.Idle.Stage);
-            Wait(0.01);
-            Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
         }
 
         [Fact]
@@ -98,12 +97,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Show_things_after_no_later_than_Dim_after_shows_things_at_its_own_time_and_the_dim_with_them()
+        public void Show_things_after_equal_to_Dim_after_shows_things_and_the_dim_together()
         {
-            core.SetDimAfter(TimeSpan.FromMinutes(5));
-            core.SetShowThingsAfter(TimeSpan.FromMinutes(3));
+            core.SetShowThingsAfter(TimeSpan.FromMinutes(2));
 
-            Wait(3);
+            Wait(1.99);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.01);
             Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
             Wait(5);
             Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
