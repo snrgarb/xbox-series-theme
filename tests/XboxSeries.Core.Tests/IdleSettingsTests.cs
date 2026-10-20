@@ -107,5 +107,93 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(Minutes(2), Idle.DimAfter);
             Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
         }
+
+        [Fact]
+        public void With_nothing_saved_Dim_after_is_2_min_and_Show_things_after_5_min()
+        {
+            Assert.Equal(Minutes(2), Idle.DimAfter);
+            Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void Both_save_at_once_and_survive_a_restart()
+        {
+            core.SetDimAfter(Minutes(10));
+            core.SetShowThingsAfter(TimeSpan.FromHours(1));
+
+            NewCore();
+
+            Assert.Equal(Minutes(10), Idle.DimAfter);
+            Assert.Equal(TimeSpan.FromHours(1), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void The_saved_times_set_the_timers_after_a_restart()
+        {
+            core.SetDimAfter(Minutes(10));
+            NewCore();
+
+            clock.Advance(TimeSpan.FromMinutes(9.99));
+            Assert.Equal(IdleStage.Awake, Idle.Stage);
+            clock.Advance(TimeSpan.FromMinutes(0.01));
+            Assert.Equal(IdleStage.ShowingThings, Idle.Stage);
+        }
+
+        [Fact]
+        public void Never_survives_a_restart()
+        {
+            core.SetShowThingsAfter(null);
+            NewCore();
+            Assert.Equal(Minutes(2), Idle.DimAfter);
+            Assert.Null(Idle.ShowThingsAfter);
+
+            core.SetDimAfter(null);
+            NewCore();
+            Assert.Null(Idle.DimAfter);
+            Assert.Null(Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void A_time_refused_saves_nothing()
+        {
+            core.SetShowThingsAfter(Minutes(1));
+            core.SetDimAfter(Minutes(7));
+            core.SetDimAfter(Minutes(2));
+
+            Assert.Equal(0, secrets.Writes);
+        }
+
+        [Fact]
+        public void Unreadable_saved_times_are_the_defaults()
+        {
+            secrets.Values["Idle"] = "{not json";
+
+            NewCore();
+
+            Assert.Equal(Minutes(2), Idle.DimAfter);
+            Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void A_saved_time_not_among_the_steps_is_its_default()
+        {
+            secrets.Values["Idle"] = "{\"DimAfter\":\"00:03:00\",\"ShowThingsAfter\":\"soon\"}";
+
+            NewCore();
+
+            Assert.Equal(Minutes(2), Idle.DimAfter);
+            Assert.Equal(Minutes(5), Idle.ShowThingsAfter);
+        }
+
+        [Fact]
+        public void A_saved_Show_things_after_shorter_than_Dim_after_is_raised_to_it()
+        {
+            secrets.Values["Idle"] = "{\"DimAfter\":\"00:30:00\",\"ShowThingsAfter\":\"00:10:00\"}";
+
+            NewCore();
+
+            Assert.Equal(Minutes(30), Idle.DimAfter);
+            Assert.Equal(Minutes(30), Idle.ShowThingsAfter);
+        }
     }
 }

@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace XboxSeries.Core
 {
@@ -35,6 +37,15 @@ namespace XboxSeries.Core
 
         /// <summary>Until when the half of the wake press still to come is that press.</summary>
         private DateTime wakePressBy;
+
+        /// <summary>
+        /// The secret store's name for Theme settings' Idle page's times, as JSON: Dim after and Show things after. Not
+        /// secret, but the store keeps the extension's own options.
+        /// </summary>
+        private const string IdleSecret = "Idle";
+
+        /// <summary>How Never is saved, a time not being one.</summary>
+        private const string NeverSaved = "Never";
 
         /// <summary>What the Idle screen's cards are shuffled with.</summary>
         private readonly Random random;
@@ -203,6 +214,7 @@ namespace XboxSeries.Core
             }
 
             Idle.DimAfter = dimAfter;
+            SaveIdleSettings();
             RestartIdle();
         }
 
@@ -221,7 +233,68 @@ namespace XboxSeries.Core
             }
 
             Idle.ShowThingsAfter = showThingsAfter;
+            SaveIdleSettings();
             RestartIdle();
+        }
+
+        /// <summary>
+        /// Theme settings' Idle page's times saved before, read when the core is made: shared by every Profile. With none
+        /// saved, or none readable, 2 min and 5 min; a time not among the steps is its default, and a Show things after
+        /// shorter than Dim after is raised to it.
+        /// </summary>
+        private void LoadIdleSettings()
+        {
+            SavedIdle saved;
+            try
+            {
+                var json = secrets.Read(IdleSecret);
+                saved = json == null ? null : JsonConvert.DeserializeObject<SavedIdle>(json);
+            }
+            catch (JsonException)
+            {
+                saved = null;
+            }
+
+            var dimAfter = SavedStep(saved?.DimAfter, Idle.DimAfter);
+            var showThingsAfter = SavedStep(saved?.ShowThingsAfter, Idle.ShowThingsAfter);
+            Idle.ShowThingsAfter = IdleState.IsShorter(showThingsAfter, dimAfter) ? dimAfter : showThingsAfter;
+            Idle.DimAfter = dimAfter;
+        }
+
+        /// <summary>
+        /// A step as saved: "Never" for Never, else a time as "00:10:00"; <paramref name="fallback"/> for none saved, or
+        /// one not among <see cref="IdleState.Steps"/>.
+        /// </summary>
+        private static TimeSpan? SavedStep(string saved, TimeSpan? fallback)
+        {
+            if (saved == NeverSaved)
+            {
+                return null;
+            }
+
+            return TimeSpan.TryParseExact(saved, "c", CultureInfo.InvariantCulture, out var after) && IdleState.Steps.Contains(after)
+                ? after
+                : fallback;
+        }
+
+        /// <summary>A step to save: "Never" for Never, else the time as "00:10:00".</summary>
+        private static string StepToSave(TimeSpan? after) => after?.ToString("c", CultureInfo.InvariantCulture) ?? NeverSaved;
+
+        private void SaveIdleSettings() => secrets.Write(IdleSecret, JsonConvert.SerializeObject(new SavedIdle
+        {
+            DimAfter = StepToSave(Idle.DimAfter),
+            ShowThingsAfter = StepToSave(Idle.ShowThingsAfter),
+        }));
+
+        /// <summary>
+        /// What the secret store keeps of Theme settings' Idle page's times, each "Never" or a time as "00:10:00"; a time
+        /// missing is one never saved, so Never isn't taken for it.
+        /// </summary>
+        private sealed class SavedIdle
+        {
+            public string DimAfter { get; set; }
+
+            public string ShowThingsAfter { get; set; }
         }
 
         /// <summary>
