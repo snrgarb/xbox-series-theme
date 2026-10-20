@@ -96,7 +96,6 @@ namespace XboxSeries.Core.Tests
 
             // The card no taller than a recent game's row, its picture and gamertag kept.
             var card = KindTrigger(entry, "Profile");
-            Assert.True(int.Parse(Set(card, "Entry", "Height")) < 138);
             Assert.Equal("96", Set(card, "Entry", "Height"));
             Assert.Equal("Visible", Set(card, "Avatar", "Visibility"));
             Assert.Equal("24", Set(card, "Title", "FontSize"));
@@ -104,7 +103,7 @@ namespace XboxSeries.Core.Tests
             // Switch profile: the Switch user glyph on a Settings-sized row.
             var switchProfile = KindTrigger(entry, "SwitchProfile");
             var settings = KindTrigger(entry, "Settings");
-            Assert.Equal("", Set(switchProfile, "Glyph", "Text"));
+            Assert.Equal("\uE748", Set(switchProfile, "Glyph", "Text"));
             foreach (var (target, property) in new[] { ("Entry", "Height"), ("Glyph", "FontSize"), ("Glyph", "Margin"), ("Text", "Margin"), ("Title", "FontSize") })
             {
                 Assert.Equal(Set(settings, target, property), Set(switchProfile, target, property));

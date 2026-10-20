@@ -1060,15 +1060,15 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Profile &amp; system: the profile card with the profile signed in, or the Windows user before the first
-        /// sign-in, and Switch profile under it, then the last achievements unlocked, if any, then Settings and Power,
-        /// each under a divider.
+        /// sign-in, and Switch profile under it, greyed out while a game runs (Start-up would hand the front to Playnite
+        /// over it), then the last achievements unlocked, if any, then Settings and Power, each under a divider.
         /// </summary>
         private void ShowProfileTab()
         {
             Guide.Items = new[]
                 {
                     new GuideItem(GuideItemKind.Profile, Status.Profile?.Gamertag ?? account.Name, image: ProfilePicture),
-                    new GuideItem(GuideItemKind.SwitchProfile, "Switch profile"),
+                    new GuideItem(GuideItemKind.SwitchProfile, "Switch profile") { IsEnabled = runningGame == null && !IsQuittingOrLaunching },
                 }
                 .Concat(RecentAchievementItems())
                 .Concat(new[]

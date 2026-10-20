@@ -539,6 +539,15 @@
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                         <Setter TargetName="AchievementsSection" Property="Visibility" Value="Visible" />
                     </DataTrigger>
+                    <!-- Switch profile while a game runs: greyed out, as the media controls are when they can't act. -->
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Kind}" Value="SwitchProfile" />
+                            <Condition Binding="{Binding IsEnabled}" Value="False" />
+                        </MultiDataTrigger.Conditions>
+                        <Setter TargetName="Glyph" Property="Opacity" Value="0.35" />
+                        <Setter TargetName="Text" Property="Opacity" Value="0.35" />
+                    </MultiDataTrigger>
                     <!-- Settings and Power: smaller rows, the icon further left, as on the console. -->
                     <DataTrigger Binding="{Binding Kind}" Value="Settings">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE713;" />
