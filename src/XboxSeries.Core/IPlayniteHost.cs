@@ -48,7 +48,11 @@ namespace XboxSeries.Core
         /// <summary>Opens Playnite's own Extensions picker for the game: every extension's menu items for it.</summary>
         void OpenExtensionsMenu(Guid gameId);
 
-        /// <summary>Removes the game from Playnite's library, without Playnite's own "Are you sure?".</summary>
+        /// <summary>
+        /// Removes the game from Playnite's library, without Playnite's own "Are you sure?", excluding a library's game from
+        /// its next import so it stays removed. One installing, running, launching or uninstalling is refused, as Playnite
+        /// refuses it, with its own error.
+        /// </summary>
         void RemoveGame(Guid gameId);
 
         /// <summary>Marks the game as a favourite in Playnite's library, or unmarks it.</summary>

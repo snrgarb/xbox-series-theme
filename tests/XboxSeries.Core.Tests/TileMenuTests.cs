@@ -204,13 +204,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_running_games_menu_reads_Quit_with_the_quit_icon()
+        public void The_running_games_menu_reads_Quit_with_the_quit_icon_and_has_no_Uninstall()
         {
             core.OnGameStarted(library.Id("Halo Infinite"));
 
             OpenMenuOn("Halo Infinite");
 
-            Assert.Equal(new[] { "Quit", "Add to Favourites", "Manage game", "Uninstall", "Customise Home", "More options" }, Options());
+            Assert.Equal(new[] { "Quit", "Add to Favourites", "Manage game", "Customise Home", "More options" }, Options());
             Assert.Equal(DialogIcon.Quit, core.Home.TileMenu.Options[0].Icon);
         }
 
