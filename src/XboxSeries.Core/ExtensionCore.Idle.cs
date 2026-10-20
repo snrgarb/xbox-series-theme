@@ -45,7 +45,8 @@ namespace XboxSeries.Core
         /// to the focused element (<paramref name="padButton"/>), which usually comes before <see cref="OnControllerButton(ControllerButton, ButtonState)"/>.
         /// Resets the timers. True when it only woke the screen: the caller swallows it, and a pad button's press and
         /// release then reach <see cref="OnControllerButton(ControllerButton, ButtonState)"/> swallowed too. A pad
-        /// button whose press the pad reported first, waking the screen, is swallowed here too.
+        /// button whose press the pad reported first, waking the screen, is swallowed here too. Y's wake press on a game's
+        /// card opens its Game hub as well, once, by whichever half comes first.
         /// </summary>
         public bool OnUserInput(ControllerButton? padButton = null)
         {
@@ -57,6 +58,7 @@ namespace XboxSeries.Core
             }
 
             var woke = Idle.IsDimmed;
+            var card = Idle.Card;
             if (woke)
             {
                 wakeButton = padButton;
@@ -70,6 +72,11 @@ namespace XboxSeries.Core
             }
 
             RestartIdle();
+            if (woke && padButton == ControllerButton.Y)
+            {
+                SeeIdleCardsGame(card);
+            }
+
             return woke;
         }
 
@@ -99,6 +106,7 @@ namespace XboxSeries.Core
             }
 
             var woke = Idle.IsDimmed;
+            var card = Idle.Card;
             if (woke)
             {
                 wakeButton = button;
@@ -112,7 +120,54 @@ namespace XboxSeries.Core
             }
 
             RestartIdle();
+            if (woke && button == ControllerButton.Y)
+            {
+                SeeIdleCardsGame(card);
+            }
+
             return woke;
+        }
+
+        /// <summary>
+        /// Y's wake press on a game's card, the half of it that came first: the screen wakes, and the game's Game hub
+        /// opens, on the Dashboard, the Guide closing first if it was up and a Tile menu going. Over Search the main list
+        /// takes every game, as a game Search found does, given back as the page goes; over Play history it lists Play
+        /// history's, as a tile there does. A tip's card, or none, only wakes.
+        /// </summary>
+        private void SeeIdleCardsGame(IdleCard card)
+        {
+            if (!(card?.GameId is Guid gameId))
+            {
+                return;
+            }
+
+            void OpenHub()
+            {
+                CloseTileMenu();
+                if (Search.IsShown)
+                {
+                    ShowInMainList(GameListFilter.LastPlayed);
+                }
+                else
+                {
+                    ListPlayHistoryInMainList();
+                }
+
+                playnite.OpenGameHub(gameId);
+            }
+
+            if (Guide.IsOpen)
+            {
+                DismissAtOnce(() =>
+                {
+                    playnite.BringToFront();
+                    OpenHub();
+                });
+            }
+            else
+            {
+                OpenHub();
+            }
         }
 
         /// <summary>
