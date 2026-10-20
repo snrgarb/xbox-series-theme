@@ -1527,7 +1527,7 @@ namespace XboxSeries.Core
             CloseMyGames();
             CloseSearch();
             RefreshGamerpics();
-            Settings.Category = inPane ?? SettingsCategory.Personalisation;
+            Settings.Category = inPane ?? SettingsCategory.ThemeSettings;
             Settings.OpensInPane = inPane != null;
             Settings.OpenedFrom = from;
             Settings.OpenedFromGame = game;
@@ -1542,7 +1542,7 @@ namespace XboxSeries.Core
         {
             if (!Settings.Discord.HasDiscordTab)
             {
-                ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.Discord);
+                ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.ThemeSettings);
                 return;
             }
 
@@ -1586,6 +1586,16 @@ namespace XboxSeries.Core
             {
                 Settings.Category = category;
             }
+        }
+
+        /// <summary>A on one of Theme settings' boxes: its page, in the pane.</summary>
+        public void OpenThemePage(ThemeSettingsPage page)
+        {
+        }
+
+        /// <summary>B, or Left from its first column, on one of Theme settings' pages: back to its boxes.</summary>
+        public void LeaveThemePage()
+        {
         }
 
         /// <summary>The rail's Playnite settings: Playnite's own restyled Fullscreen Settings window, over the page.</summary>

@@ -41,9 +41,7 @@ namespace XboxSeries.Extension
             DataContext = core.Settings;
             categoryItems = new Dictionary<SettingsCategory, Button>
             {
-                [SettingsCategory.Personalisation] = PersonalisationItem,
-                [SettingsCategory.Guide] = GuideItem,
-                [SettingsCategory.Discord] = DiscordItem,
+                [SettingsCategory.ThemeSettings] = PersonalisationItem,
                 [SettingsCategory.PlayniteSettings] = PlayniteSettingsItem,
             };
 #if DEBUG
@@ -172,24 +170,24 @@ namespace XboxSeries.Extension
             var category = core.Settings.Category;
 
             // Personalisation's pages each have their own header; left or closed, it's back on its boxes for next time.
-            if (category != SettingsCategory.Personalisation || !core.Settings.IsShown)
+            if (category != SettingsCategory.ThemeSettings || !core.Settings.IsShown)
             {
                 PersonalisationPane.Reset();
             }
 
-            Header.Text = category == SettingsCategory.Personalisation ? PersonalisationPane.Title
+            Header.Text = category == SettingsCategory.ThemeSettings ? PersonalisationPane.Title
                 : category == SettingsCategory.PlayniteSettings ? "Playnite settings"
                 : category.ToString();
 
             // Left or closed, the Guide's dropdown is closed for next time.
-            if (category != SettingsCategory.Guide || !core.Settings.IsShown)
+            if (core.Settings.ThemePage != ThemeSettingsPage.Guide || !core.Settings.IsShown)
             {
                 CloseNowPlayingSources();
             }
 
-            PersonalisationPane.Visibility = category == SettingsCategory.Personalisation ? Visibility.Visible : Visibility.Collapsed;
-            GuidePane.Visibility = category == SettingsCategory.Guide ? Visibility.Visible : Visibility.Collapsed;
-            DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
+            PersonalisationPane.Visibility = category == SettingsCategory.ThemeSettings ? Visibility.Visible : Visibility.Collapsed;
+            GuidePane.Visibility = core.Settings.ThemePage == ThemeSettingsPage.Guide ? Visibility.Visible : Visibility.Collapsed;
+            DiscordPane.Visibility = core.Settings.ThemePage == ThemeSettingsPage.Discord ? Visibility.Visible : Visibility.Collapsed;
             PlaynitePane.Visibility = category == SettingsCategory.PlayniteSettings ? Visibility.Visible : Visibility.Collapsed;
 #if DEBUG
             // As Personalisation's, the Debug menu's pages each have their own header and start again on its boxes.
@@ -602,7 +600,7 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                if (core.Settings.OpensInPane && core.Settings.Category == SettingsCategory.Discord)
+                if (core.Settings.OpensInPane && core.Settings.ThemePage == ThemeSettingsPage.Discord)
                 {
                     TypeClientIdButton.Focus();
                 }

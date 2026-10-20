@@ -29,28 +29,26 @@ namespace XboxSeries.Core.Tests
             core.OpenSettings();
 
             Assert.True(core.Settings.IsShown);
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
             Assert.Equal(SettingsOrigin.TopBar, core.Settings.OpenedFrom);
         }
 
-        [Theory]
-        [InlineData(SettingsCategory.Guide)]
-        [InlineData(SettingsCategory.Discord)]
-        public void Focus_moving_down_the_rail_shows_that_category(SettingsCategory category)
+        [Fact]
+        public void Focus_moving_down_the_rail_shows_that_category()
         {
             core.OpenSettings();
 
-            core.FocusSettingsCategory(category);
+            core.FocusSettingsCategory(SettingsCategory.PlayniteSettings);
 
-            Assert.Equal(category, core.Settings.Category);
+            Assert.Equal(SettingsCategory.PlayniteSettings, core.Settings.Category);
         }
 
         [Fact]
         public void The_rail_shows_nothing_new_with_the_page_gone()
         {
-            core.FocusSettingsCategory(SettingsCategory.Discord);
+            core.FocusSettingsCategory(SettingsCategory.PlayniteSettings);
 
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
         }
 
         [Fact]
@@ -82,12 +80,12 @@ namespace XboxSeries.Core.Tests
         public void The_page_opens_on_the_rails_first_category_every_time()
         {
             core.OpenSettings();
-            core.FocusSettingsCategory(SettingsCategory.Discord);
+            core.FocusSettingsCategory(SettingsCategory.PlayniteSettings);
             core.LeaveSettings();
 
             core.OpenSettings();
 
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
         }
 
         [Fact]

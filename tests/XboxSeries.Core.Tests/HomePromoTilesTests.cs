@@ -25,7 +25,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.False(Guide.IsOpen);
             Assert.True(core.Settings.IsShown);
-            Assert.Equal(SettingsCategory.Discord, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
             Assert.True(core.Settings.OpensInPane);
             Assert.Equal(SettingsOrigin.HomeTile, core.Settings.OpenedFrom);
 
@@ -52,7 +52,7 @@ namespace XboxSeries.Core.Tests
 
             core.OpenSettings();
 
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
             Assert.False(core.Settings.OpensInPane);
         }
 

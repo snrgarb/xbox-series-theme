@@ -9,6 +9,7 @@ namespace XboxSeries.Core
     {
         private bool isShown;
         private SettingsCategory category;
+        private ThemeSettingsPage themePage;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -36,6 +37,20 @@ namespace XboxSeries.Core
                 {
                     category = value;
                     Changed(nameof(Category));
+                }
+            }
+        }
+
+        /// <summary>Theme settings' page showing in the pane: one of its boxes' pages, or <see cref="ThemeSettingsPage.None"/> for the boxes.</summary>
+        public ThemeSettingsPage ThemePage
+        {
+            get => themePage;
+            internal set
+            {
+                if (themePage != value)
+                {
+                    themePage = value;
+                    Changed(nameof(ThemePage));
                 }
             }
         }
@@ -165,10 +180,8 @@ namespace XboxSeries.Core
     /// </summary>
     public enum SettingsCategory
     {
-        /// <summary>Its boxes, Start up's for now: the boot video, the profiles, and whether Who's playing today? asks.</summary>
-        Personalisation,
-        Guide,
-        Discord,
+        /// <summary>Its boxes, Personalisation, Guide and Discord, each opening its <see cref="ThemeSettingsPage"/> in the pane.</summary>
+        ThemeSettings,
 
         /// <summary>Its boxes: Download metadata, Update after downloads, and one opening Playnite's own Settings window.</summary>
         PlayniteSettings,
@@ -177,6 +190,22 @@ namespace XboxSeries.Core
         /// <summary>Debug builds only: the Debug menu, below Playnite's entries and a divider of its own, for trying Toasts on the TV.</summary>
         Debug,
 #endif
+    }
+
+    /// <summary>Theme settings' pages, one for each of its boxes.</summary>
+    public enum ThemeSettingsPage
+    {
+        /// <summary>The boxes themselves.</summary>
+        None,
+
+        /// <summary>Its boxes, Start up's for now: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+        Personalisation,
+
+        /// <summary>The Guide's behaviour options, the Now Playing source for now.</summary>
+        Guide,
+
+        /// <summary>The Connect checklist, the Client ID and Secret, and the status line.</summary>
+        Discord,
     }
 
     /// <summary>Where Settings was opened from, which B goes back to.</summary>
