@@ -55,7 +55,7 @@ namespace XboxSeries.Extension
         private StartupWindow window;
 
         /// <param name="ui">Playnite's UI thread, which runs the core.</param>
-        /// <param name="pad">Pad 1, read on the Start-up thread.</param>
+        /// <param name="pad">The pads, read on the Start-up thread.</param>
         /// <param name="sounds">The sequence's sounds, played from the Start-up thread.</param>
         /// <param name="playniteWindow">Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one.</param>
         /// <param name="isStartupShown">Whether the core has Start-up covering the screen, asked on the UI thread.</param>
