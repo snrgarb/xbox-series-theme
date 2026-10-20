@@ -38,5 +38,23 @@ namespace XboxSeries.Core.Tests
                 new[] { "1 min", "2 min", "5 min", "10 min", "15 min", "30 min", "1 h", "2 h", "3 h", "4 h", "Never" },
                 IdleState.Steps.Select(IdleState.Describe));
         }
+
+        [Fact]
+        public void Show_things_after_offers_no_step_shorter_than_Dim_after()
+        {
+            core.SetDimAfter(Minutes(15));
+
+            Assert.Equal(
+                new[] { "15 min", "30 min", "1 h", "2 h", "3 h", "4 h", "Never" },
+                Idle.ShowThingsAfterSteps.Select(IdleState.Describe));
+        }
+
+        [Fact]
+        public void With_Dim_after_on_Never_Show_things_after_offers_only_Never()
+        {
+            core.SetDimAfter(null);
+
+            Assert.Equal(new TimeSpan?[] { null }, Idle.ShowThingsAfterSteps);
+        }
     }
 }
