@@ -6,27 +6,31 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using XboxSeries.Core;
+using static XboxSeries.Extension.AchievementPages;
 
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// A rare achievement's Toast: the console's blue pill with its spinning diamond (see RareAchievementToast.xaml). The
-    /// Toast's window plays it in place of its banner for <see cref="ToastKind.RareAchievementUnlocked"/>: <see cref="Play"/>
-    /// as the Toast shows, its timeline the console's own (frame by frame from a capture of it), and <see cref="Go"/> as it
-    /// hides. Everything moves by transforms and opacity alone, so the TV's graphics card does the work, and the diamond's
-    /// spin is its facets squashed, skewed and moved round as a turning gem's would be, not a picture.
+    /// An achievement's Toast: the console's rare achievement pill, blue with its spinning diamond for a rare one and green
+    /// with the achievement's icon for any other (see AchievementToast.xaml). The Toast's window plays it in place of its
+    /// banner for <see cref="ToastKind.AchievementUnlocked"/> and <see cref="ToastKind.RareAchievementUnlocked"/>:
+    /// <see cref="Play"/> as the Toast shows, its timeline the console's own (frame by frame from a capture of its rare
+    /// one), paging through the whole description two lines at a time (<see cref="AchievementPages"/>), and
+    /// <see cref="Go"/> as it hides. Everything moves by transforms and opacity alone, so the TV's graphics card does the
+    /// work, and the diamond's spin is its facets squashed, skewed and moved round as a turning gem's would be, not a picture.
     /// </summary>
-    public partial class RareAchievementToast : UserControl
+    public partial class AchievementToast : UserControl
     {
         // The intro, in seconds from the Toast showing, when the sound starts: the console draws its first frame 0.117 s
         // into its sound.
         private const double PopAt = 0.117, PopEnd = 0.217, LogoIn = 0.167;
         private const double SwapAt = 1.052, SwapEnd = 1.085, InsideFades = 1.25, FlyEnd = 1.485;
         private const double UnfurlAt = 1.485, UnfurlEnd = 2.385;
-        private const double TextInAt = 1.786, TextInEnd = 2.386;
+        private const double TextInAt = 1.786;
         private const double FirstShine = 2.954, SecondShine = 5.222, ShineFadesIn = 0.3, ShineDuration = 1.47;
-        private const double PushAt = 4.122, PushOut = 0.18, PushInAt = 4.30, PushIn = 0.38;
-        private const double CutAt = 7.091, PromptAt = 7.158, PromptEnd = 7.341;
+
+        // The text's fade in ends at TextInEnd, and its pages change on AchievementPages' times: the console's own for
+        // the header and one page of description, PushAt to CutAt, and the prompt, PromptAt to PromptEnd.
 
         // The going, in seconds from the Toast hiding.
         private const double CollapseEnd = 0.5, TextOutAt = 0.1, TextOut = 0.27, BrightOutAt = 0.4, LogoBackEnd = 0.57;
@@ -38,7 +42,7 @@ namespace XboxSeries.Extension
         /// <summary>How far the band of light moves, at the start and end of its sweep: its middle from 185 to 590 across the pill.</summary>
         private const double ShineFrom = -95, ShineTo = 310;
 
-        /// <summary>How far the first page goes up as it leaves, and how far below the second starts.</summary>
+        /// <summary>How far a page goes up as it leaves, and how far below the next starts.</summary>
         private const double PushUp = -24, PushFrom = 58;
 
         /// <summary>One facet's turn to the next: the gem's eight-fold symmetry repeats every 0.66 s, as the console's.</summary>
@@ -51,7 +55,10 @@ namespace XboxSeries.Extension
         private Storyboard intro;
         private Storyboard outro;
 
-        public RareAchievementToast()
+        /// <summary>The description's pages, one TextBlock each (DescriptionPage), kept for the next Toast's.</summary>
+        private readonly List<TextBlock> descriptionPages = new List<TextBlock>();
+
+        public AchievementToast()
         {
             InitializeComponent();
             BuildDiamond();
@@ -59,14 +66,54 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The Toast showing: from the circle popping in to the prompt, held there until <see cref="Go"/>; the description's
-        /// page only for an achievement with one. It starts afresh, whatever it was doing.
+        /// pages only for an achievement with one. It starts afresh, whatever it was doing.
         /// </summary>
         internal void Play()
         {
             Stop();
             var toast = DataContext as ToastState;
-            intro = Intro(!string.IsNullOrWhiteSpace(toast?.Description));
+            intro = Intro(toast?.Kind == ToastKind.RareAchievementUnlocked, Describe(toast?.Description));
             intro.Begin(this, HandoffBehavior.SnapshotAndReplace, true);
+        }
+
+        /// <summary>
+        /// The description's pages, its text split two lines to a page as a page wraps it at the text column's width, in
+        /// its font, so all of it is seen; the pages it needs shown, with their text, and the rest hidden.
+        /// </summary>
+        private List<TextBlock> Describe(string description)
+        {
+            var column = Pill.Width - Pages.Margin.Left - Pages.Margin.Right;
+            var typeface = new Typeface(Header.FontFamily, Header.FontStyle, Header.FontWeight, Header.FontStretch);
+            var pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            FormattedText Laid(string text) => new FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight, typeface, Header.FontSize, Brushes.White, pixelsPerDip);
+            var line = Laid("X").Height;
+
+            // A hair narrower than the column, so a page measured to fit never wraps once more when laid out.
+            int LinesOf(string text)
+            {
+                var laid = Laid(text);
+                laid.MaxTextWidth = column - 1;
+                return (int)Math.Round(laid.Height / line);
+            }
+
+            var texts = AchievementPages.Split(description, LinesOf);
+            while (descriptionPages.Count < texts.Count)
+            {
+                var page = (TextBlock)((DataTemplate)Resources["DescriptionPage"]).LoadContent();
+                page.RenderTransform = new TranslateTransform(0, PushFrom);
+                Descriptions.Children.Add(page);
+                descriptionPages.Add(page);
+            }
+
+            for (var index = 0; index < descriptionPages.Count; index++)
+            {
+                var shown = index < texts.Count;
+                descriptionPages[index].Text = shown ? texts[index] : "";
+                descriptionPages[index].Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            return descriptionPages.GetRange(0, texts.Count);
         }
 
         /// <summary>
@@ -96,7 +143,7 @@ namespace XboxSeries.Extension
             intro = null;
         }
 
-        private Storyboard Intro(bool describes)
+        private Storyboard Intro(bool rare, List<TextBlock> descriptions)
         {
             var board = new Storyboard();
             var quintic = new QuinticEase { EasingMode = EasingMode.EaseOut };
@@ -119,15 +166,27 @@ namespace XboxSeries.Extension
             Animate(board, LogoScale, ScaleTransform.ScaleXProperty, Jump(0, 1));
             Animate(board, LogoScale, ScaleTransform.ScaleYProperty, Jump(0, 1));
 
-            // The logo gives way to the inside of the gem, and the diamond flies out of it.
+            // The logo gives way: for a rare achievement to the inside of the gem, the diamond flying out of it and
+            // spinning; for any other to its icon, or the trophy, zooming out from close up into its place, still.
             Animate(board, Logo, OpacityProperty, Jump(0, 0), Jump(LogoIn, 0), To(PopEnd, 1), Jump(SwapAt, 1), To(SwapEnd, 0));
-            Animate(board, Gem, OpacityProperty, Jump(0, 0), Jump(SwapAt, 0), To(SwapEnd, 1));
-            Animate(board, Inside, OpacityProperty, Jump(0, 1), Jump(InsideFades, 1), To(FlyEnd, 0));
-            Animate(board, DiamondZoom, ScaleTransform.ScaleXProperty, Jump(0, 3), Jump(SwapAt, 3), To(FlyEnd, 1, quintic));
-            Animate(board, DiamondZoom, ScaleTransform.ScaleYProperty, Jump(0, 3), Jump(SwapAt, 3), To(FlyEnd, 1, quintic));
-            Animate(board, GemOpening, ScaleTransform.ScaleXProperty, Jump(0, 1), Jump(SwapAt, 1), To(FlyEnd, 1.5, quintic));
-            Animate(board, GemOpening, ScaleTransform.ScaleYProperty, Jump(0, 1), Jump(SwapAt, 1), To(FlyEnd, 1.5, quintic));
-            Spin(board, SwapAt);
+            if (rare)
+            {
+                Spin(board, SwapAt);
+                Animate(board, Icon, OpacityProperty, Jump(0, 0));
+                Animate(board, Gem, OpacityProperty, Jump(0, 0), Jump(SwapAt, 0), To(SwapEnd, 1));
+                Animate(board, Inside, OpacityProperty, Jump(0, 1), Jump(InsideFades, 1), To(FlyEnd, 0));
+                Animate(board, DiamondZoom, ScaleTransform.ScaleXProperty, Jump(0, 3), Jump(SwapAt, 3), To(FlyEnd, 1, quintic));
+                Animate(board, DiamondZoom, ScaleTransform.ScaleYProperty, Jump(0, 3), Jump(SwapAt, 3), To(FlyEnd, 1, quintic));
+                Animate(board, GemOpening, ScaleTransform.ScaleXProperty, Jump(0, 1), Jump(SwapAt, 1), To(FlyEnd, 1.5, quintic));
+                Animate(board, GemOpening, ScaleTransform.ScaleYProperty, Jump(0, 1), Jump(SwapAt, 1), To(FlyEnd, 1.5, quintic));
+            }
+            else
+            {
+                Animate(board, Gem, OpacityProperty, Jump(0, 0));
+                Animate(board, Icon, OpacityProperty, Jump(0, 0), Jump(SwapAt, 0), To(SwapEnd, 1));
+                Animate(board, IconZoom, ScaleTransform.ScaleXProperty, Jump(0, 3), Jump(SwapAt, 3), To(FlyEnd, 1, quintic));
+                Animate(board, IconZoom, ScaleTransform.ScaleYProperty, Jump(0, 3), Jump(SwapAt, 3), To(FlyEnd, 1, quintic));
+            }
 
             // The pill unfurls from behind the circle, which rides its left end out.
             Animate(board, Body, OpacityProperty, Jump(0, 0), Jump(UnfurlAt, 1));
@@ -140,27 +199,58 @@ namespace XboxSeries.Extension
             Animate(board, Pages, OpacityProperty, Jump(0, 0), Jump(TextInAt, 0), To(TextInEnd, 1));
             Animate(board, PagesDrift, TranslateTransform.XProperty, Jump(0, 4), Jump(TextInAt, 4), To(TextInEnd, 0, cubic));
 
-            // Pushed up for the description, which is cut for the prompt; without one, the first page is.
-            var shines = new List<double> { FirstShine };
-            if (describes)
+            // Pushed up for each page of the description in turn, the last cut for the prompt; without one, the first page is.
+            var times = AchievementPages.Plan(descriptions.Count);
+            var pages = new List<KeyValuePair<UIElement, TranslateTransform>> { new KeyValuePair<UIElement, TranslateTransform>(Page1, Page1Shift) };
+            foreach (var description in descriptions)
             {
-                shines.Add(SecondShine);
-                Animate(board, Page1, OpacityProperty, Jump(0, 1), Jump(PushAt + PushOut, 0));
-                Animate(board, Page1Shift, TranslateTransform.YProperty, Jump(0, 0), Jump(PushAt, 0),
-                    To(PushAt + PushOut, PushUp, new CubicEase { EasingMode = EasingMode.EaseIn }));
-                Animate(board, Description, OpacityProperty, Jump(0, 0), Jump(PushInAt, 1), Jump(CutAt, 0));
-                Animate(board, Page2Shift, TranslateTransform.YProperty, Jump(0, PushFrom), Jump(PushInAt, PushFrom), To(PushInAt + PushIn, 0, cubic));
+                pages.Add(new KeyValuePair<UIElement, TranslateTransform>(description, (TranslateTransform)description.RenderTransform));
             }
-            else
-            {
-                Animate(board, Page1, OpacityProperty, Jump(0, 1), Jump(CutAt, 0));
-                Animate(board, Page1Shift, TranslateTransform.YProperty, Jump(0, 0));
-                Animate(board, Description, OpacityProperty, Jump(0, 0));
-                Animate(board, Page2Shift, TranslateTransform.YProperty, Jump(0, PushFrom));
-            }
-            Animate(board, Prompt, OpacityProperty, Jump(0, 0), Jump(PromptAt, 0), To(PromptEnd, 1));
 
-            // The band of light, once across each of the first two pages.
+            for (var index = 0; index < pages.Count; index++)
+            {
+                var page = pages[index].Key;
+                var pageShift = pages[index].Value;
+                var opacity = new List<Key>();
+                var place = new List<Key>();
+                if (index == 0)
+                {
+                    opacity.Add(Jump(0, 1));
+                    place.Add(Jump(0, 0));
+                }
+                else
+                {
+                    // In from below as the page before leaves.
+                    var comes = times.Pushes[index - 1] + (PushInAt - PushAt);
+                    opacity.AddRange(new[] { Jump(0, 0), Jump(comes, 1) });
+                    place.AddRange(new[] { Jump(0, PushFrom), Jump(comes, PushFrom), To(comes + PushIn, 0, new CubicEase { EasingMode = EasingMode.EaseOut }) });
+                }
+
+                if (index < times.Pushes.Length)
+                {
+                    // Up and out for the next.
+                    var leaves = times.Pushes[index];
+                    opacity.Add(Jump(leaves + PushOut, 0));
+                    place.AddRange(new[] { Jump(leaves, 0), To(leaves + PushOut, PushUp, new CubicEase { EasingMode = EasingMode.EaseIn }) });
+                }
+                else
+                {
+                    opacity.Add(Jump(times.Cut, 0));
+                }
+
+                Animate(board, page, OpacityProperty, opacity.ToArray());
+                Animate(board, pageShift, TranslateTransform.YProperty, place.ToArray());
+            }
+            Animate(board, Prompt, OpacityProperty, Jump(0, 0), Jump(times.PromptAt, 0), To(times.PromptEnd, 1));
+
+            // The band of light, once across the first page and once across the description's first, as long after it
+            // settles as the console's.
+            var shines = new List<double> { FirstShine };
+            if (times.Pushes.Length > 0)
+            {
+                shines.Add(times.Pushes[0] + (SecondShine - PushAt));
+            }
+
             var shine = new List<Key> { Jump(0, 0) };
             var shift = new List<Key> { Jump(0, ShineFrom) };
             foreach (var at in shines)
@@ -180,8 +270,8 @@ namespace XboxSeries.Extension
             var cubicOut = new CubicEase { EasingMode = EasingMode.EaseOut };
             var cubicIn = new CubicEase { EasingMode = EasingMode.EaseIn };
 
-            // The pill collapses into the circle at its centre as the text fades; the bright circle and its diamond fade
-            // last, leaving the dark one.
+            // The pill collapses into the circle at its centre as the text fades; the bright circle and its diamond or
+            // icon fade last, leaving the dark one.
             Animate(board, SpanWidth, ScaleTransform.ScaleXProperty, To(CollapseEnd, 0, quintic));
             Animate(board, LeftEndShift, TranslateTransform.XProperty, To(CollapseEnd, Centre, quintic));
             Animate(board, RightEndShift, TranslateTransform.XProperty, To(CollapseEnd, -Centre, quintic));
@@ -192,6 +282,7 @@ namespace XboxSeries.Extension
             Animate(board, Dark, OpacityProperty, Jump(0, 1));
             Animate(board, Bright, OpacityProperty, Jump(BrightOutAt, Bright.Opacity), To(CollapseEnd, 0));
             Animate(board, Gem, OpacityProperty, Jump(BrightOutAt, Gem.Opacity), To(CollapseEnd, 0));
+            Animate(board, Icon, OpacityProperty, Jump(BrightOutAt, Icon.Opacity), To(CollapseEnd, 0));
 
             // The logo on the dark circle, which swells as a bright ring closes in on it.
             Animate(board, Logo, OpacityProperty, Jump(0, 0), Jump(CollapseEnd, 0), To(LogoBackEnd, 1));

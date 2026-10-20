@@ -15,7 +15,8 @@ namespace XboxSeries.Extension
     /// from behind the banner's left edge as it fades in while the text moves right into its place, and stays there as it
     /// goes; for any other kind the tile and text sit in their place from the start.
     /// It goes by growing a little, then shrinking a little as it fades out. Only render transforms and opacity move, so
-    /// the banner's size never changes. It never takes focus or the mouse.
+    /// the banner's size never changes. An achievement's Toast is the pill instead (<see cref="AchievementToast"/>), with a
+    /// timeline of its own. It never takes focus or the mouse.
     /// </summary>
     public partial class ToastWindow : Window
     {
@@ -87,8 +88,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// A Toast that cut in: on its line first too, its tile placed or sliding in again as its kind has it, or the rare
-        /// pill played afresh.
+        /// A Toast that cut in: on its line first too, its tile placed or sliding in again as its kind has it, or an
+        /// achievement's pill played afresh.
         /// </summary>
         private void ShowCutIn()
         {
@@ -98,16 +99,16 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            if (IsRare)
+            if (IsAchievement)
             {
-                PlayRare();
+                PlayAchievement();
                 return;
             }
 
-            // The banner grows in afresh only over a rare achievement's pill, which hid it.
-            var overRare = StopRare();
+            // The banner grows in afresh only over an achievement's pill, which hid it.
+            var overPill = StopAchievement();
             CycleText();
-            if (overRare)
+            if (overPill)
             {
                 GrowIn();
             }
@@ -146,21 +147,21 @@ namespace XboxSeries.Extension
             if (toast.IsShown)
             {
                 ShowOverForeground();
-                if (IsRare)
+                if (IsAchievement)
                 {
-                    PlayRare();
+                    PlayAchievement();
                     return;
                 }
 
                 // On the Toast's line first, each time it shows, and from the start of the grow, even mid-going.
-                StopRare();
+                StopAchievement();
                 CycleText();
                 GrowIn();
                 ComeIn();
             }
-            else if (Rare.Visibility == Visibility.Visible)
+            else if (Achievement.Visibility == Visibility.Visible)
             {
-                GoRare();
+                GoAchievement();
             }
             else
             {
@@ -168,41 +169,42 @@ namespace XboxSeries.Extension
             }
         }
 
-        private bool IsRare => toast.Kind == ToastKind.RareAchievementUnlocked;
+        /// <summary>Whether the Toast is an achievement's, one or several, rare or not: the pill's, not the banner's.</summary>
+        private bool IsAchievement => toast.Kind == ToastKind.AchievementUnlocked || toast.Kind == ToastKind.RareAchievementUnlocked;
 
-        /// <summary>A rare achievement's pill in place of the banner, from its start, the banner hidden where it was.</summary>
-        private void PlayRare()
+        /// <summary>An achievement's pill in place of the banner, from its start, the banner hidden where it was.</summary>
+        private void PlayAchievement()
         {
             goings++;
             textCycle.Stop(this);
             Card.BeginAnimation(OpacityProperty, null);
             Card.Opacity = 0;
-            Rare.Visibility = Visibility.Visible;
-            Rare.Play();
+            Achievement.Visibility = Visibility.Visible;
+            Achievement.Play();
         }
 
-        /// <summary>The rare achievement's pill gone for the banner, if it was showing: whether it was.</summary>
-        private bool StopRare()
+        /// <summary>The achievement's pill gone for the banner, if it was showing: whether it was.</summary>
+        private bool StopAchievement()
         {
-            if (Rare.Visibility != Visibility.Visible)
+            if (Achievement.Visibility != Visibility.Visible)
             {
                 return false;
             }
 
-            Rare.Stop();
-            Rare.Visibility = Visibility.Collapsed;
+            Achievement.Stop();
+            Achievement.Visibility = Visibility.Collapsed;
             return true;
         }
 
-        /// <summary>The rare achievement's pill going its own way; then the window hiding if the Toast hasn't shown again.</summary>
-        private void GoRare()
+        /// <summary>The achievement's pill going its own way; then the window hiding if the Toast hasn't shown again.</summary>
+        private void GoAchievement()
         {
             var going = ++goings;
-            Rare.Go(() =>
+            Achievement.Go(() =>
             {
                 if (going == goings && !toast.IsShown)
                 {
-                    StopRare();
+                    StopAchievement();
                     Hide();
                 }
             });

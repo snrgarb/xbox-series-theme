@@ -1,21 +1,24 @@
-<UserControl x:Class="XboxSeries.Extension.RareAchievementToast"
+<UserControl x:Class="XboxSeries.Extension.AchievementToast"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:XboxSeries.Extension"
+             xmlns:core="clr-namespace:XboxSeries.Core;assembly=XboxSeries.Core"
              Width="778" Height="128" Focusable="False" IsTabStop="False" IsHitTestVisible="False">
     <!--
-        A rare achievement's Toast, as the console's (Xbox One's circle-and-pill Toast, still the rare one's on Series): a
-        blue pill 778 by 128, fully rounded, with a brighter circle flush at its left holding a spinning diamond. It comes in
-        as a circle alone at the pill's centre, popping in with the white Xbox logo, which turns to the diamond flying out
-        from inside the gem; then the pill unfurls from behind the circle, which rides its left end out, and its text fades
-        in. It pages: the header, "Rare Achievement unlocked - 1%", over the Score badge, the Score and the achievement's
-        name; pushed up for the achievement's description, on at most two lines (skipped without one); then cut to "Press
-        (Guide) to view", centred, as the Guide button opens the Guide at Profile & system. A band of light sweeps across
-        the pill once on each of the first two pages. It goes as the pill collapses back into the circle, which turns dark
-        with the logo, rings bright, and shrinks to a dot. The timeline is in RareAchievementToast.xaml.cs; everything moves
-        by transforms and opacity alone, and the diamond is drawn here, in vectors (CrownFacets and PavilionFacets).
-        Its DataContext is the ToastState; it ignores the Toast's image, as the console shows the diamond whatever the
-        achievement's icon.
+        An achievement's Toast, as the console's rare one (Xbox One's circle-and-pill Toast, still the rare one's on Series):
+        a pill 778 by 128, fully rounded, with a brighter circle flush at its left. A rare achievement's is blue, its circle
+        holding a spinning diamond; any other's is the Toast's green, its circle a lighter green holding the achievement's
+        icon, or a white trophy without one, as for "<n> achievements unlocked". It comes in as a circle alone at the
+        pill's centre, popping in with the white Xbox logo, which turns to the diamond flying out from inside the gem, or
+        the icon zooming out to its place; then the pill unfurls from behind the circle, which rides its left end out, and
+        its text fades in. It pages: the header, "Rare Achievement unlocked - 1%" or "Achievement unlocked", over the Score
+        badge, the Score and the achievement's name (gone without a name, leaving the header alone); pushed up for the
+        achievement's description, whole, two lines to a page, pushed up again for each page more (skipped without one);
+        then cut to "Press (Guide) to view", centred, as the Guide button opens the Guide at Profile & system. A band of
+        light sweeps across the pill once on each of the first two pages. It goes as the pill collapses back into the
+        circle, which turns dark with the logo, rings bright, and shrinks to a dot. The timeline is in
+        AchievementToast.xaml.cs and its pages' times in AchievementPages.cs; everything moves by transforms and opacity
+        alone, and the diamond is drawn here, in vectors (CrownFacets and PavilionFacets). Its DataContext is the ToastState.
     -->
     <UserControl.Resources>
         <!--
@@ -58,30 +61,90 @@
         </DataTemplate>
 
         <!-- The body text, as the console's: Segoe UI at about 28.5 (a cap height of 20), on lines 45 apart. -->
-        <Style x:Key="RareText" TargetType="TextBlock">
+        <Style x:Key="PillText" TargetType="TextBlock">
             <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+
+        <!--
+            The palette: the console's blues for a rare achievement, and their counterparts in green for any other. The
+            pill is the Toast's own green, as the banner is, and the circle a lighter green, as much lighter and richer
+            than the pill as the rare circle's blue is than its pill's (#0FC60F: the same hue, 14% lighter and 9% more
+            saturated). Going, the dark circle is the pill's colour and the halo darker, a little over two thirds as light.
+        -->
+        <Style x:Key="PillFill" TargetType="Shape">
+            <Setter Property="Fill" Value="#0F4E7E" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.AchievementUnlocked}">
+                    <Setter Property="Fill" Value="{DynamicResource XboxGreenBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="BrightFill" TargetType="Shape">
+            <Setter Property="Fill" Value="#0D7FC9" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.AchievementUnlocked}">
+                    <Setter Property="Fill" Value="#0FC60F" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DarkFill" TargetType="Shape">
+            <Setter Property="Fill" Value="#0F5180" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.AchievementUnlocked}">
+                    <Setter Property="Fill" Value="{DynamicResource XboxGreenBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HaloFill" TargetType="Shape">
+            <Setter Property="Fill" Value="#0B3456" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.AchievementUnlocked}">
+                    <Setter Property="Fill" Value="#0B550B" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="BadgeLetter" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#0F4E7E" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.AchievementUnlocked}">
+                    <Setter Property="Foreground" Value="{DynamicResource XboxGreenBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--
+            A page of the description: as many of its words as two lines hold, wrapped to the text column, never cut
+            short. The code adds one for each page (AchievementPages splits the description) and sets its text, and moves it
+            below to wait, unseen, until pushed in (a template's transform would be frozen).
+        -->
+        <DataTemplate x:Key="DescriptionPage">
+            <TextBlock Style="{StaticResource PillText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}" FontSize="28.5"
+                       Foreground="White" TextWrapping="Wrap" Opacity="0" Margin="0,0,0,2" />
+        </DataTemplate>
+
+        <!-- The achievement's icon, decoded at twice the circle's size, as the Guide's are, for the TV's 4K. -->
+        <local:DecodedImageConverter x:Key="Icon" />
     </UserControl.Resources>
 
     <Grid x:Name="Pill" Width="778" Height="128">
         <!--
-            The pill: two round ends and the span between them, all the pill's blue. It unfurls from the circle at its
+            The pill: two round ends and the span between them, all the pill's colour. It unfurls from the circle at its
             centre by moving its ends out as the span widens, so the ends stay round; it is hidden while the circle shows
             alone.
         -->
         <Grid x:Name="Body" Opacity="0">
-            <Rectangle x:Name="Span" Margin="64,0" Fill="#0F4E7E" RenderTransformOrigin="0.5,0.5">
+            <Rectangle x:Name="Span" Margin="64,0" Style="{StaticResource PillFill}" RenderTransformOrigin="0.5,0.5">
                 <Rectangle.RenderTransform>
                     <ScaleTransform x:Name="SpanWidth" ScaleX="0" />
                 </Rectangle.RenderTransform>
             </Rectangle>
-            <Ellipse x:Name="LeftEnd" Width="128" Height="128" HorizontalAlignment="Left" Fill="#0F4E7E">
+            <Ellipse x:Name="LeftEnd" Width="128" Height="128" HorizontalAlignment="Left" Style="{StaticResource PillFill}">
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="LeftEndShift" X="325" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse x:Name="RightEnd" Width="128" Height="128" HorizontalAlignment="Right" Fill="#0F4E7E">
+            <Ellipse x:Name="RightEnd" Width="128" Height="128" HorizontalAlignment="Right" Style="{StaticResource PillFill}">
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="RightEndShift" X="-325" />
                 </Ellipse.RenderTransform>
@@ -124,15 +187,24 @@
                 <TranslateTransform x:Name="PagesDrift" X="4" />
             </Grid.RenderTransform>
 
-            <!-- Page 1: the header, then the Score badge, the Score and the name. -->
+            <!-- Page 1: the header, then the Score badge, the Score and the name; the header alone, centred, without a name. -->
             <StackPanel x:Name="Page1" VerticalAlignment="Center" Margin="0,0,0,2">
                 <StackPanel.RenderTransform>
                     <TranslateTransform x:Name="Page1Shift" />
                 </StackPanel.RenderTransform>
-                <TextBlock x:Name="Header" Style="{StaticResource RareText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
+                <TextBlock x:Name="Header" Style="{StaticResource PillText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
                            FontSize="28.5" Foreground="White" TextTrimming="CharacterEllipsis"><Run Text="{Binding Text, Mode=OneWay}" /><Run Text="{Binding Rarity, Mode=OneWay, StringFormat='{} - {0:0.#}%', TargetNullValue=''}" /></TextBlock>
                 <DockPanel x:Name="ScoreLine" Height="45">
-                    <!-- The Score badge: a white disc with the "G" cut in, in the pill's blue; gone without a Score. -->
+                    <DockPanel.Style>
+                        <Style TargetType="DockPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Detail}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DockPanel.Style>
+                    <!-- The Score badge: a white disc with the "G" cut in, in the pill's colour; gone without a Score. -->
                     <Grid x:Name="Badge" DockPanel.Dock="Left" Width="33.5" Height="33.5" Margin="0,1,11,0" VerticalAlignment="Center">
                         <Grid.Style>
                             <Style TargetType="Grid">
@@ -144,13 +216,13 @@
                             </Style>
                         </Grid.Style>
                         <Ellipse Fill="#FCFFFF" />
-                        <TextBlock Text="G" FontFamily="{DynamicResource XboxFontSemibold}" FontSize="22" Foreground="#0F4E7E"
+                        <TextBlock Text="G" FontFamily="{DynamicResource XboxFontSemibold}" FontSize="22" Style="{StaticResource BadgeLetter}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,1" />
                     </Grid>
                     <TextBlock x:Name="Score" DockPanel.Dock="Left" Text="{Binding Score, StringFormat={}{0} -}"
                                LineHeight="45" FontFamily="{DynamicResource XboxFont}" FontSize="28.5" Foreground="White" Margin="0,0,9,0">
                         <TextBlock.Style>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource RareText}">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource PillText}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Score}" Value="{x:Null}">
                                         <Setter Property="Visibility" Value="Collapsed" />
@@ -159,36 +231,31 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock x:Name="AchievementName" Text="{Binding Detail}" Style="{StaticResource RareText}" LineHeight="45"
+                    <TextBlock x:Name="AchievementName" Text="{Binding Detail}" Style="{StaticResource PillText}" LineHeight="45"
                                FontFamily="{DynamicResource XboxFont}" FontSize="28.5" Foreground="White" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
             </StackPanel>
 
-            <!-- Page 2: the achievement's description, on at most two lines. It waits below, unseen, until pushed in. -->
-            <TextBlock x:Name="Description" Text="{Binding Description}" Style="{StaticResource RareText}" LineHeight="45" MaxHeight="90"
-                       FontFamily="{DynamicResource XboxFont}" FontSize="28.5" Foreground="White"
-                       TextWrapping="Wrap" TextTrimming="WordEllipsis" Opacity="0" Margin="0,0,0,2">
-                <TextBlock.RenderTransform>
-                    <TranslateTransform x:Name="Page2Shift" Y="58" />
-                </TextBlock.RenderTransform>
-            </TextBlock>
+            <!-- Then the description's pages (DescriptionPage), each pushed up for the next. -->
+            <Grid x:Name="Descriptions" />
 
             <!-- Page 3: the prompt, alone and centred. -->
             <StackPanel x:Name="Prompt" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0">
-                <TextBlock Text="Press" Style="{StaticResource RareText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
+                <TextBlock Text="Press" Style="{StaticResource PillText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
                            FontSize="28.5" Foreground="White" />
                 <!-- The Guide button. -->
                 <Path Data="{DynamicResource SourceXbox}" Fill="White" Width="34" Height="34" Stretch="Uniform" Margin="16,2,22,0"
                       VerticalAlignment="Center" />
-                <TextBlock Text="to view" Style="{StaticResource RareText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
+                <TextBlock Text="to view" Style="{StaticResource PillText}" LineHeight="45" FontFamily="{DynamicResource XboxFont}"
                            FontSize="28.5" Foreground="White" />
             </StackPanel>
         </Grid>
 
         <!--
             The circle, a pixel inside the pill's left end and riding it, starting at the pill's centre. From the bottom:
-            the dark halo, the bright ring and the dark disc the going shows; the bright circle; the Xbox logo; and the gem,
-            clipped first to a disc inside the circle and then to the circle as the diamond flies out.
+            the dark halo, the bright ring and the dark disc the going shows; the bright circle; the Xbox logo; and a rare
+            achievement's gem, clipped first to a disc inside the circle and then to the circle as the diamond flies out, or
+            any other's icon, clipped to the circle.
         -->
         <Grid x:Name="Circle" Width="126" Height="126" HorizontalAlignment="Left" Margin="1,0,0,0" VerticalAlignment="Center"
               RenderTransformOrigin="0.5,0.5" Opacity="0">
@@ -198,22 +265,22 @@
                     <TranslateTransform x:Name="CircleShift" X="325" />
                 </TransformGroup>
             </Grid.RenderTransform>
-            <Ellipse x:Name="Halo" Fill="#0B3456" Opacity="0" RenderTransformOrigin="0.5,0.5">
+            <Ellipse x:Name="Halo" Style="{StaticResource HaloFill}" Opacity="0" RenderTransformOrigin="0.5,0.5">
                 <Ellipse.RenderTransform>
                     <ScaleTransform x:Name="HaloScale" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse x:Name="Ring" Fill="#0D7FC9" Opacity="0" RenderTransformOrigin="0.5,0.5">
+            <Ellipse x:Name="Ring" Style="{StaticResource BrightFill}" Opacity="0" RenderTransformOrigin="0.5,0.5">
                 <Ellipse.RenderTransform>
                     <ScaleTransform x:Name="RingScale" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse x:Name="Dark" Fill="#0F5180" RenderTransformOrigin="0.5,0.5">
+            <Ellipse x:Name="Dark" Style="{StaticResource DarkFill}" RenderTransformOrigin="0.5,0.5">
                 <Ellipse.RenderTransform>
                     <ScaleTransform x:Name="DarkScale" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse x:Name="Bright" Fill="#0D7FC9" Opacity="0" />
+            <Ellipse x:Name="Bright" Style="{StaticResource BrightFill}" Opacity="0" />
             <Path x:Name="Logo" Data="{DynamicResource SourceXbox}" Fill="White" Width="70" Height="70" Stretch="Uniform" Opacity="0"
                   RenderTransformOrigin="0.5,0.5">
                 <Path.RenderTransform>
@@ -221,6 +288,15 @@
                 </Path.RenderTransform>
             </Path>
             <Grid x:Name="Gem" Opacity="0">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.AchievementUnlocked}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Grid.Clip>
                     <EllipseGeometry Center="63,63" RadiusX="43.5" RadiusY="43.5">
                         <EllipseGeometry.Transform>
@@ -244,6 +320,34 @@
                         <ScaleTransform x:Name="DiamondZoom" ScaleX="3" ScaleY="3" />
                     </Canvas.RenderTransform>
                 </Canvas>
+            </Grid>
+            <!--
+                An ordinary achievement's icon filling the circle, clipped round, over the white trophy (U+1F3C6, which the
+                icon font lacks, drawn from Segoe UI Symbol's outline in the body font, as the banner's was), which shows
+                without an icon, as for "<n> achievements unlocked", or while it loads or if it can't. Both zoom out to
+                their place as the diamond flies out (IconZoom), but never spin.
+            -->
+            <Grid x:Name="Icon" Opacity="0">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.RareAchievementUnlocked}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.Clip>
+                    <EllipseGeometry Center="63,63" RadiusX="63" RadiusY="63" />
+                </Grid.Clip>
+                <Grid RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
+                        <ScaleTransform x:Name="IconZoom" ScaleX="3" ScaleY="3" />
+                    </Grid.RenderTransform>
+                    <TextBlock Text="&#x1F3C6;" FontFamily="{DynamicResource XboxFont}" FontSize="60" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Image Source="{Binding Image, Converter={StaticResource Icon}, ConverterParameter=252}" Stretch="UniformToFill" />
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

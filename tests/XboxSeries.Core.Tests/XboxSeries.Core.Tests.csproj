@@ -10,4 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\XboxSeries.Core\XboxSeries.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The achievement Toast's paging, plain C# with no WPF, compiled in here too to be checked on its own. -->
+    <Compile Include="..\..\src\XboxSeries.Extension\AchievementPages.cs" Link="Linked\AchievementPages.cs" />
+  </ItemGroup>
 </Project>
