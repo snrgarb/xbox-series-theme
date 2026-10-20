@@ -13,8 +13,9 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The Idle screen's dim. It follows the core's <see cref="IdleState.IsDimmed"/> and holds no logic: it fades in over
     /// the whole monitor as the screen dims, over every window but the Toast's, and fades out, then hides, as it wakes. It
-    /// never takes focus, the foreground or the mouse. Over the dim, it shows the core's <see cref="IdleState.Card"/>,
-    /// crossfading from one card to the next, and hides it with the dim.
+    /// never takes focus, the foreground or the mouse. Over the dim, it flies in the core's <see cref="IdleState.Card"/>
+    /// from the right with the time at the bottom left, crossfades from one card to the next, flies it out again for
+    /// none, and hides it with the dim.
     /// </summary>
     public partial class DimWindow : Window
     {
@@ -26,6 +27,12 @@ namespace XboxSeries.Extension
 
         /// <summary>From one card to the next, as Home's top bar crossfades the gamertag and the real name.</summary>
         internal static readonly Duration CardCrossfade = TimeSpan.FromMilliseconds(300);
+
+        /// <summary>The panel flying in from the right with the first card, slowing as it lands, as the console's.</summary>
+        internal static readonly Duration FlyInDuration = TimeSpan.FromMilliseconds(500);
+
+        /// <summary>The panel flying back out to the right, with no card left to show.</summary>
+        internal static readonly Duration FlyOutDuration = TimeSpan.FromMilliseconds(300);
 
         private readonly IdleState idle;
 
@@ -39,16 +46,21 @@ namespace XboxSeries.Extension
         /// <summary>Counts the goings, so only the latest one's end hides the window.</summary>
         private int goings;
 
+        /// <summary>Whether the panel is in, or flying in; out, the next card flies it in rather than crossfading.</summary>
+        private bool flownIn;
+
+        /// <param name="status">The time, shown at the bottom left with the cards.</param>
         /// <param name="below">
         /// Windows of the extension's own that raise themselves to the top as they show, the Overlay and the Launch
         /// screen's: the dim goes back over them when one shows while it is up. Playnite's windows, its dialogs, are
         /// followed as they load.
         /// </param>
         /// <param name="above">The windows to keep above it, lowest first.</param>
-        public DimWindow(IdleState idle, Window[] below, params Window[] above)
+        public DimWindow(IdleState idle, StatusState status, Window[] below, params Window[] above)
         {
             InitializeComponent();
             this.idle = idle;
+            Clock.DataContext = status;
             this.above = above;
             front = CardA;
             back = CardB;
@@ -105,6 +117,8 @@ namespace XboxSeries.Extension
                 // No card yet, nor the last one from before: the core sets one once the screen is Showing things.
                 Unseen(front);
                 Unseen(back);
+                Unseen(Clock);
+                FlownOut();
                 Cards.BeginAnimation(OpacityProperty, null);
                 Cards.Opacity = 1;
                 ShowOverForeground();
@@ -212,17 +226,18 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The new card fades in on top while the last fades out beneath it; none fades the last out, unless the screen is
-        /// waking, when it goes with the dim.
+        /// The first card flies in on the panel from the right, with the time; after it, the new card fades in on top
+        /// while the last fades out beneath it. None flies the panel back out, with the time, unless the screen is waking,
+        /// when they go with the dim.
         /// </summary>
         private void OnCardChanged()
         {
             var card = idle.Card;
             if (card == null)
             {
-                if (idle.IsDimmed)
+                if (idle.IsDimmed && flownIn)
                 {
-                    front.BeginAnimation(OpacityProperty, new DoubleAnimation(0, CardCrossfade));
+                    FlyOut();
                 }
 
                 return;
@@ -236,21 +251,62 @@ namespace XboxSeries.Extension
             Panel.SetZIndex(front, 1);
             Panel.SetZIndex(back, 0);
 
+            if (!flownIn)
+            {
+                // On the panel as it flies in, whole, rather than fading in on it; to-only, from wherever it is, as part
+                // way back out.
+                flownIn = true;
+                Seen(front, 1);
+                Seen(back, 0);
+                var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+                FlyoutSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, FlyInDuration) { EasingFunction = ease });
+                Clock.BeginAnimation(OpacityProperty, new DoubleAnimation(1, FlyInDuration));
+                return;
+            }
+
             // To-only, so a crossfade interrupted by the next card carries on from where each is.
             front.BeginAnimation(OpacityProperty, new DoubleAnimation(1, CardCrossfade));
             back.BeginAnimation(OpacityProperty, new DoubleAnimation(0, CardCrossfade));
         }
 
-        private static void Unseen(UIElement card)
+        /// <summary>The panel back out to the right, and the time faded with it; a card coming meanwhile flies it back in.</summary>
+        private void FlyOut()
         {
-            card.BeginAnimation(OpacityProperty, null);
-            card.Opacity = 0;
+            flownIn = false;
+            var slide = new DoubleAnimation(Flyout.Width, FlyOutDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+            slide.Completed += (_, __) =>
+            {
+                if (!flownIn)
+                {
+                    Unseen(front);
+                    Unseen(back);
+                }
+            };
+            FlyoutSlide.BeginAnimation(TranslateTransform.XProperty, slide);
+            Clock.BeginAnimation(OpacityProperty, new DoubleAnimation(0, FlyOutDuration));
         }
 
+        /// <summary>The panel out to the right, off the screen, at once, for the first card to fly it in.</summary>
+        private void FlownOut()
+        {
+            flownIn = false;
+            FlyoutSlide.BeginAnimation(TranslateTransform.XProperty, null);
+            FlyoutSlide.X = Flyout.Width;
+        }
+
+        private static void Seen(UIElement element, double opacity)
+        {
+            element.BeginAnimation(OpacityProperty, null);
+            element.Opacity = opacity;
+        }
+
+        private static void Unseen(UIElement element) => Seen(element, 0);
+
         /// <summary>
-        /// The cards are laid out 1080 tall, as wide as the screen's aspect makes that, and scaled to fit; each is drawn once
+        /// The cards are laid out 1080 tall, as wide as the screen's aspect makes that, and scaled to fit, the panel over
+        /// its right half and a little more, from 958 at 1920 wide, as the console's; each is drawn once
         /// into a picture at the screen's own resolution, its shadow and a cover's blur with it, so sharp, and the graphics
-        /// card fades those pictures rather than redrawing the blur and the shadow every frame at 4K.
+        /// card slides and fades those pictures rather than redrawing the blur, the shadow and the art's fade every frame at 4K.
         /// </summary>
         private void FitToScreen()
         {
@@ -260,6 +316,12 @@ namespace XboxSeries.Extension
             }
 
             Root.Width = Root.Height * ActualWidth / ActualHeight;
+            Flyout.Width = Math.Round(Root.Width / 2) + 2;
+            if (!flownIn)
+            {
+                FlownOut();
+            }
+
             var source = PresentationSource.FromVisual(this);
             var pixelsPerUnit = ActualHeight / Root.Height * (source?.CompositionTarget.TransformToDevice.M22 ?? 1);
             foreach (var card in new UIElement[] { CardA, CardB })
