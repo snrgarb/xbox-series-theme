@@ -499,6 +499,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Switch_profile_is_greyed_out_and_does_nothing_while_a_game_runs()
+        {
+            core.OnGameStarted(library.Id("Halo Infinite"));
+            OpenProfileTab();
+            Tap(ControllerButton.DPadDown);
+            Assert.Equal(GuideItemKind.SwitchProfile, core.Guide.FocusedItem.Kind);
+            Assert.False(core.Guide.FocusedItem.IsEnabled);
+
+            Tap(ControllerButton.A);
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.False(core.IsStartupShown);
+        }
+
+        [Fact]
         public void A_game_stopping_leaves_Power_up()
         {
             core.OnGameStarted(library.Id("Halo Infinite"));

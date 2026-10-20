@@ -87,14 +87,11 @@ namespace XboxSeries.Core
             });
         }
 
-        private StartupPlan StartupPlan(BootVideo video) =>
-            new StartupPlan(video, Settings.StartUp.AskWhosPlaying, profiles.ToList(), LastProfile);
-
         /// <summary>
-        /// Playnite started in Fullscreen: Start-up covers the screen, and the plan its sequence begins with, the chosen
-        /// boot video first, is handed to the sequence's thread. Null while Start-up already shows.
+        /// Start-up covers the screen, the Guide and any Toast going first, and the plan its sequence begins with is
+        /// made; null while Start-up already shows.
         /// </summary>
-        public StartupPlan OnStartup()
+        private StartupPlan BeginStartup(BootVideo video, bool askWhosPlaying)
         {
             if (IsStartupShown)
             {
@@ -103,34 +100,34 @@ namespace XboxSeries.Core
 
             CoverForStartup();
             IsStartupShown = true;
-            return StartupPlan(Settings.StartUp.BootVideo);
+            return new StartupPlan(video, askWhosPlaying, profiles.ToList(), LastProfile);
         }
+
+        /// <summary>
+        /// Playnite started in Fullscreen: Start-up covers the screen, and the plan its sequence begins with, the chosen
+        /// boot video first, is handed to the sequence's thread. Null while Start-up already shows.
+        /// </summary>
+        public StartupPlan OnStartup() => BeginStartup(Settings.StartUp.BootVideo, Settings.StartUp.AskWhosPlaying);
 
         /// <summary>
         /// Windows woke from sleep: Who's playing today? asks again, if it asks, without the boot video. The Guide, and
         /// any Toast, go first.
         /// </summary>
-        public StartupPlan OnResumedFromSleep()
-        {
-            if (!Settings.StartUp.AskWhosPlaying || IsStartupShown)
-            {
-                return null;
-            }
-
-            CoverForStartup();
-            IsStartupShown = true;
-            return StartupPlan(BootVideo.Off);
-        }
+        public StartupPlan OnResumedFromSleep() =>
+            Settings.StartUp.AskWhosPlaying ? BeginStartup(BootVideo.Off, true) : null;
 
         /// <summary>
-        /// The Guide's Switch profile: Who's playing today? asks, without the boot video, even when it doesn't ask at
-        /// start, as waking does; the Guide goes first. The plan goes out on <see cref="WhosPlayingAsked"/>.
+        /// The Guide's Switch profile: Who's playing today? asks, without the boot video, even when it is turned off for
+        /// start and waking; the Guide goes first. A Guide entry hands nothing back, so the plan goes out on
+        /// <see cref="WhosPlayingAsked"/> rather than as a return value.
         /// </summary>
         private void SwitchProfile()
         {
-            CoverForStartup();
-            IsStartupShown = true;
-            WhosPlayingAsked?.Invoke(new StartupPlan(BootVideo.Off, true, profiles.ToList(), LastProfile));
+            var plan = BeginStartup(BootVideo.Off, true);
+            if (plan != null)
+            {
+                WhosPlayingAsked?.Invoke(plan);
+            }
         }
 
         /// <summary>Settings' Boot video page: the generation that plays at start, or Off. Saved at once.</summary>

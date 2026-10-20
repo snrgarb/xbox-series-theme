@@ -111,12 +111,16 @@ One console generation's boot animation, from the original Xbox to the Series X,
 _Avoid_: intro video, splash
 
 **Profile**:
-One person who plays on this PC: a gamertag, a real name and a picture, kept in the extension's encrypted store. It is identity only; the **Bundle**'s options are shared by every Profile. The first is made from the Windows user; the one signed in shows on the **Status area**, with the **Score** total under its gamertag on **Home**'s top bar, and on the **Guide**'s Profile & system, with its achievement totals under it: the **Score** total, the achievements unlocked and the last three unlocks, newest first. Those come from this PC's library, as PlayniteAchievements keeps nothing per Profile, so every Profile shows the same totals.
+One person who plays on this PC: a gamertag, a real name and a picture, kept in the extension's encrypted store. It is identity only; the **Bundle**'s options are shared by every Profile. The first is made from the Windows user; the one signed in shows on the **Status area**, with the **Score** total under its gamertag on **Home**'s top bar, and on the **Guide**'s Profile & system, with **Switch profile** under it and the achievement totals under that: the **Score** total, the achievements unlocked and the last three unlocks, newest first. Those come from this PC's library, as PlayniteAchievements keeps nothing per Profile, so every Profile shows the same totals.
 _Avoid_: account, user (that is the Windows user), gamer
 
 **Who's playing today?**:
-**Start-up**'s profile picker: the **Profiles** in a row, focus on the one signed in last, and A signs the focused one in. It asks on every start and on waking from sleep, unless turned off on **Settings**, when the last Profile signs in by itself.
+**Start-up**'s profile picker: the **Profiles** in a row, focus on the one signed in last, and A signs the focused one in. It asks on every start and on waking from sleep, unless turned off on **Settings**, when the last Profile signs in by itself; **Switch profile** asks it whatever that setting says.
 _Avoid_: profile select, login, user switcher
+
+**Switch profile**:
+The **Guide**'s entry under the profile card on Profile & system: the Guide closes and **Who's playing today?** asks, without the **Boot video**, even when it is turned off for start and waking.
+_Avoid_: sign out, change user, user switcher
 
 **Idle screen**:
 What shows when nobody has touched the controller, keyboard or mouse for a while, in stages counted from the last input: Dimmed, after Dim after (2 min by default), a dim, 70% black, fading in over everything on screen, the **Guide**, the **Tile menu**, dialogs and the **Console keyboard** included, with only **Toasts** above it; then Showing things, after Show things after (5 min by default), the console's idle panel over the dim: a full-height panel taking the right half of the screen, sliding in from the right, showing one card at a time, each for 20 s in shuffled turn and reshuffled when they run out: the nearly-finished games (the most achievements unlocked without all: the game and the locked achievement most players have, its **Score**, the game's progress), the last unlocks ("Unlocked 2 days ago", the achievement's Score and icon), the last games played ("Played yesterday", the playtime) and tips (their buttons drawn as icons in the text and highlighted on a controller), the achievement ones only with PlayniteAchievements. Y on a game's card, "See game", wakes the screen and opens that game's **Game hub**, the **Guide** closing first if it was up; Y on a tip, "Got it", only wakes it. Never on either time switches that stage off; a Show things after no later than Dim after shows things at its own time, the dim with them. The first input while dimmed is the wake press: it only wakes the screen, swallowed, so A doesn't launch, B doesn't go back and the **Guide button** doesn't open the **Guide**, focus staying where it was (but for Y on a game's card), and **Who's playing today?** isn't asked. It waits during **Start-up**, a **Launch screen**, a running game, or with Playnite out of front, counting from zero again once that ends; Toasts neither wake it nor count as input.
@@ -182,6 +186,7 @@ _Avoid_: home button, Xbox button
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 - **Start-up** plays the **Boot video**, then **Who's playing today?** signs a **Profile** in; its "Hi" **Toast** shows first, Playnite's notifications and a ringing **Call**'s Toast after it, and pressing the **Guide button** during it opens the **Guide** on Profile & system
 - Waking from sleep asks **Who's playing today?** again, without the **Boot video**; waking the **Idle screen** never does
+- **Switch profile** on the **Guide** asks **Who's playing today?** too, also without the **Boot video**, whether or not it asks on start
 - **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from
 
 ## Flagged ambiguities
