@@ -30,9 +30,6 @@ namespace XboxSeries.Core
         /// <summary>Uninstalls the game with Playnite's own Uninstall: its library integration's route, client windows and all.</summary>
         void UninstallGame(Guid gameId);
 
-        /// <summary>Opens Playnite's own game menu for the game.</summary>
-        void OpenGameMenu(Guid gameId);
-
         /// <summary>
         /// Runs one of the game's actions that don't play it, as Playnite's game menu does: the
         /// <paramref name="index"/>th of <see cref="LibraryGame.OtherActions"/>.

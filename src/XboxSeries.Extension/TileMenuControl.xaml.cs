@@ -5,7 +5,9 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using Playnite.SDK.Controls;
+using Playnite.SDK.Events;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -13,8 +15,10 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The tile menu, injected over Home as a custom element. It follows the core's <see cref="HomeState.TileMenu"/>,
     /// centred on the screen, and holds no menu logic: the core drives it from the pad, as it does the Guide.
-    /// Focus stays on the tile underneath, so the tile keeps its ring and size; Playnite's own keys for the pad are
-    /// swallowed instead, so nothing behind the menu reacts to them.
+    /// Focus stays on the tile underneath, or the Game hub's button, so it keeps its ring and size and has focus again
+    /// once the menu closes; Playnite's own keys and routed pad presses are swallowed instead, while the core says the
+    /// menu holds them (<see cref="ExtensionCore.TileMenuHolds"/>), so nothing behind the menu reacts to them.
+    /// It also has Playnite's own ways into its game menu open this one instead (<see cref="GameMenuTakeover"/>).
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
     public partial class TileMenuControl : PluginUserControl
@@ -34,9 +38,13 @@ namespace XboxSeries.Extension
         private const double DimmedBehindFlyout = 0.45;
 
         private readonly ExtensionCore core;
+        private readonly GameMenuTakeover takeover;
         private readonly TranslateTransform rise = new TranslateTransform();
         private readonly TranslateTransform flyoutSlide = new TranslateTransform();
         private Window window;
+
+        /// <summary>Playnite's Game hub, whose template is applied, with its ways into the game menu, as it first shows.</summary>
+        private FrameworkElement gameHub;
 #if DEBUG
         private readonly HashSet<Key> debugKeysDown = new HashSet<Key>();
 #endif
@@ -45,6 +53,7 @@ namespace XboxSeries.Extension
         {
             InitializeComponent();
             this.core = core;
+            takeover = new GameMenuTakeover(core);
             DataContext = core.Home;
             Panel.Core = core;
             Panel.RenderTransform = rise;
@@ -64,6 +73,15 @@ namespace XboxSeries.Extension
                 window.PreviewKeyUp += OnWindowKeyUp;
                 window.Deactivated += OnWindowDeactivated;
             }
+
+            InputManager.Current.PreProcessInput += OnPreProcessInput;
+            gameHub = HomeRows.FindGameDetails(this);
+            if (gameHub != null)
+            {
+                gameHub.IsVisibleChanged += OnGameHubVisibleChanged;
+            }
+
+            TakeOverGameMenu();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -75,6 +93,44 @@ namespace XboxSeries.Extension
                 window.PreviewKeyUp -= OnWindowKeyUp;
                 window.Deactivated -= OnWindowDeactivated;
                 window = null;
+            }
+
+            InputManager.Current.PreProcessInput -= OnPreProcessInput;
+            if (gameHub != null)
+            {
+                gameHub.IsVisibleChanged -= OnGameHubVisibleChanged;
+                gameHub = null;
+            }
+        }
+
+        private void OnGameHubVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue)
+            {
+                TakeOverGameMenu();
+            }
+        }
+
+        /// <summary>Once Playnite has bound its game menu, after the window's templates and its own focus have settled.</summary>
+        private void TakeOverGameMenu() =>
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() => takeover.TakeOver(window, gameHub)));
+
+        /// <summary>
+        /// Playnite's routed copy of a pad press the menu holds: cancelled before any handler sees it, so A doesn't click
+        /// the Game hub's button under the menu, nor B close the hub, nor Menu open Playnite's game menu. Playnite routes a
+        /// press before raising it to the core, so the menu is still up for it; a held button's resends can come once the
+        /// press has closed the menu, so the core holds that button until it is released.
+        /// </summary>
+        private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
+        {
+            var input = e.StagingItem.Input;
+            if ((input.RoutedEvent == Keyboard.KeyDownEvent || input.RoutedEvent == Keyboard.KeyUpEvent)
+                && input is KeyEventArgs key
+                && PlayniteInput.PadButtonOf(key) is ControllerInput pad
+                && PlayniteInput.ToButton(pad) is ControllerButton button
+                && core.TileMenuHolds(button))
+            {
+                e.Cancel();
             }
         }
 

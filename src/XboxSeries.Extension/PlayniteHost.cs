@@ -194,17 +194,6 @@ namespace XboxSeries.Extension
             }
         }
 
-        public void OpenGameMenu(Guid gameId)
-        {
-            if (!SelectInMainList(gameId))
-            {
-                return;
-            }
-
-            // Fullscreen's game menu is for the main list's selected game.
-            FullscreenCommand("OpenGameMenuCommand")?.Execute(null);
-        }
-
         public void RunGameAction(Guid gameId, int index)
         {
             var game = api.Database.Games.Get(gameId);

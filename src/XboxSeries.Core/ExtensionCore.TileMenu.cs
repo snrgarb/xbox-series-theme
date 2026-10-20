@@ -22,6 +22,34 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
+        /// Playnite asked for its own game menu, by a binding or button the extension took over: Menu or Manage on the
+        /// Game hub, Menu on Playnite's own grid. The Tile menu opens for <paramref name="gameId"/> in its place, without
+        /// Manage game when <paramref name="fromGameHub"/>, as the player is there already. Nothing opens over the Guide,
+        /// text entry or a menu already up.
+        /// </summary>
+        public void OpenTileMenu(Guid gameId, bool fromGameHub)
+        {
+            var game = GameById(gameId);
+            if (game == null || Home.TileMenu != null || Guide.IsOverlayShown || TextEntry.IsShown)
+            {
+                return;
+            }
+
+            StopRepeat();
+            sounds.Play(UiSound.PromptOpen);
+            Home.TileMenu = TileMenuFor(game, withManageGame: !fromGameHub);
+        }
+
+        /// <summary>
+        /// Whether a press of <paramref name="button"/> belongs to the tile menu: any while it is up, and one pressed while
+        /// it was up until it is released. Playnite routes its own copy of each pad press, and resends of a held one, to
+        /// what has focus under the menu, a tile, its grid or the Game hub's buttons; a resend can come after the press
+        /// has closed the menu.
+        /// </summary>
+        public bool TileMenuHolds(ControllerButton button) =>
+            (Home.TileMenu != null && !Guide.IsOpen) || tileMenuHeld.Contains(button);
+
+        /// <summary>
         /// Menu on a game tile: Play game (Install while it isn't installed, Quit while it runs), Add to or Remove from
         /// Favourites, Manage game, Uninstall for an installed game a library installed, then after a gap Customise Home
         /// (on My games &amp; apps Customise games &amp; apps) and More options, which opens its flyout over the menu.
@@ -39,10 +67,10 @@ namespace XboxSeries.Core
             CancelTap();
             StopRepeat();
             sounds.Play(UiSound.PromptOpen);
-            Home.TileMenu = TileMenuFor(game);
+            Home.TileMenu = TileMenuFor(game, withManageGame: true);
         }
 
-        private Dialog TileMenuFor(LibraryGame game)
+        private Dialog TileMenuFor(LibraryGame game, bool withManageGame)
         {
             var gameId = game.Id;
             Dialog menu = null;
@@ -54,12 +82,16 @@ namespace XboxSeries.Core
                 game.Favorite
                     ? new DialogOption("Remove from Favourites", DialogIcon.Unfavourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, false)))
                     : new DialogOption("Add to Favourites", DialogIcon.Favourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, true))),
-                new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() =>
+            };
+
+            if (withManageGame)
+            {
+                rows.Add(new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() =>
                 {
                     ListPlayHistoryInMainList();
                     playnite.OpenGameHub(gameId);
-                })),
-            };
+                })));
+            }
 
             // A game added by hand has no library to uninstall it.
             if (game.Installed && !game.IsCustom)

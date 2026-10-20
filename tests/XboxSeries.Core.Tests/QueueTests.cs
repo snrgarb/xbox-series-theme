@@ -584,7 +584,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void View_on_a_queued_game_on_Manage_Queue_opens_Manage_game()
+        public void View_on_a_queued_game_on_Manage_Queue_opens_its_Tile_menu()
         {
             var library = new FakeLibrary().WithGame("33 Immortals", installed: false, installing: true);
             core.OnLibraryChanged(library.Snapshot());
@@ -593,11 +593,12 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.Back);
 
-            Assert.Equal(new[] { library.Id("33 Immortals") }, playnite.OpenedGameMenus);
+            Assert.Equal("33 Immortals", core.Home.TileMenu.Title);
+            Assert.Contains("Manage game", core.Home.TileMenu.Options.Select(o => o.Label));
         }
 
         [Fact]
-        public void View_on_a_Recently_installed_cover_opens_Manage_game()
+        public void View_on_a_Recently_installed_cover_opens_its_Tile_menu()
         {
             var library = new FakeLibrary().WithGame("Halo Infinite");
             core.OnLibraryChanged(library.Snapshot());
@@ -606,7 +607,7 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.Back);
 
-            Assert.Equal(new[] { library.Id("Halo Infinite") }, playnite.OpenedGameMenus);
+            Assert.Equal("Halo Infinite", core.Home.TileMenu.Title);
         }
 
         [Fact]
@@ -617,7 +618,7 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.Back);
 
-            Assert.Empty(playnite.OpenedGameMenus);
+            Assert.Null(core.Home.TileMenu);
         }
 
         [Fact]
