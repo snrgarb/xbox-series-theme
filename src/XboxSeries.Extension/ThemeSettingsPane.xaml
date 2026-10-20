@@ -5,7 +5,7 @@
              Focusable="False" KeyDown="OnPaneKeyDown">
     <!--
         Settings' Theme settings category, as Personalisation: dark boxes two wide, each a line icon and its name alone,
-        opening its page in the pane in their place, the header following: Personalisation, Guide and Discord. Which page
+        opening its page in the pane in their place, the header following: Personalisation and Idle, then Guide and Discord. Which page
         shows is the core's (SettingsState.ThemePage). In Settings' palette and 1080p units (SettingsControl.xaml).
     -->
     <UserControl.Resources>
@@ -19,6 +19,9 @@
     <UniformGrid Margin="0,20,0,0" Columns="2" HorizontalAlignment="Left" VerticalAlignment="Top">
         <Button x:Name="PersonalisationBox" Style="{StaticResource Box}" Tag="&#xE771;" Click="OnBoxClick">
             <TextBlock Text="Personalisation" Style="{StaticResource Text}" />
+        </Button>
+        <Button x:Name="IdleBox" Style="{StaticResource Box}" Tag="&#xE708;" Click="OnBoxClick">
+            <TextBlock Text="Idle" Style="{StaticResource Text}" />
         </Button>
         <Button x:Name="GuideBox" Style="{StaticResource Box}" Tag="&#xE7FC;" Click="OnBoxClick">
             <TextBlock Text="Guide" Style="{StaticResource Text}" />
