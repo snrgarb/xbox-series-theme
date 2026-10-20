@@ -140,6 +140,26 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Settings_from_the_Guide_while_up_on_a_Theme_settings_page_opens_again_on_its_boxes()
+        {
+            windows.OpenWindow();
+            core.OpenSettings();
+            core.OpenThemePage(ThemeSettingsPage.Guide);
+            var openings = 0;
+            core.Settings.Opened += (s, e) => openings++;
+            OpenProfileTab();
+            Tap(ControllerButton.DPadDown);
+
+            Press(ControllerButton.A);
+            Release(ControllerButton.A);
+
+            // Already up, the page changes nothing else the view could follow, so it's told it opened again, focus going to the rail.
+            Assert.Equal(1, openings);
+            Assert.Equal(ThemeSettingsPage.None, core.Settings.ThemePage);
+            Assert.Equal(SettingsOrigin.Guide, core.Settings.OpenedFrom);
+        }
+
+        [Fact]
         public void Settings_from_the_Guide_takes_My_games_and_apps_place_with_the_users_own_filter_back()
         {
             core.OpenMyGames(MyGamesItem.Games);

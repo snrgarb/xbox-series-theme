@@ -261,7 +261,7 @@
                 <Button x:Name="MorePlayniteOptionsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
                     <TextBlock Text="More Playnite options" Style="{StaticResource RailText}" />
                 </Button>
-                <!-- Debug builds only, shown by the code-behind: under a second divider, the Debug menu, to try Toasts and Steam installs. -->
+                <!-- Debug builds only, shown by the code-behind: under a divider, the Debug menu, to try Toasts and Steam installs. -->
                 <Border x:Name="DebugDivider" Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}"
                         Visibility="Collapsed" />
                 <Button x:Name="DebugItem" Style="{StaticResource RailItem}" Visibility="Collapsed">

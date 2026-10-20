@@ -96,6 +96,7 @@ namespace XboxSeries.Extension
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             core.Settings.PropertyChanged += OnStateChanged;
+            core.Settings.Opened += OnOpened;
 
             // Put up before the page was loaded, as when the Guide brings Playnite back from a Game hub.
             shownCategory = core.Settings.Category;
@@ -117,6 +118,7 @@ namespace XboxSeries.Extension
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             core.Settings.PropertyChanged -= OnStateChanged;
+            core.Settings.Opened -= OnOpened;
 
             // Gone mid-slide, the category is left where it settles.
             PaneFlyIn.Stop(CategoryHost);
@@ -134,13 +136,6 @@ namespace XboxSeries.Extension
                 case nameof(SettingsState.Category):
                     ShowCategory();
                     FlyInCategory();
-
-                    // Opened again from the Guide while up: focus follows the category back to the rail's first.
-                    if (IsKeyboardFocusWithin && !categoryItems[core.Settings.Category].IsKeyboardFocused)
-                    {
-                        FocusRailSoon();
-                    }
-
                     break;
                 case nameof(SettingsState.ThemePage):
                     ShowThemePage();
@@ -151,17 +146,15 @@ namespace XboxSeries.Extension
                     shownCategory = core.Settings.Category;
                     shownPage = core.Settings.ThemePage;
                     ShowCategory();
-
-                    // Opened from the top bar or the Guide: focus goes to the category showing, the rail's first; from a
-                    // tile under Home's Recent row, into the category's options.
-                    if (core.Settings.IsShown)
-                    {
-                        FocusRailSoon();
-                    }
-
                     break;
             }
         }
+
+        /// <summary>
+        /// Opened, also again from the Guide while up: from the top bar or the Guide, focus goes to the category showing,
+        /// the rail's first; from a tile under Home's Recent row or the Tile menu's Customise, into the page it came for.
+        /// </summary>
+        private void OnOpened(object sender, EventArgs e) => FocusRailSoon();
 
         /// <summary>
         /// Theme settings' page changed: shown in the boxes' place at once, as Personalisation's own pages are, with no
@@ -380,7 +373,7 @@ namespace XboxSeries.Extension
                 }
                 else if (pad == ControllerInput.B || e.Key == Key.Left)
                 {
-                    // Handled here, before the page's B takes it back to where Settings was opened from.
+                    // Handled here, before the page's own B steps back to Theme settings' boxes.
                     e.Handled = true;
                     core.LeaveThemePage();
                 }
@@ -406,7 +399,7 @@ namespace XboxSeries.Extension
             }
             else if (pad == ControllerInput.B)
             {
-                // Handled here, before the page's B takes it back to where Settings was opened from.
+                // Handled here, before the page's own B steps back to Theme settings' boxes.
                 e.Handled = true;
                 CloseNowPlayingSources();
                 NowPlayingSourceBox.Focus();
@@ -523,7 +516,7 @@ namespace XboxSeries.Extension
             }
             else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0))
             {
-                // Handled here, before the page's B takes it back to where Settings was opened from.
+                // Handled here, before the page's own B steps back to Theme settings' boxes.
                 e.Handled = true;
                 core.LeaveThemePage();
             }
@@ -646,9 +639,9 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// B on the page, from Playnite: back to where it was opened from. Opened from the top bar, focus goes back to its
-        /// Settings button; from the Guide, Home's rows take it as they come back. From the tile menu's Customise Home, Home's
-        /// rows take it too, on the tile they last had focus on, the one whose menu opened the page; from Customise games
+        /// B on the page, from Playnite: on a page of Theme settings, back to its boxes; otherwise back to where it was
+        /// opened from. Opened from the top bar, focus goes back to its Settings button; from the Guide, Home's rows take it
+        /// as they come back. From the tile menu's Customise Home, Home's rows take it too, on the tile they last had focus on, the one whose menu opened the page; from Customise games
         /// &amp; apps, My games &amp; apps comes back in the page's place and puts it on that tile
         /// (<see cref="MyGamesState.ReturnsToGame"/>). Handled, the B goes no further, so My games &amp; apps, back
         /// already, doesn't take it too.
@@ -662,9 +655,12 @@ namespace XboxSeries.Extension
             }
 
             var from = core.Settings.OpenedFrom;
+            var page = core.Settings.ThemePage;
             core.LeaveSettings();
-            e.Handled = !core.Settings.IsShown;
-            if (e.Handled && from == SettingsOrigin.TopBar)
+
+            // Stepped back from a page of Theme settings to its boxes, the B is spent too.
+            e.Handled = !core.Settings.IsShown || core.Settings.ThemePage != page;
+            if (!core.Settings.IsShown && from == SettingsOrigin.TopBar)
             {
                 FocusTopBarSoon();
             }

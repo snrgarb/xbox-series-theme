@@ -6,7 +6,7 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
-    /// <summary>Settings' Discord category: its Client ID and Secret, each typed over the page or pasted.</summary>
+    /// <summary>Settings' Discord page, under Theme settings: its Client ID and Secret, each typed over the page or pasted.</summary>
     public class DiscordSettingsXamlTests
     {
         private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
