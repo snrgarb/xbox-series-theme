@@ -250,7 +250,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Null(core.Home.TileMenu);
             Assert.True(core.Settings.IsShown);
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
         }
 
         [Fact]
@@ -303,7 +303,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Null(core.Home.TileMenu);
             Assert.True(core.Settings.IsShown);
-            Assert.Equal(SettingsCategory.Personalisation, core.Settings.Category);
+            Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
             Assert.False(core.MyGames.IsShown);
             Assert.Equal(SettingsOrigin.MyGamesTile, core.Settings.OpenedFrom);
         }
