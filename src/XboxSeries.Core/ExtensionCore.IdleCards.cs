@@ -34,6 +34,9 @@ namespace XboxSeries.Core
             "Pick a boot video, original Xbox to Series X, in Personalisation › Start up.",
         };
 
+        /// <summary>The Y prompt of a game's card, whose Game hub Y opens.</summary>
+        private const string SeeGame = "See game";
+
         /// <summary>The cards of this Showing things, as built when it started, in their turn's order.</summary>
         private List<IdleCard> idleCards = new List<IdleCard>();
 
@@ -169,19 +172,22 @@ namespace XboxSeries.Core
                 .ToList();
 
         /// <summary>
-        /// The last <see cref="IdleCardsOfAKind"/> games played, never hidden ones: each with its art, its name, and its
-        /// playtime and when it was last played, "12 h played · yesterday", or only when, "Yesterday", with no playtime.
+        /// The last <see cref="IdleCardsOfAKind"/> games played, never hidden ones: each with its art, when it was last
+        /// played atop, "Played yesterday", its name, and its playtime, "12 h played", with Y seeing the game.
         /// </summary>
         private IEnumerable<IdleCard> RecentlyPlayedCards() =>
             PlayedGames().Take(IdleCardsOfAKind).Select(g =>
             {
-                var when = IdleWhen(g.LastActivity.Value);
                 var played = PlaytimeWords(g.Playtime);
                 return new IdleCard(
                     IdleCardKind.RecentlyPlayed,
                     g.Name,
-                    played == null ? Capitalised(when) : played + " played · " + when,
-                    HeroArtOf(g));
+                    played == null ? null : played + " played",
+                    HeroArtOf(g),
+                    header: "Played " + IdleWhen(g.LastActivity.Value),
+                    label: "Recently played",
+                    prompt: SeeGame,
+                    gameId: g.Id);
             });
 
         /// <summary>A playtime in seconds as the card words it, "12 h" or under an hour "45 min"; null under a minute.</summary>

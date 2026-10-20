@@ -256,17 +256,39 @@ namespace XboxSeries.Core.Tests
         }
 
         [Theory]
-        [InlineData(12 * 3600 + 1800, 1, "12 h played · yesterday")]
-        [InlineData(3600, 0, "1 h played · today")]
-        [InlineData(45 * 60 + 30, 0, "45 min played · today")]
-        [InlineData(0, 1, "Yesterday")]
-        [InlineData(30, 3, "3 days ago")]
-        public void A_recently_played_cards_detail_is_its_playtime_and_when_it_was_last_played(ulong playtime, int daysAgo, string detail)
+        [InlineData(12 * 3600 + 1800, 1, "Played yesterday", "12 h played")]
+        [InlineData(3600, 0, "Played today", "1 h played")]
+        [InlineData(45 * 60 + 30, 0, "Played today", "45 min played")]
+        [InlineData(0, 1, "Played yesterday", null)]
+        [InlineData(30, 3, "Played 3 days ago", null)]
+        public void A_recently_played_cards_header_is_when_it_was_last_played_and_its_description_its_playtime(
+            ulong playtime, int daysAgo, string header, string description)
         {
             library.WithGame("Hades", lastActivity: Start.Date.AddDays(-daysAgo).AddHours(9), playtime: playtime);
             LibraryChanged();
 
-            Assert.Equal(detail, FirstRound(IdleCardKind.RecentlyPlayed).Single().Description);
+            var card = FirstRound(IdleCardKind.RecentlyPlayed).Single();
+
+            Assert.Equal(header, card.Header);
+            Assert.Equal(description, card.Description);
+        }
+
+        [Fact]
+        public void A_recently_played_card_is_labelled_so_with_no_Score_or_progress_and_Y_sees_the_game()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Hades", lastActivity: Start, playtime: 7200);
+            LibraryChanged();
+
+            var card = FirstRound(IdleCardKind.RecentlyPlayed).Single();
+
+            Assert.Equal("Hades", card.Title);
+            Assert.Equal("Recently played", card.Label);
+            Assert.Null(card.Score);
+            Assert.Null(card.Progress);
+            Assert.False(card.IsRare);
+            Assert.Equal("See game", card.Prompt);
+            Assert.Equal(id, card.GameId);
         }
 
         [Theory]
@@ -289,9 +311,9 @@ namespace XboxSeries.Core.Tests
             library.WithGame("Hades", lastActivity: DateTime.Parse(at, System.Globalization.CultureInfo.InvariantCulture));
             LibraryChanged();
 
-            var detail = FirstRound(IdleCardKind.RecentlyPlayed).Single().Description;
+            var header = FirstRound(IdleCardKind.RecentlyPlayed).Single().Header;
 
-            Assert.Equal(char.ToUpperInvariant(when[0]) + when.Substring(1), detail);
+            Assert.Equal("Played " + when, header);
         }
 
         [Fact]
