@@ -50,6 +50,16 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void CloseGameHub(Guid gameId) => ClosedGameHubs.Add(gameId);
 
+        /// <summary>Every game Playnite was asked to install with its own Install, in order.</summary>
+        public List<Guid> PlayniteInstalls { get; } = new List<Guid>();
+
+        public void InstallGame(Guid gameId) => PlayniteInstalls.Add(gameId);
+
+        /// <summary>Every game Playnite was asked to uninstall with its own Uninstall, in order.</summary>
+        public List<Guid> PlayniteUninstalls { get; } = new List<Guid>();
+
+        public void UninstallGame(Guid gameId) => PlayniteUninstalls.Add(gameId);
+
         /// <summary>Every game whose game menu Playnite was asked to open, in order.</summary>
         public List<Guid> OpenedGameMenus { get; } = new List<Guid>();
 

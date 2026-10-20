@@ -108,6 +108,23 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
+        /// The Tile menu's Install, as the Game hub's: through the client without its windows while
+        /// <see cref="CanInstallSilently"/>, otherwise Playnite's own Install, unless it is already installing or queued.
+        /// </summary>
+        private void InstallThroughTheme(Guid gameId)
+        {
+            var game = GameById(gameId);
+            if (CanInstallSilently(gameId))
+            {
+                InstallGame(gameId);
+            }
+            else if (game != null && !game.Installed && !game.Installing && !installOrder.Contains(gameId))
+            {
+                playnite.InstallGame(gameId);
+            }
+        }
+
+        /// <summary>
         /// The Game hub's Install, for a game <see cref="CanInstallSilently"/>: asks its client to install it, puts it in
         /// the queue as Queued, and goes back from the hub to where it was opened from, as the console does.
         /// </summary>

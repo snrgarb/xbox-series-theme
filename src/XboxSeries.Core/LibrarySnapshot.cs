@@ -49,7 +49,8 @@ namespace XboxSeries.Core
             string sortingName = null,
             string platform = null,
             bool installing = false,
-            DateTime? installedAt = null)
+            DateTime? installedAt = null,
+            bool isCustom = false)
         {
             Id = id;
             Name = name;
@@ -72,6 +73,7 @@ namespace XboxSeries.Core
             Platform = platform;
             Installing = installing;
             InstalledAt = installedAt;
+            IsCustom = isCustom;
         }
 
         public Guid Id { get; }
@@ -120,6 +122,9 @@ namespace XboxSeries.Core
         /// does as the install begins. Null when it isn't installed or the folder can't be read.
         /// </summary>
         public DateTime? InstalledAt { get; }
+
+        /// <summary>Whether the user added the game to Playnite by hand, so no library integration installs or uninstalls it.</summary>
+        public bool IsCustom { get; }
     }
 
     /// <summary>A Playnite filter preset. Snapshots list them in Playnite's own order.</summary>

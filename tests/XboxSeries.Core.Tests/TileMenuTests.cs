@@ -11,6 +11,7 @@ namespace XboxSeries.Core.Tests
 
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 14, 20, 0, 0));
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
+        private readonly FakeDownloads downloads = new FakeDownloads();
         private readonly FakePlayniteHost playnite;
         private readonly ExtensionCore core;
         private readonly FakeLibrary library;
@@ -18,7 +19,7 @@ namespace XboxSeries.Core.Tests
         public TileMenuTests()
         {
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), downloads);
             library = new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), installDirectory: HaloDirectory)
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades.jpg")
@@ -34,7 +35,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.Start);
 
             Assert.Equal("Hades", core.Home.TileMenu.Title);
-            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Customise Home" }, Options());
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Uninstall", "Customise Home", "More options" }, Options());
             Assert.Equal("Play game", core.Home.TileMenu.FocusedOption.Label);
         }
 
@@ -174,7 +175,7 @@ namespace XboxSeries.Core.Tests
             OpenMenuOn("Hades");
 
             Assert.Equal(
-                new[] { DialogIcon.Play, DialogIcon.Favourite, DialogIcon.Manage, DialogIcon.Customise },
+                new[] { DialogIcon.Play, DialogIcon.Favourite, DialogIcon.Manage, DialogIcon.Uninstall, DialogIcon.Customise, DialogIcon.MoreOptions },
                 core.Home.TileMenu.Options.Select(o => o.Icon));
         }
 
@@ -209,7 +210,7 @@ namespace XboxSeries.Core.Tests
 
             OpenMenuOn("Halo Infinite");
 
-            Assert.Equal(new[] { "Quit", "Add to Favourites", "Manage game", "Customise Home" }, Options());
+            Assert.Equal(new[] { "Quit", "Add to Favourites", "Manage game", "Uninstall", "Customise Home", "More options" }, Options());
             Assert.Equal(DialogIcon.Quit, core.Home.TileMenu.Options[0].Icon);
         }
 
@@ -231,14 +232,187 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Manage_game_opens_Playnites_game_menu()
+        public void Manage_game_opens_the_games_Game_hub()
         {
             OpenMenuOn("Hades");
 
             Choose("Manage game");
 
             Assert.Null(core.Home.TileMenu);
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
+            Assert.Empty(playnite.OpenedGameMenus);
+        }
+
+        [Fact]
+        public void More_options_opens_Playnites_game_menu()
+        {
+            OpenMenuOn("Hades");
+
+            Choose("More options");
+
+            Assert.Null(core.Home.TileMenu);
             Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedGameMenus);
+        }
+
+        [Fact]
+        public void An_uninstalled_game_offers_Install_in_place_of_Play_game_and_no_Uninstall()
+        {
+            AddGame("Celeste", installed: false);
+
+            OpenMenuOn("Celeste");
+
+            Assert.Equal(new[] { "Install", "Add to Favourites", "Manage game", "Customise Home", "More options" }, Options());
+            Assert.Equal(DialogIcon.Install, core.Home.TileMenu.Options[0].Icon);
+        }
+
+        [Fact]
+        public void Install_installs_through_the_client_without_its_windows_when_it_can()
+        {
+            AddGame("Celeste", installed: false);
+            downloads.Installable.Add(library.Id("Celeste"));
+            OpenMenuOn("Celeste");
+
+            Choose("Install");
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.Equal(new[] { library.Id("Celeste") }, downloads.InstallsAsked);
+            Assert.Empty(playnite.PlayniteInstalls);
+            Assert.Empty(playnite.StartedGames);
+        }
+
+        [Fact]
+        public void Install_falls_back_on_Playnites_own_Install_for_a_game_its_client_cant_install_silently()
+        {
+            AddGame("Celeste", installed: false);
+            OpenMenuOn("Celeste");
+
+            Choose("Install");
+
+            Assert.Equal(new[] { library.Id("Celeste") }, playnite.PlayniteInstalls);
+            Assert.Empty(downloads.InstallsAsked);
+        }
+
+        [Fact]
+        public void Install_on_a_game_already_installing_asks_nothing_more()
+        {
+            AddGame("Celeste", installed: false, installing: true);
+            OpenMenuOn("Celeste");
+
+            Choose("Install");
+
+            Assert.Empty(playnite.PlayniteInstalls);
+            Assert.Empty(downloads.InstallsAsked);
+        }
+
+        [Fact]
+        public void A_custom_game_has_no_Uninstall()
+        {
+            AddGame("Doom", custom: true);
+
+            OpenMenuOn("Doom");
+
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Customise Home", "More options" }, Options());
+        }
+
+        [Fact]
+        public void Uninstall_asks_first_with_a_prompt()
+        {
+            OpenMenuOn("Hades");
+
+            Choose("Uninstall");
+
+            Assert.Equal("Uninstall Hades?", core.Home.TileMenu.Title);
+            Assert.True(core.Home.TileMenu.IsPrompt);
+            Assert.Equal(new[] { "Uninstall", "Cancel" }, Options());
+            Assert.Empty(downloads.UninstallsAsked);
+            Assert.Empty(playnite.PlayniteUninstalls);
+        }
+
+        [Fact]
+        public void Confirming_Uninstall_uninstalls_through_the_client_without_its_windows()
+        {
+            downloads.Uninstallable.Add(library.Id("Hades"));
+            OpenMenuOn("Hades");
+            Choose("Uninstall");
+
+            Choose("Uninstall");
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.Equal(new[] { library.Id("Hades") }, downloads.UninstallsAsked);
+            Assert.Empty(playnite.PlayniteUninstalls);
+        }
+
+        [Fact]
+        public void Confirming_Uninstall_falls_back_on_Playnites_own_for_a_game_its_client_cant_uninstall_silently()
+        {
+            OpenMenuOn("Hades");
+            Choose("Uninstall");
+
+            Choose("Uninstall");
+
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.PlayniteUninstalls);
+            Assert.Empty(downloads.UninstallsAsked);
+        }
+
+        [Fact]
+        public void Confirming_Uninstall_of_a_game_already_being_uninstalled_asks_nothing_more()
+        {
+            downloads.Uninstallable.Add(library.Id("Hades"));
+            core.UninstallGame(library.Id("Hades"));
+            OpenMenuOn("Hades");
+            Choose("Uninstall");
+
+            Choose("Uninstall");
+
+            Assert.Equal(new[] { library.Id("Hades") }, downloads.UninstallsAsked);
+            Assert.Empty(playnite.PlayniteUninstalls);
+        }
+
+        [Fact]
+        public void Cancel_on_the_Uninstall_prompt_goes_back_to_the_menu_on_Uninstall()
+        {
+            downloads.Uninstallable.Add(library.Id("Hades"));
+            OpenMenuOn("Hades");
+            Choose("Uninstall");
+
+            Choose("Cancel");
+
+            Assert.Equal("Hades", core.Home.TileMenu.Title);
+            Assert.Equal("Uninstall", core.Home.TileMenu.FocusedOption.Label);
+            Assert.Empty(downloads.UninstallsAsked);
+            Assert.Empty(playnite.PlayniteUninstalls);
+        }
+
+        [Fact]
+        public void B_on_the_Uninstall_prompt_goes_back_to_the_menu_and_B_again_closes_it()
+        {
+            downloads.Uninstallable.Add(library.Id("Hades"));
+            OpenMenuOn("Hades");
+            Choose("Uninstall");
+
+            Tap(ControllerButton.B);
+
+            Assert.Equal("Hades", core.Home.TileMenu.Title);
+            Assert.Equal("Uninstall", core.Home.TileMenu.FocusedOption.Label);
+
+            Tap(ControllerButton.B);
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.Empty(downloads.UninstallsAsked);
+        }
+
+        [Fact]
+        public void Focus_steps_from_Uninstall_over_the_gap_to_Customise_and_back()
+        {
+            OpenMenuOn("Hades");
+            Choose("Uninstall");
+            Tap(ControllerButton.B);
+
+            Tap(ControllerButton.DPadDown);
+            Assert.Equal("Customise Home", core.Home.TileMenu.FocusedOption.Label);
+
+            Tap(ControllerButton.DPadUp);
+            Assert.Equal("Uninstall", core.Home.TileMenu.FocusedOption.Label);
         }
 
         [Fact]
@@ -291,8 +465,8 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.Start);
 
-            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Customise games & apps" }, Options());
-            Assert.Equal(DialogIcon.Customise, core.Home.TileMenu.Options[3].Icon);
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Uninstall", "Customise games & apps", "More options" }, Options());
+            Assert.Equal(DialogIcon.Customise, core.Home.TileMenu.Options[4].Icon);
         }
 
         [Fact]
@@ -391,7 +565,7 @@ namespace XboxSeries.Core.Tests
         {
             OpenMenuOn("Tunic");
 
-            Assert.Equal(new[] { "Play game", "Remove from Favourites", "Manage game", "Customise Home" }, Options());
+            Assert.Equal(new[] { "Play game", "Remove from Favourites", "Manage game", "Uninstall", "Customise Home", "More options" }, Options());
             Assert.Equal(DialogIcon.Unfavourite, core.Home.TileMenu.Options[1].Icon);
 
             Choose("Remove from Favourites");
@@ -420,12 +594,12 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.DPadUp);
             Assert.Equal("Play game", core.Home.TileMenu.FocusedOption.Label);
 
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
-            Tap(ControllerButton.DPadDown);
+            for (var i = 0; i < 6; i++)
+            {
+                Tap(ControllerButton.DPadDown);
+            }
 
-            Assert.Equal("Customise Home", core.Home.TileMenu.FocusedOption.Label);
+            Assert.Equal("More options", core.Home.TileMenu.FocusedOption.Label);
             Assert.True(core.Home.TileMenu.FocusedOption.IsFocused);
             Assert.False(core.Home.TileMenu.Options[0].IsFocused);
         }
@@ -457,13 +631,12 @@ namespace XboxSeries.Core.Tests
             Release(ControllerButton.A);
             clock.Advance(TimeSpan.FromSeconds(1));
 
-            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedGameMenus);
-            Assert.Empty(playnite.OpenedHubs);
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
 
             core.ChooseHomeTile(tile);
             clock.Advance(TimeSpan.FromSeconds(1));
 
-            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
+            Assert.Equal(new[] { library.Id("Hades"), library.Id("Hades") }, playnite.OpenedHubs);
         }
 
         [Fact]
@@ -510,7 +683,7 @@ namespace XboxSeries.Core.Tests
             Assert.Same(manage, core.Home.TileMenu.FocusedOption);
 
             core.ChooseOption(manage);
-            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedGameMenus);
+            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
         }
 
         private HomeTile RecentTile(string title) => core.Home.RecentRow.Single(t => t.Title == title);
@@ -521,6 +694,13 @@ namespace XboxSeries.Core.Tests
         /// <summary>The Play history entry's tile of the game named <paramref name="title"/>.</summary>
         private HomeTile EntryOf(string title) =>
             core.MyGames.PlayHistory.SelectMany(s => s.Entries).Single(e => e.Tile.Title == title).Tile;
+
+        /// <summary>Another game on the Recent row, played most recently of all.</summary>
+        private void AddGame(string name, bool installed = true, bool installing = false, bool custom = false)
+        {
+            library.WithGame(name, lastActivity: new DateTime(2026, 10, 13), installed: installed, installing: installing, custom: custom);
+            core.OnLibraryChanged(library.Snapshot());
+        }
 
         private string[] Options() => core.Home.TileMenu.Options.Select(o => o.Label).ToArray();
 

@@ -107,6 +107,10 @@ namespace XboxSeries.Extension
             api.StartGame(gameId);
         }
 
+        public void InstallGame(Guid gameId) => api.InstallGame(gameId);
+
+        public void UninstallGame(Guid gameId) => api.UninstallGame(gameId);
+
         public void StartApp(App app)
         {
             // Not in the SDK: Playnite's own start of a Software tool, as its Software tools menu runs it. It runs script
