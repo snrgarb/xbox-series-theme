@@ -19,6 +19,7 @@ namespace XboxSeries.Core.Tests
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
         private readonly FakeAchievements achievements = new FakeAchievements();
         private readonly FakeLibrary library = new FakeLibrary();
+        private FakePlayniteHost playnite;
         private ExtensionCore core;
 
         public IdleCardsTests()
@@ -28,7 +29,7 @@ namespace XboxSeries.Core.Tests
 
         private ExtensionCore Core(Random random) =>
             new ExtensionCore(
-                clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(),
+                clock, windows, playnite = new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(),
                 new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads(),
                 achievements: achievements, random: random);
 
@@ -595,6 +596,180 @@ namespace XboxSeries.Core.Tests
             core.OnUserInput();
 
             Assert.False(dimmedAsTheCardWent);
+        }
+
+        /// <summary>Showing things, on to the first card of <paramref name="kind"/>.</summary>
+        private IdleCard ShowThingsOn(IdleCardKind kind)
+        {
+            ShowThings();
+            for (var i = 0; i < 100 && core.Idle.Card.Kind != kind; i++)
+            {
+                NextCard();
+            }
+
+            Assert.Equal(kind, core.Idle.Card.Kind);
+            return core.Idle.Card;
+        }
+
+        /// <summary>A recently played game, whose card Y sees, read by the core.</summary>
+        private Guid RecentlyPlayedGame()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Hades", lastActivity: Start);
+            LibraryChanged();
+            return id;
+        }
+
+        private void Press(ControllerButton button)
+        {
+            core.OnControllerButton(button, ButtonState.Pressed);
+            core.OnControllerButton(button, ButtonState.Released);
+        }
+
+        [Fact]
+        public void Y_routed_then_reported_on_a_games_card_wakes_the_screen_swallowed_and_opens_its_Game_hub_once()
+        {
+            var id = RecentlyPlayedGame();
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            Assert.True(core.OnUserInput(ControllerButton.Y));
+            Press(ControllerButton.Y);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_reported_then_routed_on_a_games_card_opens_its_Game_hub_once_too()
+        {
+            var id = RecentlyPlayedGame();
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            core.OnControllerButton(ControllerButton.Y, ButtonState.Pressed);
+            Assert.True(core.OnUserInput(ControllerButton.Y));
+            core.OnControllerButton(ControllerButton.Y, ButtonState.Released);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_on_an_achievements_card_opens_its_games_Game_hub()
+        {
+            var id = GameWithAchievements("Hades", 3, 10);
+            AchievementsRead();
+            ShowThingsOn(IdleCardKind.CloseAchievements);
+
+            core.OnUserInput(ControllerButton.Y);
+            Press(ControllerButton.Y);
+
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_on_a_tip_only_wakes_the_screen()
+        {
+            ShowThingsOn(IdleCardKind.Tip);
+
+            Assert.True(core.OnUserInput(ControllerButton.Y));
+            Press(ControllerButton.Y);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Theory]
+        [InlineData(ControllerButton.A)]
+        [InlineData(ControllerButton.B)]
+        [InlineData(ControllerButton.X)]
+        public void Another_button_on_a_games_card_only_wakes_the_screen(ControllerButton button)
+        {
+            RecentlyPlayedGame();
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            Assert.True(core.OnUserInput(button));
+            Press(button);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void A_key_or_the_mouse_on_a_games_card_only_wakes_the_screen()
+        {
+            RecentlyPlayedGame();
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            Assert.True(core.OnUserInput());
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_while_only_dimmed_only_wakes_the_screen()
+        {
+            RecentlyPlayedGame();
+            clock.Advance(TimeSpan.FromMinutes(2));
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+
+            Assert.True(core.OnUserInput(ControllerButton.Y));
+            Press(ControllerButton.Y);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_on_a_games_card_over_the_Guide_closes_the_Guide_and_opens_the_Game_hub_on_the_Dashboard()
+        {
+            var id = RecentlyPlayedGame();
+            Press(ControllerButton.Guide);
+            clock.Advance(TimeSpan.FromSeconds(6));
+            Assert.True(core.Guide.IsOpen);
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            core.OnUserInput(ControllerButton.Y);
+            Press(ControllerButton.Y);
+
+            Assert.False(core.Guide.IsOpen);
+            Assert.Equal(playnite.Window, windows.Foreground);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_on_a_games_card_over_a_Tile_menu_closes_the_menu_and_opens_the_Game_hub()
+        {
+            var id = RecentlyPlayedGame();
+            core.FocusHomeTile(core.Home.RecentRow[0]);
+            Press(ControllerButton.Start);
+            Assert.NotNull(core.Home.TileMenu);
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            core.OnUserInput(ControllerButton.Y);
+            Press(ControllerButton.Y);
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_on_a_games_card_over_the_Search_page_opens_the_Game_hub_with_every_game_in_the_main_list()
+        {
+            var id = RecentlyPlayedGame();
+            core.OpenSearch();
+            core.LeaveSearch();
+            Assert.True(core.Search.IsShown);
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            core.OnUserInput(ControllerButton.Y);
+            Press(ControllerButton.Y);
+
+            Assert.True(core.Search.IsShown);
+            Assert.False(playnite.ShowsUsersOwnFilter);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+            core.LeaveSearch();
+            Assert.True(playnite.ShowsUsersOwnFilter);
         }
 
         [Fact]
