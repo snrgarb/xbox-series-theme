@@ -39,9 +39,6 @@ namespace XboxSeries.Core
         /// <summary>The wait before the library update starts; null with none.</summary>
         private IDisposable libraryUpdateTimer;
 
-        /// <summary>The wait before the metadata download after the library update looks again whether it can start; null with none.</summary>
-        private IDisposable heldMetadataTimer;
-
         /// <summary>
         /// Whether the library update after downloads, or the metadata download that follows it, is going or held off for a
         /// game.
@@ -184,12 +181,10 @@ namespace XboxSeries.Core
         /// </summary>
         private void StartMetadataAfterUpdate(IReadOnlyList<Guid> games, int gamesAdded)
         {
-            heldMetadataTimer = null;
-
             // A game started while the library updated: it looks again a little later, until its Play session has ended.
             if (runningGame != null || IsQuittingOrLaunching)
             {
-                heldMetadataTimer = clock.After(HeldUpdateRecheck, () => StartMetadataAfterUpdate(games, gamesAdded));
+                clock.After(HeldUpdateRecheck, () => StartMetadataAfterUpdate(games, gamesAdded));
                 return;
             }
 
