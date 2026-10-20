@@ -185,21 +185,41 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Dim after: how long with no input before the screen dims, or null for Never. It counts from now; not saved
-        /// yet, until the Idle settings page keeps it.
+        /// Dim after: how long with no input before the screen dims, one of <see cref="IdleState.Steps"/>, null for Never.
+        /// Past Show things after, it raises Show things after with it, set first so Show things after is among
+        /// <see cref="IdleState.ShowThingsAfterSteps"/> as they change. It counts from now. A time not among the steps,
+        /// or the one already set, is refused.
         /// </summary>
         public void SetDimAfter(TimeSpan? dimAfter)
         {
+            if (!IdleState.Steps.Contains(dimAfter) || dimAfter == Idle.DimAfter)
+            {
+                return;
+            }
+
+            if (IdleState.IsShorter(Idle.ShowThingsAfter, dimAfter))
+            {
+                Idle.ShowThingsAfter = dimAfter;
+            }
+
             Idle.DimAfter = dimAfter;
             RestartIdle();
         }
 
         /// <summary>
-        /// Show things after: how long with no input before the Idle screen shows things, or null for Never. It counts
-        /// from now; not saved yet, until the Idle settings page keeps it.
+        /// Show things after: how long with no input before the Idle screen shows things, one of
+        /// <see cref="IdleState.ShowThingsAfterSteps"/>, null for Never. It counts from now. A time shorter than Dim
+        /// after, not among the steps, or the one already set, is refused.
         /// </summary>
         public void SetShowThingsAfter(TimeSpan? showThingsAfter)
         {
+            if (!IdleState.Steps.Contains(showThingsAfter)
+                || IdleState.IsShorter(showThingsAfter, Idle.DimAfter)
+                || showThingsAfter == Idle.ShowThingsAfter)
+            {
+                return;
+            }
+
             Idle.ShowThingsAfter = showThingsAfter;
             RestartIdle();
         }
@@ -284,7 +304,7 @@ namespace XboxSeries.Core
                         return;
                     }
 
-                    // Show things after no later than Dim after has already shown things, the dim with them.
+                    // Show things after equal to Dim after may have shown things first, the dim with them.
                     if (Idle.Stage == IdleStage.Awake)
                     {
                         Idle.Stage = IdleStage.Dimmed;
