@@ -447,14 +447,24 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- The nav: the profile, then one item per page section. Focusing an item shows it. -->
+        <!--
+            The nav: the profile, then one item per page section. Focusing an item shows it. The profile is the one signed
+            in, by its picture and gamertag; before anyone has signed in, the person glyph and the Windows user's name.
+        -->
         <StackPanel x:Name="NavPane" Grid.Column="0" Margin="0,78,0,0">
             <StackPanel Orientation="Horizontal" Margin="75,0,0,58">
                 <Grid Width="54" Height="54">
                     <Ellipse Fill="{DynamicResource GlyphBrush}" />
                     <TextBlock Text="&#xE77B;" Style="{StaticResource NavIcon}" Width="Auto" HorizontalAlignment="Center" />
+                    <Image Source="{Binding Status.Profile.Picture, RelativeSource={RelativeSource AncestorType=local:MyGamesControl}, Converter={StaticResource Image}, ConverterParameter=108, FallbackValue={x:Null}}"
+                           Stretch="UniformToFill">
+                        <Image.Clip>
+                            <EllipseGeometry Center="27,27" RadiusX="27" RadiusY="27" />
+                        </Image.Clip>
+                    </Image>
                 </Grid>
-                <TextBlock Text="{x:Static sys:Environment.UserName}" Style="{StaticResource Text}"
+                <TextBlock Text="{Binding Status.Profile.Gamertag, RelativeSource={RelativeSource AncestorType=local:MyGamesControl}, FallbackValue={x:Static sys:Environment.UserName}}"
+                           Style="{StaticResource Text}"
                            Foreground="{StaticResource DimBrush}" VerticalAlignment="Center" Margin="14,0,0,0" />
             </StackPanel>
             <StackPanel x:Name="Nav" KeyDown="OnNavKeyDown">
@@ -771,8 +781,11 @@
             <TextBlock x:Name="NoHistory" Grid.Row="1" Text="Games you play show up here." Style="{StaticResource Text}"
                        Foreground="{StaticResource DimBrush}" Margin="28,0,0,0" VerticalAlignment="Top" />
 
-            <!-- Under Games' grid, as on the console: the way to every game, under the user's own filter. -->
-            <StackPanel x:Name="LookingForMore" Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="3,0,0,20">
+            <!--
+                Under Games' grid, as on the console: the way to every game, under the user's own filter. It follows the
+                grid's last row, so shows only once the grid is scrolled to its end; the code places it.
+            -->
+            <StackPanel x:Name="LookingForMore" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="3,0,0,0">
                 <TextBlock Text="Looking for more?" Style="{StaticResource Text}" Margin="0,0,0,12" />
                 <Button x:Name="SeeFullLibrary" Style="{StaticResource FooterButton}" Click="OnSeeFullLibrary"
                         KeyDown="OnSeeFullLibraryKeyDown">
