@@ -65,7 +65,7 @@ namespace XboxSeries.Extension
                 if (NativeMethods.GetCursorPos(out var cursor) && (cursor.X != lastCursor.X || cursor.Y != lastCursor.Y))
                 {
                     lastCursor = cursor;
-                    var now = DateTime.UtcNow;
+                    var now = DateTime.Now;
                     if (core.Idle.IsDimmed || now - mouseMoveToldAt >= MouseMoveEvery)
                     {
                         mouseMoveToldAt = now;
@@ -90,9 +90,9 @@ namespace XboxSeries.Extension
             {
                 swallowed = swallow.Press(button, DateTime.Now, () => core.OnUserInput(PlayniteInput.ToButton(button)), KeyTwinsOf(button));
             }
-            else if (routed == Keyboard.KeyUpEvent && input is KeyEventArgs padUp && PlayniteInput.PadButtonOf(padUp) is ControllerInput let)
+            else if (routed == Keyboard.KeyUpEvent && input is KeyEventArgs padUp && PlayniteInput.PadButtonOf(padUp) is ControllerInput padReleased)
             {
-                swallowed = swallow.Release(let);
+                swallowed = swallow.Release(padReleased);
             }
             else if (routed == Mouse.PreviewMouseDownEvent && input is MouseButtonEventArgs click)
             {
