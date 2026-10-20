@@ -50,8 +50,9 @@ namespace XboxSeries.Core
         public bool IsDimmed => stage != IdleStage.Awake;
 
         /// <summary>
-        /// The card centred on the dim while Showing things, each for a while in shuffled turn; null while Awake or
-        /// Dimmed, or with nothing to show. The view crossfades from one to the next and hides it with the dim.
+        /// The card on the idle panel, the right half of the screen flown in from the right over the dim, while Showing
+        /// things, each for a while in shuffled turn; null while Awake or Dimmed, or with nothing to show. The view
+        /// crossfades from one to the next and hides it with the dim.
         /// </summary>
         public IdleCard Card
         {
