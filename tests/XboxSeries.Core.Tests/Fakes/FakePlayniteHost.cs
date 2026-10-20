@@ -227,20 +227,29 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public bool IsLibraryBusy { get; set; }
 
-        /// <summary>Every library update asked for, by its done callback, in order.</summary>
+        /// <summary>
+        /// Every library update asked for, by its done callback, in order: called with the games added, or null for a run
+        /// cancelled or failed.
+        /// </summary>
         public List<Action<IReadOnlyList<Guid>>> LibraryUpdates { get; } = new List<Action<IReadOnlyList<Guid>>>();
 
         public void UpdateLibrary(Action<IReadOnlyList<Guid>> done) => LibraryUpdates.Add(done);
 
-        /// <summary>Every metadata download asked for, with its games and done callback, in order.</summary>
-        public List<(IReadOnlyList<Guid> Games, Action Done)> MetadataDownloads { get; } = new List<(IReadOnlyList<Guid>, Action)>();
+        /// <summary>
+        /// Every metadata download asked for, with its games and done callback, in order: called with true when it
+        /// finished, false when cancelled or failed.
+        /// </summary>
+        public List<(IReadOnlyList<Guid> Games, Action<bool> Done)> MetadataDownloads { get; } = new List<(IReadOnlyList<Guid>, Action<bool>)>();
 
-        public void DownloadMetadata(IReadOnlyList<Guid> games, Action done) => MetadataDownloads.Add((games, done));
+        public void DownloadMetadata(IReadOnlyList<Guid> games, Action<bool> done) => MetadataDownloads.Add((games, done));
 
-        /// <summary>Every download of the games missing metadata asked for, by its done callback, in order.</summary>
-        public List<Action> MissingMetadataDownloads { get; } = new List<Action>();
+        /// <summary>
+        /// Every download of the games missing metadata asked for, by its done callback, in order: true when it finished,
+        /// false when cancelled or failed.
+        /// </summary>
+        public List<Action<bool>> MissingMetadataDownloads { get; } = new List<Action<bool>>();
 
-        public void DownloadMissingMetadata(Action done) => MissingMetadataDownloads.Add(done);
+        public void DownloadMissingMetadata(Action<bool> done) => MissingMetadataDownloads.Add(done);
 
         /// <summary>How many times Playnite was asked to stop its library update or metadata download.</summary>
         public int LibraryTaskCancels { get; private set; }

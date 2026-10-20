@@ -11,7 +11,7 @@ How the Bundle gets achievements, what a user has to set up today for them to wo
 - **The Guide's Profile & system** shows the **Score** total, the number of achievements unlocked, and the last three unlocks.
 - Not built yet: the **Achievements page** in the Game hub (#34).
 
-Without PlayniteAchievements, none of this appears and nothing fails.
+Without PlayniteAchievements (not installed, disabled, or a version the adapter can't read), every achievement feature is off and nothing fails: #83.
 
 ## How it works
 
@@ -94,6 +94,8 @@ All of this is in PlayniteAchievements' own UI. The Bundle cannot do any of it f
 - **Sign-in needs a mouse.** PlayniteAchievements' sign-in windows are web pages, not controller-friendly.
 
 ## Onboarding: what it will need
+
+Tracked in the draft umbrella issue #84, which grows a section for each system.
 
 An onboarding system (first run, and re-runnable from Settings) should take the user from nothing to working Toasts, driven by the controller wherever possible. Proposed steps, each a state the extension can detect:
 

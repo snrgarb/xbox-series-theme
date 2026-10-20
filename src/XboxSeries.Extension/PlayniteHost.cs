@@ -210,9 +210,9 @@ namespace XboxSeries.Extension
 
         public void UpdateLibrary(Action<IReadOnlyList<Guid>> done) => libraryTasks.UpdateLibrary(done);
 
-        public void DownloadMetadata(IReadOnlyList<Guid> games, Action done) => libraryTasks.DownloadMetadata(games, done);
+        public void DownloadMetadata(IReadOnlyList<Guid> games, Action<bool> done) => libraryTasks.DownloadMetadata(games, done);
 
-        public void DownloadMissingMetadata(Action done) => libraryTasks.DownloadMissingMetadata(done);
+        public void DownloadMissingMetadata(Action<bool> done) => libraryTasks.DownloadMissingMetadata(done);
 
         public void CancelLibraryTask() => libraryTasks.CancelRun();
 

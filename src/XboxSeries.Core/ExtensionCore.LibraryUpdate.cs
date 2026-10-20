@@ -39,7 +39,13 @@ namespace XboxSeries.Core
         /// <summary>The wait before the library update starts; null with none.</summary>
         private IDisposable libraryUpdateTimer;
 
-        /// <summary>Whether the library update after downloads, or the metadata download that follows it, is going.</summary>
+        /// <summary>The wait before the metadata download after the library update looks again whether it can start; null with none.</summary>
+        private IDisposable heldMetadataTimer;
+
+        /// <summary>
+        /// Whether the library update after downloads, or the metadata download that follows it, is going or held off for a
+        /// game.
+        /// </summary>
         private bool libraryUpdateRunning;
 
         /// <summary>Update after downloads, on or off, saved at once.</summary>
@@ -70,7 +76,7 @@ namespace XboxSeries.Core
             }
 
             Settings.Playnite.IsDownloadingMetadata = true;
-            playnite.DownloadMissingMetadata(() => Settings.Playnite.IsDownloadingMetadata = false);
+            playnite.DownloadMissingMetadata(_ => Settings.Playnite.IsDownloadingMetadata = false);
         }
 
         /// <summary>
@@ -133,8 +139,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The library update after downloads starts, with Playnite's progress bar, once no game is played and Playnite
-        /// has no library task of its own going; then metadata for the games that
-        /// finished and those it added; then the Library updated Toast waits its turn.
+        /// has no library task of its own going; then metadata for the games that finished and those it added; then the
+        /// Library updated Toast waits its turn. Cancelled or failed, either step ends the run with no Toast.
         /// </summary>
         private void StartLibraryUpdate()
         {
@@ -159,17 +165,54 @@ namespace XboxSeries.Core
             libraryUpdateRunning = true;
             playnite.UpdateLibrary(gamesAdded =>
             {
-                var games = finished.Concat(gamesAdded).Distinct().ToList();
-                playnite.DownloadMetadata(games, () =>
+                // Cancelled, failed or not run: no metadata and no Toast, and the games that finished are let go rather
+                // than tried again.
+                if (gamesAdded == null)
                 {
-                    libraryUpdateRunning = false;
-                    EnqueueToast(new WaitingToast(LibraryUpdated, ToastKind.LibraryUpdated, null, detail: GamesAddedLine(gamesAdded.Count)));
-                    if (finishedDownloads.Count > 0)
-                    {
-                        WaitForQuietThenUpdate();
-                    }
-                });
+                    EndLibraryUpdate();
+                    return;
+                }
+
+                StartMetadataAfterUpdate(finished.Concat(gamesAdded).Distinct().ToList(), gamesAdded.Count);
             });
+        }
+
+        /// <summary>
+        /// Metadata for <paramref name="games"/>, the games that finished and those the library update added, once no game
+        /// is played or launching, as the update itself waits; then the Library updated Toast, saying the
+        /// <paramref name="gamesAdded"/>, waits its turn.
+        /// </summary>
+        private void StartMetadataAfterUpdate(IReadOnlyList<Guid> games, int gamesAdded)
+        {
+            heldMetadataTimer = null;
+
+            // A game started while the library updated: it looks again a little later, until its Play session has ended.
+            if (runningGame != null || IsQuittingOrLaunching)
+            {
+                heldMetadataTimer = clock.After(HeldUpdateRecheck, () => StartMetadataAfterUpdate(games, gamesAdded));
+                return;
+            }
+
+            playnite.DownloadMetadata(games, completed =>
+            {
+                // Cancelled or failed, it doesn't say the library was updated.
+                if (completed)
+                {
+                    EnqueueToast(new WaitingToast(LibraryUpdated, ToastKind.LibraryUpdated, null, detail: GamesAddedLine(gamesAdded)));
+                }
+
+                EndLibraryUpdate();
+            });
+        }
+
+        /// <summary>The update after downloads has ended; games that finished while it ran get one of their own.</summary>
+        private void EndLibraryUpdate()
+        {
+            libraryUpdateRunning = false;
+            if (finishedDownloads.Count > 0)
+            {
+                WaitForQuietThenUpdate();
+            }
         }
 
         /// <summary>The Library updated Toast's second line: "&lt;n&gt; games added", "1 game added", or none for none.</summary>

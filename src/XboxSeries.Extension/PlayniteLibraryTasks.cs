@@ -14,8 +14,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Not in the SDK: Playnite's own library update and metadata download, run against Fullscreen's main view model
     /// (<c>Playnite.ViewModels.MainViewModelBase</c>) with its progress bar, as Desktop mode runs them. Names checked
-    /// against Playnite 10.63. On a build without one of them each call logs, does nothing and still calls back.
-    /// Every callback runs once, on the UI thread, also when the run failed or was cancelled.
+    /// against Playnite 10.63. On a build without one of them each call logs, does nothing and still calls back, saying it
+    /// didn't complete. Every callback runs once, on the UI thread, also when the run failed or was cancelled.
     /// </summary>
     internal sealed class PlayniteLibraryTasks
     {
@@ -33,7 +33,40 @@ namespace XboxSeries.Extension
 
         private static object Get(object owner, string name) => owner?.GetType().GetProperty(name)?.GetValue(owner);
 
-        private static void Set(object owner, string name, object value) => owner?.GetType().GetProperty(name)?.SetValue(owner, value);
+        /// <summary>Sets a property of Playnite's own; on a build without it, logs that once and does nothing.</summary>
+        private static void Set(object owner, string name, object value)
+        {
+            if (owner == null)
+            {
+                return;
+            }
+
+            var property = owner.GetType().GetProperty(name);
+            if (property == null)
+            {
+                WarnMissingOnce(owner.GetType(), name);
+                return;
+            }
+
+            property.SetValue(owner, value);
+        }
+
+        /// <summary>Members of Playnite's own already logged as missing from this build, so each is logged once.</summary>
+        private static readonly HashSet<string> missingLogged = new HashSet<string>();
+
+        /// <summary>Logs that this Playnite build has no <paramref name="name"/> on <paramref name="type"/>, the first time only.</summary>
+        private static void WarnMissingOnce(Type type, string name)
+        {
+            lock (missingLogged)
+            {
+                if (!missingLogged.Add(type.FullName + "." + name))
+                {
+                    return;
+                }
+            }
+
+            logger.Warn($"This Playnite build has no {type.FullName}.{name}: what uses it does nothing");
+        }
 
         /// <summary>A type of Playnite's own, by full name, from whichever loaded assembly has it; null if none does.</summary>
         private static Type PlayniteType(string name) =>
@@ -68,6 +101,8 @@ namespace XboxSeries.Extension
         {
             OnUiThread(async () =>
             {
+                // Null until the update is seen to have run to the end: cancelled, failed or not run, the callback gets null.
+                List<Guid> result = null;
                 var added = new List<Guid>();
                 EventHandler<ItemCollectionChangedEventArgs<Game>> collect = (_, e) =>
                 {
@@ -89,6 +124,13 @@ namespace XboxSeries.Extension
                         return;
                     }
 
+                    // Playnite's UpdateLibrary returns at once, running nothing, while a run of its own holds the library.
+                    if (Get(model, "GameAdditionAllowed") as bool? == false)
+                    {
+                        logger.Info("Library update not run: Playnite's library is busy with a run of its own");
+                        return;
+                    }
+
                     api.Database.Games.ItemCollectionChanged += collect;
                     try
                     {
@@ -99,32 +141,37 @@ namespace XboxSeries.Extension
                         api.Database.Games.ItemCollectionChanged -= collect;
                     }
 
-                    // Cancelled part way: none, as the contract says, though some may have been added.
+                    // Playnite's run ends quietly when cancelled, so its token, the one the run set, says whether it was.
                     if (CancelToken()?.IsCancellationRequested == true)
                     {
                         logger.Info("Library update was cancelled");
-                        added.Clear();
+                        return;
+                    }
+
+                    lock (added)
+                    {
+                        result = added.Distinct().ToList();
                     }
                 }
                 catch (Exception e)
                 {
                     logger.Error(e, "Couldn't update the library");
-                    added.Clear();
                 }
                 finally
                 {
-                    Call(() => done(added.Distinct().ToList()));
+                    Call(() => done(result));
                 }
             });
         }
 
-        public void DownloadMetadata(IReadOnlyList<Guid> games, Action done)
+        public void DownloadMetadata(IReadOnlyList<Guid> games, Action<bool> done)
         {
             OnUiThread(async () =>
             {
+                var completed = false;
                 try
                 {
-                    await Download(games.Select(api.Database.Games.Get).Where(g => g != null).ToList());
+                    completed = await Download(games.Select(api.Database.Games.Get).Where(g => g != null).ToList());
                 }
                 catch (Exception e)
                 {
@@ -132,15 +179,16 @@ namespace XboxSeries.Extension
                 }
                 finally
                 {
-                    Call(done);
+                    Call(() => done(completed));
                 }
             });
         }
 
-        public void DownloadMissingMetadata(Action done)
+        public void DownloadMissingMetadata(Action<bool> done)
         {
             OnUiThread(async () =>
             {
+                var completed = false;
                 try
                 {
                     var fields = MetadataSettings();
@@ -152,7 +200,7 @@ namespace XboxSeries.Extension
 
                     var missing = api.Database.Games.Where(g => !g.Hidden && IsMissingMetadata(g, fields)).ToList();
                     logger.Info($"{missing.Count} games are missing metadata");
-                    await Download(missing);
+                    completed = await Download(missing);
                 }
                 catch (Exception e)
                 {
@@ -160,7 +208,7 @@ namespace XboxSeries.Extension
                 }
                 finally
                 {
-                    Call(done);
+                    Call(() => done(completed));
                 }
             });
         }
@@ -188,7 +236,25 @@ namespace XboxSeries.Extension
         /// </summary>
         private static bool IsMissingMetadata(Game game, object settings)
         {
-            bool Imports(string field) => Get(Get(settings, field), "Import") as bool? == true;
+            // A field, or its Import, missing from this build's settings is logged once and read as not imported.
+            bool Imports(string field)
+            {
+                var fieldProperty = settings.GetType().GetProperty(field);
+                if (fieldProperty == null)
+                {
+                    WarnMissingOnce(settings.GetType(), field);
+                    return false;
+                }
+
+                var fieldSettings = fieldProperty.GetValue(settings);
+                var import = fieldSettings?.GetType().GetProperty("Import");
+                if (fieldSettings != null && import == null)
+                {
+                    WarnMissingOnce(fieldSettings.GetType(), "Import");
+                }
+
+                return import?.GetValue(fieldSettings) as bool? == true;
+            }
             bool None<T>(ICollection<T> items) => items == null || items.Count == 0;
 
             return (Imports("Name") && string.IsNullOrEmpty(game.Name))
@@ -217,13 +283,14 @@ namespace XboxSeries.Extension
         /// <summary>
         /// Desktop's <c>DesktopAppViewModel.DownloadMetadata</c>, rebuilt against Fullscreen's main view model: Playnite's
         /// <c>MetadataDownloader</c> over <paramref name="games"/> with the progress bar and GlobalTaskHandler's token, so
-        /// the bar's own Cancel stops it. From a copy of the saved settings that skips every field already set.
+        /// the bar's own Cancel stops it. From a copy of the saved settings that skips every field already set. True when it
+        /// ran to the end, with none to download too; false when it was cancelled or couldn't run.
         /// </summary>
-        private static async Task Download(List<Game> games)
+        private static async Task<bool> Download(List<Game> games)
         {
             if (games.Count == 0)
             {
-                return;
+                return true;
             }
 
             var model = Model;
@@ -242,7 +309,7 @@ namespace XboxSeries.Extension
                 || settings == null || progressTask == null || cancelToken == null || cancelAndWait == null)
             {
                 logger.Warn("Can't download metadata: this Playnite build lacks part of Desktop's Download Metadata");
-                return;
+                return false;
             }
 
             var ctorArgs = new[] { database, Get(extensions, "MetadataPlugins"), Get(extensions, "LibraryPlugins") };
@@ -250,7 +317,7 @@ namespace XboxSeries.Extension
             if (ctor == null)
             {
                 logger.Warn("Can't download metadata: this Playnite build has no MetadataDownloader(database, metadata plugins, library plugins)");
-                return;
+                return false;
             }
 
             logger.Info($"Downloading metadata for {games.Count} games, filling blank fields only");
@@ -261,6 +328,10 @@ namespace XboxSeries.Extension
                 await (Task)cancelAndWait.Invoke(null, null);
 
                 Set(filters, "IgnoreDatabaseUpdates", true);
+
+                // Not disposed here: GlobalTaskHandler keeps it as its CancelToken after the run, where Playnite or another
+                // extension may still read its Token or Cancel it, which throw once it's disposed. GlobalTaskHandler's
+                // setter disposes it itself when the next run sets a new one.
                 var cancel = new CancellationTokenSource();
                 cancelToken.SetValue(null, cancel);
                 var status = ResourceProvider.GetString("LOCProgressMetadata");
@@ -283,6 +354,15 @@ namespace XboxSeries.Extension
                     progressTask.SetValue(null, task);
                     await task;
                 }
+
+                // The downloader ends quietly when cancelled, so the token says whether it was.
+                if (cancel.IsCancellationRequested)
+                {
+                    logger.Info("Metadata download was cancelled");
+                    return false;
+                }
+
+                return true;
             }
             finally
             {
