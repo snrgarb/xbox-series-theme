@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Windows.Controls;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -28,6 +31,7 @@ namespace XboxSeries.Extension
         private readonly PlayniteAchievementsSource achievements;
         private readonly DiscordPipe discordPipe = new DiscordPipe();
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
+        private readonly PopularGamerpics popularGamerpics;
         private bool libraryPushed;
         private ToastWindow toastWindow;
         private LaunchScreenWindow launchScreenWindow;
@@ -68,13 +72,15 @@ namespace XboxSeries.Extension
             sounds = new PlayniteSounds(api);
             host = new PlayniteHost(api, GetPluginUserDataPath());
             var downloads = new SteamDownloads(api);
+            popularGamerpics = new PopularGamerpics(new HttpClient { Timeout = TimeSpan.FromSeconds(30) },
+                Path.Combine(GetPluginUserDataPath(), "Gamerpics", "Popular"));
 
             // PlayniteAchievements may load after us: the source finds it only once started.
             achievements = new PlayniteAchievementsSource(api);
 #if DEBUG
             steamDownloads = downloads;
 #endif
-            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath()), audio, controller,
+            core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath(), popularGamerpics), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions,
                 achievements: achievements);
             core.StartupEnded += () => startup?.End();
@@ -224,6 +230,10 @@ namespace XboxSeries.Extension
             mediaSessions.ArtFetched += (request, art) => OnUiThread(() => core.OnMediaArt(request, art));
             StartupTiming.Time("Starting the media sessions", mediaSessions.Start);
 
+            // The popular gamerpics, fetched afresh on every start, in the background: those saved before are offered
+            // meanwhile, and Settings reads them again each time it opens.
+            _ = FetchPopularGamerpicsAsync();
+
             // PlayniteAchievements, every plugin loaded by now: its changes and live unlocks arrive on the UI thread, and
             // one change once its games are first read, which the core takes as where it starts announcing unlocks.
             achievements.Changed += core.OnAchievementsChanged;
@@ -239,6 +249,18 @@ namespace XboxSeries.Extension
             StartupTiming.Time("Signing in to Discord with the saved tokens", core.OnApplicationStarted);
             logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
             StartupTiming.Log($"Our OnApplicationStarted took {started.ElapsedMilliseconds} ms, ending");
+        }
+
+        private async Task FetchPopularGamerpicsAsync()
+        {
+            try
+            {
+                await popularGamerpics.FetchAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                logger.Warn(e, "Couldn't fetch the popular gamerpics");
+            }
         }
 
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)

@@ -14,7 +14,8 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// Adapter: the Windows user signed in, with the account picture and full name the first profile takes, and the
-    /// Gamerpics folder in the extension's data folder, where the user puts pictures a profile can wear.
+    /// pictures a profile can wear: the Gamerpics folder's in the extension's data folder, where the user puts their own,
+    /// then the popular gamerpics fetched into it.
     /// </summary>
     internal sealed class WindowsUserAccount : IUserAccount
     {
@@ -26,12 +27,15 @@ namespace XboxSeries.Extension
         private static readonly string[] PictureExtensions = { ".png", ".jpg", ".jpeg", ".gif", ".bmp" };
 
         private readonly string gamerpicsFolder;
+        private readonly PopularGamerpics popular;
         private readonly Lazy<string> realName = new Lazy<string>(ReadRealName);
 
         /// <param name="dataFolder">The extension's own data folder, which holds the Gamerpics folder.</param>
-        public WindowsUserAccount(string dataFolder)
+        /// <param name="popular">The popular gamerpics, fetched into their own folder.</param>
+        public WindowsUserAccount(string dataFolder, PopularGamerpics popular)
         {
             gamerpicsFolder = Path.Combine(dataFolder, "Gamerpics");
+            this.popular = popular;
         }
 
         public string Name => Environment.UserName;
@@ -44,28 +48,43 @@ namespace XboxSeries.Extension
         public string RealName => realName.Value;
 
         /// <summary>
-        /// The images in the Gamerpics folder, by name, read afresh each time. The folder is made if it's missing, so the
-        /// user can find it.
+        /// The images in the Gamerpics folder, by name, then the popular gamerpics fetched, most liked first, read afresh
+        /// each time. The folder is made if it's missing, so the user can find it.
         /// </summary>
-        public IReadOnlyList<string> Gamerpics
+        public IReadOnlyList<string> Gamerpics => OwnGamerpics().Concat(PopularPictures()).ToList();
+
+        private IEnumerable<string> OwnGamerpics()
         {
-            get
+            try
             {
-                try
-                {
-                    Directory.CreateDirectory(gamerpicsFolder);
-                    return Directory.EnumerateFiles(gamerpicsFolder)
-                        .Where(f => PictureExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
-                        .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-                }
-                catch (Exception e) when (e is IOException || e is UnauthorizedAccessException || e is SecurityException || e is ArgumentException || e is NotSupportedException)
-                {
-                    logger.Warn(e, "Couldn't read the Gamerpics folder");
-                    return new string[0];
-                }
+                Directory.CreateDirectory(gamerpicsFolder);
+                return Directory.EnumerateFiles(gamerpicsFolder)
+                    .Where(f => PictureExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))
+                    .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            catch (Exception e) when (IsFileError(e))
+            {
+                logger.Warn(e, "Couldn't read the Gamerpics folder");
+                return new string[0];
             }
         }
+
+        private IEnumerable<string> PopularPictures()
+        {
+            try
+            {
+                return popular.Pictures;
+            }
+            catch (Exception e) when (IsFileError(e))
+            {
+                logger.Warn(e, "Couldn't read the popular gamerpics");
+                return new string[0];
+            }
+        }
+
+        private static bool IsFileError(Exception e) =>
+            e is IOException || e is UnauthorizedAccessException || e is SecurityException || e is ArgumentException || e is NotSupportedException;
 
         /// <summary>
         /// The account picture at 192 px, which Windows records per user under AccountPicture; Windows' default user
