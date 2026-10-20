@@ -5,8 +5,9 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Idle screen's cards: at Showing things, a pool of the nearly-finished games, the last unlocks, the last games played and the tips is shown one card at a time in shuffled turn, each
-    /// for <see cref="IdleCardShownFor"/>, reshuffled when it runs out; waking hides the card.
+    /// The Idle screen's cards: at Showing things, a pool of the nearly-finished games, the last unlocks, the last games
+    /// played and the tips shows one card at a time in shuffled turn, each for <see cref="IdleCardShownFor"/>,
+    /// reshuffled when it runs out; waking hides the card.
     /// </summary>
     public sealed partial class ExtensionCore
     {
