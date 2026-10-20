@@ -263,8 +263,11 @@ namespace XboxSeries.Core
         RecentGame,
         Profile,
 
+        /// <summary>Under the profile card: Who's playing today? comes up, without the boot video, whether or not it asks at start.</summary>
+        SwitchProfile,
+
         /// <summary>
-        /// One of the last few achievements unlocked, newest first, on Profile &amp; system under the profile card, the first
+        /// One of the last few achievements unlocked, newest first, on Profile &amp; system under Switch profile, the first
         /// under a divider: its name as the title, its game's name as its <see cref="GuideItem.Detail"/>, its icon as its
         /// image. Only there while <see cref="GuideState.Achievements"/> is. A does nothing on it.
         /// </summary>

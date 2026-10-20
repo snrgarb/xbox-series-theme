@@ -369,6 +369,35 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Switch_profile_closes_the_Guide_and_asks_Whos_playing_today_even_when_it_doesnt_ask_at_start()
+        {
+            core.AddProfile("Ana");
+            core.SetAskWhosPlaying(false);
+            SignIn(0);
+            clock.Advance(TimeSpan.FromSeconds(10));
+            StartupPlan asked = null;
+            core.WhosPlayingAsked += plan => asked = plan;
+            TapGuide();
+            Tap(ControllerButton.RightShoulder);
+            Tap(ControllerButton.DPadDown);
+            Assert.Equal(GuideItemKind.SwitchProfile, core.Guide.FocusedItem.Kind);
+
+            Tap(ControllerButton.A);
+
+            Assert.False(core.Guide.IsOpen);
+            Assert.True(core.IsStartupShown);
+            Assert.Equal(BootVideo.Off, asked.BootVideo);
+            Assert.True(asked.AskWhosPlaying);
+            Assert.Equal("gabe", asked.LastProfile.Gamertag);
+
+            core.OnStartupSignedIn(asked.Profiles[1]);
+            clock.Advance(TimeSpan.FromSeconds(3));
+            Assert.False(core.IsStartupShown);
+            Assert.Equal("Ana", core.Status.Profile.Gamertag);
+            Assert.Equal("Hi Ana!", core.Toast.Text);
+        }
+
+        [Fact]
         public void Waking_from_sleep_closes_the_Guide()
         {
             TapGuide();

@@ -71,15 +71,15 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Profile_and_system_shows_the_profile_card_with_the_Windows_user_then_Settings_and_Power()
+        public void Profile_and_system_shows_the_profile_card_with_the_Windows_user_then_Switch_profile_Settings_and_Power()
         {
             OpenProfileTab();
 
             var items = core.Guide.Items;
-            Assert.Equal(new[] { GuideItemKind.Profile, GuideItemKind.Settings, GuideItemKind.Power }, items.Select(i => i.Kind));
-            Assert.Equal(new[] { "Gabe", "Settings", "Power" }, items.Select(i => i.Title));
+            Assert.Equal(new[] { GuideItemKind.Profile, GuideItemKind.SwitchProfile, GuideItemKind.Settings, GuideItemKind.Power }, items.Select(i => i.Kind));
+            Assert.Equal(new[] { "Gabe", "Switch profile", "Settings", "Power" }, items.Select(i => i.Title));
             Assert.Equal(@"C:\pics\gabe.png", items[0].Image);
-            Assert.Equal(new[] { false, true, true }, items.Select(i => i.HasDividerAbove));
+            Assert.Equal(new[] { false, false, true, true }, items.Select(i => i.HasDividerAbove));
             Assert.Equal(GuideItemKind.Profile, core.Guide.FocusedItem.Kind);
         }
 
@@ -121,6 +121,7 @@ namespace XboxSeries.Core.Tests
             windows.OpenWindow();
             OpenProfileTab();
             Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
 
             Press(ControllerButton.A);
 
@@ -149,6 +150,7 @@ namespace XboxSeries.Core.Tests
             core.Settings.Opened += (s, e) => openings++;
             OpenProfileTab();
             Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
 
             Press(ControllerButton.A);
             Release(ControllerButton.A);
@@ -164,6 +166,7 @@ namespace XboxSeries.Core.Tests
         {
             core.OpenMyGames(MyGamesItem.Games);
             OpenProfileTab();
+            Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
 
             Tap(ControllerButton.A);
@@ -558,6 +561,7 @@ namespace XboxSeries.Core.Tests
         private void OpenPowerFromTheGuide()
         {
             OpenProfileTab();
+            Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.A);

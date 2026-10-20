@@ -1060,11 +1060,16 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Profile &amp; system: the profile card with the profile signed in, or the Windows user before the first
-        /// sign-in, then the last achievements unlocked, if any, then Settings and Power, each under a divider.
+        /// sign-in, and Switch profile under it, then the last achievements unlocked, if any, then Settings and Power,
+        /// each under a divider.
         /// </summary>
         private void ShowProfileTab()
         {
-            Guide.Items = new[] { new GuideItem(GuideItemKind.Profile, Status.Profile?.Gamertag ?? account.Name, image: ProfilePicture) }
+            Guide.Items = new[]
+                {
+                    new GuideItem(GuideItemKind.Profile, Status.Profile?.Gamertag ?? account.Name, image: ProfilePicture),
+                    new GuideItem(GuideItemKind.SwitchProfile, "Switch profile"),
+                }
                 .Concat(RecentAchievementItems())
                 .Concat(new[]
                 {
@@ -1878,6 +1883,12 @@ namespace XboxSeries.Core
             if (item.Kind == GuideItemKind.Power)
             {
                 ShowPower();
+                return;
+            }
+
+            if (item.Kind == GuideItemKind.SwitchProfile)
+            {
+                SwitchProfile();
                 return;
             }
 

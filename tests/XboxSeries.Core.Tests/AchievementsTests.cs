@@ -395,7 +395,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(4, core.Guide.Achievements.Unlocked);
             var items = core.Guide.Items;
             Assert.Equal(
-                new[] { GuideItemKind.Profile, GuideItemKind.RecentAchievement, GuideItemKind.RecentAchievement, GuideItemKind.RecentAchievement, GuideItemKind.Settings, GuideItemKind.Power },
+                new[] { GuideItemKind.Profile, GuideItemKind.SwitchProfile, GuideItemKind.RecentAchievement, GuideItemKind.RecentAchievement, GuideItemKind.RecentAchievement, GuideItemKind.Settings, GuideItemKind.Power },
                 items.Select(i => i.Kind));
             var recent = items.Where(i => i.Kind == GuideItemKind.RecentAchievement).ToList();
             Assert.Equal(new[] { "Strawberry", "Escaped", "Summit" }, recent.Select(i => i.Title));
@@ -469,6 +469,7 @@ namespace XboxSeries.Core.Tests
             OpenProfileTab();
             Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
             Assert.Equal(GuideItemKind.Settings, core.Guide.FocusedItem.Kind);
 
             Record(hades, Unlocked("boon", "Blessed", at: Start.AddDays(-5)), Unlocked("escape", "Escaped", at: Start.AddDays(-1)));
@@ -486,6 +487,7 @@ namespace XboxSeries.Core.Tests
             Record(hades, Unlocked("boon", "Blessed", at: Start.AddDays(-5)));
             core.OnAchievementsChanged();
             OpenProfileTab();
+            Tap(ControllerButton.DPadDown);
             Tap(ControllerButton.DPadDown);
             Assert.Equal(GuideItemKind.RecentAchievement, core.Guide.FocusedItem.Kind);
             sounds.Played.Clear();
@@ -511,7 +513,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.False(core.Toast.IsShown);
             Assert.Null(core.Guide.Achievements);
-            Assert.Equal(new[] { GuideItemKind.Profile, GuideItemKind.Settings, GuideItemKind.Power }, core.Guide.Items.Select(i => i.Kind));
+            Assert.Equal(new[] { GuideItemKind.Profile, GuideItemKind.SwitchProfile, GuideItemKind.Settings, GuideItemKind.Power }, core.Guide.Items.Select(i => i.Kind));
         }
 
         [Fact]
