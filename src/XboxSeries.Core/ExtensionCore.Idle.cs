@@ -18,34 +18,54 @@ namespace XboxSeries.Core
         private bool idlePaused;
 
         /// <summary>
-        /// How soon after Playnite routes a wake press to the focused element the pad's own report of it has to come to be
-        /// swallowed with it; later, a press of that button is a new one.
+        /// How soon after one half of a pad button's wake press, Playnite routing it to the focused element or the pad
+        /// reporting it, the other has to come to be swallowed with it; later, a press of that button is a new one.
         /// </summary>
         private static readonly TimeSpan WakePressWindow = TimeSpan.FromSeconds(1);
 
-        /// <summary>The pad button that woke the screen, whose press and release the pad events swallow; null for none.</summary>
+        /// <summary>The pad button whose press woke the screen, swallowed as routed and as reported; null for none.</summary>
         private ControllerButton? wakeButton;
 
-        /// <summary>Whether the pad events have seen the wake button's press, so its release is the one to swallow.</summary>
-        private bool wakeButtonDown;
+        /// <summary>Whether Playnite's routing of the wake button's press has come.</summary>
+        private bool wakeRouted;
 
-        /// <summary>Until when the pad's report of a routed wake press is still that press.</summary>
+        /// <summary>Whether the pad's report of the wake button's press has come, so its release is the one to swallow.</summary>
+        private bool wakeReported;
+
+        /// <summary>Until when the half of the wake press still to come is that press.</summary>
         private DateTime wakePressBy;
 
         public IdleState Idle { get; } = new IdleState();
 
         /// <summary>
         /// Any input but the pad's buttons as the core gets them: a key, the mouse, or a pad button as Playnite routes it
-        /// to the focused element (<paramref name="padButton"/>), which comes before <see cref="OnControllerButton(ControllerButton, ButtonState)"/>.
+        /// to the focused element (<paramref name="padButton"/>), which usually comes before <see cref="OnControllerButton(ControllerButton, ButtonState)"/>.
         /// Resets the timers. True when it only woke the screen: the caller swallows it, and a pad button's press and
-        /// release then reach <see cref="OnControllerButton(ControllerButton, ButtonState)"/> swallowed too.
+        /// release then reach <see cref="OnControllerButton(ControllerButton, ButtonState)"/> swallowed too. A pad
+        /// button whose press the pad reported first, waking the screen, is swallowed here too.
         /// </summary>
         public bool OnUserInput(ControllerButton? padButton = null)
         {
+            if (padButton != null && padButton == wakeButton && !wakeRouted && clock.Now <= wakePressBy)
+            {
+                wakeRouted = true;
+                RestartIdle();
+                return true;
+            }
+
             var woke = Idle.IsDimmed;
-            wakeButton = woke ? padButton : null;
-            wakeButtonDown = false;
-            wakePressBy = clock.Now + WakePressWindow;
+            if (woke)
+            {
+                wakeButton = padButton;
+                wakeRouted = true;
+                wakeReported = false;
+                wakePressBy = clock.Now + WakePressWindow;
+            }
+            else if (padButton != null && padButton != wakeButton)
+            {
+                wakeButton = null;
+            }
+
             RestartIdle();
             return woke;
         }
@@ -59,20 +79,35 @@ namespace XboxSeries.Core
         {
             if (state == ButtonState.Released)
             {
-                if (button != wakeButton || !wakeButtonDown)
+                if (button != wakeButton || !wakeReported)
                 {
                     return false;
                 }
 
                 wakeButton = null;
-                wakeButtonDown = false;
                 return true;
             }
 
-            var routedWake = button == wakeButton && !wakeButtonDown && clock.Now <= wakePressBy;
-            var woke = routedWake || Idle.IsDimmed;
-            wakeButton = woke ? button : (ControllerButton?)null;
-            wakeButtonDown = woke;
+            if (button == wakeButton && !wakeReported && clock.Now <= wakePressBy)
+            {
+                wakeReported = true;
+                RestartIdle();
+                return true;
+            }
+
+            var woke = Idle.IsDimmed;
+            if (woke)
+            {
+                wakeButton = button;
+                wakeRouted = false;
+                wakeReported = true;
+                wakePressBy = clock.Now + WakePressWindow;
+            }
+            else
+            {
+                wakeButton = null;
+            }
+
             RestartIdle();
             return woke;
         }
