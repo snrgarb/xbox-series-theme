@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Tile menu: Menu on a game tile, with the console's main rows, the rest behind More options.
+    /// The Tile menu: Menu on a game tile, with the console's main rows, the rest behind More options, a flyout over
+    /// it. B steps back one level at a time: from a prompt to the panel that asked it, from the flyout to the menu.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -14,6 +16,7 @@ namespace XboxSeries.Core
             if (Home.TileMenu != null)
             {
                 StopRepeat();
+                Home.TileMenuFlyout = null;
                 Home.TileMenu = null;
             }
         }
@@ -21,7 +24,7 @@ namespace XboxSeries.Core
         /// <summary>
         /// Menu on a game tile: Play game (Install while it isn't installed, Quit while it runs), Add to or Remove from
         /// Favourites, Manage game, Uninstall for an installed game a library installed, then after a gap Customise Home
-        /// (on My games &amp; apps Customise games &amp; apps) and More options.
+        /// (on My games &amp; apps Customise games &amp; apps) and More options, which opens its flyout over the menu.
         /// Each closes the menu first, so focus is back on the tile before anything else opens.
         /// </summary>
         private void ShowTileMenu(HomeTile tile)
@@ -67,11 +70,7 @@ namespace XboxSeries.Core
             rows.Add(new DialogOption(
                 MyGames.IsShown ? "Customise games & apps" : "Customise Home", DialogIcon.Customise,
                 () => FromTileMenu(() => Customise(gameId))));
-            rows.Add(new DialogOption("More options", DialogIcon.MoreOptions, () => FromTileMenu(() =>
-            {
-                ListPlayHistoryInMainList();
-                playnite.OpenGameMenu(gameId);
-            })));
+            rows.Add(new DialogOption("More options", DialogIcon.MoreOptions, () => ShowMoreOptions(gameId)));
 
             menu = new Dialog(game.Name, null, isPrompt: false, CloseTileMenu, rows.ToArray());
             return menu;
@@ -91,6 +90,66 @@ namespace XboxSeries.Core
                 isPrompt: true,
                 Back,
                 new DialogOption("Uninstall", DialogIcon.Uninstall, () => FromTileMenu(() => UninstallThroughTheme(game.Id))),
+                new DialogOption("Cancel", DialogIcon.Cancel, Back));
+        }
+
+        /// <summary>
+        /// More options' flyout, read from the library as it opens: a row for each of the game's actions that don't play
+        /// it, Hide or Unhide this game, Enable or Disable HDR on an HDR display, Extensions, and Remove. Playnite's Edit
+        /// fields isn't offered (#94).
+        /// </summary>
+        private void ShowMoreOptions(Guid gameId)
+        {
+            var game = GameById(gameId);
+            if (game == null)
+            {
+                CloseTileMenu();
+                return;
+            }
+
+            Dialog flyout = null;
+            var rows = game.OtherActions
+                .Select((name, index) => new DialogOption(name, DialogIcon.GameAction, () => FromTileMenu(() => playnite.RunGameAction(gameId, index))))
+                .ToList();
+            rows.Add(game.Hidden
+                ? new DialogOption("Unhide this game", DialogIcon.Unhide, () => FromTileMenu(() => playnite.SetHidden(gameId, false)))
+                : new DialogOption("Hide this game", DialogIcon.Hide, () => FromTileMenu(() => playnite.SetHidden(gameId, true))));
+            if (playnite.IsHdrSupported)
+            {
+                rows.Add(game.SystemHdr
+                    ? new DialogOption("Disable HDR", DialogIcon.Hdr, () => FromTileMenu(() => playnite.SetSystemHdr(gameId, false)))
+                    : new DialogOption("Enable HDR", DialogIcon.Hdr, () => FromTileMenu(() => playnite.SetSystemHdr(gameId, true))));
+            }
+
+            rows.Add(new DialogOption("Extensions", DialogIcon.Extensions, () => FromTileMenu(() => playnite.OpenExtensionsMenu(gameId))));
+            rows.Add(new DialogOption("Remove", DialogIcon.RemoveGame, () => AskRemove(flyout, game)));
+
+            StopRepeat();
+            flyout = new Dialog("More options", null, isPrompt: false, CloseMoreOptions, rows.ToArray());
+            Home.TileMenuFlyout = flyout;
+        }
+
+        /// <summary>B on the flyout: back to the menu, focus still on More options.</summary>
+        private void CloseMoreOptions()
+        {
+            StopRepeat();
+            Home.TileMenuFlyout = null;
+        }
+
+        /// <summary>
+        /// "Remove X?" in the flyout's place. Remove takes the game out of the library; Cancel, or B, goes back to
+        /// <paramref name="flyout"/>, focus still on Remove.
+        /// </summary>
+        private void AskRemove(Dialog flyout, LibraryGame game)
+        {
+            void Back() => Home.TileMenuFlyout = flyout;
+
+            Home.TileMenuFlyout = new Dialog(
+                $"Remove {game.Name}?",
+                null,
+                isPrompt: true,
+                Back,
+                new DialogOption("Remove", DialogIcon.RemoveGame, () => FromTileMenu(() => playnite.RemoveGame(game.Id))),
                 new DialogOption("Cancel", DialogIcon.Cancel, Back));
         }
 

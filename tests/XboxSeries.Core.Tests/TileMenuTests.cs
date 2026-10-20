@@ -244,17 +244,6 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void More_options_opens_Playnites_game_menu()
-        {
-            OpenMenuOn("Hades");
-
-            Choose("More options");
-
-            Assert.Null(core.Home.TileMenu);
-            Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedGameMenus);
-        }
-
-        [Fact]
         public void An_uninstalled_game_offers_Install_in_place_of_Play_game_and_no_Uninstall()
         {
             AddGame("Celeste", installed: false);

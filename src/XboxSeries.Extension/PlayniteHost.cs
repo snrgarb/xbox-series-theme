@@ -205,6 +205,117 @@ namespace XboxSeries.Extension
             FullscreenCommand("OpenGameMenuCommand")?.Execute(null);
         }
 
+        public void RunGameAction(Guid gameId, int index)
+        {
+            var game = api.Database.Games.Get(gameId);
+            var action = game?.GameActions?.Where(a => !a.IsPlayAction).ElementAtOrDefault(index);
+            if (action == null)
+            {
+                return;
+            }
+
+            // Not in the SDK: what Playnite's game menu runs for the row, GamesEditor.ActivateAction, which starts a file,
+            // URL, script or emulator action as Playnite does and reports its own errors.
+            var editor = PlayniteApplication()?.GetType().GetProperty("GamesEditor")?.GetValue(PlayniteApplication());
+            var activate = editor?.GetType().GetMethod("ActivateAction", new[] { typeof(Game), typeof(GameAction) });
+            if (activate == null)
+            {
+                logger.Warn("Can't run a game's action: this Playnite build has no GamesEditor.ActivateAction");
+                return;
+            }
+
+            Later(() =>
+            {
+                try
+                {
+                    activate.Invoke(editor, new object[] { game, action });
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, $"Couldn't run {game.Name}'s action {action.Name}");
+                }
+            });
+        }
+
+        public void SetHidden(Guid gameId, bool hidden)
+        {
+            var game = api.Database.Games.Get(gameId);
+            if (game != null && game.Hidden != hidden)
+            {
+                game.Hidden = hidden;
+                api.Database.Games.Update(game);
+            }
+        }
+
+        /// <summary>Not in the SDK: Playnite's own check, <c>Playnite.HdrUtilities.IsHdrSupported</c>, the primary display's. False on a build without it.</summary>
+        public bool IsHdrSupported
+        {
+            get
+            {
+                try
+                {
+                    var check = AppDomain.CurrentDomain.GetAssemblies()
+                        .Select(a => a.GetType("Playnite.HdrUtilities", throwOnError: false))
+                        .FirstOrDefault(t => t != null)
+                        ?.GetMethod("IsHdrSupported", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+                    return check?.Invoke(null, null) is bool supported && supported;
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, "Couldn't ask Playnite whether the display supports HDR");
+                    return false;
+                }
+            }
+        }
+
+        public void SetSystemHdr(Guid gameId, bool enabled)
+        {
+            var game = api.Database.Games.Get(gameId);
+            if (game != null && game.EnableSystemHdr != enabled)
+            {
+                game.EnableSystemHdr = enabled;
+                api.Database.Games.Update(game);
+            }
+        }
+
+        public void OpenExtensionsMenu(Guid gameId)
+        {
+            // Not in the SDK: what the game menu's Extensions runs, ExtensionsMenuViewModels over the main view model,
+            // listing every extension's game menu items for the game.
+            var game = api.Database.Games.Get(gameId);
+            var model = Application.Current?.MainWindow?.DataContext;
+            var app = model?.GetType().Assembly;
+            var factory = app?.GetType("Playnite.FullscreenApp.Windows.ExtensionsMenuWindowFactory");
+            var menu = app?.GetType("Playnite.FullscreenApp.ViewModels.ExtensionsMenuViewModels");
+            var open = menu?.GetMethod("OpenView", Type.EmptyTypes);
+            if (game == null || factory == null || open == null)
+            {
+                logger.Warn("Can't open Playnite's Extensions picker: this Playnite build has no ExtensionsMenuViewModels");
+                return;
+            }
+
+            Later(() =>
+            {
+                try
+                {
+                    open.Invoke(Activator.CreateInstance(menu, Activator.CreateInstance(factory), model, game), null);
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, "Couldn't open Playnite's Extensions picker");
+                }
+            });
+        }
+
+        public void RemoveGame(Guid gameId)
+        {
+            // The theme has asked already; Playnite's own RemoveGame would ask again.
+            if (api.Database.Games.Get(gameId) != null)
+            {
+                api.Database.Games.Remove(gameId);
+            }
+        }
+
         public void OpenPlayniteSettings()
         {
             // Not a command of the main view model, but of the main menu's: its Settings builds the window's view model

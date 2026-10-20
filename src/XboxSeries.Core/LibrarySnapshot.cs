@@ -50,7 +50,9 @@ namespace XboxSeries.Core
             string platform = null,
             bool installing = false,
             DateTime? installedAt = null,
-            bool isCustom = false)
+            bool isCustom = false,
+            IReadOnlyList<string> otherActions = null,
+            bool systemHdr = false)
         {
             Id = id;
             Name = name;
@@ -74,6 +76,8 @@ namespace XboxSeries.Core
             Installing = installing;
             InstalledAt = installedAt;
             IsCustom = isCustom;
+            OtherActions = otherActions ?? new string[0];
+            SystemHdr = systemHdr;
         }
 
         public Guid Id { get; }
@@ -125,6 +129,12 @@ namespace XboxSeries.Core
 
         /// <summary>Whether the user added the game to Playnite by hand, so no library integration installs or uninstalls it.</summary>
         public bool IsCustom { get; }
+
+        /// <summary>The names of the game's actions that don't play it (as "Launch config tool"), in Playnite's order.</summary>
+        public IReadOnlyList<string> OtherActions { get; }
+
+        /// <summary>Whether Playnite turns Windows' HDR on while the game runs.</summary>
+        public bool SystemHdr { get; }
     }
 
     /// <summary>A Playnite filter preset. Snapshots list them in Playnite's own order.</summary>

@@ -668,7 +668,8 @@ namespace XboxSeries.Core
             }
             else if (button == ControllerButton.A && dialog != null)
             {
-                tileMenuHoldsA = dialog == Home.TileMenu;
+                // With the Guide closed, the dialog is the tile menu's, or its flyout's, over a tile.
+                tileMenuHoldsA = !Guide.IsOpen;
                 Choose(dialog, dialog.FocusedOption);
                 AfterAnswer(handBack => Dismiss(button, handBack));
             }
@@ -2057,8 +2058,11 @@ namespace XboxSeries.Core
 
         private static int Clamp(int index, int count) => Math.Max(0, Math.Min(count - 1, index));
 
-        /// <summary>The menu or prompt that has the pad: the Guide's while the Guide is open, otherwise the tile menu.</summary>
-        private Dialog ActiveDialog => Guide.IsOpen ? Guide.Dialog : Home.TileMenu;
+        /// <summary>
+        /// The menu or prompt that has the pad: the Guide's while the Guide is open, otherwise the tile menu's More options
+        /// flyout over the tile menu, or the tile menu itself.
+        /// </summary>
+        private Dialog ActiveDialog => Guide.IsOpen ? Guide.Dialog : Home.TileMenuFlyout ?? Home.TileMenu;
 
         /// <summary>Esc, or a click on the dimmed area. No pad button is held, so focus goes back at once.</summary>
         public void DismissGuide()
