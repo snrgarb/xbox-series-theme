@@ -53,7 +53,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Tile menu's Uninstall, confirmed: as the game menu's, through the client without its windows while
+        /// The Tile menu's Uninstall, confirmed: as Playnite's game menu's, through the client without its windows while
         /// <see cref="CanUninstallSilently"/>, otherwise Playnite's own Uninstall.
         /// </summary>
         private void UninstallThroughTheme(Guid gameId)

@@ -51,7 +51,7 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Menu on a game tile: Play game (Install while it isn't installed, Quit while it runs), Add to or Remove from
-        /// Favourites, Manage game, Uninstall for an installed game a library installed, then after a gap Customise Home
+        /// Favourites, Manage game, Uninstall for an installed game a library installed, not running, then after a gap Customise Home
         /// (on My games &amp; apps Customise games &amp; apps) and More options, which opens its flyout over the menu.
         /// Each closes the menu first, so focus is back on the tile before anything else opens.
         /// </summary>
@@ -93,8 +93,8 @@ namespace XboxSeries.Core
                 })));
             }
 
-            // A game added by hand has no library to uninstall it.
-            if (game.Installed && !game.IsCustom)
+            // A game added by hand has no library to uninstall it; the running one has its files in use, and Quit first.
+            if (game.Installed && !game.IsCustom && gameId != runningGame)
             {
                 rows.Add(new DialogOption("Uninstall", DialogIcon.Uninstall, () => AskUninstall(menu, game)));
             }

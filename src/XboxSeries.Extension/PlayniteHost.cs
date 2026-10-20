@@ -298,11 +298,31 @@ namespace XboxSeries.Extension
 
         public void RemoveGame(Guid gameId)
         {
-            // The theme has asked already; Playnite's own RemoveGame would ask again.
-            if (api.Database.Games.Get(gameId) != null)
+            // The theme has asked already; Playnite's own RemoveGame would ask again. The rest is as it does it.
+            var game = api.Database.Games.Get(gameId);
+            if (game == null)
             {
-                api.Database.Games.Remove(gameId);
+                return;
             }
+
+            if (game.IsInstalling || game.IsRunning || game.IsLaunching || game.IsUninstalling)
+            {
+                api.Dialogs.ShowErrorMessage(ResourceProvider.GetString("LOCGameRemoveRunningError"), ResourceProvider.GetString("LOCGameError"));
+                return;
+            }
+
+            // A library's game would come back with its next update; Playnite offers this, and removing from the theme means it.
+            if (!game.IsCustomGame)
+            {
+                var library = api.Addons.Plugins.FirstOrDefault(p => p.Id == game.PluginId) as Playnite.SDK.Plugins.LibraryPlugin;
+                var exclusion = new Playnite.ImportExclusionItem(game.GameId, game.Name, game.PluginId, library?.Name);
+                if (api.Database.ImportExclusions[exclusion.Id] == null)
+                {
+                    api.Database.ImportExclusions.Add(exclusion);
+                }
+            }
+
+            api.Database.Games.Remove(gameId);
         }
 
         public void OpenPlayniteSettings()
