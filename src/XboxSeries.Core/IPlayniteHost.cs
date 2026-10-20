@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace XboxSeries.Core
 {
@@ -85,6 +86,35 @@ namespace XboxSeries.Core
 
         /// <summary>Opens Playnite's own Fullscreen main menu: Switch to Desktop mode, Update library, Minimise, Exit.</summary>
         void OpenMainMenu();
+
+        /// <summary>
+        /// Whether Playnite's progress bar is up for a run of its own, a library update or a metadata download, which the
+        /// calls below leave to finish rather than start beside.
+        /// </summary>
+        bool IsLibraryBusy { get; }
+
+        /// <summary>
+        /// Updates every integration's library, as Fullscreen's Update library does but downloading no metadata itself,
+        /// with Playnite's progress bar; then calls <paramref name="done"/> on the UI thread with the games it added, none
+        /// when it was cancelled or failed.
+        /// </summary>
+        void UpdateLibrary(Action<IReadOnlyList<Guid>> done);
+
+        /// <summary>
+        /// Downloads metadata for <paramref name="games"/> from Playnite's saved metadata sources, filling blank fields only
+        /// whatever those settings say about overwriting, with Playnite's progress bar; then calls <paramref name="done"/>
+        /// on the UI thread, also when it was cancelled or failed.
+        /// </summary>
+        void DownloadMetadata(IReadOnlyList<Guid> games, Action done);
+
+        /// <summary>
+        /// <see cref="DownloadMetadata"/> for every game missing metadata: one with a blank field among those Playnite's
+        /// saved metadata settings download.
+        /// </summary>
+        void DownloadMissingMetadata(Action done);
+
+        /// <summary>Stops the library update or metadata download running with Playnite's progress bar, as its Cancel does.</summary>
+        void CancelLibraryTask();
 
         /// <summary>
         /// Carries out <paramref name="command"/> itself, without Playnite's own "Are you sure?": turning off or restarting

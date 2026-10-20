@@ -58,7 +58,50 @@ namespace XboxSeries.Core
         /// <summary>Personalisation's Start up: the boot video, the profiles, and whether Who's playing today? asks.</summary>
         public StartUpSettingsState StartUp { get; } = new StartUpSettingsState();
 
+        /// <summary>The Playnite settings category: Download metadata, Update after downloads, and Playnite's own window.</summary>
+        public PlayniteSettingsState Playnite { get; } = new PlayniteSettingsState();
+
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
+    }
+
+    /// <summary>Settings' Playnite settings category.</summary>
+    public sealed class PlayniteSettingsState : INotifyPropertyChanged
+    {
+        private bool updateAfterDownloads = true;
+        private bool isDownloadingMetadata;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>
+        /// Whether a game finishing downloading is followed by a library update and metadata for the games it brings,
+        /// ending with the Library updated Toast. On by default, saved at once.
+        /// </summary>
+        public bool UpdateAfterDownloads
+        {
+            get => updateAfterDownloads;
+            internal set
+            {
+                if (updateAfterDownloads != value)
+                {
+                    updateAfterDownloads = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UpdateAfterDownloads)));
+                }
+            }
+        }
+
+        /// <summary>Whether the Download metadata box's run is going, which B or Cancel stops.</summary>
+        public bool IsDownloadingMetadata
+        {
+            get => isDownloadingMetadata;
+            internal set
+            {
+                if (isDownloadingMetadata != value)
+                {
+                    isDownloadingMetadata = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDownloadingMetadata)));
+                }
+            }
+        }
     }
 
     /// <summary>Settings' Guide category, shared by every profile.</summary>
@@ -110,13 +153,19 @@ namespace XboxSeries.Core
         }
     }
 
-    /// <summary>The Settings rail's categories, in its order. Playnite's own entries below its divider are actions, not categories.</summary>
+    /// <summary>
+    /// The Settings rail's categories, in its order. Below its divider Playnite settings is a category of boxes, and More
+    /// Playnite options an action.
+    /// </summary>
     public enum SettingsCategory
     {
         /// <summary>Its boxes, Start up's for now: the boot video, the profiles, and whether Who's playing today? asks.</summary>
         Personalisation,
         Guide,
         Discord,
+
+        /// <summary>Its boxes: Download metadata, Update after downloads, and one opening Playnite's own Settings window.</summary>
+        PlayniteSettings,
 #if DEBUG
 
         /// <summary>Debug builds only: the Debug menu, below Playnite's entries and a divider of its own, for trying Toasts on the TV.</summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -199,6 +200,24 @@ namespace XboxSeries.Extension
         public void OpenPlayniteSettings()
         {
             Later(FullscreenCommand("OpenSettingsCommand"));
+        }
+
+        public bool IsLibraryBusy => false;
+
+        public void UpdateLibrary(Action<IReadOnlyList<Guid>> done)
+        {
+        }
+
+        public void DownloadMetadata(IReadOnlyList<Guid> games, Action done)
+        {
+        }
+
+        public void DownloadMissingMetadata(Action done)
+        {
+        }
+
+        public void CancelLibraryTask()
+        {
         }
 
         public void OpenMainMenu()

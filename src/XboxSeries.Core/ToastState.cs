@@ -42,6 +42,12 @@ namespace XboxSeries.Core
         /// then the prompt, with a sound of its own. Several recorded together are an ordinary <see cref="AchievementUnlocked"/>.
         /// </summary>
         RareAchievementUnlocked,
+
+        /// <summary>
+        /// "Library updated" as the update after a game finished downloading is done: a glyph, no cover, with
+        /// "&lt;n&gt; games added" as its <see cref="ToastState.Detail"/> when it added any.
+        /// </summary>
+        LibraryUpdated,
     }
 
     /// <summary>
