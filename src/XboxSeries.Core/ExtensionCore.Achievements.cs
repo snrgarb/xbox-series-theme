@@ -7,7 +7,8 @@ namespace XboxSeries.Core
     /// <summary>
     /// Achievements, from PlayniteAchievements: an Achievement unlocked Toast, the console's pill, as the game running now,
     /// or the one that just exited, unlocks one (its rare form for one few players have), and the totals on the Guide's
-    /// Profile &amp; system.
+    /// Profile &amp; system and Home's top bar. Each unlock's Score is its platform's own points where PlayniteAchievements
+    /// records them, else by rarity, so the total Score sums every platform's.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -71,14 +72,17 @@ namespace XboxSeries.Core
         private const int RecentAchievementCount = 3;
 
         /// <summary>
-        /// An achievement's Score by its rarity, the share of players who have unlocked it: at most each percentage of
-        /// <see cref="RarityAtMost"/>, the Score in the same place of <see cref="ScoreAtRarity"/>; any commoner,
-        /// <see cref="CommonScore"/>.
+        /// An achievement's Score by its rarity, the share of players who have unlocked it, for one whose platform has no
+        /// points of its own where PlayniteAchievements records them: at most each percentage of <see cref="RarityAtMost"/>,
+        /// the Score in the same place of <see cref="ScoreAtRarity"/>; any commoner, <see cref="CommonScore"/>.
         /// </summary>
         private static readonly double[] RarityAtMost = { 1, 5, 10, 25, 50 };
         private static readonly int[] ScoreAtRarity = { 100, 50, 30, 20, 15 };
 
-        /// <summary>The Score of an achievement more than half of players have, or whose rarity isn't known.</summary>
+        /// <summary>
+        /// The Score of an achievement with no points of its own that more than half of players have, or whose rarity isn't
+        /// known.
+        /// </summary>
         private const int CommonScore = 10;
 
         /// <summary>Every unlock heard of, from a read or live, by <see cref="UnlockKey"/>, so each is told of once at most.</summary>
@@ -143,7 +147,7 @@ namespace XboxSeries.Core
         /// <summary>
         /// PlayniteAchievements heard of an unlock live, while the game runs: its Toast waits a second for any others
         /// heard with it, then shows in its turn. One already heard of, or another game's, tells of nothing. It counts in
-        /// the totals at once.
+        /// the totals at once. One heard with no time is taken as unlocked now, its points and all else kept.
         /// </summary>
         public void OnAchievementUnlocked(Guid gameId, Achievement achievement)
         {
@@ -156,7 +160,8 @@ namespace XboxSeries.Core
                 gameId,
                 achievement.UnlockedAt != null
                     ? achievement
-                    : new Achievement(achievement.Key, achievement.Name, achievement.Icon, achievement.Rarity, clock.Now, achievement.Description));
+                    : new Achievement(
+                        achievement.Key, achievement.Name, achievement.Icon, achievement.Rarity, clock.Now, achievement.Description, achievement.Points));
             if (!heardUnlocks.Add(unlock.Key))
             {
                 return;
@@ -261,9 +266,18 @@ namespace XboxSeries.Core
         /// <summary>Whether fewer than <see cref="RareBelow"/> percent of players have an achievement; unknown rarity is never rare.</summary>
         private static bool IsRare(Achievement achievement) => achievement.Rarity < RareBelow;
 
-        /// <summary>An achievement's Score: rarer is worth more, from 100 for the rarest down to 10.</summary>
+        /// <summary>
+        /// An achievement's Score: its platform's own points where PlayniteAchievements records them (Xbox's Gamerscore,
+        /// RetroAchievements' points, Epic's XP), else by rarity, rarer worth more, from 100 for the rarest down to 10.
+        /// Points of 0 count as none recorded, so fall back to rarity too.
+        /// </summary>
         private static int ScoreOf(Achievement achievement)
         {
+            if (achievement.Points > 0)
+            {
+                return achievement.Points.Value;
+            }
+
             var rarity = achievement.Rarity;
             if (rarity == null)
             {
