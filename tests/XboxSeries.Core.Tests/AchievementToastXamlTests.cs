@@ -13,13 +13,13 @@ namespace XboxSeries.Core.Tests
     // header, Score and name to the description and the prompt. The XAML isn't run here (it was laid out and its timeline
     // rendered frame by frame on a harness hosting the real ToastWindow, beside the console's own frames); these checks
     // guard what it shows, where it sits and what it animates.
-    public class RareAchievementXamlTests
+    public class AchievementToastXamlTests
     {
         private static readonly string ExtensionDir = Path.Combine(RepoRoot, "src", "XboxSeries.Extension");
 
         private static XDocument Load(string file) => XDocument.Load(Path.Combine(ExtensionDir, file));
 
-        private static XDocument Rare() => Load("RareAchievementToast.xaml");
+        private static XDocument Rare() => Load("AchievementToast.xaml");
 
         private static XElement Named(XContainer root, string name) =>
             root.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
@@ -40,7 +40,7 @@ namespace XboxSeries.Core.Tests
             var card = Named(toast, "Card");
             var rare = Named(toast, "Rare");
 
-            Assert.Equal("RareAchievementToast", rare.Name.LocalName);
+            Assert.Equal("AchievementToast", rare.Name.LocalName);
             Assert.Same(card.Parent, rare.Parent);
             Assert.Equal(("Center", "Bottom", (string)card.Attribute("Margin")),
                 ((string)rare.Attribute("HorizontalAlignment"), (string)rare.Attribute("VerticalAlignment"), (string)rare.Attribute("Margin")));
@@ -168,7 +168,7 @@ namespace XboxSeries.Core.Tests
             var rare = Rare();
             Assert.DoesNotContain(rare.Descendants(), e => e.Name.LocalName.EndsWith("Effect"));
 
-            var code = File.ReadAllText(Path.Combine(ExtensionDir, "RareAchievementToast.xaml.cs"));
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "AchievementToast.xaml.cs"));
             var animated = Regex.Matches(code, @"\bAnimate\(\s*\w+,\s*[^,]+,\s*([\w.]+Property)\b").Cast<Match>()
                 .Select(m => m.Groups[1].Value).Distinct().ToArray();
             var allowed = new[]
@@ -187,7 +187,7 @@ namespace XboxSeries.Core.Tests
         {
             // The console's old page goes up about 50 and the new comes from about 120 below, in video pixels zoomed
             // about 2.078 times: 24 and 58 at our 128-tall pill.
-            var code = File.ReadAllText(Path.Combine(ExtensionDir, "RareAchievementToast.xaml.cs"));
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "AchievementToast.xaml.cs"));
 
             Assert.Contains("PushUp = -24, PushFrom = 58;", code);
         }

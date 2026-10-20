@@ -10,13 +10,13 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// A rare achievement's Toast: the console's blue pill with its spinning diamond (see RareAchievementToast.xaml). The
+    /// A rare achievement's Toast: the console's blue pill with its spinning diamond (see AchievementToast.xaml). The
     /// Toast's window plays it in place of its banner for <see cref="ToastKind.RareAchievementUnlocked"/>: <see cref="Play"/>
     /// as the Toast shows, its timeline the console's own (frame by frame from a capture of it), and <see cref="Go"/> as it
     /// hides. Everything moves by transforms and opacity alone, so the TV's graphics card does the work, and the diamond's
     /// spin is its facets squashed, skewed and moved round as a turning gem's would be, not a picture.
     /// </summary>
-    public partial class RareAchievementToast : UserControl
+    public partial class AchievementToast : UserControl
     {
         // The intro, in seconds from the Toast showing, when the sound starts: the console draws its first frame 0.117 s
         // into its sound.
@@ -51,7 +51,7 @@ namespace XboxSeries.Extension
         private Storyboard intro;
         private Storyboard outro;
 
-        public RareAchievementToast()
+        public AchievementToast()
         {
             InitializeComponent();
             BuildDiamond();

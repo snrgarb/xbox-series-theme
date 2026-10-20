@@ -1,4 +1,4 @@
-<UserControl x:Class="XboxSeries.Extension.RareAchievementToast"
+<UserControl x:Class="XboxSeries.Extension.AchievementToast"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:XboxSeries.Extension"
@@ -12,7 +12,7 @@
         name; pushed up for the achievement's description, on at most two lines (skipped without one); then cut to "Press
         (Guide) to view", centred, as the Guide button opens the Guide at Profile & system. A band of light sweeps across
         the pill once on each of the first two pages. It goes as the pill collapses back into the circle, which turns dark
-        with the logo, rings bright, and shrinks to a dot. The timeline is in RareAchievementToast.xaml.cs; everything moves
+        with the logo, rings bright, and shrinks to a dot. The timeline is in AchievementToast.xaml.cs; everything moves
         by transforms and opacity alone, and the diamond is drawn here, in vectors (CrownFacets and PavilionFacets).
         Its DataContext is the ToastState; it ignores the Toast's image, as the console shows the diamond whatever the
         achievement's icon.
