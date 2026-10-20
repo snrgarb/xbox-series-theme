@@ -1162,58 +1162,6 @@ namespace XboxSeries.Core
             heroTimer = null;
         }
 
-        /// <summary>The tile menu went from the Dashboard without an answer, as when Playnite leaves the foreground.</summary>
-        public void CloseTileMenu()
-        {
-            if (Home.TileMenu != null)
-            {
-                StopRepeat();
-                Home.TileMenu = null;
-            }
-        }
-
-        /// <summary>
-        /// Menu on a game tile: Play game (Quit while it runs), Add to or Remove from Favourites, Manage game, and Customise
-        /// Home, or on My games &amp; apps Customise games &amp; apps.
-        /// Each closes the menu first, so focus is back on the tile before anything else opens.
-        /// </summary>
-        private void ShowTileMenu(HomeTile tile)
-        {
-            var game = GameById(tile.GameId);
-            if (game == null)
-            {
-                return;
-            }
-
-            var gameId = game.Id;
-            var play = gameId == runningGame
-                ? new DialogOption("Quit", DialogIcon.Quit, () => FromTileMenu(() => QuitGame(gameId)))
-                : new DialogOption("Play game", DialogIcon.Play, () => FromTileMenu(() => PlayGame(gameId)));
-            var favourite = game.Favorite
-                ? new DialogOption("Remove from Favourites", DialogIcon.Unfavourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, false)))
-                : new DialogOption("Add to Favourites", DialogIcon.Favourite, () => FromTileMenu(() => playnite.SetFavourite(gameId, true)));
-            var manage = new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() =>
-            {
-                ListPlayHistoryInMainList();
-                playnite.OpenGameMenu(gameId);
-            }));
-            var customise = new DialogOption(
-                MyGames.IsShown ? "Customise games & apps" : "Customise Home", DialogIcon.Customise,
-                () => FromTileMenu(() => Customise(gameId)));
-
-            // A pending A on the tile would otherwise open its Game hub under the menu.
-            CancelTap();
-            StopRepeat();
-            sounds.Play(UiSound.PromptOpen);
-            Home.TileMenu = new Dialog(game.Name, null, isPrompt: false, CloseTileMenu, play, favourite, manage, customise);
-        }
-
-        private void FromTileMenu(Action action)
-        {
-            CloseTileMenu();
-            action();
-        }
-
         /// <summary>
         /// A on a Home tile. It opens the game's Game hub, unless a second A on the same tile follows within the
         /// double-tap window: that plays the game instead, so the hub waits out the window before opening.

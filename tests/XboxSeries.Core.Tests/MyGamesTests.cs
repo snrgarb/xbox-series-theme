@@ -216,7 +216,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Manage_game_on_a_Play_history_entry_puts_every_game_it_lists_in_the_main_list_for_its_menu()
+        public void Manage_game_on_a_Play_history_entry_puts_every_game_it_lists_in_the_main_list_for_its_hub()
         {
             var library = new FakeLibrary()
                 .WithGame("Not Installed", lastActivity: new DateTime(2026, 10, 12), installed: false)
@@ -233,7 +233,7 @@ namespace XboxSeries.Core.Tests
 
             Tap(ControllerButton.A);
 
-            Assert.Equal(new[] { library.Id("Not Installed") }, playnite.OpenedGameMenus);
+            Assert.Equal(new[] { library.Id("Not Installed") }, playnite.OpenedHubs);
             Assert.Equal(new[] { "Halo Infinite", "Not Installed" }, MainList(library));
         }
 

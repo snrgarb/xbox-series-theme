@@ -53,6 +53,22 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
+        /// The Tile menu's Uninstall, confirmed: as the game menu's, through the client without its windows while
+        /// <see cref="CanUninstallSilently"/>, otherwise Playnite's own Uninstall.
+        /// </summary>
+        private void UninstallThroughTheme(Guid gameId)
+        {
+            if (CanUninstallSilently(gameId))
+            {
+                UninstallGame(gameId);
+            }
+            else
+            {
+                playnite.UninstallGame(gameId);
+            }
+        }
+
+        /// <summary>
         /// The game menu's Uninstall, for a game <see cref="CanUninstallSilently"/>: asks its client to uninstall it,
         /// follows it until the client has, and then tells of it with a "X was uninstalled" Toast. One already being
         /// uninstalled is asked once only.

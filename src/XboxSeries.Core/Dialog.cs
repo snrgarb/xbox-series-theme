@@ -193,5 +193,14 @@ namespace XboxSeries.Core
 
         /// <summary>Customise Home and Customise games &amp; apps, on the tile menu: Settings, on Theme settings' Personalisation.</summary>
         Customise,
+
+        /// <summary>The tile menu's Install, for a game not installed.</summary>
+        Install,
+
+        /// <summary>The tile menu's Uninstall, and its prompt's.</summary>
+        Uninstall,
+
+        /// <summary>The tile menu's last row, More options.</summary>
+        MoreOptions,
     }
 }

@@ -121,6 +121,16 @@
                                 <Setter TargetName="Icon" Property="Text" Value="&#xE771;" />
                                 <Setter TargetName="Option" Property="Margin" Value="0,21,0,0" />
                             </DataTrigger>
+                            <!-- The tile menu's Install, Uninstall and More options, as the theme's game menu draws them (GameMenu.xaml). -->
+                            <DataTrigger Binding="{Binding Icon}" Value="Install">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE896;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Uninstall">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE74D;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="MoreOptions">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE712;" />
+                            </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

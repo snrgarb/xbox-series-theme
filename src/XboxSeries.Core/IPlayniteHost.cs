@@ -24,7 +24,13 @@ namespace XboxSeries.Core
         /// <summary>Closes <paramref name="gameId"/>'s Game hub, if it is the one open, back to the page it was opened from.</summary>
         void CloseGameHub(Guid gameId);
 
-        /// <summary>Opens Playnite's own game menu for the game: Manage game.</summary>
+        /// <summary>Installs the game with Playnite's own Install: its library integration's route, client windows and all.</summary>
+        void InstallGame(Guid gameId);
+
+        /// <summary>Uninstalls the game with Playnite's own Uninstall: its library integration's route, client windows and all.</summary>
+        void UninstallGame(Guid gameId);
+
+        /// <summary>Opens Playnite's own game menu for the game.</summary>
         void OpenGameMenu(Guid gameId);
 
         /// <summary>Marks the game as a favourite in Playnite's library, or unmarks it.</summary>
