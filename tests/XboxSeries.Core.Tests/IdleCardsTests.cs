@@ -167,8 +167,35 @@ namespace XboxSeries.Core.Tests
             Assert.All(cards, c => Assert.Equal("Got it", c.Prompt));
             Assert.All(cards, c => Assert.Null(c.GameId));
             Assert.Equal(12, cards.Select(c => c.Title).Distinct().Count());
-            Assert.Contains("Press Y on Home to search your games and apps.", cards.Select(c => c.Title));
+            Assert.Contains("Press {Y} on Home to search your games and apps.", cards.Select(c => c.Title));
             Assert.Contains("Pick a boot video, original Xbox to Series X, in Personalisation › Start up.", cards.Select(c => c.Title));
+        }
+
+        [Fact]
+        public void A_tip_names_its_buttons_as_icons_in_its_text_and_highlights_them_on_the_controller()
+        {
+            ShowThings();
+
+            var tips = Cards(12).ToDictionary(c => c.Title);
+
+            Assert.Equal(new[] { ControllerButton.Guide }, tips["Press {Guide} anywhere, even in a game, to open the Guide."].Buttons);
+            Assert.Equal(new[] { ControllerButton.Start }, tips["Press {Start} on a game tile to play it, favourite it or manage it."].Buttons);
+            Assert.Equal(new[] { ControllerButton.Y }, tips["Press {Y} on Home to search your games and apps."].Buttons);
+            Assert.Equal(
+                new[] { ControllerButton.X, ControllerButton.Y, ControllerButton.Start },
+                tips["On the keyboard, {X} is backspace, {Y} is space, {Start} is Enter."].Buttons);
+            Assert.Equal(new[] { ControllerButton.Start }, tips["Customise Home from a tile's menu, or Settings › Theme settings › Personalisation."].Buttons);
+            Assert.Equal(new[] { ControllerButton.Guide }, tips["See what's playing in the Guide's Audio, under Now Playing."].Buttons);
+            Assert.Empty(tips["Your Score adds up achievements across every platform."].Buttons);
+        }
+
+        [Fact]
+        public void A_games_card_highlights_no_buttons()
+        {
+            library.WithGame("Hades", lastActivity: Start);
+            LibraryChanged();
+
+            Assert.Empty(ShowThingsOn(IdleCardKind.RecentlyPlayed).Buttons);
         }
 
         [Theory]
