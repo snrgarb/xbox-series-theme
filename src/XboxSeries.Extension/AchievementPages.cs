@@ -27,8 +27,11 @@ namespace XboxSeries.Extension
     /// </summary>
     internal static class AchievementPages
     {
-        /// <summary>How long the core shows an achievement's Toast before it goes.</summary>
-        public const double ShownFor = 8.5;
+        /// <summary>
+        /// How long the core shows an achievement's Toast before it goes with a description of a page or none, as the
+        /// console does; longer with more, which <see cref="Plan"/> is given.
+        /// </summary>
+        public const double ConsoleShownFor = 8.5;
 
         /// <summary>When the header's page is in, faded in as the pill unfurled.</summary>
         public const double TextInEnd = 2.386;
@@ -49,7 +52,7 @@ namespace XboxSeries.Extension
         private const double PushSpan = PushInAt + PushIn - PushAt;
 
         /// <summary>How long the console holds the header, a page of description, and the prompt, still.</summary>
-        private const double HeaderHold = PushAt - TextInEnd, PageHold = CutAt - PushInAt - PushIn, PromptHold = ShownFor - PromptEnd;
+        private const double HeaderHold = PushAt - TextInEnd, PageHold = CutAt - PushInAt - PushIn, PromptHold = ConsoleShownFor - PromptEnd;
 
         /// <summary>
         /// <paramref name="text"/> in pages of at most <see cref="LinesPerPage"/> lines, as <paramref name="linesOf"/>
@@ -77,12 +80,14 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// When the pages change, for <paramref name="descriptionPages"/> pages of description after the header. With
-        /// none, the header holds until the prompt; with one, the console's own timings; with more, each push takes the
-        /// console's time but the header, every page of description and the prompt are held for less, all in the same
-        /// proportion, so the prompt is in with time to read it before the Toast goes at <see cref="ShownFor"/>.
+        /// When the pages change, for <paramref name="descriptionPages"/> pages of description after the header, in a
+        /// Toast the core shows for <paramref name="shownFor"/> seconds. With none, the header holds until the prompt;
+        /// with one, the console's own timings; with more, each push takes the console's time and, as far as
+        /// <paramref name="shownFor"/> has room, every page is held as the console holds one, any left over going to the
+        /// prompt; with too little room, the header, every page and the prompt are held for less, all in the same
+        /// proportion, so the prompt is in with time to read it before the Toast goes.
         /// </summary>
-        public static PageTimes Plan(int descriptionPages)
+        public static PageTimes Plan(int descriptionPages, double shownFor)
         {
             if (descriptionPages <= 0)
             {
@@ -90,7 +95,7 @@ namespace XboxSeries.Extension
             }
 
             var holds = HeaderHold + descriptionPages * PageHold + PromptHold;
-            var room = ShownFor - TextInEnd - descriptionPages * PushSpan - (PromptEnd - CutAt);
+            var room = shownFor - TextInEnd - descriptionPages * PushSpan - (PromptEnd - CutAt);
             var scale = Math.Min(1, room / holds);
             var pushes = new double[descriptionPages];
             var at = TextInEnd + scale * HeaderHold;

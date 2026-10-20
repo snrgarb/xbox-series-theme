@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 
 namespace XboxSeries.Core
@@ -57,6 +58,7 @@ namespace XboxSeries.Core
         private int? score;
         private double? rarity;
         private string description;
+        private TimeSpan shownFor;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -177,6 +179,24 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// How long an achievement's Toast shows before its outro: the console's 8.5 s, and longer for a description of more
+        /// than a page, so its view can hold every page as the console holds one; zero for any other Toast. Like
+        /// <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public TimeSpan ShownFor
+        {
+            get => shownFor;
+            internal set
+            {
+                if (shownFor != value)
+                {
+                    shownFor = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShownFor)));
+                }
+            }
+        }
+
         public bool IsShown
         {
             get => isShown;
@@ -194,8 +214,10 @@ namespace XboxSeries.Core
         /// The Toast shows as told: its line, kind and image, and the achievement's name, Score, rarity and description
         /// where it has them. Every field is set at once, so nothing of the Toast before lingers on this one.
         /// </summary>
-        internal void Show(string text, ToastKind kind, string image, string detail = null, int? score = null, double? rarity = null, string description = null)
+        internal void Show(string text, ToastKind kind, string image, string detail = null, int? score = null, double? rarity = null, string description = null,
+            TimeSpan shownFor = default(TimeSpan))
         {
+            ShownFor = shownFor;
             Text = text;
             Kind = kind;
             Image = image;

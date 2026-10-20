@@ -200,7 +200,8 @@ namespace XboxSeries.Extension
             Animate(board, PagesDrift, TranslateTransform.XProperty, Jump(0, 4), Jump(TextInAt, 4), To(TextInEnd, 0, cubic));
 
             // Pushed up for each page of the description in turn, the last cut for the prompt; without one, the first page is.
-            var times = AchievementPages.Plan(descriptions.Count);
+            var shown = (DataContext as ToastState)?.ShownFor.TotalSeconds ?? 0;
+            var times = AchievementPages.Plan(descriptions.Count, shown > 0 ? shown : AchievementPages.ConsoleShownFor);
             var pages = new List<KeyValuePair<UIElement, TranslateTransform>> { new KeyValuePair<UIElement, TranslateTransform>(Page1, Page1Shift) };
             foreach (var description in descriptions)
             {
