@@ -31,6 +31,9 @@ namespace XboxSeries.Extension
         /// <summary>The category last shown, for which way along the rail focus moved to the next.</summary>
         private SettingsCategory shownCategory;
 
+        /// <summary>Theme settings' page last shown, for the box focus goes back to as it's left.</summary>
+        private ThemeSettingsPage shownPage;
+
         /// <summary>The Now Playing source's choices its open list shows, in its order; empty while it is closed.</summary>
         private List<string> shownSources = new List<string>();
 
@@ -41,14 +44,16 @@ namespace XboxSeries.Extension
             DataContext = core.Settings;
             categoryItems = new Dictionary<SettingsCategory, Button>
             {
-                [SettingsCategory.ThemeSettings] = PersonalisationItem,
+                [SettingsCategory.ThemeSettings] = ThemeSettingsItem,
                 [SettingsCategory.PlayniteSettings] = PlayniteSettingsItem,
             };
 #if DEBUG
             ShowDebugMenu();
 #endif
+            ThemeSettingsPane.Attach(core);
+            ThemeSettingsPane.BackToRail += (s, e) => ThemeSettingsItem.Focus();
             PersonalisationPane.Attach(core);
-            PersonalisationPane.BackToRail += (s, e) => PersonalisationItem.Focus();
+            PersonalisationPane.BackToThemeSettings += (s, e) => core.LeaveThemePage();
             PersonalisationPane.TitleChanged += (s, e) => ShowCategory();
             PlaynitePane.Attach(core);
             PlaynitePane.BackToRail += (s, e) => PlayniteSettingsItem.Focus();
@@ -58,6 +63,7 @@ namespace XboxSeries.Extension
             Unloaded += OnUnloaded;
             KeyDown += OnPageKeyDown;
             shownCategory = core.Settings.Category;
+            shownPage = core.Settings.ThemePage;
             ShowCategory();
         }
 
@@ -70,7 +76,7 @@ namespace XboxSeries.Extension
         /// <summary>The rail, top to bottom, the divider aside.</summary>
         private Button[] RailItems => new[]
         {
-            PersonalisationItem, GuideItem, DiscordItem, PlayniteSettingsItem, MorePlayniteOptionsItem,
+            ThemeSettingsItem, PlayniteSettingsItem, MorePlayniteOptionsItem,
 #if DEBUG
             DebugItem,
 #endif
@@ -93,6 +99,7 @@ namespace XboxSeries.Extension
 
             // Put up before the page was loaded, as when the Guide brings Playnite back from a Game hub.
             shownCategory = core.Settings.Category;
+            shownPage = core.Settings.ThemePage;
             ShowCategory();
             if (core.Settings.IsShown)
             {
@@ -135,10 +142,14 @@ namespace XboxSeries.Extension
                     }
 
                     break;
+                case nameof(SettingsState.ThemePage):
+                    ShowThemePage();
+                    break;
                 case nameof(SettingsState.IsShown):
                     // Opened or closed, the page shows its category at once, with no slide.
                     PaneFlyIn.Stop(CategoryHost);
                     shownCategory = core.Settings.Category;
+                    shownPage = core.Settings.ThemePage;
                     ShowCategory();
 
                     // Opened from the top bar or the Guide: focus goes to the category showing, the rail's first; from a
@@ -153,6 +164,81 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
+        /// Theme settings' page changed: shown in the boxes' place at once, as Personalisation's own pages are, with no
+        /// slide. Opened from a box, focus goes to the page's first option; left from the page, back to the box that
+        /// opened it. Changed with focus elsewhere, as the rail's Theme settings taking it back to its boxes, focus stays.
+        /// </summary>
+        private void ShowThemePage()
+        {
+            var left = shownPage;
+            shownPage = core.Settings.ThemePage;
+            var fromBoxes = ThemeSettingsPane.IsKeyboardFocusWithin;
+            var fromPage = PaneOf(left)?.IsKeyboardFocusWithin == true;
+            ShowCategory();
+            if (!core.Settings.IsShown)
+            {
+                return;
+            }
+
+            if (shownPage != ThemeSettingsPage.None && fromBoxes)
+            {
+                FocusSoon(() => FocusThemePage(shownPage));
+            }
+            else if (shownPage == ThemeSettingsPage.None && fromPage)
+            {
+                FocusSoon(() => ThemeSettingsPane.FocusBox(left));
+            }
+        }
+
+        /// <summary>The pane showing a page of Theme settings; none for its boxes.</summary>
+        private FrameworkElement PaneOf(ThemeSettingsPage page)
+        {
+            switch (page)
+            {
+                case ThemeSettingsPage.Personalisation: return PersonalisationPane;
+                case ThemeSettingsPage.Guide: return GuidePane;
+                case ThemeSettingsPage.Discord: return DiscordPane;
+                default: return null;
+            }
+        }
+
+        /// <summary>
+        /// A page of Theme settings' first option: Personalisation's first box, the Now Playing source's box, or Discord's
+        /// Type for the Client ID; for none, the first of Theme settings' own boxes.
+        /// </summary>
+        private void FocusThemePage(ThemeSettingsPage page)
+        {
+            switch (page)
+            {
+                case ThemeSettingsPage.Personalisation:
+                    PersonalisationPane.FocusFirst();
+                    break;
+                case ThemeSettingsPage.Guide:
+                    NowPlayingSourceBox.Focus();
+                    break;
+                case ThemeSettingsPage.Discord:
+                    TypeClientIdButton.Focus();
+                    break;
+                default:
+                    ThemeSettingsPane.FocusFirst();
+                    break;
+            }
+        }
+
+        /// <summary>Focuses once the pane just shown is laid out, while the page is still up.</summary>
+        private void FocusSoon(Action focus)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (core.Settings.IsShown && IsVisible)
+                {
+                    UpdateLayout();
+                    focus();
+                }
+            }));
+        }
+
+        /// <summary>
         /// As focus moves along the rail, the new category comes in from below for a move down it, or from above for a
         /// move up. Changed any other way, as the page opening, it is just there.
         /// </summary>
@@ -164,30 +250,36 @@ namespace XboxSeries.Extension
                 core.Settings.IsShown && Rail.IsKeyboardFocusWithin, CategoryHost);
         }
 
-        /// <summary>The header and the lit rail item.</summary>
+        /// <summary>The header, the pane showing, and the lit rail item.</summary>
         private void ShowCategory()
         {
             var category = core.Settings.Category;
+            var themeSettings = category == SettingsCategory.ThemeSettings;
+            var page = themeSettings ? core.Settings.ThemePage : ThemeSettingsPage.None;
 
             // Personalisation's pages each have their own header; left or closed, it's back on its boxes for next time.
-            if (category != SettingsCategory.ThemeSettings || !core.Settings.IsShown)
+            if (page != ThemeSettingsPage.Personalisation || !core.Settings.IsShown)
             {
                 PersonalisationPane.Reset();
             }
 
-            Header.Text = category == SettingsCategory.ThemeSettings ? PersonalisationPane.Title
+            Header.Text = page == ThemeSettingsPage.Personalisation ? PersonalisationPane.Title
+                : page == ThemeSettingsPage.Guide ? "Guide"
+                : page == ThemeSettingsPage.Discord ? "Discord"
+                : themeSettings ? "Theme settings"
                 : category == SettingsCategory.PlayniteSettings ? "Playnite settings"
                 : category.ToString();
 
             // Left or closed, the Guide's dropdown is closed for next time.
-            if (core.Settings.ThemePage != ThemeSettingsPage.Guide || !core.Settings.IsShown)
+            if (page != ThemeSettingsPage.Guide || !core.Settings.IsShown)
             {
                 CloseNowPlayingSources();
             }
 
-            PersonalisationPane.Visibility = category == SettingsCategory.ThemeSettings ? Visibility.Visible : Visibility.Collapsed;
-            GuidePane.Visibility = core.Settings.ThemePage == ThemeSettingsPage.Guide ? Visibility.Visible : Visibility.Collapsed;
-            DiscordPane.Visibility = core.Settings.ThemePage == ThemeSettingsPage.Discord ? Visibility.Visible : Visibility.Collapsed;
+            ThemeSettingsPane.Visibility = themeSettings && page == ThemeSettingsPage.None ? Visibility.Visible : Visibility.Collapsed;
+            PersonalisationPane.Visibility = page == ThemeSettingsPage.Personalisation ? Visibility.Visible : Visibility.Collapsed;
+            GuidePane.Visibility = page == ThemeSettingsPage.Guide ? Visibility.Visible : Visibility.Collapsed;
+            DiscordPane.Visibility = page == ThemeSettingsPage.Discord ? Visibility.Visible : Visibility.Collapsed;
             PlaynitePane.Visibility = category == SettingsCategory.PlayniteSettings ? Visibility.Visible : Visibility.Collapsed;
 #if DEBUG
             // As Personalisation's, the Debug menu's pages each have their own header and start again on its boxes.
@@ -230,28 +322,18 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Up and down move through the rail, over the divider, and stay put at its ends: Home is hidden behind the page.
-        /// The pad's A opens More Playnite options. Right or A on Personalisation, Guide, Discord or Playnite settings moves
-        /// into its options; Left and Right go nowhere else: More Playnite options has no options to move into.
+        /// The pad's A opens More Playnite options. Right or A on Theme settings or Playnite settings moves into its boxes;
+        /// Left and Right go nowhere else: More Playnite options has no options to move into.
         /// </summary>
         private void OnRailKeyDown(object sender, KeyEventArgs e)
         {
             var items = RailItems;
             var here = Array.IndexOf(items, e.OriginalSource as Button);
             var pad = PlayniteInput.PadButtonOf(e);
-            if (e.OriginalSource == PersonalisationItem && (pad == ControllerInput.A || e.Key == Key.Right))
+            if (e.OriginalSource == ThemeSettingsItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
                 e.Handled = true;
-                PersonalisationPane.FocusFirst();
-            }
-            else if (e.OriginalSource == GuideItem && (pad == ControllerInput.A || e.Key == Key.Right))
-            {
-                e.Handled = true;
-                NowPlayingSourceBox.Focus();
-            }
-            else if (e.OriginalSource == DiscordItem && (pad == ControllerInput.A || e.Key == Key.Right))
-            {
-                e.Handled = true;
-                TypeClientIdButton.Focus();
+                ThemeSettingsPane.FocusFirst();
             }
             else if (e.OriginalSource == PlayniteSettingsItem && (pad == ControllerInput.A || e.Key == Key.Right))
             {
@@ -282,8 +364,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The pad in the Guide's options. On the Now Playing source's box: A opens its list, Left or B goes back to the
-        /// rail's Guide. In the open list: up and down move through the choices, staying put at its ends, A chooses the
+        /// The pad in the Guide's options. On the Now Playing source's box: A opens its list, Left or B goes back to
+        /// Theme settings' boxes, focus on Guide. In the open list: up and down move through the choices, staying put at its ends, A chooses the
         /// one focused and B closes it unchanged, focus going back to the box either way.
         /// </summary>
         private void OnGuidePaneKeyDown(object sender, KeyEventArgs e)
@@ -300,7 +382,7 @@ namespace XboxSeries.Extension
                 {
                     // Handled here, before the page's B takes it back to where Settings was opened from.
                     e.Handled = true;
-                    GuideItem.Focus();
+                    core.LeaveThemePage();
                 }
                 else if (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Right)
                 {
@@ -414,7 +496,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The pad in Discord's options: up and down between its rows, left and right along Type and Paste or Connect and
-        /// Disconnect, Left from the first column or B back to the rail's Discord, and A presses the button focused.
+        /// Disconnect, Left from the first column or B back to Theme settings' boxes, focus on Discord, and A presses the
+        /// button focused.
         /// </summary>
         private void OnDiscordPaneKeyDown(object sender, KeyEventArgs e)
         {
@@ -442,7 +525,7 @@ namespace XboxSeries.Extension
             {
                 // Handled here, before the page's B takes it back to where Settings was opened from.
                 e.Handled = true;
-                DiscordItem.Focus();
+                core.LeaveThemePage();
             }
             else if (e.Key == Key.Left || e.Key == Key.Right)
             {
@@ -588,8 +671,9 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Focuses the category showing once the page is laid out, or, opened by a tile under Home's Recent row, the option
-        /// it came for: Discord's Client ID, or the Playnite settings box.
+        /// Focuses the category showing once the page is laid out, or, opened by a tile under Home's Recent row or the Tile
+        /// menu's Customise, the page or option it came for: Discord's Client ID, Personalisation's first box, or the
+        /// Playnite settings box.
         /// </summary>
         private void FocusRailSoon()
         {
@@ -600,9 +684,10 @@ namespace XboxSeries.Extension
                     return;
                 }
 
-                if (core.Settings.OpensInPane && core.Settings.ThemePage == ThemeSettingsPage.Discord)
+                if (core.Settings.OpensInPane && core.Settings.Category == SettingsCategory.ThemeSettings
+                    && core.Settings.ThemePage != ThemeSettingsPage.None)
                 {
-                    TypeClientIdButton.Focus();
+                    FocusThemePage(core.Settings.ThemePage);
                 }
                 else if (core.Settings.OpensInPane && core.Settings.Category == SettingsCategory.PlayniteSettings)
                 {
