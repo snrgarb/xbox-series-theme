@@ -111,7 +111,7 @@ One console generation's boot animation, from the original Xbox to the Series X,
 _Avoid_: intro video, splash
 
 **Profile**:
-One person who plays on this PC: a gamertag, a real name and a picture, kept in the extension's encrypted store. It is identity only; the **Bundle**'s options are shared by every Profile. The first is made from the Windows user; the one signed in shows on the **Status area** and the **Guide**'s Profile & system, with its achievement totals under it: the **Score** total, the achievements unlocked and the last three unlocks, newest first. Those come from this PC's library, as PlayniteAchievements keeps nothing per Profile, so every Profile shows the same totals.
+One person who plays on this PC: a gamertag, a real name and a picture, kept in the extension's encrypted store. It is identity only; the **Bundle**'s options are shared by every Profile. The first is made from the Windows user; the one signed in shows on the **Status area**, with the **Score** total under its gamertag on **Home**'s top bar, and on the **Guide**'s Profile & system, with its achievement totals under it: the **Score** total, the achievements unlocked and the last three unlocks, newest first. Those come from this PC's library, as PlayniteAchievements keeps nothing per Profile, so every Profile shows the same totals.
 _Avoid_: account, user (that is the Windows user), gamer
 
 **Who's playing today?**:
@@ -155,8 +155,8 @@ An achievement fewer than 10% of players have unlocked, as the console's rule; o
 _Avoid_: ultra rare, legendary
 
 **Score**:
-What an achievement is worth, from its rarity, the share of players who have unlocked it, as achievements on this PC have no Xbox points: 1% or less is 100, 5% or less 50, 10% or less 30, 25% or less 20, 50% or less 15, and anything commoner, or of unknown rarity, 10. The Achievement unlocked **Toast** shows it, and the **Profile**'s totals add it up.
-_Avoid_: Gamerscore (that is Xbox's own, which these aren't), points
+What an achievement is worth: its platform's own points where PlayniteAchievements records them (Xbox's Gamerscore, RetroAchievements' points, Epic's XP), else from its rarity, the share of players who have unlocked it, as Steam, GOG and PSN have no points: 1% or less is 100, 5% or less 50, 10% or less 30, 25% or less 20, 50% or less 15, and anything commoner, or of unknown rarity, 10. The Achievement unlocked **Toast** shows it, and the **Profile**'s totals add it up over every platform's games.
+_Avoid_: Gamerscore (that is Xbox's own, only part of the total), points (that is a platform's own, which a Score may or may not be)
 
 **Guide button**:
 The Xbox logo button in the centre of an Xbox controller.
