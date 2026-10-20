@@ -24,7 +24,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void The_dim_is_a_40_percent_black_over_the_whole_window_starting_clear()
         {
-            var shade = Dim().Elements().Single(e => (string)e.Attribute(X + "Name") == "Shade");
+            var shade = Dim().Descendants().Single(e => (string)e.Attribute(X + "Name") == "Shade");
             var color = (string)shade.Attribute("Background");
             Assert.Matches("^#[0-9A-Fa-f]{8}$", color);
             Assert.Equal("000000", color.Substring(3));
