@@ -40,6 +40,10 @@ namespace XboxSeries.Extension
             if (msg == NativeMethods.WM_HOTKEY && wParam.ToInt32() == HotkeyId)
             {
                 logger.Info("Debug Guide hotkey G pressed");
+
+                // A hotkey never reaches WPF's input, where the Idle screen hears of every other: told here, as the pad's
+                // Guide is, so a tap that only wakes the screen is swallowed by the core as it reaches it.
+                core.OnUserInput(ControllerButton.Guide);
                 core.OnControllerButton(ControllerButton.Guide, ButtonState.Pressed);
                 core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
                 handled = true;
