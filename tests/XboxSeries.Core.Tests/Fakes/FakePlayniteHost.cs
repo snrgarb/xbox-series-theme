@@ -60,11 +60,6 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void UninstallGame(Guid gameId) => PlayniteUninstalls.Add(gameId);
 
-        /// <summary>Every game whose game menu Playnite was asked to open, in order.</summary>
-        public List<Guid> OpenedGameMenus { get; } = new List<Guid>();
-
-        public void OpenGameMenu(Guid gameId) => OpenedGameMenus.Add(gameId);
-
         /// <summary>Every non-play action Playnite was asked to run, by its place among the game's, in order.</summary>
         public List<(Guid GameId, int Index)> RanActions { get; } = new List<(Guid, int)>();
 

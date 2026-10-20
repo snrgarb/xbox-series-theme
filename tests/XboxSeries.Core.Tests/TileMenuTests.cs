@@ -240,7 +240,6 @@ namespace XboxSeries.Core.Tests
 
             Assert.Null(core.Home.TileMenu);
             Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
-            Assert.Empty(playnite.OpenedGameMenus);
         }
 
         [Fact]
@@ -673,6 +672,96 @@ namespace XboxSeries.Core.Tests
 
             core.ChooseOption(manage);
             Assert.Equal(new[] { library.Id("Hades") }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Opened_from_the_Game_hub_the_menu_has_no_Manage_game()
+        {
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: true);
+
+            Assert.Equal("Hades", core.Home.TileMenu.Title);
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Uninstall", "Customise Home", "More options" }, Options());
+            Assert.Equal("Play game", core.Home.TileMenu.FocusedOption.Label);
+        }
+
+        [Fact]
+        public void Opened_from_Playnites_own_grid_the_menu_has_Manage_game()
+        {
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: false);
+
+            Assert.Equal(new[] { "Play game", "Add to Favourites", "Manage game", "Uninstall", "Customise Home", "More options" }, Options());
+        }
+
+        [Fact]
+        public void The_Game_hubs_menu_opens_nothing_over_the_Guide_or_a_menu_already_up()
+        {
+            Tap(ControllerButton.Guide);
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: true);
+            Assert.Null(core.Home.TileMenu);
+
+            Tap(ControllerButton.B);
+            clock.Advance(TimeSpan.FromSeconds(1));
+            OpenMenuOn("Tunic");
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: true);
+            Assert.Equal("Tunic", core.Home.TileMenu.Title);
+        }
+
+        [Fact]
+        public void The_Game_hubs_menu_for_a_game_no_longer_in_the_library_opens_nothing()
+        {
+            core.OpenTileMenu(Guid.NewGuid(), fromGameHub: true);
+
+            Assert.Null(core.Home.TileMenu);
+        }
+
+        [Fact]
+        public void The_menu_holds_every_button_while_it_is_up()
+        {
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: true);
+
+            Assert.True(core.TileMenuHolds(ControllerButton.A));
+            Assert.True(core.TileMenuHolds(ControllerButton.B));
+            Assert.True(core.TileMenuHolds(ControllerButton.Start));
+        }
+
+        [Fact]
+        public void The_A_that_chose_from_the_menu_is_held_until_it_is_released()
+        {
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: true);
+
+            // Play game: the menu closes on the press, and the hub's own Play under it mustn't get the same press.
+            Press(ControllerButton.A);
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.True(core.TileMenuHolds(ControllerButton.A));
+            Assert.False(core.TileMenuHolds(ControllerButton.B));
+
+            Release(ControllerButton.A);
+
+            Assert.False(core.TileMenuHolds(ControllerButton.A));
+        }
+
+        [Fact]
+        public void The_B_that_closed_the_menu_is_held_until_it_is_released_so_the_hub_stays_open()
+        {
+            core.OpenTileMenu(library.Id("Hades"), fromGameHub: true);
+
+            Press(ControllerButton.B);
+
+            Assert.Null(core.Home.TileMenu);
+            Assert.True(core.TileMenuHolds(ControllerButton.B));
+
+            Release(ControllerButton.B);
+
+            Assert.False(core.TileMenuHolds(ControllerButton.B));
+        }
+
+        [Fact]
+        public void With_no_menu_up_nothing_is_held()
+        {
+            Press(ControllerButton.A);
+
+            Assert.False(core.TileMenuHolds(ControllerButton.A));
         }
 
         private HomeTile RecentTile(string title) => core.Home.RecentRow.Single(t => t.Title == title);

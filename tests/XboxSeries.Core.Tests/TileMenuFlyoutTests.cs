@@ -35,7 +35,6 @@ namespace XboxSeries.Core.Tests
             Assert.NotNull(core.Home.TileMenuFlyout);
             Assert.Equal("Hades", core.Home.TileMenu.Title);
             Assert.Equal("More options", core.Home.TileMenu.FocusedOption.Label);
-            Assert.Empty(playnite.OpenedGameMenus);
         }
 
         [Fact]

@@ -7,7 +7,8 @@ namespace XboxSeries.Core
     /// <summary>
     /// The Dashboard's hint bar (<see cref="HomeState.Hints"/>): More options while what has focus has a menu. A game tile
     /// with a Tile menu tells the core it has focus already, for Menu; Playnite's own grid and the Game hub, where Menu
-    /// opens Playnite's Manage game, say so here. The bar only binds to the result.
+    /// opens the Tile menu through Playnite's own binding (<see cref="OpenTileMenu"/>), say so here. The bar only binds to
+    /// the result.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -26,7 +27,7 @@ namespace XboxSeries.Core
         private HomeTile hintedTile;
         private bool hintedTileOnRecentRow;
 
-        /// <summary>A game in Playnite's own grid, Games' or Full library's, got focus: Menu there opens Playnite's Manage game.</summary>
+        /// <summary>A game in Playnite's own grid, Games' or Full library's, got focus: Menu there opens the Tile menu.</summary>
         public void FocusGameGrid()
         {
             gameGridFocused = true;
@@ -41,8 +42,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Game hub has the pad: focus is on it, where Menu opens Playnite's Manage game. Manage game's own window, or
-        /// a dialog's, takes focus from the hub as it opens, and <see cref="LeaveGameHub"/> says so.
+        /// The Game hub has the pad: focus is on it, where Menu opens the Tile menu. A window of Playnite's, or a dialog's,
+        /// takes focus from the hub as it opens, and <see cref="LeaveGameHub"/> says so; the Tile menu leaves focus there.
         /// </summary>
         public void FocusGameHub()
         {
@@ -50,7 +51,7 @@ namespace XboxSeries.Core
             RefreshHints();
         }
 
-        /// <summary>Focus left the Game hub: it closed, or Manage game or a dialog took the pad.</summary>
+        /// <summary>Focus left the Game hub: it closed, or a window of Playnite's or a dialog took the pad.</summary>
         public void LeaveGameHub()
         {
             gameHubFocused = false;

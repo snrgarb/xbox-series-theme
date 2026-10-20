@@ -11,7 +11,7 @@ namespace XboxSeries.Extension
     /// and decides nothing itself: it shows while there are any and hides once there are none.
     /// It also tells the core when focus is on Playnite's own parts with a menu, which no control of the extension's is
     /// on to report: a game in My games &amp; apps' grid (Playnite's main list) and the Game hub. Each loses focus as
-    /// Playnite leaves the foreground, as when Manage game or a dialog opens in its own window.
+    /// Playnite leaves the foreground, as when a dialog opens in its own window.
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
     public partial class HintBarControl : PluginUserControl

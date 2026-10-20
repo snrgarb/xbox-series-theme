@@ -343,15 +343,14 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Menu_on_the_hub_is_left_to_Playnites_Manage_game()
+        public void Menu_on_the_hub_comes_through_its_own_binding_not_the_pad()
         {
             core.FocusGameHub();
 
             Tap(ControllerButton.Start);
 
-            // Playnite opens Manage game itself from the hub; the core opens nothing of its own over it.
+            // The hub's Menu binding asks for the Tile menu itself (OpenTileMenu); the pad alone opens nothing more over it.
             Assert.Null(core.Home.TileMenu);
-            Assert.Empty(playnite.OpenedGameMenus);
         }
 
         [Fact]

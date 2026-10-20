@@ -148,8 +148,11 @@ namespace XboxSeries.Core
         private IDisposable heroTimer;
         private HomeTile focusedTile;
 
-        /// <summary>Whether A, still held, answered the tile menu: Playnite's own Enter for it must not choose the tile.</summary>
-        private bool tileMenuHoldsA;
+        /// <summary>
+        /// The buttons pressed while the tile menu had the pad and not yet released: Playnite's own copies of such a press
+        /// mustn't reach what lies under the menu, even once the press has closed it (<see cref="TileMenuHolds"/>).
+        /// </summary>
+        private readonly HashSet<ControllerButton> tileMenuHeld = new HashSet<ControllerButton>();
 
         /// <summary>
         /// The filter and sort My games &amp; apps last put on the main list, with the user's own kept to give back; null
@@ -633,12 +636,13 @@ namespace XboxSeries.Core
                     StopRepeat();
                 }
 
-                if (button == ControllerButton.A)
-                {
-                    tileMenuHoldsA = false;
-                }
-
+                tileMenuHeld.Remove(button);
                 return;
+            }
+
+            if (Home.TileMenu != null && !Guide.IsOpen)
+            {
+                tileMenuHeld.Add(button);
             }
 
             var dialog = ActiveDialog;
@@ -668,8 +672,6 @@ namespace XboxSeries.Core
             }
             else if (button == ControllerButton.A && dialog != null)
             {
-                // With the Guide closed, the dialog is the tile menu's, or its flyout's, over a tile.
-                tileMenuHoldsA = !Guide.IsOpen;
                 Choose(dialog, dialog.FocusedOption);
                 AfterAnswer(handBack => Dismiss(button, handBack));
             }
@@ -688,8 +690,8 @@ namespace XboxSeries.Core
             else if (button == ControllerButton.Back && dialog == null && TileHasThePad
                 && MyGames.IsShown && MyGames.Item == MyGamesItem.ManageQueue)
             {
-                // Manage Queue's hint bar offers View for Manage game, on its rows and Recently installed covers alike.
-                playnite.OpenGameMenu(focusedTile.GameId);
+                // Manage Queue's hint bar offers View for the Tile menu, on its rows and Recently installed covers alike.
+                ShowTileMenu(focusedTile);
             }
             else if (button == ControllerButton.A && dialog == null && TileHasThePad)
             {
@@ -1169,7 +1171,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void ChooseHomeTile(HomeTile tile)
         {
-            if (tileMenuHoldsA || TextEntry.IsShown)
+            if (TileMenuHolds(ControllerButton.A) || TextEntry.IsShown)
             {
                 return;
             }
@@ -1400,8 +1402,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Game hub and Playnite's game menu are for the main list's selected game, so a Play history game opening
-        /// either has to be in the list, which Games' filter or the user's own can leave it out of, uninstalled say. The
+        /// The Game hub is for the main list's selected game, so a Play history game opening its hub has to be in the
+        /// list, which Games' filter or the user's own can leave it out of, uninstalled say. The
         /// main list, hidden behind Play history's own, takes every game Play history lists only now, as one opens, not on
         /// every visit to Play history, which had Playnite refilter and sort it for nothing.
         /// </summary>

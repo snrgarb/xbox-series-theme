@@ -293,7 +293,7 @@ namespace XboxSeries.Core
 
     /// <summary>
     /// One game in the queue, as Manage Queue's row and the nav's block above All storage show it. Its tile takes focus,
-    /// A and Menu as a Home tile does; View opens Manage game.
+    /// A and Menu as a Home tile does; View opens its Tile menu too.
     /// </summary>
     public sealed class QueueEntry
     {
