@@ -171,6 +171,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_wake_press_the_pad_reports_before_Playnite_routes_it_is_swallowed_as_routed_too()
+        {
+            FocusRecentTile();
+            Wait(2);
+
+            core.OnControllerButton(ControllerButton.A, ButtonState.Pressed);
+            Assert.True(core.OnUserInput(ControllerButton.A));
+            core.OnControllerButton(ControllerButton.A, ButtonState.Released);
+            Wait(0.1);
+
+            Assert.Empty(playnite.OpenedHubs);
+            Assert.False(core.OnUserInput(ControllerButton.A));
+        }
+
+        [Fact]
         public void The_Guide_button_tapped_while_dimmed_wakes_the_screen_without_opening_the_Guide()
         {
             Wait(2);
