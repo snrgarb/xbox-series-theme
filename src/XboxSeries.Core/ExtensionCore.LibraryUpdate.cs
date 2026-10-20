@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
 
 namespace XboxSeries.Core
 {
@@ -10,19 +12,174 @@ namespace XboxSeries.Core
     /// </summary>
     public sealed partial class ExtensionCore
     {
+        /// <summary>
+        /// The secret store's name for the Playnite settings category's options, as JSON: Update after downloads. Not
+        /// secret, but the store keeps the extension's own options.
+        /// </summary>
+        private const string PlayniteSettingsSecret = "PlayniteSettings";
+
+        /// <summary>The Library updated Toast's line.</summary>
+        private const string LibraryUpdated = "Library updated";
+
+        /// <summary>
+        /// How long after the last game finished downloading the library update waits, so several finishing close
+        /// together give one update.
+        /// </summary>
+        private static readonly TimeSpan UpdateAfterDownloadsQuiet = TimeSpan.FromSeconds(10);
+
+        /// <summary>
+        /// How often the library update, held off while a game is played or launching or while Playnite runs a library
+        /// task of its own, looks again whether it can start.
+        /// </summary>
+        private static readonly TimeSpan HeldUpdateRecheck = TimeSpan.FromSeconds(5);
+
+        /// <summary>The games seen to finish downloading that the next library update is for, in the order they finished.</summary>
+        private readonly List<Guid> finishedDownloads = new List<Guid>();
+
+        /// <summary>The wait before the library update starts; null with none.</summary>
+        private IDisposable libraryUpdateTimer;
+
+        /// <summary>Whether the library update after downloads, or the metadata download that follows it, is going.</summary>
+        private bool libraryUpdateRunning;
+
         /// <summary>Update after downloads, on or off, saved at once.</summary>
         public void SetUpdateAfterDownloads(bool on)
         {
+            Settings.Playnite.UpdateAfterDownloads = on;
+            secrets.Write(PlayniteSettingsSecret, JsonConvert.SerializeObject(new SavedPlayniteSettings { UpdateAfterDownloads = on }));
+
+            // Turned off, games already finished are let go: turning it back on doesn't bring their update back.
+            if (!on)
+            {
+                finishedDownloads.Clear();
+                libraryUpdateTimer?.Dispose();
+                libraryUpdateTimer = null;
+            }
         }
 
-        /// <summary>The Download metadata box: metadata for every game missing it, with Playnite's progress bar and no Toast.</summary>
+        /// <summary>
+        /// The Download metadata box: metadata for every game missing it, with Playnite's progress bar and no Toast. It
+        /// does nothing while it is already going, or beside the update after downloads or a library task of Playnite's
+        /// own, whose progress bar is already up.
+        /// </summary>
         public void DownloadMissingMetadata()
         {
+            if (Settings.Playnite.IsDownloadingMetadata || libraryUpdateRunning || playnite.IsLibraryBusy)
+            {
+                return;
+            }
+
+            Settings.Playnite.IsDownloadingMetadata = true;
+            playnite.DownloadMissingMetadata(() => Settings.Playnite.IsDownloadingMetadata = false);
         }
 
-        /// <summary>B or Cancel while the Download metadata box's run is going: stops it.</summary>
+        /// <summary>
+        /// B or Cancel while the Download metadata box's run is going: stops it. It reads as going until Playnite says it
+        /// has stopped.
+        /// </summary>
         public void CancelMetadataDownload()
         {
+            if (Settings.Playnite.IsDownloadingMetadata)
+            {
+                playnite.CancelLibraryTask();
+            }
+        }
+
+        /// <summary>
+        /// The Playnite settings category's options saved before, read when the core is made; with none saved, or none
+        /// readable, Update after downloads is on.
+        /// </summary>
+        private void LoadPlayniteSettings()
+        {
+            SavedPlayniteSettings saved;
+            try
+            {
+                var json = secrets.Read(PlayniteSettingsSecret);
+                saved = json == null ? null : JsonConvert.DeserializeObject<SavedPlayniteSettings>(json);
+            }
+            catch (JsonException)
+            {
+                saved = null;
+            }
+
+            Settings.Playnite.UpdateAfterDownloads = saved?.UpdateAfterDownloads ?? true;
+        }
+
+        /// <summary>
+        /// A game seen to finish downloading, with Update after downloads on: the library update waits <see cref="UpdateAfterDownloadsQuiet"/> from now,
+        /// for any others finishing with it.
+        /// </summary>
+        private void NoteFinishedDownload(Guid gameId)
+        {
+            if (!Settings.Playnite.UpdateAfterDownloads)
+            {
+                return;
+            }
+
+            if (!finishedDownloads.Contains(gameId))
+            {
+                finishedDownloads.Add(gameId);
+            }
+
+            WaitForQuietThenUpdate();
+        }
+
+        /// <summary>The library update starts <see cref="UpdateAfterDownloadsQuiet"/> from now, unless another game finishes first.</summary>
+        private void WaitForQuietThenUpdate()
+        {
+            libraryUpdateTimer?.Dispose();
+            libraryUpdateTimer = clock.After(UpdateAfterDownloadsQuiet, StartLibraryUpdate);
+        }
+
+        /// <summary>
+        /// The library update after downloads starts, with Playnite's progress bar, once no game is played and Playnite
+        /// has no library task of its own going; then metadata for the games that
+        /// finished and those it added; then the Library updated Toast waits its turn.
+        /// </summary>
+        private void StartLibraryUpdate()
+        {
+            libraryUpdateTimer = null;
+
+            // Games finishing while one runs are for the next, which waits for this one's end.
+            if (libraryUpdateRunning || finishedDownloads.Count == 0)
+            {
+                return;
+            }
+
+            // Never while a game is played, or about to be, nor beside the Download metadata box's run or a library task
+            // of Playnite's own, whose progress bar is up: it looks again a little later.
+            if (runningGame != null || IsQuittingOrLaunching || Settings.Playnite.IsDownloadingMetadata || playnite.IsLibraryBusy)
+            {
+                libraryUpdateTimer = clock.After(HeldUpdateRecheck, StartLibraryUpdate);
+                return;
+            }
+
+            var finished = finishedDownloads.ToList();
+            finishedDownloads.Clear();
+            libraryUpdateRunning = true;
+            playnite.UpdateLibrary(gamesAdded =>
+            {
+                var games = finished.Concat(gamesAdded).Distinct().ToList();
+                playnite.DownloadMetadata(games, () =>
+                {
+                    libraryUpdateRunning = false;
+                    EnqueueToast(new WaitingToast(LibraryUpdated, ToastKind.LibraryUpdated, null, detail: GamesAddedLine(gamesAdded.Count)));
+                    if (finishedDownloads.Count > 0)
+                    {
+                        WaitForQuietThenUpdate();
+                    }
+                });
+            });
+        }
+
+        /// <summary>The Library updated Toast's second line: "&lt;n&gt; games added", "1 game added", or none for none.</summary>
+        private static string GamesAddedLine(int count) =>
+            count == 0 ? null : count == 1 ? "1 game added" : count + " games added";
+
+        /// <summary>The Playnite settings category's options as saved.</summary>
+        private sealed class SavedPlayniteSettings
+        {
+            public bool? UpdateAfterDownloads { get; set; }
         }
     }
 }
