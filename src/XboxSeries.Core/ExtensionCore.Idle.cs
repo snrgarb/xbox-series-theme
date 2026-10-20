@@ -196,6 +196,7 @@ namespace XboxSeries.Core
             dimTimer = null;
             showThingsTimer?.Dispose();
             showThingsTimer = null;
+            StopIdleCards();
             Idle.Stage = IdleStage.Awake;
             if (idlePaused)
             {
@@ -228,6 +229,7 @@ namespace XboxSeries.Core
                     if (IdleTimerMayAct())
                     {
                         Idle.Stage = IdleStage.ShowingThings;
+                        StartIdleCards();
                     }
                 });
             }
