@@ -464,6 +464,35 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void An_unlock_heard_live_before_the_first_read_is_no_recent_unlock_as_it_makes_no_totals()
+        {
+            var hades = GameWithAchievements("Hades", 0, 2);
+            LibraryChanged();
+
+            core.OnAchievementUnlocked(hades, new Achievement("Hades0", "Hades 0", "h.png", 50, Start));
+
+            Assert.Empty(FirstRound(IdleCardKind.RecentUnlock));
+        }
+
+        [Fact]
+        public void Waking_takes_the_card_once_the_screen_is_awake_so_the_view_hides_it_with_the_dim()
+        {
+            ShowThings();
+            var dimmedAsTheCardWent = (bool?)null;
+            core.Idle.PropertyChanged += (sender, e) =>
+            {
+                if (e.PropertyName == nameof(IdleState.Card) && core.Idle.Card == null)
+                {
+                    dimmedAsTheCardWent = core.Idle.IsDimmed;
+                }
+            };
+
+            core.OnUserInput();
+
+            Assert.False(dimmedAsTheCardWent);
+        }
+
+        [Fact]
         public void Without_PlayniteAchievements_only_recently_played_and_tips_cycle()
         {
             GameWithAchievements("Hades", 3, 10);

@@ -299,6 +299,9 @@ namespace XboxSeries.Core
         private IEnumerable<GameAchievement> RecordedUnlocks() =>
             recordedAchievements.SelectMany(g => g.Achievements.Where(a => a.UnlockedAt != null).Select(a => new GameAchievement(g.GameId, a)));
 
+        /// <summary>Every unlock: those in the games' achievements as last read, and those heard live that no read has shown yet.</summary>
+        private IEnumerable<GameAchievement> AllUnlocks() => RecordedUnlocks().Concat(liveUnlocks);
+
         /// <summary>
         /// The Profile's totals and last unlocks, over every game this PC has achievements for; none at all without
         /// PlayniteAchievements, with no game having any, or before the first read, so unlocks heard live never make
@@ -315,9 +318,7 @@ namespace XboxSeries.Core
             }
             else
             {
-                var unlocked = RecordedUnlocks()
-                    .Concat(liveUnlocks)
-                    .ToList();
+                var unlocked = AllUnlocks().ToList();
                 Guide.Achievements = new ProfileAchievements(unlocked.Sum(u => ScoreOf(u.Achievement)), unlocked.Count);
                 recentAchievements = unlocked.OrderByDescending(u => u.Achievement.UnlockedAt).Take(RecentAchievementCount).ToList();
             }
