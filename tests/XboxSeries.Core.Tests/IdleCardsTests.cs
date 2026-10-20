@@ -422,5 +422,70 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal("2 of 3 unlocked · Next: Hades 2", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
         }
+
+        [Fact]
+        public void Recent_unlocks_holds_the_last_five_unlocks_with_their_icon_name_game_and_when()
+        {
+            var hades = Guid.NewGuid();
+            var celeste = Guid.NewGuid();
+            library.WithGame(hades, "Hades").WithGame(celeste, "Celeste");
+            achievements.Recorded.Add(new GameAchievements(hades, Enumerable.Range(1, 4)
+                .Select(i => new Achievement("h" + i, "Hades " + i, "h" + i + ".png", 50, Start.AddDays(-i * 2)))
+                .ToList()));
+            achievements.Recorded.Add(new GameAchievements(celeste, Enumerable.Range(1, 3)
+                .Select(i => new Achievement("c" + i, "Celeste " + i, "c" + i + ".png", 50, Start.AddDays(-i * 2 - 1)))
+                .Concat(new[] { new Achievement("locked", "Locked", null, 50, null) })
+                .ToList()));
+            AchievementsRead();
+
+            var unlocks = FirstRound(IdleCardKind.RecentUnlock);
+
+            Assert.Equal(new[] { "Celeste 1", "Celeste 2", "Hades 1", "Hades 2", "Hades 3" }, unlocks.Select(c => c.Title).OrderBy(t => t));
+            var celeste2 = unlocks.Single(c => c.Title == "Celeste 2");
+            Assert.Equal("c2.png", celeste2.Icon);
+            Assert.Equal("Celeste · Unlocked 5 days ago", celeste2.Detail);
+            Assert.Null(celeste2.Art);
+            Assert.Equal("Hades · Unlocked 2 days ago", unlocks.Single(c => c.Title == "Hades 1").Detail);
+        }
+
+        [Fact]
+        public void An_unlock_heard_live_is_a_recent_unlock_and_one_of_a_hidden_or_unknown_game_is_not()
+        {
+            var hades = GameWithAchievements("Hades", 0, 2);
+            var hidden = GameWithAchievements("Hidden", 1, 2, hidden: true);
+            GameWithAchievements("Unknown", 1, 2, inLibrary: false);
+            AchievementsRead();
+
+            core.OnAchievementUnlocked(hades, new Achievement("Hades0", "Hades 0", "h.png", 50, Start));
+
+            var unlock = Assert.Single(FirstRound(IdleCardKind.RecentUnlock));
+            Assert.Equal("Hades 0", unlock.Title);
+            Assert.Equal("Hades · Unlocked today", unlock.Detail);
+        }
+
+        [Fact]
+        public void Without_PlayniteAchievements_only_recently_played_and_tips_cycle()
+        {
+            GameWithAchievements("Hades", 3, 10);
+            library.WithGame("Celeste", lastActivity: Start);
+            AchievementsRead();
+            achievements.IsAvailable = false;
+
+            var kinds = FirstRound().Select(c => c.Kind).Distinct().OrderBy(k => k);
+
+            Assert.Equal(new[] { IdleCardKind.RecentlyPlayed, IdleCardKind.Tip }, kinds);
+        }
+
+        [Fact]
+        public void With_achievements_the_pool_holds_every_kind()
+        {
+            GameWithAchievements("Hades", 3, 10);
+            library.WithGame("Celeste", lastActivity: Start);
+            AchievementsRead();
+
+            var kinds = FirstRound().Select(c => c.Kind).Distinct().OrderBy(k => k);
+
+            Assert.Equal(new[] { IdleCardKind.CloseAchievements, IdleCardKind.RecentUnlock, IdleCardKind.RecentlyPlayed, IdleCardKind.Tip }, kinds);
+        }
     }
 }

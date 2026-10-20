@@ -5,7 +5,7 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Idle screen's cards: at Showing things, a pool of the nearly-finished games, the last games played and the tips is shown one card at a time in shuffled turn, each
+    /// The Idle screen's cards: at Showing things, a pool of the nearly-finished games, the last unlocks, the last games played and the tips is shown one card at a time in shuffled turn, each
     /// for <see cref="IdleCardShownFor"/>, reshuffled when it runs out; waking hides the card.
     /// </summary>
     public sealed partial class ExtensionCore
@@ -106,11 +106,11 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Every card of the Idle screen's pool, unshuffled: the nearly-finished games, the last games played, then the
-        /// tips. Without PlayniteAchievements, the achievement kinds are left out.
+        /// Every card of the Idle screen's pool, unshuffled: the nearly-finished games, the last unlocks, the last games
+        /// played, then the tips. Without PlayniteAchievements, the achievement kinds are left out.
         /// </summary>
         private List<IdleCard> IdleCardPool() =>
-            (achievements.IsAvailable ? CloseAchievementsCards() : Enumerable.Empty<IdleCard>())
+            (achievements.IsAvailable ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
                 .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null)))
                 .ToList();
@@ -148,6 +148,24 @@ namespace XboxSeries.Core
                 })
                 .ToList();
         }
+
+        /// <summary>
+        /// The last <see cref="IdleCardsOfAKind"/> unlocks, as last read and heard live since, of games in the library and
+        /// never hidden: each with its icon, its name, and its game and when, "Hades · Unlocked 2 days ago".
+        /// </summary>
+        private IEnumerable<IdleCard> RecentUnlockCards() =>
+            RecordedUnlocks()
+                .Concat(liveUnlocks)
+                .Select(u => new { Unlock = u.Achievement, Game = library.Games.FirstOrDefault(g => g.Id == u.GameId && !g.Hidden) })
+                .Where(u => u.Game != null)
+                .OrderByDescending(u => u.Unlock.UnlockedAt)
+                .Take(IdleCardsOfAKind)
+                .Select(u => new IdleCard(
+                    IdleCardKind.RecentUnlock,
+                    u.Unlock.Name,
+                    u.Game.Name + " · Unlocked " + IdleWhen(u.Unlock.UnlockedAt.Value),
+                    icon: u.Unlock.Icon))
+                .ToList();
 
         /// <summary>
         /// The last <see cref="IdleCardsOfAKind"/> games played, never hidden ones: each with its art, its name, and its
