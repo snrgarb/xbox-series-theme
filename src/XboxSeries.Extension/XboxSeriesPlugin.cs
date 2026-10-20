@@ -170,8 +170,8 @@ namespace XboxSeries.Extension
             // The Idle screen's dim, over the Overlay and the Launch screen's, going back over them when either shows
             // while it is up, and beneath the Toast's, which it keeps above it, so Toasts show over it. Every input on
             // this thread is told to the core for its timers, and the press that only wakes the screen swallowed.
-            dimWindow = new DimWindow(core.Idle, new Window[] { overlay, launchScreenWindow }, toastWindow);
-            idleInput = new IdleInput(core, controller);
+            dimWindow = dimWindow ?? new DimWindow(core.Idle, new Window[] { overlay, launchScreenWindow }, toastWindow);
+            idleInput = idleInput ?? new IdleInput(core, controller);
 
             // So work left for when the UI thread is idle runs at once, not when something else next wakes it.
             DispatcherHeartbeat.Start(PlayniteApi.MainView.UIDispatcher);
