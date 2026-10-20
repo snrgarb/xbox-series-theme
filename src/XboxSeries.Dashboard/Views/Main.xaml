@@ -347,6 +347,49 @@
                             <!-- With the extension, Settings: its rail and the category showing, over the whole page. -->
                             <ContentControl x:Name="XboxSeries_Settings" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
 
+                            <!--
+                                Playnite's progress over My games & apps, Settings and Search, which hide the top bar and its
+                                own (PART_ElemProgressIndicator): a copy where it sits, bound to what Playnite drives that part
+                                from, so Download metadata and the update after a download show on whichever page is up.
+                            -->
+                            <StackPanel x:Name="XboxPageProgress" Grid.RowSpan="2" Orientation="Horizontal"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top" Height="60" Margin="0,84,105,0"
+                                        IsHitTestVisible="False">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ProgressActive}" Value="True" />
+                                                    <Condition Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_MyGames}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ProgressActive}" Value="True" />
+                                                    <Condition Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Settings}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding ProgressActive}" Value="True" />
+                                                    <Condition Binding="{Binding Content.State.IsShown, ElementName=XboxSeries_Search}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="{Binding ProgressStatus}" Style="{StaticResource XboxText}" FontSize="16"
+                                           Foreground="{DynamicResource XboxTextDimBrush}"
+                                           VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <ContentControl Style="{DynamicResource ProgressIndicator}" Focusable="False"
+                                                Height="26" Width="26" VerticalAlignment="Center" />
+                            </StackPanel>
+
                             <!-- With the extension, Search: its box, the console keyboard and the results, over the whole page. -->
                             <ContentControl x:Name="XboxSeries_Search" Grid.RowSpan="2" Focusable="False" IsTabStop="False" />
 
