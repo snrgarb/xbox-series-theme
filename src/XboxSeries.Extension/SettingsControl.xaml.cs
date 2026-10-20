@@ -15,8 +15,8 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// Settings, injected as a custom element over Home: the rail and the category showing beside it. It follows the
-    /// core's <see cref="SettingsState"/>, tells the core which category has focus and which of Playnite's entries was
-    /// chosen, and takes B back to where the page was opened from. It holds no page logic. The Dashboard hides Home by
+    /// core's <see cref="SettingsState"/>, tells the core which category has focus and when More Playnite options
+    /// was chosen, and takes B back to where the page was opened from. It holds no page logic. The Dashboard hides Home by
     /// <see cref="State"/>, and opens the page from the top bar with <see cref="OpenSettingsCommand"/>.
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
@@ -44,6 +44,7 @@ namespace XboxSeries.Extension
                 [SettingsCategory.Personalisation] = PersonalisationItem,
                 [SettingsCategory.Guide] = GuideItem,
                 [SettingsCategory.Discord] = DiscordItem,
+                [SettingsCategory.PlayniteSettings] = PlayniteSettingsItem,
             };
 #if DEBUG
             ShowDebugMenu();
@@ -51,6 +52,8 @@ namespace XboxSeries.Extension
             PersonalisationPane.Attach(core);
             PersonalisationPane.BackToRail += (s, e) => PersonalisationItem.Focus();
             PersonalisationPane.TitleChanged += (s, e) => ShowCategory();
+            PlaynitePane.Attach(core);
+            PlaynitePane.BackToRail += (s, e) => PlayniteSettingsItem.Focus();
             DiscordSteps.ItemsSource = core.Settings.Discord.Steps.Select((step, i) => new { Number = $"{i + 1}.", Text = step }).ToList();
             OpenSettingsCommand = new RelayCommand(core.OpenSettings);
             Loaded += OnLoaded;
@@ -173,7 +176,9 @@ namespace XboxSeries.Extension
                 PersonalisationPane.Reset();
             }
 
-            Header.Text = category == SettingsCategory.Personalisation ? PersonalisationPane.Title : category.ToString();
+            Header.Text = category == SettingsCategory.Personalisation ? PersonalisationPane.Title
+                : category == SettingsCategory.PlayniteSettings ? "Playnite settings"
+                : category.ToString();
 
             // Left or closed, the Guide's dropdown is closed for next time.
             if (category != SettingsCategory.Guide || !core.Settings.IsShown)
@@ -184,6 +189,7 @@ namespace XboxSeries.Extension
             PersonalisationPane.Visibility = category == SettingsCategory.Personalisation ? Visibility.Visible : Visibility.Collapsed;
             GuidePane.Visibility = category == SettingsCategory.Guide ? Visibility.Visible : Visibility.Collapsed;
             DiscordPane.Visibility = category == SettingsCategory.Discord ? Visibility.Visible : Visibility.Collapsed;
+            PlaynitePane.Visibility = category == SettingsCategory.PlayniteSettings ? Visibility.Visible : Visibility.Collapsed;
 #if DEBUG
             // As Personalisation's, the Debug menu's pages each have their own header and start again on its boxes.
             if (category != SettingsCategory.Debug || !core.Settings.IsShown)
@@ -217,11 +223,7 @@ namespace XboxSeries.Extension
 
         private void OpenPlayniteEntry(object item)
         {
-            if (item == PlayniteSettingsItem)
-            {
-                core.OpenPlayniteSettings();
-            }
-            else if (item == MorePlayniteOptionsItem)
+            if (item == MorePlayniteOptionsItem)
             {
                 core.OpenMorePlayniteOptions();
             }
@@ -229,8 +231,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Up and down move through the rail, over the divider, and stay put at its ends: Home is hidden behind the page.
-        /// The pad's A opens Playnite's entries. Right or A on Personalisation, Guide or Discord moves into its options;
-        /// Left and Right go nowhere else: Playnite's entries have no options to move into.
+        /// The pad's A opens More Playnite options. Right or A on Personalisation, Guide, Discord or Playnite settings moves
+        /// into its options; Left and Right go nowhere else: More Playnite options has no options to move into.
         /// </summary>
         private void OnRailKeyDown(object sender, KeyEventArgs e)
         {
@@ -251,6 +253,11 @@ namespace XboxSeries.Extension
             {
                 e.Handled = true;
                 TypeClientIdButton.Focus();
+            }
+            else if (e.OriginalSource == PlayniteSettingsItem && (pad == ControllerInput.A || e.Key == Key.Right))
+            {
+                e.Handled = true;
+                PlaynitePane.FocusFirst();
             }
 #if DEBUG
             else if (e.OriginalSource == DebugItem && (pad == ControllerInput.A || e.Key == Key.Right))
