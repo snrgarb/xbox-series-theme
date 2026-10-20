@@ -5,13 +5,16 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Idle screen's cards: at Showing things, a pool of tips is shown one card at a time in shuffled turn, each
+    /// The Idle screen's cards: at Showing things, a pool of the last games played and tips is shown one card at a time in shuffled turn, each
     /// for <see cref="IdleCardShownFor"/>, reshuffled when it runs out; waking hides the card.
     /// </summary>
     public sealed partial class ExtensionCore
     {
         /// <summary>How long each Idle screen card shows before the next.</summary>
         private static readonly TimeSpan IdleCardShownFor = TimeSpan.FromSeconds(10);
+
+        /// <summary>How many cards the pool holds of each kind but tips, which are all in it.</summary>
+        private const int IdleCardsOfAKind = 5;
 
         /// <summary>The Idle screen's tips, every one in the pool, text only.</summary>
         private static readonly string[] IdleTips =
@@ -102,8 +105,76 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Every card of the Idle screen's pool, unshuffled.</summary>
+        /// <summary>Every card of the Idle screen's pool, unshuffled: the last games played, then the tips.</summary>
         private List<IdleCard> IdleCardPool() =>
-            IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null)).ToList();
+            RecentlyPlayedCards()
+                .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null)))
+                .ToList();
+
+        /// <summary>
+        /// The last <see cref="IdleCardsOfAKind"/> games played, never hidden ones: each with its art, its name, and its
+        /// playtime and when it was last played, "12 h played · yesterday", or only when, "Yesterday", with no playtime.
+        /// </summary>
+        private IEnumerable<IdleCard> RecentlyPlayedCards() =>
+            PlayedGames().Take(IdleCardsOfAKind).Select(g =>
+            {
+                var when = IdleWhen(g.LastActivity.Value);
+                var played = PlaytimeWords(g.Playtime);
+                return new IdleCard(
+                    IdleCardKind.RecentlyPlayed,
+                    g.Name,
+                    played == null ? Capitalised(when) : played + " played · " + when,
+                    HeroArtOf(g));
+            });
+
+        /// <summary>A playtime in seconds as the card words it, "12 h" or under an hour "45 min"; null under a minute.</summary>
+        private static string PlaytimeWords(ulong seconds) =>
+            seconds >= 3600 ? seconds / 3600 + " h"
+            : seconds >= 60 ? seconds / 60 + " min"
+            : null;
+
+        /// <summary>
+        /// When something happened, from now by calendar day, as the Idle screen's cards word it: "today", "yesterday",
+        /// "3 days ago", "a week ago", "2 weeks ago", "a month ago", "5 months ago", "a year ago", "3 years ago". A time
+        /// ahead of now is today.
+        /// </summary>
+        private string IdleWhen(DateTime at)
+        {
+            var today = clock.Now.Date;
+            var day = at.Date;
+            var days = (today - day).Days;
+            if (days <= 0)
+            {
+                return "today";
+            }
+
+            if (days == 1)
+            {
+                return "yesterday";
+            }
+
+            if (days < 7)
+            {
+                return days + " days ago";
+            }
+
+            if (days < 30)
+            {
+                return days < 14 ? "a week ago" : days / 7 + " weeks ago";
+            }
+
+            // Whole calendar months, one more only once the day of the month comes round again.
+            var months = (today.Year - day.Year) * 12 + today.Month - day.Month - (today.Day < day.Day ? 1 : 0);
+            months = Math.Max(1, months);
+            if (months < 12)
+            {
+                return months == 1 ? "a month ago" : months + " months ago";
+            }
+
+            var years = months / 12;
+            return years == 1 ? "a year ago" : years + " years ago";
+        }
+
+        private static string Capitalised(string words) => char.ToUpperInvariant(words[0]) + words.Substring(1);
     }
 }
