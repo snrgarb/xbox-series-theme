@@ -9,7 +9,7 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Adapter: pad 1's battery, and the buttons it holds down for the Start-up sequence. Windows.Gaming.Input finds the
+    /// Adapter: pad 1's battery, and the buttons the pads hold down for the Start-up sequence. Windows.Gaming.Input finds the
     /// pad and says whether it is on a cable; the percentage of a pad on Bluetooth LE, as Xbox pads on a PC usually are,
     /// comes from <see cref="BluetoothBattery"/>. XInput isn't used: it reports no battery for a pad on Bluetooth.
     /// </summary>
@@ -67,11 +67,12 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The buttons pad 1 holds down now, read straight from Windows on the calling thread, so the Start-up thread can
-        /// read the pad while Playnite's UI thread, through which its own controller callback comes, is busy. The left
-        /// stick pushed counts as the D-pad, as it does through Playnite. Empty with no pad, without Windows.Gaming.Input,
-        /// or when the reading fails, which is logged the first time. It keeps nothing between calls, so any thread may
-        /// call it.
+        /// The buttons any pad holds down now, read straight from Windows on the calling thread, so the Start-up thread can
+        /// read the pads while Playnite's UI thread, through which its own controller callback comes, is busy. Every pad
+        /// is read, as Playnite reads every pad through XInput: the first Windows lists may be one nobody holds, as the
+        /// virtual pad a streaming host such as Sunshine leaves connected. The left stick pushed counts as the D-pad, as it
+        /// does through Playnite. Empty with no pad, without Windows.Gaming.Input, or when the reading fails, which is
+        /// logged the first time. It keeps nothing between calls, so any thread may call it.
         /// </summary>
         public IReadOnlyCollection<ControllerButton> ButtonsDown()
         {
@@ -82,38 +83,35 @@ namespace XboxSeries.Extension
 
             try
             {
-                var pad = Gamepad.Gamepads.FirstOrDefault();
-                if (pad == null)
-                {
-                    return NoButtons;
-                }
-
-                var reading = pad.GetCurrentReading();
                 var down = new HashSet<ControllerButton>();
-                foreach (var button in Buttons)
+                foreach (var pad in Gamepad.Gamepads)
                 {
-                    if ((reading.Buttons & button.Key) != 0)
+                    var reading = pad.GetCurrentReading();
+                    foreach (var button in Buttons)
                     {
-                        down.Add(button.Value);
+                        if ((reading.Buttons & button.Key) != 0)
+                        {
+                            down.Add(button.Value);
+                        }
                     }
-                }
 
-                if (reading.LeftThumbstickX <= -StickAsDPad)
-                {
-                    down.Add(ControllerButton.DPadLeft);
-                }
-                else if (reading.LeftThumbstickX >= StickAsDPad)
-                {
-                    down.Add(ControllerButton.DPadRight);
-                }
+                    if (reading.LeftThumbstickX <= -StickAsDPad)
+                    {
+                        down.Add(ControllerButton.DPadLeft);
+                    }
+                    else if (reading.LeftThumbstickX >= StickAsDPad)
+                    {
+                        down.Add(ControllerButton.DPadRight);
+                    }
 
-                if (reading.LeftThumbstickY >= StickAsDPad)
-                {
-                    down.Add(ControllerButton.DPadUp);
-                }
-                else if (reading.LeftThumbstickY <= -StickAsDPad)
-                {
-                    down.Add(ControllerButton.DPadDown);
+                    if (reading.LeftThumbstickY >= StickAsDPad)
+                    {
+                        down.Add(ControllerButton.DPadUp);
+                    }
+                    else if (reading.LeftThumbstickY <= -StickAsDPad)
+                    {
+                        down.Add(ControllerButton.DPadDown);
+                    }
                 }
 
                 return down;

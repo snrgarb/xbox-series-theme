@@ -22,7 +22,7 @@ namespace XboxSeries.Extension
     /// <see cref="StartupSequence"/>'s <see cref="StartupState"/> and holds no logic: shown over the monitor Playnite's
     /// window is on while <see cref="StartupState.IsShown"/>, holding the foreground so no key reaches Home behind it,
     /// and fading out to reveal Home once the sequence ends, the foreground handed back to Playnite's window. While it
-    /// shows it reads pad 1 itself, every frame, through Windows.Gaming.Input, since Playnite's controller callback waits
+    /// shows it reads the pads itself, every frame, through Windows.Gaming.Input, since Playnite's controller callback waits
     /// on its UI thread; every key here is marked handled, and the keyboard's own arrows, Enter, Space and Escape stand
     /// in for the pad's. A click on a profile signs it in. A boot video that is missing or can't play ends as one that
     /// finished would; the sequence ends one that runs long.
@@ -69,7 +69,7 @@ namespace XboxSeries.Extension
         private int videos;
 
         /// <param name="themeResources">The theme's resources the window uses, copied on the UI thread for this one.</param>
-        /// <param name="readPad">The buttons pad 1 holds down now, read on this thread.</param>
+        /// <param name="readPad">The buttons any pad holds down now, read on this thread.</param>
         /// <param name="playniteWindow">Playnite's own window, or <see cref="IntPtr.Zero"/> before it has one; any thread may ask.</param>
         /// <param name="activatePlaynite">Activates Playnite's window in WPF, on Playnite's own thread, as the foreground goes back to it.</param>
         public StartupWindow(StartupSequence sequence, IReadOnlyDictionary<string, object> themeResources, Func<IReadOnlyCollection<ControllerButton>> readPad, Func<IntPtr> playniteWindow, Action activatePlaynite)
@@ -341,7 +341,7 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Pad 1's buttons, read here every frame and handed to the sequence, which finds the presses and releases in
+        /// The pads' buttons, read here every frame and handed to the sequence, which finds the presses and releases in
         /// them. For the first seconds after the sequence shows, each press is logged with its time, to show presses
         /// answered while Playnite's UI thread is still busy.
         /// </summary>
