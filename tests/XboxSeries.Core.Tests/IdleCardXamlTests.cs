@@ -142,7 +142,7 @@ namespace XboxSeries.Core.Tests
             var code = Code("IdleCardControl.xaml.cs");
             Assert.Contains("var hasIcon = card.Art == null && (card.Icon != null || card.Kind == IdleCardKind.RecentUnlock);", code);
             Assert.Contains("Title.TextWrapping = isTip ? TextWrapping.Wrap : TextWrapping.NoWrap;", code);
-            Assert.Contains("Detail.Visibility = string.IsNullOrEmpty(card.Detail) ? Visibility.Collapsed : Visibility.Visible;", code);
+            Assert.Contains("Detail.Visibility = string.IsNullOrEmpty(card.Description) ? Visibility.Collapsed : Visibility.Visible;", code);
         }
 
         [Fact]

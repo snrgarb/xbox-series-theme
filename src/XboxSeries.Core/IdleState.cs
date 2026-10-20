@@ -83,28 +83,74 @@ namespace XboxSeries.Core
         Tip,
     }
 
-    /// <summary>One Idle screen card: art or an icon, a title line and a detail line.</summary>
+    /// <summary>
+    /// One Idle screen card, the console's idle panel flown in from the right: a top line (a Score and a progress, or a
+    /// header), a bold title, a label and a description, a game's art or an achievement's icon in the lower half, and a
+    /// Y prompt. Whatever is null isn't shown.
+    /// </summary>
     public sealed class IdleCard
     {
-        internal IdleCard(IdleCardKind kind, string title, string detail, HeroArt art = null, string icon = null)
+        internal IdleCard(
+            IdleCardKind kind,
+            string title,
+            string description,
+            HeroArt art = null,
+            string icon = null,
+            string header = null,
+            string label = null,
+            int? score = null,
+            double? progress = null,
+            bool isRare = false,
+            string prompt = null,
+            Guid? gameId = null)
         {
             Kind = kind;
             Title = title;
-            Detail = detail;
+            Description = description;
             Art = art;
             Icon = icon;
+            Header = header;
+            Label = label;
+            Score = score;
+            Progress = progress;
+            IsRare = isRare;
+            Prompt = prompt;
+            GameId = gameId;
         }
 
         public IdleCardKind Kind { get; }
 
+        /// <summary>The bold title: "Halo 5: Guardians - Kraken Lackin'", a game's name, or a tip's text.</summary>
         public string Title { get; }
 
-        public string Detail { get; }
+        /// <summary>The line under the label: an achievement's description, or a game's playtime; null for none.</summary>
+        public string Description { get; }
 
         /// <summary>A game's art, falling back as Home's hero does, its cover for missing background art; null for none.</summary>
         public HeroArt Art { get; }
 
         /// <summary>A full path or URI to an achievement's icon; null for none.</summary>
         public string Icon { get; }
+
+        /// <summary>The light top line in place of a Score: "Unlocked 2 days ago", "Played yesterday", "Tip"; null for none.</summary>
+        public string Header { get; }
+
+        /// <summary>The bold line under the title: "Close achievement", "Achievement unlocked", "Recently played"; null for none.</summary>
+        public string Label { get; }
+
+        /// <summary>The achievement's Score, by the G at the top; null for none.</summary>
+        public int? Score { get; }
+
+        /// <summary>How far along, 0 to 1: the top right's percentage and the bar under it; null for none.</summary>
+        public double? Progress { get; }
+
+        /// <summary>Whether the achievement is rare, fewer than 10% of players having it: the diamond by the Score.</summary>
+        public bool IsRare { get; }
+
+        /// <summary>The Y prompt's words, "See game" or "Got it"; null for none.</summary>
+        public string Prompt { get; }
+
+        /// <summary>The game Y opens the Game hub of; null where Y only wakes the screen.</summary>
+        public Guid? GameId { get; }
     }
 }
