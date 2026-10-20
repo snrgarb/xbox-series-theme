@@ -201,6 +201,7 @@ namespace XboxSeries.Core.Tests
             core.OpenProfile();
             Assert.True(windows.IsFrozen);
             Tap(ControllerButton.DPadDown);
+            Tap(ControllerButton.DPadDown);
             Assert.Equal(GuideItemKind.Settings, core.Guide.FocusedItem.Kind);
 
             Tap(ControllerButton.A);

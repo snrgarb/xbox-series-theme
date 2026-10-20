@@ -58,6 +58,9 @@ namespace XboxSeries.Core
         /// <summary>Signing you in has shown: the Start-up window fades out to Home as "Hi X!" shows. Raised on the UI thread.</summary>
         public event Action StartupEnded;
 
+        /// <summary>Who's playing today? asked from the Guide's Switch profile: the plan for a Start-up sequence to begin with.</summary>
+        public event Action<StartupPlan> WhosPlayingAsked;
+
         /// <summary>
         /// The sequence's thread signed a profile in, marshalled to the UI thread: the core's own profile of that id is
         /// signed in at once, on the status area and saved as the last; the sequence has played the sign-in sound. After
@@ -117,6 +120,17 @@ namespace XboxSeries.Core
             CoverForStartup();
             IsStartupShown = true;
             return StartupPlan(BootVideo.Off);
+        }
+
+        /// <summary>
+        /// The Guide's Switch profile: Who's playing today? asks, without the boot video, even when it doesn't ask at
+        /// start, as waking does; the Guide goes first. The plan goes out on <see cref="WhosPlayingAsked"/>.
+        /// </summary>
+        private void SwitchProfile()
+        {
+            CoverForStartup();
+            IsStartupShown = true;
+            WhosPlayingAsked?.Invoke(new StartupPlan(BootVideo.Off, true, profiles.ToList(), LastProfile));
         }
 
         /// <summary>Settings' Boot video page: the generation that plays at start, or Off. Saved at once.</summary>
