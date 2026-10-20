@@ -121,6 +121,39 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Top_bar_profile_shows_the_Score_under_the_gamertag_and_none_without_totals()
+        {
+            var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));
+            var x = XNamespace.Get("http://schemas.microsoft.com/winfx/2006/xaml");
+            var profile = main.Descendants().Single(e => (string)e.Attribute("Style") == "{StaticResource XboxTopBarProfile}");
+            var style = main.Root.Elements().Single(e => (string)e.Attribute(x + "Key") == "XboxTopBarProfile");
+            XElement Named(string name) => style.Descendants().Single(e => (string)e.Attribute(x + "Name") == name);
+
+            // The whole Status State, so the template reads both its Profile and its Achievements.
+            Assert.Equal("{Binding Content.State, ElementName=XboxSeries_Status}", (string)profile.Attribute("Tag"));
+
+            var score = Named("Score");
+            Assert.Equal(Named("GamertagAndScore"), score.Parent);
+            Assert.Contains(score.Descendants(), e => e.Name.LocalName == "TextBlock"
+                && ((string)e.Attribute("Text") ?? "").StartsWith("{Binding Tag.Achievements.Score,")
+                && ((string)e.Attribute("Text")).Contains("StringFormat={}{0:N0}"));
+
+            // The gamertag and Score fade together while the real name shows.
+            Assert.Contains(style.Descendants(), e => e.Name.LocalName == "DoubleAnimationUsingKeyFrames"
+                && (string)e.Attribute("Storyboard.TargetName") == "GamertagAndScore");
+
+            // No totals, or theme-only where the binding falls back to null: no Score, the gamertag at full size.
+            var none = style.Descendants().Single(e => e.Name.LocalName == "DataTrigger"
+                && ((string)e.Attribute("Binding") ?? "").StartsWith("{Binding Tag.Achievements,")
+                && ((string)e.Attribute("Binding")).Contains("FallbackValue={x:Null}")
+                && (string)e.Attribute("Value") == "{x:Null}");
+            Assert.Contains(none.Elements(), e => (string)e.Attribute("TargetName") == "Score"
+                && (string)e.Attribute("Property") == "Visibility" && (string)e.Attribute("Value") == "Collapsed");
+            Assert.Contains(none.Elements(), e => (string)e.Attribute("TargetName") == "Gamertag"
+                && (string)e.Attribute("Property") == "FontSize" && (string)e.Attribute("Value") == "22");
+        }
+
+        [Fact]
         public void Top_bar_Settings_is_Playnites_main_menu_theme_only_and_the_extensions_page_with_it()
         {
             var main = XDocument.Load(Path.Combine(DashboardDir, "Views", "Main.xaml"));

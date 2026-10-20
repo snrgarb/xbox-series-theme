@@ -12,8 +12,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// PlayniteAchievements' members, reached by reflection on its plugin instance, as checked against its source
     /// (v4.1): PlayniteAchievementsPlugin's AchievementDataService, CacheManager and RefreshRuntime, and its static
-    /// AchievementUnlocked event. AchievementDetail's and AchievementUnlockedEventArgs' Description is optional: a
-    /// version without it still binds, its achievements with no description.
+    /// AchievementUnlocked event. AchievementDetail's and AchievementUnlockedEventArgs' Description and Points are
+    /// optional: a version without them still binds, its achievements with no description and no points of their own.
     /// </summary>
     internal sealed partial class PlayniteAchievementsSource
     {
@@ -264,6 +264,7 @@ namespace XboxSeries.Extension
             private readonly PropertyInfo apiName;
             private readonly PropertyInfo displayName;
             private readonly PropertyInfo description;
+            private readonly PropertyInfo points;
             private readonly PropertyInfo unlockedIconPath;
             private readonly PropertyInfo globalPercent;
             private readonly PropertyInfo unlockTimeUtc;
@@ -302,6 +303,7 @@ namespace XboxSeries.Extension
                 apiName = Property(detailType, "ApiName", typeof(string));
                 displayName = Property(detailType, "DisplayName", typeof(string));
                 description = Optional(detailType, "Description", typeof(string));
+                points = Optional(detailType, "Points", typeof(int?));
                 unlockedIconPath = Property(detailType, "UnlockedIconPath", typeof(string));
                 globalPercent = Property(detailType, "GlobalPercentUnlocked", typeof(double?));
                 unlockTimeUtc = Property(detailType, "UnlockTimeUtc", typeof(DateTime?));
@@ -409,7 +411,8 @@ namespace XboxSeries.Extension
                     Icon(members.IconPath?.GetValue(e) as string, dataDirectory),
                     Rarity(members.GlobalPercent?.GetValue(e) as double?),
                     UnlockedAt(true, members.UnlockTimeUtc?.GetValue(e) as DateTime?) is DateTime at && at != DateTime.MinValue ? at : DateTime.Now,
-                    Description(members.Description?.GetValue(e) as string));
+                    Description(members.Description?.GetValue(e) as string),
+                    members.Points?.GetValue(e) as int?);
                 return true;
             }
 
@@ -485,7 +488,8 @@ namespace XboxSeries.Extension
                         Icon(unlockedIconPath.GetValue(detail) as string, dataDirectory),
                         Rarity(globalPercent.GetValue(detail) as double?),
                         UnlockedAt(Get<bool>(unlocked, detail), unlockTimeUtc.GetValue(detail) as DateTime?),
-                        Description(description?.GetValue(detail) as string)));
+                        Description(description?.GetValue(detail) as string),
+                        points?.GetValue(detail) as int?));
                 }
 
                 return mapped.Count == 0 ? null : new GameAchievements(id.Value, mapped);
@@ -604,6 +608,7 @@ namespace XboxSeries.Extension
                 ApiName = Find("ApiName");
                 DisplayName = Find("DisplayName");
                 Description = Find("Description");
+                Points = Find("Points");
                 IconPath = Find("IconPath");
                 GlobalPercent = Find("GlobalPercent");
                 UnlockTimeUtc = Find("UnlockTimeUtc");
@@ -622,6 +627,7 @@ namespace XboxSeries.Extension
             public PropertyInfo ApiName { get; }
             public PropertyInfo DisplayName { get; }
             public PropertyInfo Description { get; }
+            public PropertyInfo Points { get; }
             public PropertyInfo IconPath { get; }
             public PropertyInfo GlobalPercent { get; }
             public PropertyInfo UnlockTimeUtc { get; }

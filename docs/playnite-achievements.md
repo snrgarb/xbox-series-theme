@@ -36,6 +36,7 @@ PlayniteAchievements ── cache ──► PlayniteAchievementsSource (adapter,
 - **No API to build against.** PlayniteAchievements offers no SDK or contract, so the adapter finds the plugin instance by its Id `e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b` and reaches its members by reflection. Those members were checked against its source at v4.1:
   - `AchievementDataService.GetAllGameAchievementData` and `GetGameAchievementData(Guid)`;
   - per achievement: `ApiName`, `DisplayName`, `Description` (optional), `UnlockedIconPath`, `GlobalPercentUnlocked`, `UnlockTimeUtc` and `Unlocked`.
+  - per achievement, on both the cached detail and the unlock event: `Points` (optional), the platform's own points; its `GamerScore` (a rarity stand-in, not Xbox Gamerscore) and `ScaledPoints` are not read.
 - **Binding and failure.** It binds once Playnite has loaded every plugin. If the plugin isn't installed, or a member has been renamed or reshaped, the adapter logs one line and reports no achievements. It never throws into Playnite.
 - **What it listens to:**
   - the static `PlayniteAchievementsPlugin.AchievementUnlocked` event, which is raised live while a game runs;
@@ -50,7 +51,7 @@ PlayniteAchievements ── cache ──► PlayniteAchievementsSource (adapter,
 - **Each unlock is announced once.** Dedupe is on (game, achievement key). The same unlock often arrives twice: live, then again from the cache.
 - **Grouping.** Unlocks heard within 1 s of each other, or found in one refresh, become one "<n> achievements unlocked" Toast.
 - **Rare** means a known rarity under 10%. An achievement with unknown rarity is never Rare.
-- **Score** comes from rarity: ≤1% → 100, ≤5% → 50, ≤10% → 30, ≤25% → 20, ≤50% → 15, anything else (or unknown) → 10.
+- **Score** is an achievement's own platform points where PlayniteAchievements records them (Xbox Gamerscore, RetroAchievements points, Epic XP); otherwise it comes from rarity: ≤1% → 100, ≤5% → 50, ≤10% → 30, ≤25% → 20, ≤50% → 15, anything else (or unknown) → 10. The total spans every platform's games, so it mixes the two.
 - **Totals are per PC, not per Profile.** PlayniteAchievements keeps no per-user data, so every Profile shows the same numbers.
 
 ### When a Toast actually appears
