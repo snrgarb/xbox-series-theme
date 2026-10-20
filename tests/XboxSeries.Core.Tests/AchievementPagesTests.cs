@@ -49,7 +49,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void One_page_of_description_keeps_the_consoles_own_timings()
         {
-            var times = AchievementPages.Plan(1);
+            var times = AchievementPages.Plan(1, AchievementPages.ConsoleShownFor);
 
             Assert.Equal(4.122, Assert.Single(times.Pushes), 3);
             Assert.Equal(7.091, times.Cut, 3);
@@ -60,7 +60,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void Without_a_description_the_header_holds_until_the_prompt_as_it_did()
         {
-            var times = AchievementPages.Plan(0);
+            var times = AchievementPages.Plan(0, AchievementPages.ConsoleShownFor);
 
             Assert.Empty(times.Pushes);
             Assert.Equal((7.091, 7.158, 7.341), (times.Cut, times.PromptAt, times.PromptEnd));
@@ -73,7 +73,7 @@ namespace XboxSeries.Core.Tests
         [InlineData(6)]
         public void More_pages_are_each_held_for_less_in_proportion_the_prompt_still_in_before_the_Toast_goes(int pages)
         {
-            var times = AchievementPages.Plan(pages);
+            var times = AchievementPages.Plan(pages, AchievementPages.ConsoleShownFor);
             const double push = AchievementPages.PushInAt + AchievementPages.PushIn - AchievementPages.PushAt;
 
             // Every page of description held alike, each push at the console's pace.
@@ -85,7 +85,7 @@ namespace XboxSeries.Core.Tests
 
             // The header, the pages and the prompt all shortened by the same proportion of the console's holds.
             var headerHold = times.Pushes[0] - AchievementPages.TextInEnd;
-            var promptHold = AchievementPages.ShownFor - times.PromptEnd;
+            var promptHold = AchievementPages.ConsoleShownFor - times.PromptEnd;
             var scale = pageHold / (7.091 - 4.68);
             Assert.True(scale < 1);
             Assert.Equal(4.122 - 2.386, headerHold / scale, 3);
@@ -94,9 +94,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Given_the_core_s_longer_time_for_a_long_description_every_page_is_held_as_long_as_the_console_holds_one()
+        {
+            // The core keeps the Toast up 3 s more for each page after the first.
+            var times = AchievementPages.Plan(3, AchievementPages.ConsoleShownFor + 2 * 3);
+
+            Assert.Equal(4.122, times.Pushes[0], 3);
+            Assert.Equal(7.091 - 4.68, times.Pushes[1] - times.Pushes[0] - 0.558, 3);
+            Assert.Equal(7.091 - 4.68, times.Cut - times.Pushes[2] - 0.558, 3);
+            Assert.True(times.PromptEnd <= AchievementPages.ConsoleShownFor + 6);
+        }
+
+        [Fact]
         public void Three_pages_a_five_line_description_are_still_each_held_about_a_second()
         {
-            var times = AchievementPages.Plan(3);
+            var times = AchievementPages.Plan(3, AchievementPages.ConsoleShownFor);
 
             Assert.True(times.Pushes[1] - times.Pushes[0] - 0.558 > 0.95);
         }

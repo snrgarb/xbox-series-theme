@@ -587,6 +587,39 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_description_longer_than_a_page_keeps_the_Toast_up_three_seconds_more_for_each_page_after_the_first()
+        {
+            // 200 characters: three pages of about 80, two more than the console's one.
+            var description = new string('a', 199) + ".";
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40, description: description));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(TimeSpan.FromSeconds(8.5 + 2 * 3), core.Toast.ShownFor);
+
+            clock.Advance(TimeSpan.FromSeconds(14.49));
+            Assert.True(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(0.01));
+            Assert.False(core.Toast.IsShown);
+        }
+
+        [Fact]
+        public void A_description_of_a_page_or_none_keeps_the_console_s_8_and_a_half_seconds_and_other_Toasts_say_nothing_of_it()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40, description: new string('a', 80)));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.Equal(TimeSpan.FromSeconds(8.5), core.Toast.ShownFor);
+
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5));
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+            Assert.Equal(TimeSpan.Zero, core.Toast.ShownFor);
+        }
+
+        [Fact]
         public void The_ordinary_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_its_outro_and_the_usual_gap()
         {
             core.OnNotificationsChanged(new Notification[0]);

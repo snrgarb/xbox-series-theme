@@ -38,6 +38,18 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan AchievementToastOutro = TimeSpan.FromSeconds(1.12);
 
+        /// <summary>
+        /// About how much of a description fits on one page of the achievement Toast, two lines across its text column, a
+        /// little under what the view lays out, so a long one is given its time rather than rushed.
+        /// </summary>
+        private const int DescriptionPageChars = 80;
+
+        /// <summary>
+        /// How much longer an achievement's Toast shows for each page of its description after the first: the console's
+        /// hold of a page and its push to the next, so every page reads as long as the console's one does.
+        /// </summary>
+        private static readonly TimeSpan DescriptionPageTime = TimeSpan.FromSeconds(3);
+
 #if DEBUG
 
         /// <summary>The Debug menu's made-up unlocks' name, and their description for the pill's second page.</summary>
@@ -187,6 +199,16 @@ namespace XboxSeries.Core
             }
         }
 #endif
+
+        /// <summary>
+        /// How long an achievement's Toast shows before its outro: <see cref="AchievementToastDuration"/>, and
+        /// <see cref="DescriptionPageTime"/> more for each page its description runs to after the first.
+        /// </summary>
+        private static TimeSpan AchievementShownFor(string description)
+        {
+            var pages = string.IsNullOrWhiteSpace(description) ? 0 : (description.Trim().Length + DescriptionPageChars - 1) / DescriptionPageChars;
+            return AchievementToastDuration + TimeSpan.FromTicks(DescriptionPageTime.Ticks * Math.Max(0, pages - 1));
+        }
 
         /// <summary>A game started: its unlocks are the ones told of now, from this moment on.</summary>
         private void FollowAchievementsOf(Guid gameId)

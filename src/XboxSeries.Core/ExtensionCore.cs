@@ -297,9 +297,12 @@ namespace XboxSeries.Core
             shownToast = waitingToasts.Dequeue();
             var rare = shownToast.Kind == ToastKind.RareAchievementUnlocked;
             var pill = rare || shownToast.Kind == ToastKind.AchievementUnlocked;
-            Toast.Show(shownToast.Text, shownToast.Kind, shownToast.Image, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description);
+            var shownFor = pill ? AchievementShownFor(shownToast.Description) : ToastDuration;
+            Toast.Show(
+                shownToast.Text, shownToast.Kind, shownToast.Image, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description,
+                pill ? shownFor : TimeSpan.Zero);
             sounds.Play(rare ? UiSound.RareAchievement : UiSound.Notification);
-            toastTimer = clock.After(pill ? AchievementToastDuration : ToastDuration, () =>
+            toastTimer = clock.After(shownFor, () =>
             {
                 shownToast = null;
                 Toast.IsShown = false;
