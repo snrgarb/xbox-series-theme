@@ -58,6 +58,29 @@ namespace XboxSeries.Core.Tests
             return cards;
         }
 
+        /// <summary>Showing things starts, and the cards of its first round: each card once, in the order shown.</summary>
+        private List<IdleCard> FirstRound()
+        {
+            ShowThings();
+            var cards = new List<IdleCard> { core.Idle.Card };
+            for (var i = 0; i < 100; i++)
+            {
+                NextCard();
+                if (cards.Contains(core.Idle.Card))
+                {
+                    break;
+                }
+
+                cards.Add(core.Idle.Card);
+            }
+
+            return cards;
+        }
+
+        private List<IdleCard> FirstRound(IdleCardKind kind) => FirstRound().Where(c => c.Kind == kind).ToList();
+
+        private void LibraryChanged() => core.OnLibraryChanged(library.Snapshot());
+
         [Fact]
         public void No_card_shows_while_awake_or_only_dimmed()
         {
@@ -174,6 +197,75 @@ namespace XboxSeries.Core.Tests
             ShowThings();
 
             Assert.NotNull(core.Idle.Card);
+        }
+
+        [Fact]
+        public void Recently_played_holds_the_last_five_games_played_never_hidden_ones_with_their_art_and_name()
+        {
+            for (var i = 1; i <= 7; i++)
+            {
+                library.WithGame("Game " + i, lastActivity: Start.AddHours(-i), backgroundImage: "bg" + i + ".jpg");
+            }
+
+            library.WithGame("Hidden", lastActivity: Start, hidden: true).WithGame("Never played");
+            LibraryChanged();
+
+            var played = FirstRound(IdleCardKind.RecentlyPlayed);
+
+            Assert.Equal(new[] { "Game 1", "Game 2", "Game 3", "Game 4", "Game 5" }, played.Select(c => c.Title).OrderBy(t => t));
+            Assert.Equal("bg1.jpg", played.Single(c => c.Title == "Game 1").Art.Image);
+            Assert.All(played, c => Assert.Null(c.Icon));
+        }
+
+        [Fact]
+        public void A_recently_played_games_art_falls_back_to_its_cover()
+        {
+            library.WithGame("Celeste", lastActivity: Start, coverImage: "celeste.jpg");
+            LibraryChanged();
+
+            var card = FirstRound(IdleCardKind.RecentlyPlayed).Single();
+
+            Assert.Equal("celeste.jpg", card.Art.Image);
+            Assert.True(card.Art.IsCover);
+        }
+
+        [Theory]
+        [InlineData(12 * 3600 + 1800, 1, "12 h played · yesterday")]
+        [InlineData(3600, 0, "1 h played · today")]
+        [InlineData(45 * 60 + 30, 0, "45 min played · today")]
+        [InlineData(0, 1, "Yesterday")]
+        [InlineData(30, 3, "3 days ago")]
+        public void A_recently_played_cards_detail_is_its_playtime_and_when_it_was_last_played(ulong playtime, int daysAgo, string detail)
+        {
+            library.WithGame("Hades", lastActivity: Start.Date.AddDays(-daysAgo).AddHours(9), playtime: playtime);
+            LibraryChanged();
+
+            Assert.Equal(detail, FirstRound(IdleCardKind.RecentlyPlayed).Single().Detail);
+        }
+
+        [Theory]
+        [InlineData("2026-10-20 23:59", "today")]
+        [InlineData("2026-10-20 00:00", "today")]
+        [InlineData("2026-10-19 23:59", "yesterday")]
+        [InlineData("2026-10-18 12:00", "2 days ago")]
+        [InlineData("2026-10-14 12:00", "6 days ago")]
+        [InlineData("2026-10-13 12:00", "a week ago")]
+        [InlineData("2026-10-06 12:00", "2 weeks ago")]
+        [InlineData("2026-09-22 12:00", "4 weeks ago")]
+        [InlineData("2026-09-20 12:00", "a month ago")]
+        [InlineData("2026-08-21 12:00", "a month ago")]
+        [InlineData("2026-08-20 12:00", "2 months ago")]
+        [InlineData("2025-10-21 12:00", "11 months ago")]
+        [InlineData("2025-10-20 12:00", "a year ago")]
+        [InlineData("2023-01-01 12:00", "3 years ago")]
+        public void When_is_worded_by_calendar_day_from_now(string at, string when)
+        {
+            library.WithGame("Hades", lastActivity: DateTime.Parse(at, System.Globalization.CultureInfo.InvariantCulture));
+            LibraryChanged();
+
+            var detail = FirstRound(IdleCardKind.RecentlyPlayed).Single().Detail;
+
+            Assert.Equal(char.ToUpperInvariant(when[0]) + when.Substring(1), detail);
         }
     }
 }
