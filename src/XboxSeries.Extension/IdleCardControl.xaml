@@ -29,6 +29,11 @@
                     <GradientStop Offset="0.6" Color="#FF000000" />
                 </LinearGradientBrush>
             </Grid.OpacityMask>
+            <!--
+                Under an achievement's icon, the art darkened by half again, so the icon stands out from it; at its
+                strength on every other card.
+            -->
+            <Rectangle x:Name="IconShade" Fill="#80000000" Visibility="Collapsed" />
             <!-- A little shade under the prompt, so it reads over bright art. -->
             <Rectangle>
                 <Rectangle.Fill>
@@ -54,29 +59,104 @@
         </Border>
 
         <!--
-            A tip's controller, outlined in white as the console's tip has it, 438 by 309, centred across the panel with
-            its top 507 down. The Y is filled, with its letter in the panel's colour.
+            A tip's controller, an Xbox One or Series pad from the front in white line, as the console's tip has it,
+            442 by 312, centred across the panel with its top 506 down. Its body is traced from that capture
+            (inbox/idle-panels/tip.png), centred on the line, 3.2 wide, and made symmetric; its buttons are circles,
+            the D-pad a plus, measured there. The Guide's sphere is Kenney's Input Prompts xbox_guide.svg
+            (https://kenney.nl/assets/input-prompts, CC0 1.0, kenney.nl), outlined, its top filled.
+            Each button is named as the pad's (ControllerButton; the D-pad's four as one) and is outlined, or, when the
+            tip is about it (IdleCard.Buttons), filled white with its letter or mark in the panel's colour, as the Y and
+            the bumpers of the console's tip (see IdleCardControl.xaml.cs): a part tagged Shape is filled, one tagged
+            Lit shows only then and one tagged Unlit only otherwise.
         -->
-        <Canvas x:Name="Controller" Width="438" Height="310" Margin="0,504,4,0" HorizontalAlignment="Center"
+        <Canvas x:Name="Controller" Width="442" Height="312" Margin="0,506,4,0" HorizontalAlignment="Center"
                 VerticalAlignment="Top" Visibility="Collapsed">
-            <Path Stroke="White" StrokeThickness="3.5" StrokeLineJoin="Round"
-                  Data="M 219,24 C 195,24 172,19 157,10 C 127,0 87,2 62,26 C 35,55 14,120 5,190 C -1,240 0,285 12,300 C 25,314 45,312 58,300 C 80,280 100,248 118,232 C 135,220 160,218 219,218 C 278,218 303,220 320,232 C 338,248 358,280 380,300 C 393,312 413,314 426,300 C 438,285 439,240 433,190 C 424,120 403,55 376,26 C 351,2 311,0 281,10 C 266,19 243,24 219,24 Z" />
-            <!-- The bumpers, filled, along the shoulders. -->
-            <Path Fill="White"
-                  Data="M 62,26 C 87,2 127,0 157,10 L 164,24 C 132,14 96,16 70,36 Z M 376,26 C 351,2 311,0 281,10 L 274,24 C 306,14 342,16 368,36 Z" />
-            <!-- The sticks, View and Menu, the D-pad. -->
-            <Path Stroke="White" StrokeThickness="3.5" StrokeLineJoin="Round"
-                  Data="M 77,87 A 25,25 0 1 1 127,87 A 25,25 0 1 1 77,87 Z M 254,158 A 25,25 0 1 1 304,158 A 25,25 0 1 1 254,158 Z M 176,88 A 10,10 0 1 1 196,88 A 10,10 0 1 1 176,88 Z M 241,88 A 10,10 0 1 1 261,88 A 10,10 0 1 1 241,88 Z M 148,124 L 170,124 L 170,146 L 192,146 L 192,168 L 170,168 L 170,190 L 148,190 L 148,168 L 126,168 L 126,146 L 148,146 Z" />
-            <!-- The Guide button: a ring with the sphere's two crossing swooshes. -->
-            <Path Stroke="White" StrokeThickness="3"
-                  Data="M 201,41 A 17,17 0 1 1 235,41 A 17,17 0 1 1 201,41 Z M 207,30 C 214,34 224,44 230,54 M 229,30 C 222,34 212,44 206,54" />
-            <!-- X, B and A, outlined. -->
-            <Path Stroke="White" StrokeThickness="3.5"
-                  Data="M 290,87 A 14,14 0 1 1 318,87 A 14,14 0 1 1 290,87 Z M 351,87 A 14,14 0 1 1 379,87 A 14,14 0 1 1 351,87 Z M 321,117 A 14,14 0 1 1 349,117 A 14,14 0 1 1 321,117 Z" />
-            <Ellipse Canvas.Left="320" Canvas.Top="42" Width="30" Height="30" Fill="White" />
-            <TextBlock Canvas.Left="320" Canvas.Top="42" Width="30" Height="30" Text="Y" TextAlignment="Center"
-                       FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="19" Padding="0,3,0,0"
-                       Foreground="{Binding Background, ElementName=Panel}" />
+            <Path x:Name="Body" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round"
+                  Data="M 181.1,13.8 C 175.1,13.8 168.7,14.5 162.8,13.6 C 154.9,12.3 148.6,5.9 141.3,3.2 C 131.2,-0.6 100,10.9 90,15.7 C 83.3,19 72.7,24.4 70,31.8 C 69.3,33.6 69.6,35.5 68.1,37 C 62.7,42.6 57.1,47.3 53.1,54 C 47.4,63.7 39.6,89.1 35.3,100.8 C 31.3,111.5 28.1,122.4 24.4,133.1 C 13.3,165.3 4.8,198.8 3.6,233 C 3,248.5 3,264.4 9.9,278.7 C 14.8,289 22.8,297.8 32.8,303.3 C 37.6,305.9 44.4,309.6 50,308.5 C 54.1,307.7 58.2,303.7 61.3,301 C 68.5,294.8 74.9,287.7 80.7,280.2 C 94.1,263.2 109.3,235.8 130,227.5 C 132.4,226.6 135.2,225.5 137.7,225.3 C 146,224.7 154.5,225.2 162.8,225.2 L 279.2,225.2 C 287.5,225.2 296,224.7 304.3,225.3 C 306.8,225.5 309.6,226.6 312,227.5 C 332.7,235.8 347.9,263.2 361.3,280.2 C 367.1,287.7 373.5,294.8 380.7,301 C 383.8,303.7 387.9,307.7 392,308.5 C 397.6,309.6 404.4,305.9 409.2,303.3 C 419.2,297.8 427.2,289 432.1,278.7 C 439,264.4 439,248.5 438.4,233 C 437.2,198.8 428.7,165.3 417.6,133.1 C 413.9,122.4 410.7,111.5 406.7,100.8 C 402.4,89.1 394.6,63.7 388.9,54 C 384.9,47.3 379.3,42.6 373.9,37 C 372.4,35.5 372.7,33.6 372,31.8 C 369.3,24.4 358.7,19 352,15.7 C 342,10.9 310.8,-0.6 300.7,3.2 C 293.4,5.9 287.1,12.3 279.2,13.6 C 273.3,14.5 266.9,13.8 260.9,13.8 Z" />
+            <Canvas x:Name="LeftShoulder">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round" Data="M 66.5,36.5 C 78,22 100,9 120,4 C 128,2 136,0.5 141,1.5 C 147,2.5 155,8 162,12.5 L 163.5,14 L 150.5,32.5 C 147,27 142,20 136,18.5 C 125,16 100,19 82,29 C 76,32 71,35 66.5,36.5 Z" />
+            </Canvas>
+            <Canvas x:Name="RightShoulder">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round" Data="M 375.5,36.5 C 364,22 342,9 322,4 C 314,2 306,0.5 301,1.5 C 295,2.5 287,8 280,12.5 L 278.5,14 L 291.5,32.5 C 295,27 300,20 306,18.5 C 317,16 342,19 360,29 C 366,32 371,35 375.5,36.5 Z" />
+            </Canvas>
+            <Canvas x:Name="LeftStick">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="105,88.4" RadiusX="24.5" RadiusY="24.5" /></Path.Data>
+                </Path>
+            </Canvas>
+            <Canvas x:Name="RightStick">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="281,159.6" RadiusX="24.5" RadiusY="24.5" /></Path.Data>
+                </Path>
+            </Canvas>
+            <Canvas x:Name="DPad">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round" Data="M 155.2,127.3 L 169.2,127.3 A 3,3 0 0 1 172.2,130.3 L 172.2,147.6 A 2,2 0 0 0 174.2,149.6 L 191.5,149.6 A 3,3 0 0 1 194.5,152.6 L 194.5,166.6 A 3,3 0 0 1 191.5,169.6 L 174.2,169.6 A 2,2 0 0 0 172.2,171.6 L 172.2,188.9 A 3,3 0 0 1 169.2,191.9 L 155.2,191.9 A 3,3 0 0 1 152.2,188.9 L 152.2,171.6 A 2,2 0 0 0 150.2,169.6 L 132.9,169.6 A 3,3 0 0 1 129.9,166.6 L 129.9,152.6 A 3,3 0 0 1 132.9,149.6 L 150.2,149.6 A 2,2 0 0 0 152.2,147.6 L 152.2,130.3 A 3,3 0 0 1 155.2,127.3 Z" />
+            </Canvas>
+            <Canvas x:Name="Back">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="188.1,88.4" RadiusX="9.5" RadiusY="9.5" /></Path.Data>
+                </Path>
+                <Path Tag="Lit" Stroke="{Binding Background, ElementName=Panel}" StrokeThickness="1.4" Visibility="Collapsed"
+                      Data="M 186.4,89.9 L 182.8,89.9 L 182.8,82.9 L 189.8,82.9 L 189.8,86.9" />
+                <Path Tag="Lit" Fill="{Binding Background, ElementName=Panel}" Visibility="Collapsed"
+                      Data="M 186.4,86.9 L 193.4,86.9 L 193.4,93.9 L 186.4,93.9 Z" />
+            </Canvas>
+            <Canvas x:Name="Start">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="253.6,88.4" RadiusX="9.5" RadiusY="9.5" /></Path.Data>
+                </Path>
+                <Path Tag="Lit" Fill="{Binding Background, ElementName=Panel}" Visibility="Collapsed" Data="M 248.1,84.4 L 259.1,84.4 L 259.1,86.2 L 248.1,86.2 Z M 248.1,87.5 L 259.1,87.5 L 259.1,89.3 L 248.1,89.3 Z M 248.1,90.6 L 259.1,90.6 L 259.1,92.4 L 248.1,92.4 Z" />
+            </Canvas>
+            <Canvas x:Name="X">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="306.6,88.4" RadiusX="13.8" RadiusY="13.8" /></Path.Data>
+                </Path>
+                <TextBlock Tag="Lit" Canvas.Left="291.6" Canvas.Top="73.4" Text="X" Width="30" Height="30" TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="22" Padding="0,2,0,0" Foreground="{Binding Background, ElementName=Panel}" Visibility="Collapsed" />
+            </Canvas>
+            <Canvas x:Name="Y">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="337.2,58.1" RadiusX="13.8" RadiusY="13.8" /></Path.Data>
+                </Path>
+                <TextBlock Tag="Lit" Canvas.Left="322.2" Canvas.Top="43.1" Text="Y" Width="30" Height="30" TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="22" Padding="0,2,0,0" Foreground="{Binding Background, ElementName=Panel}" Visibility="Collapsed" />
+            </Canvas>
+            <Canvas x:Name="B">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="367.6,88.4" RadiusX="13.8" RadiusY="13.8" /></Path.Data>
+                </Path>
+                <TextBlock Tag="Lit" Canvas.Left="352.6" Canvas.Top="73.4" Text="B" Width="30" Height="30" TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="22" Padding="0,2,0,0" Foreground="{Binding Background, ElementName=Panel}" Visibility="Collapsed" />
+            </Canvas>
+            <Canvas x:Name="A">
+                <Path Tag="Shape" Stroke="White" StrokeThickness="3.2" StrokeLineJoin="Round">
+                    <Path.Data><EllipseGeometry Center="337.2,117.7" RadiusX="13.8" RadiusY="13.8" /></Path.Data>
+                </Path>
+                <TextBlock Tag="Lit" Canvas.Left="322.2" Canvas.Top="102.7" Text="A" Width="30" Height="30" TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="22" Padding="0,2,0,0" Foreground="{Binding Background, ElementName=Panel}" Visibility="Collapsed" />
+            </Canvas>
+            <Canvas x:Name="Guide">
+                <Path Tag="Unlit" Stroke="White" StrokeThickness="1.8" StrokeLineJoin="Round">
+                    <Path.Data>
+                        <PathGeometry Figures="M51.3 45.75 Q51.65 44.05 50.6 40.7 49.55 37.45 46.45 32.2 43.3 26.95 40.05 22.85 L38.7 21.1 40.15 19.75 Q42.85 17.3 44.9 16 45.75 15.5 46.8 15.1 L48.4 14.65 Q48.7 14.65 49.7 15.7 L51.6 18 Q54.5 22.05 55.6 27.3 55.95 28.9 56 31.8 L55.7 36.35 Q55.1 39.45 53.9 42 L52.7 44.3 51.4 46.25 51.15 46.45 51.3 45.8 51.3 45.75 M29.6 55.9 Q23.9 55.35 18.95 52.1 L16.3 50.05 Q15.65 49.3 15.65 48.2 15.65 46.05 17.9 42.4 20.2 38.8 24.25 34.45 26.55 32 29.2 29.65 31.8 27.35 32.1 27.4 32.8 27.6 36.9 31.55 40.95 35.5 43 38 46.25 41.95 47.65 45 49 48.05 48.25 49.5 47.7 50.6 44.8 52.35 41.9 54.1 39.3 54.9 L34.5 55.85 29.6 55.9 M12 45.2 Q10.3 42.6 9.4 39.85 8.45 37.15 8.1 33.5 L8 31.2 8.45 27.65 Q8.95 24.55 10.6 21.3 12.2 18 14.35 15.8 15.2 14.85 15.6 14.75 L17.1 15 Q19.55 15.85 23.75 19.6 L25.45 21.15 24.5 22.3 Q21.2 26.35 18.2 31.35 15.1 36.45 13.8 39.95 13.1 41.85 12.85 43.6 12.55 45.35 12.9 46.15 L12.9 46.5 12 45.2">
+                            <PathGeometry.Transform><MatrixTransform Matrix="0.725,0,0,0.725,197.8,20.1" /></PathGeometry.Transform>
+                        </PathGeometry>
+                    </Path.Data>
+                </Path>
+                <Path Tag="Unlit" Fill="White" Stroke="White" StrokeThickness="1.8" StrokeLineJoin="Round">
+                    <Path.Data>
+                        <PathGeometry Figures="M29.95 13.85 Q28.5 13.1 26.45 12.4 24.45 11.65 23.15 11.45 L20.9 11.3 19.95 11.2 Q20.1 11 21.8 10.25 24.4 9 27.4 8.35 L32.05 8 36.65 8.35 Q38.6 8.75 40.65 9.5 42.65 10.25 43.9 11.1 L44.4 11.4 43.3 11.35 Q39.75 11.1 34.05 13.85 L31.95 14.8 29.95 13.85 Z">
+                            <PathGeometry.Transform><MatrixTransform Matrix="0.725,0,0,0.725,197.8,20.1" /></PathGeometry.Transform>
+                        </PathGeometry>
+                    </Path.Data>
+                </Path>
+                <Path Tag="Lit" Fill="White" Visibility="Collapsed">
+                    <Path.Data><EllipseGeometry Center="221,43.3" RadiusX="19.5" RadiusY="19.5" /></Path.Data>
+                </Path>
+                <Path Tag="Lit" Fill="{Binding Background, ElementName=Panel}" Visibility="Collapsed">
+                    <Path.Data>
+                        <PathGeometry Figures="M51.3 45.75 Q51.65 44.05 50.6 40.7 49.55 37.45 46.45 32.2 43.3 26.95 40.05 22.85 L38.7 21.1 40.15 19.75 Q42.85 17.3 44.9 16 45.75 15.5 46.8 15.1 L48.4 14.65 Q48.7 14.65 49.7 15.7 L51.6 18 Q54.5 22.05 55.6 27.3 55.95 28.9 56 31.8 L55.7 36.35 Q55.1 39.45 53.9 42 L52.7 44.3 51.4 46.25 51.15 46.45 51.3 45.8 51.3 45.75 M29.95 13.85 Q28.5 13.1 26.45 12.4 24.45 11.65 23.15 11.45 L20.9 11.3 19.95 11.2 Q20.1 11 21.8 10.25 24.4 9 27.4 8.35 L32.05 8 36.65 8.35 Q38.6 8.75 40.65 9.5 42.65 10.25 43.9 11.1 L44.4 11.4 43.3 11.35 Q39.75 11.1 34.05 13.85 L31.95 14.8 29.95 13.85 M29.6 55.9 Q23.9 55.35 18.95 52.1 L16.3 50.05 Q15.65 49.3 15.65 48.2 15.65 46.05 17.9 42.4 20.2 38.8 24.25 34.45 26.55 32 29.2 29.65 31.8 27.35 32.1 27.4 32.8 27.6 36.9 31.55 40.95 35.5 43 38 46.25 41.95 47.65 45 49 48.05 48.25 49.5 47.7 50.6 44.8 52.35 41.9 54.1 39.3 54.9 L34.5 55.85 29.6 55.9 M12 45.2 Q10.3 42.6 9.4 39.85 8.45 37.15 8.1 33.5 L8 31.2 8.45 27.65 Q8.95 24.55 10.6 21.3 12.2 18 14.35 15.8 15.2 14.85 15.6 14.75 L17.1 15 Q19.55 15.85 23.75 19.6 L25.45 21.15 24.5 22.3 Q21.2 26.35 18.2 31.35 15.1 36.45 13.8 39.95 13.1 41.85 12.85 43.6 12.55 45.35 12.9 46.15 L12.9 46.5 12 45.2">
+                            <PathGeometry.Transform><MatrixTransform Matrix="0.56,0,0,0.56,203.1,25.4" /></PathGeometry.Transform>
+                        </PathGeometry>
+                    </Path.Data>
+                </Path>
+            </Canvas>
         </Canvas>
 
         <StackPanel Margin="72,75,78,0" VerticalAlignment="Top">
@@ -126,13 +206,12 @@
                        LineStackingStrategy="BlockLineHeight" LineHeight="60" MaxHeight="180" />
         </StackPanel>
 
-        <!-- The Y prompt: an outlined Y, 72 round, and its words, 63 up from the bottom. -->
+        <!--
+            The Y prompt: the Y's icon, 72 round (ButtonGlyphs, filled in from the code-behind), and its words, 63 up
+            from the bottom.
+        -->
         <StackPanel x:Name="Prompt" Orientation="Horizontal" Margin="72,0,78,62" VerticalAlignment="Bottom">
-            <Grid Width="72" Height="72">
-                <Ellipse Stroke="White" StrokeThickness="4.5" />
-                <TextBlock Text="Y" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="42"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,3" Foreground="White" />
-            </Grid>
+            <Border x:Name="PromptGlyph" Width="72" Height="72" />
             <TextBlock x:Name="PromptText" Margin="26,0,0,6" VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}"
                        FontWeight="Bold" FontSize="46" Foreground="White" />
         </StackPanel>

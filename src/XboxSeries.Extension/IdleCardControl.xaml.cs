@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using XboxSeries.Core;
 
 namespace XboxSeries.Extension
@@ -33,6 +37,7 @@ namespace XboxSeries.Extension
             InitializeComponent();
             art.Root.Opacity = 1;
             Art.Children.Insert(0, art.Root);
+            PromptGlyph.Child = ButtonGlyphs.Create(ControllerButton.Y, 72, Brushes.White);
         }
 
         /// <summary>Shows <paramref name="card"/>; for none, keeps the last, to fade out as it is.</summary>
@@ -65,8 +70,17 @@ namespace XboxSeries.Extension
             ToDo.Width = new GridLength(1 - progress, GridUnitType.Star);
 
             // A name in the console's large title, a few lines at most; a tip's text in the smaller, read whole.
-            Title.Text = card.Title;
             Title.FontSize = isTip ? 46 : 64;
+
+            // A tip's buttons as their icons in its words, "{Y}" as the console's "(Y)".
+            Title.Inlines.Clear();
+            foreach (var part in isTip ? ButtonTokens.Parse(card.Title) : new[] { new ButtonTokens.Part(card.Title, null) })
+            {
+                Title.Inlines.Add(part.Button.HasValue
+                    ? (Inline)ButtonGlyphs.Inline(part.Button.Value, Title.FontSize, Brushes.White)
+                    : new Run(part.Text));
+            }
+
             Title.LineHeight = isTip ? 60 : 76;
             Title.MaxHeight = isTip ? 600 : 228;
             Title.Margin = new Thickness(0, hasProgress ? 40 : 29, 37, 0);
@@ -83,13 +97,47 @@ namespace XboxSeries.Extension
             Picture.Width = card.Icon != null ? 320 : double.NaN;
             PictureImage.Stretch = card.Icon != null ? Stretch.UniformToFill : Stretch.Uniform;
             Picture.Visibility = Seen(PictureImage.Source != null);
+            IconShade.Visibility = Seen(card.Icon != null);
             Controller.Visibility = Seen(isTip && card.Art == null);
+            Highlight(isTip ? card.Buttons : new ControllerButton[0]);
 
             // A tip's prompt quieter, as the console's "Got it".
             PromptText.Text = card.Prompt;
             Prompt.Visibility = Seen(!string.IsNullOrEmpty(card.Prompt));
             Prompt.Opacity = isTip ? 0.6 : 1;
         }
+
+        /// <summary>
+        /// The controller's <paramref name="buttons"/> filled white with their marks, the rest outlined (see
+        /// IdleCardControl.xaml): each button's part tagged Shape filled, one tagged Lit shown and one tagged Unlit hidden.
+        /// </summary>
+        private void Highlight(IReadOnlyList<ControllerButton> buttons)
+        {
+            var lit = new HashSet<string>(buttons.Select(ElementOf));
+            foreach (var button in Controller.Children.OfType<Canvas>())
+            {
+                var on = lit.Contains(button.Name);
+                foreach (var part in button.Children.OfType<FrameworkElement>())
+                {
+                    switch (part.Tag as string)
+                    {
+                        case "Shape":
+                            ((Shape)part).Fill = on ? Brushes.White : null;
+                            break;
+                        case "Lit":
+                            part.Visibility = Seen(on);
+                            break;
+                        case "Unlit":
+                            part.Visibility = Seen(!on);
+                            break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>The controller's element for <paramref name="button"/>, named as it is; the D-pad's four as one.</summary>
+        internal static string ElementOf(ControllerButton button) =>
+            button >= ControllerButton.DPadUp ? "DPad" : button.ToString();
 
         private static Visibility Seen(bool seen) => seen ? Visibility.Visible : Visibility.Collapsed;
 
