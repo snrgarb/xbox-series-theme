@@ -7,7 +7,7 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
-    /// <summary>Settings' Guide category: the Now Playing source's dropdown, drawn as the Guide's Audio dropdowns.</summary>
+    /// <summary>Theme settings' Guide page: the Now Playing source's dropdown, drawn as the Guide's Audio dropdowns.</summary>
     public class NowPlayingSourceXamlTests
     {
         private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -31,12 +31,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Right_or_A_on_the_rail_s_Guide_moves_onto_the_dropdown()
+        public void Opening_Theme_settings_Guide_page_moves_onto_the_dropdown()
         {
             var code = File.ReadAllText(Path.Combine(ExtensionDir(), "SettingsControl.xaml.cs"));
 
             Assert.Matches(
-                new Regex(@"e\.OriginalSource == GuideItem && \(pad == ControllerInput\.A \|\| e\.Key == Key\.Right\)\)\s*\{\s*e\.Handled = true;\s*NowPlayingSourceBox\.Focus\(\);"),
+                new Regex(@"case ThemeSettingsPage\.Guide:\s*NowPlayingSourceBox\.Focus\(\);"),
                 code);
         }
 

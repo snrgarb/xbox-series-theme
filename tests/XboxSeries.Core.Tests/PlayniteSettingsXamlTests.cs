@@ -31,7 +31,7 @@ namespace XboxSeries.Core.Tests
         private static string TitleOf(XElement box) => TextOf(Titles(box).Single());
 
         [Fact]
-        public void Playnite_settings_on_the_rail_is_a_category_below_the_divider_and_More_Playnite_options_stays_an_action()
+        public void Playnite_settings_on_the_rail_is_a_category_straight_after_Theme_settings_and_More_Playnite_options_stays_an_action()
         {
             var settings = Load("SettingsControl.xaml");
             var item = Named(settings, "PlayniteSettingsItem");
@@ -40,7 +40,8 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("OnCategoryFocused", (string)item.Attribute("GotKeyboardFocus"));
             Assert.Null(item.Attribute("Click"));
             Assert.Equal("OnPlayniteEntryClick", (string)more.Attribute("Click"));
-            Assert.Equal("Border", item.ElementsBeforeSelf().Last().Name.LocalName);
+            // No divider between the theme's entry and Playnite's any more (#86).
+            Assert.Same(Named(settings, "ThemeSettingsItem"), item.ElementsBeforeSelf().Last());
             Assert.Same(item, more.ElementsBeforeSelf().Last());
         }
 

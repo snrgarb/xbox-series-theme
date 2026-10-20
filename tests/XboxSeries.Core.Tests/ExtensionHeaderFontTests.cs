@@ -37,7 +37,7 @@ namespace XboxSeries.Core.Tests
         // Settings: its title, the category's heading and the rail, Settings' nav.
         [InlineData("SettingsControl.xaml", "Text=Settings", "XboxHeaderFont")]
         [InlineData("SettingsControl.xaml", "Name=Header", "XboxHeaderFont")]
-        [InlineData("SettingsControl.xaml", "Text=Personalisation", "XboxHeaderFont")]
+        [InlineData("SettingsControl.xaml", "Text=Theme settings", "XboxHeaderFont")]
         [InlineData("SettingsControl.xaml", "Text=More Playnite options", "XboxHeaderFont")]
         // Start-up's title.
         [InlineData("StartupWindow.xaml", "Text=Who's playing today?", "XboxHeaderFont")]
