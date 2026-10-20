@@ -229,25 +229,25 @@
 
                         <!--
                             With a real name, the gamertag (with the Score under it) and the real name take turns in the
-                            name's place, as on the console, crossfading on the Toast's text cycle: each for 2.2 s, a 0.3 s crossfade to the other.
+                            name's place, as on the console, each for 7.2 s, a 0.3 s crossfade to the other.
                         -->
                         <DataTrigger Binding="{Binding Tag.Profile.HasRealName, RelativeSource={RelativeSource Self}, FallbackValue=False}" Value="True">
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard x:Name="NameSwap">
                                     <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GamertagAndScore" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GamertagAndScore" Storyboard.TargetProperty="Opacity" Duration="0:0:15">
                                             <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
-                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1" />
-                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="0" />
-                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="0" />
-                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="1" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:7.2" Value="1" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:7.5" Value="0" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:14.7" Value="0" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:15" Value="1" />
                                         </DoubleAnimationUsingKeyFrames>
-                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RealName" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RealName" Storyboard.TargetProperty="Opacity" Duration="0:0:15">
                                             <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0" />
-                                            <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="0" />
-                                            <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="1" />
-                                            <DiscreteDoubleKeyFrame KeyTime="0:0:4.7" Value="1" />
-                                            <LinearDoubleKeyFrame KeyTime="0:0:5" Value="0" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:7.2" Value="0" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:7.5" Value="1" />
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:14.7" Value="1" />
+                                            <LinearDoubleKeyFrame KeyTime="0:0:15" Value="0" />
                                         </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </BeginStoryboard>
