@@ -323,6 +323,45 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_live_unlock_with_its_platforms_own_points_shows_those_points_as_its_Score()
+        {
+            core.OnGameStarted(hades);
+
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 0.5, points: 40));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(40, core.Toast.Score);
+        }
+
+        [Fact]
+        public void A_live_unlock_heard_with_no_time_keeps_its_points_for_its_Toast_and_the_totals()
+        {
+            Baseline();
+            core.OnGameStarted(hades);
+
+            core.OnAchievementUnlocked(hades, new Achievement("boon", "Blessed", "boon.png", 0.5, null, null, 40));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(40, core.Toast.Score);
+            Assert.Equal(40, core.Guide.Achievements.Score);
+        }
+
+        [Fact]
+        public void The_Score_total_counts_each_platforms_own_points_where_recorded_and_the_rarity_Score_elsewhere()
+        {
+            Record(
+                hades,
+                Unlocked("boon", "Blessed", rarity: 0.5, points: 40, at: Start.AddDays(-5)),
+                Unlocked("escape", "Escaped", rarity: 4, points: null, at: Start.AddDays(-4)),
+                Unlocked("pet", "Petted Cerberus", rarity: 0.5, points: 0, at: Start.AddDays(-3)));
+            Record(celeste, Unlocked("summit", "Summit", rarity: 60, points: 15, at: Start.AddDays(-2)));
+            core.OnAchievementsChanged();
+
+            Assert.Equal(40 + 50 + 100 + 15, core.Guide.Achievements.Score);
+            Assert.Equal(40 + 50 + 100 + 15, core.Status.Achievements.Score);
+        }
+
+        [Fact]
         public void The_Guide_button_during_the_Toast_opens_the_Guide_at_Profile_and_system()
         {
             core.OnGameStarted(hades);
@@ -813,8 +852,8 @@ namespace XboxSeries.Core.Tests
             achievements.Recorded.AddRange(recorded.Select(r => new GameAchievements(r.Key, r.Value)));
         }
 
-        private Achievement Unlocked(string key, string name, double? rarity = 20, string icon = null, DateTime? at = null, string description = null) =>
-            new Achievement(key, name, icon ?? key + ".png", rarity, at ?? clock.Now, description);
+        private Achievement Unlocked(string key, string name, double? rarity = 20, string icon = null, DateTime? at = null, string description = null, int? points = null) =>
+            new Achievement(key, name, icon ?? key + ".png", rarity, at ?? clock.Now, description, points);
 
         private static Achievement Locked(string key, string name) => new Achievement(key, name, key + ".png", 20, null);
 
