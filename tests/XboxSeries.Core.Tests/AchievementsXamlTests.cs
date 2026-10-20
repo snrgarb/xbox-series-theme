@@ -7,8 +7,8 @@ using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
-    // The view's side of achievements (#81): the Achievement unlocked Toast's look, and Profile & system's achievements
-    // section and recent unlocks. The XAML isn't run here (it was laid out on a harness hosting the real windows); these
+    // The view's side of achievements (#81): that the Achievement unlocked Toast is the green pill rather than the banner
+    // (its look is AchievementToastXamlTests'), and Profile & system's achievements section and recent unlocks. The XAML isn't run here (it was laid out on a harness hosting the real windows); these
     // checks guard what the Toast and the tab show and where they get it.
     public class AchievementsXamlTests
     {
@@ -41,59 +41,17 @@ namespace XboxSeries.Core.Tests
                 ?.Attribute("Value");
 
         [Fact]
-        public void An_Achievement_unlocked_Toast_has_its_tile_in_place_from_the_start_as_the_other_Toasts_with_an_image_have()
+        public void An_Achievement_unlocked_Toast_is_the_green_pill_not_the_banner_so_the_banner_keeps_nothing_for_it()
         {
-            Assert.Equal("False", Keyed(Load("ToastImages.xaml"), "ToastSlide.AchievementUnlocked").Value);
-        }
-
-        [Fact]
-        public void Without_an_icon_its_tile_shows_the_trophy_on_the_tiles_green_drawn_as_the_other_kinds_draw_their_glyphs()
-        {
+            // The pill (AchievementToast.xaml, AchievementToastXamlTests) shows its icon, name, Score and description.
             var images = Load("ToastImages.xaml");
-            var trophy = Keyed(images, "ToastImage.AchievementUnlocked").Elements().Single();
-            var bin = Keyed(images, "ToastImage.Uninstalled").Elements().Single();
+            Assert.DoesNotContain(images.Descendants(), e => ((string)e.Attribute(X + "Key"))?.EndsWith(".AchievementUnlocked") == true);
 
-            Assert.Equal(Trophy, (string)trophy.Attribute("Text"));
-            Assert.Equal("{DynamicResource XboxFont}", (string)trophy.Attribute("FontFamily"));
-            Assert.Equal(((string)bin.Attribute("FontSize"), (string)bin.Attribute("Foreground")),
-                ((string)trophy.Attribute("FontSize"), (string)trophy.Attribute("Foreground")));
-        }
-
-        [Fact]
-        public void Its_name_and_Score_are_a_second_line_under_the_cycling_one_moving_with_it_and_gone_for_several_unlocks()
-        {
             var toast = Load("ToastWindow.xaml");
-            var line = Named(toast, "Line");
-            var achievement = Named(toast, "AchievementLine");
-
-            // Under the line and the prompt, which fade in its place, and not fading with them.
-            var cycling = line.Parent;
-            Assert.Same(cycling.Parent, achievement.Parent);
-            Assert.True(cycling.IsBefore(achievement));
-            Assert.Equal("StackPanel", achievement.Parent.Name.LocalName);
-            Assert.Contains(achievement.Ancestors(), a => a.Descendants().Any(e => (string)e.Attribute(X + "Name") == "TextShift")
-                && a.Elements().Any(e => e.Name.LocalName == "Grid.RenderTransform"));
-
-            // The trophy, "<Score> G - " and the name, in the line's font and size.
-            var texts = achievement.Descendants().Where(e => e.Name.LocalName == "TextBlock").ToList();
-            Assert.Equal(new[] { Trophy, "{Binding Score, StringFormat={}{0} G -}", "{Binding Detail}" },
-                texts.Select(t => (string)t.Attribute("Text")));
-            Assert.All(texts, t => Assert.Equal(((string)line.Attribute("FontSize"), (string)line.Attribute("FontFamily")),
-                ((string)t.Attribute("FontSize"), (string)t.Attribute("FontFamily"))));
-            Assert.Equal("CharacterEllipsis", (string)texts[2].Attribute("TextTrimming"));
-
-            // Gone without a name, as for "<n> achievements unlocked" and every other kind; the Score gone without one.
-            Assert.Equal("{x:Null}", HiddenWhen(achievement, "{Binding Detail}"));
-            Assert.Equal("{x:Null}", HiddenWhen(texts[1], "{Binding Score}"));
-        }
-
-        [Fact]
-        public void Its_prompt_reads_to_view_as_the_Guide_button_opens_the_Guide_at_Profile_and_system()
-        {
-            var toast = Load("ToastWindow.xaml");
+            Assert.DoesNotContain(toast.Descendants(), e => (string)e.Attribute(X + "Name") == "AchievementLine");
             Assert.DoesNotContain(toast.Descendants(), e => e.Name.LocalName == "DataTrigger"
-                && (string)e.Attribute("Value") == "{x:Static core:ToastKind.AchievementUnlocked}"
-                && e.Elements().Any(s => (string)s.Attribute("Property") == "Text"));
+                && (string)e.Attribute("Value") == "{x:Static core:ToastKind.AchievementUnlocked}");
+            Assert.DoesNotContain(toast.Descendants().Attributes(), a => a.Value == Trophy);
         }
 
         [Fact]
