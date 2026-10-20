@@ -22,16 +22,63 @@ namespace XboxSeries.Core
     /// </summary>
     public sealed class IdleState : INotifyPropertyChanged
     {
+        /// <summary>
+        /// The steps both of Theme settings' Idle page's dropdowns offer, in order: 1, 2, 5, 10, 15 and 30 min, 1, 2, 3
+        /// and 4 h, then null for Never.
+        /// </summary>
+        public static readonly IReadOnlyList<TimeSpan?> Steps = new TimeSpan?[]
+        {
+            TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10),
+            TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(30), TimeSpan.FromHours(1), TimeSpan.FromHours(2),
+            TimeSpan.FromHours(3), TimeSpan.FromHours(4), null,
+        };
+
         private IdleStage stage;
         private IdleCard card;
+        private TimeSpan? dimAfter = TimeSpan.FromMinutes(2);
+        private TimeSpan? showThingsAfter = TimeSpan.FromMinutes(5);
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>How long with no input before the screen dims; null for Never, which switches the stage off.</summary>
-        public TimeSpan? DimAfter { get; internal set; } = TimeSpan.FromMinutes(2);
+        public TimeSpan? DimAfter
+        {
+            get => dimAfter;
+            internal set
+            {
+                if (dimAfter != value)
+                {
+                    dimAfter = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DimAfter)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowThingsAfterSteps)));
+                }
+            }
+        }
 
         /// <summary>How long with no input before the Idle screen shows things; null for Never, which switches the stage off.</summary>
-        public TimeSpan? ShowThingsAfter { get; internal set; } = TimeSpan.FromMinutes(5);
+        public TimeSpan? ShowThingsAfter
+        {
+            get => showThingsAfter;
+            internal set
+            {
+                if (showThingsAfter != value)
+                {
+                    showThingsAfter = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowThingsAfter)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// The steps Show things after's dropdown offers: <see cref="Steps"/> but those shorter than <see cref="DimAfter"/>,
+        /// Never always among them.
+        /// </summary>
+        // TODO(#90 core): leave out the steps shorter than DimAfter.
+        public IReadOnlyList<TimeSpan?> ShowThingsAfterSteps => Steps;
+
+        /// <summary>A step as its dropdown shows it: "1 min", "30 min", "1 h", "4 h", or "Never" for null.</summary>
+        // TODO(#90 core): the real words.
+        public static string Describe(TimeSpan? after) => after?.ToString() ?? "Never";
 
         public IdleStage Stage
         {
