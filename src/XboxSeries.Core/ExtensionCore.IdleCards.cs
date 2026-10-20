@@ -156,7 +156,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The last <see cref="IdleCardsOfAKind"/> unlocks, as last read and heard live since, of games in the library and
-        /// never hidden: each with its icon, its name, and its game and when, "Hades · Unlocked 2 days ago".
+        /// never hidden: each with when atop, "Unlocked 2 days ago", its Score and rarity, its game and name, "Hades -
+        /// Blessed", its description, its icon and its game's art, with Y seeing the game.
         /// </summary>
         private IEnumerable<IdleCard> RecentUnlockCards() =>
             AllUnlocks()
@@ -166,9 +167,16 @@ namespace XboxSeries.Core
                 .Take(IdleCardsOfAKind)
                 .Select(u => new IdleCard(
                     IdleCardKind.RecentUnlock,
-                    u.Unlock.Name,
-                    u.Game.Name + " · Unlocked " + IdleWhen(u.Unlock.UnlockedAt.Value),
-                    icon: u.Unlock.Icon))
+                    u.Game.Name + " - " + u.Unlock.Name,
+                    u.Unlock.Description,
+                    HeroArtOf(u.Game),
+                    u.Unlock.Icon,
+                    header: "Unlocked " + IdleWhen(u.Unlock.UnlockedAt.Value),
+                    label: "Achievement unlocked",
+                    score: ScoreOf(u.Unlock),
+                    isRare: IsRare(u.Unlock),
+                    prompt: SeeGame,
+                    gameId: u.Game.Id))
                 .ToList();
 
         /// <summary>

@@ -462,12 +462,43 @@ namespace XboxSeries.Core.Tests
 
             var unlocks = FirstRound(IdleCardKind.RecentUnlock);
 
-            Assert.Equal(new[] { "Celeste 1", "Celeste 2", "Hades 1", "Hades 2", "Hades 3" }, unlocks.Select(c => c.Title).OrderBy(t => t));
-            var celeste2 = unlocks.Single(c => c.Title == "Celeste 2");
+            Assert.Equal(
+                new[] { "Celeste - Celeste 1", "Celeste - Celeste 2", "Hades - Hades 1", "Hades - Hades 2", "Hades - Hades 3" },
+                unlocks.Select(c => c.Title).OrderBy(t => t));
+            var celeste2 = unlocks.Single(c => c.Title == "Celeste - Celeste 2");
             Assert.Equal("c2.png", celeste2.Icon);
-            Assert.Equal("Celeste · Unlocked 5 days ago", celeste2.Description);
-            Assert.Null(celeste2.Art);
-            Assert.Equal("Hades · Unlocked 2 days ago", unlocks.Single(c => c.Title == "Hades 1").Description);
+            Assert.Equal("Unlocked 5 days ago", celeste2.Header);
+            Assert.Equal("Unlocked 2 days ago", unlocks.Single(c => c.Title == "Hades - Hades 1").Header);
+        }
+
+        [Theory]
+        [InlineData(0.5, null, 100, true)]
+        [InlineData(60.0, null, 10, false)]
+        [InlineData(60.0, 30, 30, false)]
+        public void A_recent_unlock_card_is_its_game_and_name_its_description_its_Score_and_rarity_with_the_games_art_and_Y_seeing_it(
+            double rarity, int? points, int score, bool rare)
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Halo 5: Guardians", backgroundImage: "halo.jpg");
+            achievements.Recorded.Add(new GameAchievements(id, new[]
+            {
+                new Achievement("k", "Kraken Lackin'", "k.png", rarity, Start.AddDays(-1), "Complete the mission without dying.", points),
+            }));
+            AchievementsRead();
+
+            var card = FirstRound(IdleCardKind.RecentUnlock).Single();
+
+            Assert.Equal("Halo 5: Guardians - Kraken Lackin'", card.Title);
+            Assert.Equal("Unlocked yesterday", card.Header);
+            Assert.Equal("Achievement unlocked", card.Label);
+            Assert.Equal("Complete the mission without dying.", card.Description);
+            Assert.Equal(score, card.Score);
+            Assert.Equal(rare, card.IsRare);
+            Assert.Null(card.Progress);
+            Assert.Equal("k.png", card.Icon);
+            Assert.Equal("halo.jpg", card.Art.Image);
+            Assert.Equal("See game", card.Prompt);
+            Assert.Equal(id, card.GameId);
         }
 
         [Fact]
@@ -481,8 +512,8 @@ namespace XboxSeries.Core.Tests
             core.OnAchievementUnlocked(hades, new Achievement("Hades0", "Hades 0", "h.png", 50, Start));
 
             var unlock = Assert.Single(FirstRound(IdleCardKind.RecentUnlock));
-            Assert.Equal("Hades 0", unlock.Title);
-            Assert.Equal("Hades · Unlocked today", unlock.Description);
+            Assert.Equal("Hades - Hades 0", unlock.Title);
+            Assert.Equal("Unlocked today", unlock.Header);
         }
 
         [Fact]
