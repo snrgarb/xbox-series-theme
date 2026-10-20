@@ -154,6 +154,9 @@ namespace XboxSeries.Extension
         /// <summary>What the page shows, for the Dashboard to hide Home and place Playnite's main list by.</summary>
         public MyGamesState State => core.MyGames;
 
+        /// <summary>The profile signed in, which the nav's top shows.</summary>
+        public StatusState Status => core.Status;
+
         /// <summary>The top bar's My games &amp; apps: the page, on Games.</summary>
         public ICommand OpenGamesCommand { get; }
 
@@ -181,6 +184,7 @@ namespace XboxSeries.Extension
                 mainList.SizeChanged += FitFiveToARow;
                 mainList.PreviewKeyDown += OnMainListPreviewKeyDown;
                 mainList.KeyDown += OnMainListKeyDown;
+                mainList.AddHandler(ScrollViewer.ScrollChangedEvent, (ScrollChangedEventHandler)OnMainListScrolled);
                 ((INotifyCollectionChanged)mainList.Items).CollectionChanged += OnMainListChanged;
             }
 
@@ -233,6 +237,7 @@ namespace XboxSeries.Extension
                 mainList.SizeChanged -= FitFiveToARow;
                 mainList.PreviewKeyDown -= OnMainListPreviewKeyDown;
                 mainList.KeyDown -= OnMainListKeyDown;
+                mainList.RemoveHandler(ScrollViewer.ScrollChangedEvent, (ScrollChangedEventHandler)OnMainListScrolled);
                 ((INotifyCollectionChanged)mainList.Items).CollectionChanged -= OnMainListChanged;
                 mainList = null;
             }
@@ -340,7 +345,7 @@ namespace XboxSeries.Extension
             LibraryBar.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
             TabsFocus.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
             ShowNameBox();
-            LookingForMore.Visibility = games ? Visibility.Visible : Visibility.Collapsed;
+            PlaceLookingForMore();
             var empty = core.MyGames.PlayHistory.Count == 0;
             History.Visibility = history && !empty ? Visibility.Visible : Visibility.Collapsed;
             NoHistory.Visibility = history && empty ? Visibility.Visible : Visibility.Collapsed;
@@ -512,6 +517,50 @@ namespace XboxSeries.Extension
             }
 
             mainList.Margin = margin;
+        }
+
+        private void OnMainListScrolled(object sender, ScrollChangedEventArgs e) => PlaceLookingForMore();
+
+        /// <summary>
+        /// "Looking for more?" under Games' last row, as on the console, rather than fixed under the grid: shown only while
+        /// that row is all in view, so once the grid is scrolled to its end. Placed from the last tile itself, as Playnite's
+        /// panel scrolls by moving its tiles; until it is built, the row isn't in view. Again once the page has laid out,
+        /// as Games coming back shows the grid without scrolling it.
+        /// </summary>
+        private void PlaceLookingForMore()
+        {
+            LookingForMore.Visibility = Visibility.Collapsed;
+            if (core.MyGames.Item != MyGamesItem.Games || mainList == null || mainList.Items.Count == 0)
+            {
+                return;
+            }
+
+            var last = mainList.ItemContainerGenerator.ContainerFromIndex(mainList.Items.Count - 1) as FrameworkElement;
+            if (last == null || !last.IsVisible)
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(PlaceShownLookingForMore));
+                return;
+            }
+
+            var bottom = last.TranslatePoint(new Point(0, last.ActualHeight), mainList).Y;
+            if (bottom > mainList.ActualHeight + 1)
+            {
+                return;
+            }
+
+            var grid = (Grid)LookingForMore.Parent;
+            var top = last.TranslatePoint(new Point(0, last.ActualHeight), grid).Y - grid.RowDefinitions[Grid.GetRow(LookingForMore)].Offset;
+            LookingForMore.Margin = new Thickness(3, top + TileGap, 0, 0);
+            LookingForMore.Visibility = Visibility.Visible;
+        }
+
+        /// <summary>Places "Looking for more?" once more, if the grid's last tile is built by then.</summary>
+        private void PlaceShownLookingForMore()
+        {
+            if (mainList?.ItemContainerGenerator.ContainerFromIndex(mainList.Items.Count - 1) is FrameworkElement last && last.IsVisible)
+            {
+                PlaceLookingForMore();
+            }
         }
 
         /// <summary>
