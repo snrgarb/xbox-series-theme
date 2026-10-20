@@ -46,6 +46,9 @@ namespace XboxSeries.Extension
         /// <summary>The Guide page's dropdown, the Now Playing source, and the Idle page's, Dim after then Show things after.</summary>
         private readonly Dropdown nowPlayingSource, dimAfter, showThingsAfter;
 
+        /// <summary>The three dropdowns, in that order.</summary>
+        private readonly Dropdown[] dropdowns;
+
         internal SettingsControl(ExtensionCore core)
         {
             InitializeComponent();
@@ -59,7 +62,8 @@ namespace XboxSeries.Extension
                 () => StepChoices(IdleState.Steps, core.Idle.DimAfter, core.SetDimAfter));
             showThingsAfter = new Dropdown(ShowThingsAfterBox, ShowThingsAfterList, ShowThingsAfterOptions,
                 () => StepChoices(core.Idle.ShowThingsAfterSteps, core.Idle.ShowThingsAfter, core.SetShowThingsAfter));
-            foreach (var dropdown in new[] { nowPlayingSource, dimAfter, showThingsAfter })
+            dropdowns = new[] { nowPlayingSource, dimAfter, showThingsAfter };
+            foreach (var dropdown in dropdowns)
             {
                 dropdown.Options.KeyDown += (s, e) => OnDropListKeyDown(dropdown, e);
             }
@@ -478,7 +482,7 @@ namespace XboxSeries.Extension
         // The keyboard's Enter and the mouse; the pad's A arrives as OnDropdownsKeyDown.
         private void OnDropBoxClick(object sender, RoutedEventArgs e)
         {
-            var dropdown = new[] { nowPlayingSource, dimAfter, showThingsAfter }.Single(d => d.Box == sender);
+            var dropdown = dropdowns.Single(d => d.Box == sender);
             if (dropdown.IsOpen)
             {
                 CloseDropdown(dropdown);
@@ -596,18 +600,22 @@ namespace XboxSeries.Extension
                 ReadChoices = readChoices;
             }
 
+            /// <summary>The box showing the one set now, which A opens the list from.</summary>
             public Button Box { get; }
 
+            /// <summary>The list under the box, shown while it is open.</summary>
             public FrameworkElement List { get; }
 
             /// <summary>The open list's rows.</summary>
             public Panel Options { get; }
 
+            /// <summary>The core's choices now, read as the list opens.</summary>
             public Func<IEnumerable<DropChoice>> ReadChoices { get; }
 
             /// <summary>The choices the open list shows, in its order; empty while it is closed.</summary>
             public List<DropChoice> Choices { get; set; } = new List<DropChoice>();
 
+            /// <summary>Whether the list shows.</summary>
             public bool IsOpen => List.Visibility == Visibility.Visible;
         }
 
@@ -621,10 +629,13 @@ namespace XboxSeries.Extension
                 Choose = choose;
             }
 
+            /// <summary>The row's words.</summary>
             public string Label { get; }
 
+            /// <summary>Whether it is the one set now, ticked and focused as the list opens.</summary>
             public bool IsChosen { get; }
 
+            /// <summary>Hands the choice to the core.</summary>
             public Action Choose { get; }
         }
 
