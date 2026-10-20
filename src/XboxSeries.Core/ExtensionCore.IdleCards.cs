@@ -123,9 +123,10 @@ namespace XboxSeries.Core
         /// <summary>
         /// The <see cref="IdleCardsOfAKind"/> nearly-finished games, in the library and never hidden: the most
         /// achievements unlocked without having them all, as last read and with unlocks heard live since, those nearer
-        /// finished first among as many, then by name. Each card has the game's art, its name, how many are unlocked and
-        /// the locked achievement most players have, "42 of 48 unlocked · Next: Blessed", of unknown rarity only with no
-        /// other named. PlayniteAchievements has no progress counters, so this is as close as it gets.
+        /// finished first among as many, then by name. Each card is the game and the locked achievement most players
+        /// have, "Hades - Blessed", of unknown rarity only with no other named, the game alone with none: that one's
+        /// Score, rarity and description, the game's progress, 42 of 48 unlocked, its art, and Y seeing the game.
+        /// PlayniteAchievements has no progress counters, so this is as close as it gets.
         /// </summary>
         private IEnumerable<IdleCard> CloseAchievementsCards()
         {
@@ -148,8 +149,17 @@ namespace XboxSeries.Core
                         .Where(a => !string.IsNullOrEmpty(a.Name))
                         .OrderByDescending(a => a.Rarity ?? double.MinValue)
                         .FirstOrDefault();
-                    var detail = (g.Total - g.Locked.Count) + " of " + g.Total + " unlocked" + (next == null ? "" : " · Next: " + next.Name);
-                    return new IdleCard(IdleCardKind.CloseAchievements, g.Game.Name, detail, HeroArtOf(g.Game));
+                    return new IdleCard(
+                        IdleCardKind.CloseAchievements,
+                        next == null ? g.Game.Name : g.Game.Name + " - " + next.Name,
+                        next?.Description,
+                        HeroArtOf(g.Game),
+                        label: "Close achievement",
+                        score: next == null ? (int?)null : ScoreOf(next),
+                        progress: (double)(g.Total - g.Locked.Count) / g.Total,
+                        isRare: next != null && IsRare(next),
+                        prompt: SeeGame,
+                        gameId: g.Game.Id);
                 })
                 .ToList();
         }
