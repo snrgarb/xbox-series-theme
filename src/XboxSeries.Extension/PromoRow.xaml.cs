@@ -2,18 +2,63 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using Playnite.SDK.Events;
+using XboxSeries.Core;
 
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// The four placeholder tiles under Home's Recent row. It holds no logic: <see cref="RecentRowControl"/>, which hosts
-    /// it, moves focus into, along and out of it.
+    /// The four tiles under Home's Recent row: Discord, Playnite settings, Achievements and Downloads. A on one asks the
+    /// core to open where it goes; it holds no other logic: <see cref="RecentRowControl"/>, which hosts it, moves focus
+    /// into, along and out of it.
     /// </summary>
     public partial class PromoRow : UserControl
     {
+        private ExtensionCore core;
+
         public PromoRow()
         {
             InitializeComponent();
+        }
+
+        internal void Attach(ExtensionCore extensionCore)
+        {
+            core = extensionCore;
+            AchievementsTile.DataContext = core.Status;
+            DownloadsTile.DataContext = core.MyGames;
+        }
+
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnTileKeyDown, Playnite raising it as KeyDown alone.
+        private void OnTileClick(object sender, RoutedEventArgs e) => Open(sender);
+
+        private void OnTileKeyDown(object sender, KeyEventArgs e)
+        {
+            if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
+            {
+                e.Handled = true;
+                Open(sender);
+            }
+        }
+
+        private void Open(object tile)
+        {
+            if (tile == DiscordTile)
+            {
+                core.OpenDiscordFromHome();
+            }
+            else if (tile == PlayniteSettingsTile)
+            {
+                core.OpenPlayniteSettingsFromHome();
+            }
+            else if (tile == AchievementsTile)
+            {
+                core.OpenProfile();
+            }
+            else if (tile == DownloadsTile)
+            {
+                core.OpenQueueFromHome();
+            }
         }
 
         /// <summary>The tiles, left to right.</summary>

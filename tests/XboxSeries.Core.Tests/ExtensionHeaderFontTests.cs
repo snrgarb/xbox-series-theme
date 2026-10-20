@@ -59,8 +59,8 @@ namespace XboxSeries.Core.Tests
         [InlineData("MyGamesControl.xaml", "Text=Games you play show up here.", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text=All storage", "XboxFont")]
         // Tile captions.
-        [InlineData("PromoRow.xaml", "Text=Browse the store", "XboxFontSemibold")]
-        [InlineData("PromoRow.xaml", "Text=Pre-order, play now", "XboxFont")]
+        [InlineData("PromoRow.xaml", "Text=Discord", "XboxFontSemibold")]
+        [InlineData("PromoRow.xaml", "Sets=Nothing queued", "XboxFont")]
         [InlineData("HomeTiles.xaml", "Text={TemplateBinding Tag}|FontSize=18", "XboxFont")]
         // The Guide's entries, dialogs' options and prompts' messages.
         [InlineData("OverlayWindow.xaml", "Name=Calling", "XboxFont")]

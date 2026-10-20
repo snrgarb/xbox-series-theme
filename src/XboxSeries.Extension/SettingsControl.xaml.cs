@@ -143,7 +143,8 @@ namespace XboxSeries.Extension
                     shownCategory = core.Settings.Category;
                     ShowCategory();
 
-                    // Opened from the top bar or the Guide: focus goes to the category showing, the rail's first.
+                    // Opened from the top bar or the Guide: focus goes to the category showing, the rail's first; from a
+                    // tile under Home's Recent row, into the category's options.
                     if (core.Settings.IsShown)
                     {
                         FocusRailSoon();
@@ -588,12 +589,28 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Focuses the category showing once the page is laid out.</summary>
+        /// <summary>
+        /// Focuses the category showing once the page is laid out, or, opened by a tile under Home's Recent row, the option
+        /// it came for: Discord's Client ID, or the Playnite settings box.
+        /// </summary>
         private void FocusRailSoon()
         {
             Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
             {
-                if (core.Settings.IsShown && IsVisible)
+                if (!core.Settings.IsShown || !IsVisible)
+                {
+                    return;
+                }
+
+                if (core.Settings.OpensInPane && core.Settings.Category == SettingsCategory.Discord)
+                {
+                    TypeClientIdButton.Focus();
+                }
+                else if (core.Settings.OpensInPane && core.Settings.Category == SettingsCategory.PlayniteSettings)
+                {
+                    PlaynitePane.FocusPlayniteSettings();
+                }
+                else
                 {
                     categoryItems[core.Settings.Category].Focus();
                 }

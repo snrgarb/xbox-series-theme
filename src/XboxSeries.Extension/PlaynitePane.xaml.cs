@@ -45,6 +45,12 @@ namespace XboxSeries.Extension
             DownloadMetadataBox.Focus();
         }
 
+        /// <summary>Home's Playnite settings tile, opening the page: the Playnite settings box.</summary>
+        public void FocusPlayniteSettings()
+        {
+            PlayniteSettingsBox.Focus();
+        }
+
         // The keyboard's Enter and the mouse; the pad's A arrives as OnPaneKeyDown, Playnite raising it as KeyDown alone.
         private void OnBoxClick(object sender, RoutedEventArgs e) => Press((Button)sender);
 

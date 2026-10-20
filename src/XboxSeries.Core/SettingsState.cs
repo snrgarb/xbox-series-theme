@@ -40,6 +40,12 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// Whether focus goes into the category's options as the page opens, rather than to its rail entry: as a tile under
+        /// Home's Recent row opens it on Discord or Playnite settings.
+        /// </summary>
+        public bool OpensInPane { get; internal set; }
+
         /// <summary>Where the page was opened from, which B goes back to.</summary>
         public SettingsOrigin OpenedFrom { get; internal set; }
 
@@ -182,7 +188,10 @@ namespace XboxSeries.Core
         /// <summary>The Guide's Settings entry: B goes to Home.</summary>
         Guide,
 
-        /// <summary>The tile menu's Customise Home, on a Home tile: B goes back to Home, its rows focusing that tile again.</summary>
+        /// <summary>
+        /// The tile menu's Customise Home, on a Home tile, or a tile under the Recent row: B goes back to Home, its rows
+        /// focusing that tile again.
+        /// </summary>
         HomeTile,
 
         /// <summary>
