@@ -269,11 +269,11 @@ namespace XboxSeries.Core
         /// <summary>
         /// An achievement's Score: its platform's own points where PlayniteAchievements records them (Xbox's Gamerscore,
         /// RetroAchievements' points, Epic's XP), else by rarity, rarer worth more, from 100 for the rarest down to 10.
-        /// Points of 0 count as none recorded, so fall back to rarity too.
+        /// Points of 0 are worth 0, as PlayniteAchievements' own totals count them.
         /// </summary>
         private static int ScoreOf(Achievement achievement)
         {
-            if (achievement.Points > 0)
+            if (achievement.Points != null)
             {
                 return achievement.Points.Value;
             }

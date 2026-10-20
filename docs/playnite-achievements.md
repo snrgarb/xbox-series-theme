@@ -8,6 +8,7 @@ How the Bundle gets achievements, what a user has to set up today for them to wo
   - one unlock gets the green pill;
   - one **Rare** unlock gets the blue pill with the diamond and its own sound;
   - several unlocks together get "<n> achievements unlocked".
+- **Home's top bar** shows the **Score** total under the gamertag, as the console's.
 - **The Guide's Profile & system** shows the **Score** total, the number of achievements unlocked, and the last three unlocks.
 - Not built yet: the **Achievements page** in the Game hub (#34).
 
@@ -51,7 +52,7 @@ PlayniteAchievements ── cache ──► PlayniteAchievementsSource (adapter,
 - **Each unlock is announced once.** Dedupe is on (game, achievement key). The same unlock often arrives twice: live, then again from the cache.
 - **Grouping.** Unlocks heard within 1 s of each other, or found in one refresh, become one "<n> achievements unlocked" Toast.
 - **Rare** means a known rarity under 10%. An achievement with unknown rarity is never Rare.
-- **Score** is an achievement's own platform points where PlayniteAchievements records them (Xbox Gamerscore, RetroAchievements points, Epic XP); otherwise it comes from rarity: ≤1% → 100, ≤5% → 50, ≤10% → 30, ≤25% → 20, ≤50% → 15, anything else (or unknown) → 10. The total spans every platform's games, so it mixes the two.
+- **Score** is an achievement's own platform points where PlayniteAchievements records them (Xbox Gamerscore, RetroAchievements points, Epic XP), 0 included; otherwise it comes from rarity: ≤1% → 100, ≤5% → 50, ≤10% → 30, ≤25% → 20, ≤50% → 15, anything else (or unknown) → 10. The total spans every platform's games, so it mixes the two.
 - **Totals are per PC, not per Profile.** PlayniteAchievements keeps no per-user data, so every Profile shows the same numbers.
 
 ### When a Toast actually appears

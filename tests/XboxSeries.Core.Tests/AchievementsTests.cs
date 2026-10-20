@@ -357,8 +357,8 @@ namespace XboxSeries.Core.Tests
             Record(celeste, Unlocked("summit", "Summit", rarity: 60, points: 15, at: Start.AddDays(-2)));
             core.OnAchievementsChanged();
 
-            Assert.Equal(40 + 50 + 100 + 15, core.Guide.Achievements.Score);
-            Assert.Equal(40 + 50 + 100 + 15, core.Status.Achievements.Score);
+            Assert.Equal(40 + 50 + 0 + 15, core.Guide.Achievements.Score);
+            Assert.Equal(40 + 50 + 0 + 15, core.Status.Achievements.Score);
         }
 
         [Fact]
