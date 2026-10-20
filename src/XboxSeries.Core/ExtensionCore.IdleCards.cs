@@ -17,21 +17,24 @@ namespace XboxSeries.Core
         /// <summary>How many cards the pool holds of each kind but tips, which are all in it.</summary>
         private const int IdleCardsOfAKind = 5;
 
-        /// <summary>The Idle screen's tips, every one in the pool, text only.</summary>
-        private static readonly string[] IdleTips =
+        /// <summary>
+        /// The Idle screen's tips, every one in the pool, each with the buttons it is about, highlighted on its controller.
+        /// A button its text names is in braces, "{Y}", which the view draws as the button's icon.
+        /// </summary>
+        private static readonly IdleTip[] IdleTips =
         {
-            "Press the Guide button anywhere, even in a game, to open the Guide.",
-            "Press Menu on a game tile to play it, favourite it or manage it.",
-            "Press Y on Home to search your games and apps.",
-            "Customise Home from a tile's menu, or Settings › Theme settings › Personalisation.",
-            "Flag a filter preset in Playnite to show it as a Group on Home.",
-            "On the keyboard, X is backspace, Y is space, Start is Enter.",
-            "See what's downloading in My games & apps › Manage › Queue.",
-            "Your Score adds up achievements across every platform.",
-            "Connect Discord in Settings to see your calls in the Guide.",
-            "Rejoin a recent Discord call in one press from the Discord tab.",
-            "See what's playing in the Guide's Audio, under Now Playing.",
-            "Pick a boot video, original Xbox to Series X, in Personalisation › Start up.",
+            new IdleTip("Press {Guide} anywhere, even in a game, to open the Guide.", new[] { ControllerButton.Guide }),
+            new IdleTip("Press {Start} on a game tile to play it, favourite it or manage it.", new[] { ControllerButton.Start }),
+            new IdleTip("Press {Y} on Home to search your games and apps.", new[] { ControllerButton.Y }),
+            new IdleTip("Customise Home from a tile's menu, or Settings › Theme settings › Personalisation.", new[] { ControllerButton.Start }),
+            new IdleTip("Flag a filter preset in Playnite to show it as a Group on Home.", new ControllerButton[0]),
+            new IdleTip("On the keyboard, {X} is backspace, {Y} is space, {Start} is Enter.", new[] { ControllerButton.X, ControllerButton.Y, ControllerButton.Start }),
+            new IdleTip("See what's downloading in My games & apps › Manage › Queue.", new ControllerButton[0]),
+            new IdleTip("Your Score adds up achievements across every platform.", new ControllerButton[0]),
+            new IdleTip("Connect Discord in Settings to see your calls in the Guide.", new[] { ControllerButton.Guide }),
+            new IdleTip("Rejoin a recent Discord call in one press from the Discord tab.", new[] { ControllerButton.Guide }),
+            new IdleTip("See what's playing in the Guide's Audio, under Now Playing.", new[] { ControllerButton.Guide }),
+            new IdleTip("Pick a boot video, original Xbox to Series X, in Personalisation › Start up.", new ControllerButton[0]),
         };
 
         /// <summary>The Y prompt of a game's card, whose Game hub Y opens.</summary>
@@ -117,7 +120,7 @@ namespace XboxSeries.Core
         private List<IdleCard> IdleCardPool() =>
             (achievements.IsAvailable && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
-                .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null, header: "Tip", prompt: "Got it")))
+                .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t.Text, null, header: "Tip", prompt: "Got it", buttons: t.Buttons)))
                 .ToList();
 
         /// <summary>
@@ -254,6 +257,19 @@ namespace XboxSeries.Core
 
             var years = months / 12;
             return years == 1 ? "a year ago" : years + " years ago";
+        }
+
+        /// <summary>One of the Idle screen's tips: its text, and the buttons it is about.</summary>
+        private sealed class IdleTip
+        {
+            public IdleTip(string text, ControllerButton[] buttons)
+            {
+                Text = text;
+                Buttons = buttons;
+            }
+
+            public string Text { get; }
+            public ControllerButton[] Buttons { get; }
         }
     }
 }

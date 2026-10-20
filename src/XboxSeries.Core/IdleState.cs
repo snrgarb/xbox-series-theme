@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace XboxSeries.Core
@@ -103,7 +104,8 @@ namespace XboxSeries.Core
             double? progress = null,
             bool isRare = false,
             string prompt = null,
-            Guid? gameId = null)
+            Guid? gameId = null,
+            IReadOnlyList<ControllerButton> buttons = null)
         {
             Kind = kind;
             Title = title;
@@ -117,11 +119,15 @@ namespace XboxSeries.Core
             IsRare = isRare;
             Prompt = prompt;
             GameId = gameId;
+            Buttons = buttons ?? new ControllerButton[0];
         }
 
         public IdleCardKind Kind { get; }
 
-        /// <summary>The bold title: "Halo 5: Guardians - Kraken Lackin'", a game's name, or a tip's text.</summary>
+        /// <summary>
+        /// The bold title: "Halo 5: Guardians - Kraken Lackin'", a game's name, or a tip's text, which names a button by
+        /// its <see cref="ControllerButton"/> in braces, "{Y}", for the view to draw as the button's icon.
+        /// </summary>
         public string Title { get; }
 
         /// <summary>The line under the label: an achievement's description, or a game's playtime; null for none.</summary>
@@ -153,5 +159,8 @@ namespace XboxSeries.Core
 
         /// <summary>The game Y opens the Game hub of; null where Y only wakes the screen.</summary>
         public Guid? GameId { get; }
+
+        /// <summary>The buttons a tip is about, highlighted on its controller; empty for none.</summary>
+        public IReadOnlyList<ControllerButton> Buttons { get; }
     }
 }
