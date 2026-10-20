@@ -67,7 +67,7 @@
             <!-- The sticks, View and Menu, the D-pad. -->
             <Path Stroke="White" StrokeThickness="3.5" StrokeLineJoin="Round"
                   Data="M 77,87 A 25,25 0 1 1 127,87 A 25,25 0 1 1 77,87 Z M 254,158 A 25,25 0 1 1 304,158 A 25,25 0 1 1 254,158 Z M 176,88 A 10,10 0 1 1 196,88 A 10,10 0 1 1 176,88 Z M 241,88 A 10,10 0 1 1 261,88 A 10,10 0 1 1 241,88 Z M 148,124 L 170,124 L 170,146 L 192,146 L 192,168 L 170,168 L 170,190 L 148,190 L 148,168 L 126,168 L 126,146 L 148,146 Z" />
-            <!-- The Xbox button: a ring with the sphere's two crossing swooshes. -->
+            <!-- The Guide button: a ring with the sphere's two crossing swooshes. -->
             <Path Stroke="White" StrokeThickness="3"
                   Data="M 201,41 A 17,17 0 1 1 235,41 A 17,17 0 1 1 201,41 Z M 207,30 C 214,34 224,44 230,54 M 229,30 C 222,34 212,44 206,54" />
             <!-- X, B and A, outlined. -->
