@@ -82,19 +82,17 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_Y_prompt_is_an_outlined_72_circle_at_the_bottom_left()
+        public void The_Y_prompt_is_the_Ys_72_icon_at_the_bottom_left()
         {
             var card = Load("IdleCardControl.xaml");
             var prompt = Named(card, "Prompt");
             Assert.Equal("Bottom", (string)prompt.Attribute("VerticalAlignment"));
             Assert.Equal("72,0,78,62", (string)prompt.Attribute("Margin"));
-            var circle = prompt.Elements().First();
-            Assert.Equal("72", (string)circle.Attribute("Width"));
-            Assert.Equal("72", (string)circle.Attribute("Height"));
-            var ring = circle.Elements().Single(e => e.Name.LocalName == "Ellipse");
-            Assert.Null(ring.Attribute("Fill"));
-            Assert.Equal("White", (string)ring.Attribute("Stroke"));
-            Assert.Equal("Y", (string)circle.Elements().Single(e => e.Name.LocalName == "TextBlock").Attribute("Text"));
+            var glyph = prompt.Elements().First();
+            Assert.Equal("PromptGlyph", (string)glyph.Attribute(X + "Name"));
+            Assert.Equal("72", (string)glyph.Attribute("Width"));
+            Assert.Equal("72", (string)glyph.Attribute("Height"));
+            Assert.Contains("PromptGlyph.Child = ButtonGlyphs.Create(ControllerButton.Y, 72, Brushes.White);", Code("IdleCardControl.xaml.cs"));
             Assert.Equal("Bold", (string)Named(card, "PromptText").Attribute("FontWeight"));
             Assert.Equal("46", (string)Named(card, "PromptText").Attribute("FontSize"));
         }
@@ -133,11 +131,85 @@ namespace XboxSeries.Core.Tests
             Assert.Contains("var picture = card.Icon ?? (card.Art?.IsCover == true ? card.Art.Image : null);", code);
             Assert.Contains("Controller.Visibility = Seen(isTip && card.Art == null);", code);
 
-            // The controller's outline, drawn in white, as the tip's capture has it, 438 by 310 at 507 down.
+            // The controller's outline, traced from the tip's capture, 442 by 312 at 506 down, centred, in white lines.
             var controller = Named(card, "Controller");
-            Assert.Equal("438", (string)controller.Attribute("Width"));
-            Assert.All(controller.Elements().Where(e => e.Name.LocalName == "Path" && e.Attribute("Stroke") != null),
-                path => Assert.Equal("White", (string)path.Attribute("Stroke")));
+            Assert.Equal("442", (string)controller.Attribute("Width"));
+            Assert.Equal("312", (string)controller.Attribute("Height"));
+            Assert.Equal("0,506,4,0", (string)controller.Attribute("Margin"));
+            Assert.Equal("Center", (string)controller.Attribute("HorizontalAlignment"));
+            var body = Named(card, "Body");
+            Assert.Equal("White", (string)body.Attribute("Stroke"));
+            Assert.Equal("3.2", (string)body.Attribute("StrokeThickness"));
+            Assert.Null(body.Attribute("Fill"));
+            Assert.All(controller.Descendants().Where(e => e.Name.LocalName == "Path" && (string)e.Attribute("Tag") == "Shape"),
+                path =>
+                {
+                    Assert.Equal("White", (string)path.Attribute("Stroke"));
+                    Assert.Equal("3.2", (string)path.Attribute("StrokeThickness"));
+                    Assert.Null(path.Attribute("Fill"));
+                });
+        }
+
+        [Fact]
+        public void Every_button_of_the_pad_is_on_the_controller_by_its_name_and_a_tips_buttons_are_filled_white()
+        {
+            var card = Load("IdleCardControl.xaml");
+            var buttons = Named(card, "Controller").Elements().Where(e => e.Name.LocalName == "Canvas").ToList();
+
+            // One element for each button, the D-pad's four as one, each but the Guide with a part filled when lit.
+            var expected = System.Enum.GetValues(typeof(ControllerButton)).Cast<ControllerButton>()
+                .Select(b => b >= ControllerButton.DPadUp ? "DPad" : b.ToString()).Distinct().OrderBy(n => n);
+            Assert.Equal(expected, buttons.Select(b => (string)b.Attribute(X + "Name")).OrderBy(n => n));
+            Assert.All(buttons.Where(b => (string)b.Attribute(X + "Name") != "Guide"), button =>
+                Assert.Single(button.Elements(), e => (string)e.Attribute("Tag") == "Shape"));
+
+            // A, B, X and Y have their letters, in the panel's colour, seen only when lit; the Guide its sphere outlined
+            // until then, and a white disc with the sphere in the panel's colour when lit.
+            foreach (var letter in new[] { "A", "B", "X", "Y" })
+            {
+                var text = Named(card, letter).Elements().Single(e => e.Name.LocalName == "TextBlock");
+                Assert.Equal(letter, (string)text.Attribute("Text"));
+                Assert.Equal("Lit", (string)text.Attribute("Tag"));
+                Assert.Equal("Collapsed", (string)text.Attribute("Visibility"));
+                Assert.Equal("{Binding Background, ElementName=Panel}", (string)text.Attribute("Foreground"));
+            }
+
+            var guide = Named(card, "Guide").Elements().ToList();
+            Assert.All(guide.Where(e => (string)e.Attribute("Tag") == "Unlit"), e => Assert.Equal("White", (string)e.Attribute("Stroke")));
+            Assert.All(guide.Where(e => (string)e.Attribute("Tag") == "Lit"), e => Assert.Equal("Collapsed", (string)e.Attribute("Visibility")));
+            Assert.Contains("kenney.nl/assets/input-prompts, CC0 1.0", File.ReadAllText(Path.Combine(ExtensionDir, "IdleCardControl.xaml")));
+
+            // Only a tip's buttons, from the core; a game's card none.
+            var code = Code("IdleCardControl.xaml.cs");
+            Assert.Contains("Highlight(isTip ? card.Buttons : new ControllerButton[0]);", code);
+            Assert.Contains("button >= ControllerButton.DPadUp ? \"DPad\" : button.ToString();", code);
+            Assert.Contains("((Shape)part).Fill = on ? Brushes.White : null;", code);
+        }
+
+        [Fact]
+        public void A_tips_buttons_are_drawn_as_their_icons_in_its_words_and_a_games_title_is_words_alone()
+        {
+            var code = Code("IdleCardControl.xaml.cs");
+            Assert.Contains("isTip ? ButtonTokens.Parse(card.Title) : new[] { new ButtonTokens.Part(card.Title, null) }", code);
+            Assert.Contains("ButtonGlyphs.Inline(part.Button.Value, Title.FontSize, Brushes.White)", code);
+
+            // The icons built in code with only the shared font key, so nothing of the theme's.
+            var glyphs = Code("ButtonGlyphs.cs");
+            Assert.DoesNotContain("FindResource", glyphs);
+            var keys = Regex.Matches(glyphs, @"SetResourceReference\([^,]+, ""(\w+)""\)").Cast<Match>().ToList();
+            Assert.NotEmpty(keys);
+            Assert.All(keys, m => Assert.Contains(m.Groups[1].Value, SharedKeys));
+        }
+
+        [Fact]
+        public void An_achievements_icon_has_the_art_under_it_darkened_by_half_again_and_no_other_card_does()
+        {
+            var card = Load("IdleCardControl.xaml");
+            var shade = Named(card, "IconShade");
+            Assert.Equal("Art", (string)shade.Parent.Attribute(X + "Name"));
+            Assert.Equal("#80000000", (string)shade.Attribute("Fill"));
+            Assert.Equal("Collapsed", (string)shade.Attribute("Visibility"));
+            Assert.Contains("IconShade.Visibility = Seen(card.Icon != null);", Code("IdleCardControl.xaml.cs"));
         }
 
         [Fact]
