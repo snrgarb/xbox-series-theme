@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using XboxSeries.Core;
@@ -11,7 +13,8 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The Idle screen's dim. It follows the core's <see cref="IdleState.IsDimmed"/> and holds no logic: it fades in over
     /// the whole monitor as the screen dims, over every window but the Toast's, and fades out, then hides, as it wakes. It
-    /// never takes focus, the foreground or the mouse.
+    /// never takes focus, the foreground or the mouse. Over the dim, it shows the core's <see cref="IdleState.Card"/>,
+    /// crossfading from one card to the next, and hides it with the dim.
     /// </summary>
     public partial class DimWindow : Window
     {
@@ -21,7 +24,14 @@ namespace XboxSeries.Extension
         /// <summary>The fade out, quick, as the screen wakes.</summary>
         internal static readonly Duration FadeOutDuration = TimeSpan.FromMilliseconds(250);
 
+        /// <summary>From one card to the next, as Home's top bar crossfades the gamertag and the real name.</summary>
+        internal static readonly Duration CardCrossfade = TimeSpan.FromMilliseconds(300);
+
         private readonly IdleState idle;
+
+        /// <summary>The card showing, or fading in; the other fades out beneath it.</summary>
+        private IdleCardControl front;
+        private IdleCardControl back;
 
         /// <summary>The windows that stay above the dim, the Toast's.</summary>
         private readonly Window[] above;
@@ -40,6 +50,9 @@ namespace XboxSeries.Extension
             InitializeComponent();
             this.idle = idle;
             this.above = above;
+            front = CardA;
+            back = CardB;
+            SizeChanged += (_, __) => FitToScreen();
             idle.PropertyChanged += OnIdleChanged;
             SourceInitialized += (_, __) =>
             {
@@ -76,6 +89,12 @@ namespace XboxSeries.Extension
 
         private void OnIdleChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(IdleState.Card))
+            {
+                OnCardChanged();
+                return;
+            }
+
             if (e.PropertyName != nameof(IdleState.IsDimmed))
             {
                 return;
@@ -83,6 +102,11 @@ namespace XboxSeries.Extension
 
             if (idle.IsDimmed)
             {
+                // No card yet, nor the last one from before: the core sets one once the screen is Showing things.
+                Unseen(front);
+                Unseen(back);
+                Cards.BeginAnimation(OpacityProperty, null);
+                Cards.Opacity = 1;
                 ShowOverForeground();
                 Fade(1, FadeInDuration, null);
             }
@@ -168,7 +192,10 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>The dim fading to <paramref name="to"/> from wherever it is, as part way through the other fade.</summary>
+        /// <summary>
+        /// The dim fading to <paramref name="to"/> from wherever it is, as part way through the other fade; fading out,
+        /// the card goes with it.
+        /// </summary>
         private void Fade(double to, Duration duration, Action done)
         {
             var fade = new DoubleAnimation(to, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
@@ -178,6 +205,70 @@ namespace XboxSeries.Extension
             }
 
             Shade.BeginAnimation(OpacityProperty, fade);
+            if (to == 0)
+            {
+                Cards.BeginAnimation(OpacityProperty, new DoubleAnimation(0, duration) { EasingFunction = fade.EasingFunction });
+            }
+        }
+
+        /// <summary>
+        /// The new card fades in on top while the last fades out beneath it; none fades the last out, unless the screen is
+        /// waking, when it goes with the dim.
+        /// </summary>
+        private void OnCardChanged()
+        {
+            var card = idle.Card;
+            if (card == null)
+            {
+                if (idle.IsDimmed)
+                {
+                    front.BeginAnimation(OpacityProperty, new DoubleAnimation(0, CardCrossfade));
+                }
+
+                return;
+            }
+
+            var old = front;
+            front = back;
+            back = old;
+
+            front.Show(card);
+            Panel.SetZIndex(front, 1);
+            Panel.SetZIndex(back, 0);
+
+            // To-only, so a crossfade interrupted by the next card carries on from where each is.
+            front.BeginAnimation(OpacityProperty, new DoubleAnimation(1, CardCrossfade));
+            back.BeginAnimation(OpacityProperty, new DoubleAnimation(0, CardCrossfade));
+        }
+
+        private static void Unseen(UIElement card)
+        {
+            card.BeginAnimation(OpacityProperty, null);
+            card.Opacity = 0;
+        }
+
+        /// <summary>
+        /// The cards are laid out 1080 tall, as wide as the screen's aspect makes that, and scaled to fit; each is drawn once
+        /// into a picture at the screen's own resolution, its shadow and a cover's blur with it, so sharp, and the graphics
+        /// card fades those pictures rather than redrawing the blur and the shadow every frame at 4K.
+        /// </summary>
+        private void FitToScreen()
+        {
+            if (ActualHeight <= 0)
+            {
+                return;
+            }
+
+            Root.Width = Root.Height * ActualWidth / ActualHeight;
+            var source = PresentationSource.FromVisual(this);
+            var pixelsPerUnit = ActualHeight / Root.Height * (source?.CompositionTarget.TransformToDevice.M22 ?? 1);
+            foreach (var card in new UIElement[] { CardA, CardB })
+            {
+                if (!(card.CacheMode is BitmapCache cache) || cache.RenderAtScale != pixelsPerUnit)
+                {
+                    card.CacheMode = new BitmapCache(pixelsPerUnit) { SnapsToDevicePixels = true };
+                }
+            }
         }
     }
 }
