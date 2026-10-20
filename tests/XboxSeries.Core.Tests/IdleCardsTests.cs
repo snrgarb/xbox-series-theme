@@ -81,6 +81,32 @@ namespace XboxSeries.Core.Tests
 
         private void LibraryChanged() => core.OnLibraryChanged(library.Snapshot());
 
+        /// <summary>
+        /// A game in the library with <paramref name="total"/> achievements, the first <paramref name="unlocked"/> of them
+        /// unlocked, recorded but not yet read: <see cref="AchievementsRead"/> tells the core.
+        /// </summary>
+        private Guid GameWithAchievements(string name, int unlocked, int total, bool hidden = false, bool inLibrary = true)
+        {
+            var id = Guid.NewGuid();
+            if (inLibrary)
+            {
+                library.WithGame(id, name, hidden: hidden, backgroundImage: name + ".jpg");
+            }
+
+            achievements.Recorded.Add(new GameAchievements(
+                id,
+                Enumerable.Range(0, total)
+                    .Select(i => new Achievement(name + i, name + " " + i, null, 50, i < unlocked ? Start.AddDays(-30 - i) : (DateTime?)null))
+                    .ToList()));
+            return id;
+        }
+
+        private void AchievementsRead()
+        {
+            LibraryChanged();
+            core.OnAchievementsChanged();
+        }
+
         [Fact]
         public void No_card_shows_while_awake_or_only_dimmed()
         {
@@ -266,6 +292,135 @@ namespace XboxSeries.Core.Tests
             var detail = FirstRound(IdleCardKind.RecentlyPlayed).Single().Detail;
 
             Assert.Equal(char.ToUpperInvariant(when[0]) + when.Substring(1), detail);
+        }
+
+        [Fact]
+        public void Close_achievements_holds_the_five_games_with_the_most_unlocked_without_all_of_them()
+        {
+            GameWithAchievements("Nine", 9, 50);
+            GameWithAchievements("Three", 3, 4);
+            GameWithAchievements("Twenty", 20, 21);
+            GameWithAchievements("Eight", 8, 9);
+            GameWithAchievements("Two", 2, 3);
+            GameWithAchievements("Seven", 7, 100);
+            GameWithAchievements("Four", 4, 40);
+            AchievementsRead();
+
+            var close = FirstRound(IdleCardKind.CloseAchievements);
+
+            Assert.Equal(new[] { "Eight", "Four", "Nine", "Seven", "Twenty" }, close.Select(c => c.Title).OrderBy(t => t));
+        }
+
+        [Fact]
+        public void Among_games_with_as_many_unlocked_the_one_nearer_finished_goes_first_then_by_name()
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                GameWithAchievements("Ten " + i, 10, 20);
+            }
+
+            GameWithAchievements("Five of fifty", 5, 50);
+            GameWithAchievements("Zeta five of six", 5, 6);
+            GameWithAchievements("Beta five of ten", 5, 10);
+            GameWithAchievements("Alpha five of ten", 5, 10);
+            AchievementsRead();
+
+            var titles = FirstRound(IdleCardKind.CloseAchievements).Select(c => c.Title).ToList();
+
+            Assert.Contains("Zeta five of six", titles);
+            Assert.DoesNotContain("Five of fifty", titles);
+            Assert.DoesNotContain("Alpha five of ten", titles);
+
+            achievements.Recorded.RemoveAll(g => library.Snapshot().Games.Single(x => x.Id == g.GameId).Name == "Zeta five of six");
+            core.OnUserInput();
+            AchievementsRead();
+            titles = FirstRound(IdleCardKind.CloseAchievements).Select(c => c.Title).ToList();
+
+            Assert.Contains("Alpha five of ten", titles);
+            Assert.DoesNotContain("Beta five of ten", titles);
+        }
+
+        [Fact]
+        public void Fully_finished_untouched_hidden_and_unknown_games_are_left_out_of_close_achievements()
+        {
+            GameWithAchievements("Finished", 30, 30);
+            GameWithAchievements("Untouched", 0, 30);
+            GameWithAchievements("Hidden", 20, 30, hidden: true);
+            GameWithAchievements("Not in the library", 20, 30, inLibrary: false);
+            GameWithAchievements("Close", 1, 30);
+            AchievementsRead();
+
+            var close = FirstRound(IdleCardKind.CloseAchievements);
+
+            Assert.Equal("Close", Assert.Single(close).Title);
+        }
+
+        [Fact]
+        public void A_close_achievements_card_shows_the_games_art_how_many_are_unlocked_and_the_locked_one_most_players_have()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Hades", coverImage: "hades.jpg");
+            achievements.Recorded.Add(new GameAchievements(id, new[]
+            {
+                new Achievement("a", "Blessed", null, 80, Start.AddDays(-2)),
+                new Achievement("b", "Escaped", null, 90, Start.AddDays(-1)),
+                new Achievement("c", "Unknown", null, null, null),
+                new Achievement("d", "Petted Cerberus", null, 40, null),
+                new Achievement("e", "Nameless", null, 60, null),
+                new Achievement("f", "Rare", null, 2, null),
+            }));
+            AchievementsRead();
+
+            var card = FirstRound(IdleCardKind.CloseAchievements).Single();
+
+            Assert.Equal("Hades", card.Title);
+            Assert.Equal("2 of 6 unlocked · Next: Nameless", card.Detail);
+            Assert.Equal("hades.jpg", card.Art.Image);
+            Assert.True(card.Art.IsCover);
+            Assert.Null(card.Icon);
+        }
+
+        [Fact]
+        public void A_locked_achievement_of_unknown_rarity_is_named_only_when_no_other_is_known()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Hades");
+            achievements.Recorded.Add(new GameAchievements(id, new[]
+            {
+                new Achievement("a", "Blessed", null, 80, Start),
+                new Achievement("b", "Unknown", null, null, null),
+                new Achievement("c", "Common", null, 1, null),
+            }));
+            AchievementsRead();
+
+            Assert.Equal("1 of 3 unlocked · Next: Common", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
+        }
+
+        [Fact]
+        public void With_no_locked_achievement_named_the_card_only_counts()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Hades");
+            achievements.Recorded.Add(new GameAchievements(id, new[]
+            {
+                new Achievement("a", "Blessed", null, 80, Start),
+                new Achievement("b", "", null, 50, null),
+                new Achievement("c", null, null, null, null),
+            }));
+            AchievementsRead();
+
+            Assert.Equal("1 of 3 unlocked", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
+        }
+
+        [Fact]
+        public void An_unlock_heard_live_counts_as_unlocked_before_a_read_shows_it()
+        {
+            var id = GameWithAchievements("Hades", 1, 3);
+            AchievementsRead();
+
+            core.OnAchievementUnlocked(id, new Achievement("Hades1", "Hades 1", null, 50, Start));
+
+            Assert.Equal("2 of 3 unlocked · Next: Hades 2", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
         }
     }
 }
