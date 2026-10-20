@@ -8,7 +8,7 @@ using static XboxSeries.Core.Tests.XamlFonts;
 namespace XboxSeries.Core.Tests
 {
     // Playnite's game status view, "<Game> is running…", drawn as the Launch screen (#80): the game's art full screen,
-    // chosen as the hero chooses it, with the cover, the status and Close centred over it. The XAML isn't run here (it was
+    // chosen as the hero chooses it, with the cover and the status centred over it, and no Close: B leaves the view. The XAML isn't run here (it was
     // tried on a harness hosting Playnite's own GameStatus control); these checks guard the art, the scrim and the parts.
     public class GameStatusXamlTests
     {
@@ -43,7 +43,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Same(host, art.Parent);
             Assert.Same(art, host.Elements().First(e => !e.Name.LocalName.Contains(".")));
-            Assert.Equal("5", (string)art.Attribute("Grid.RowSpan"));
+            Assert.Equal("4", (string)art.Attribute("Grid.RowSpan"));
             Assert.Equal("3", (string)art.Attribute("Grid.ColumnSpan"));
             Assert.Equal("True", (string)art.Attribute("ClipToBounds"));
             Assert.Equal("False", (string)art.Attribute("IsHitTestVisible"));
@@ -119,7 +119,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_scrim_over_the_art_keeps_the_status_and_Close_readable_on_bright_art()
+        public void A_scrim_over_the_art_keeps_the_status_readable_on_bright_art()
         {
             var doc = View();
             var host = Named(doc, "PART_ViewHost");
@@ -132,7 +132,7 @@ namespace XboxSeries.Core.Tests
             foreach (var scrim in scrims)
             {
                 Assert.Equal("False", (string)scrim.Attribute("IsHitTestVisible"));
-                Assert.Equal("5", (string)scrim.Attribute("Grid.RowSpan"));
+                Assert.Equal("4", (string)scrim.Attribute("Grid.RowSpan"));
                 Assert.Equal("3", (string)scrim.Attribute("Grid.ColumnSpan"));
                 Assert.True(children.IndexOf(Named(doc, "XboxGameStatusArt")) < children.IndexOf(scrim));
                 Assert.True(children.IndexOf(scrim) < children.IndexOf(Named(doc, "PART_ImageCover")));
@@ -140,19 +140,38 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_cover_the_status_and_Close_stay_centred_in_the_middle_column_over_the_art()
+        public void The_cover_and_the_status_stay_centred_in_the_middle_column_over_the_art()
         {
             var doc = View();
-            foreach (var (part, row) in new[] { ("PART_ImageCover", "1"), ("PART_TextStatus", "2"), ("PART_PanelActionButtons", "3") })
+            foreach (var (part, row) in new[] { ("PART_ImageCover", "1"), ("PART_TextStatus", "2") })
             {
                 var element = Named(doc, part);
                 Assert.Equal(row, (string)element.Attribute("Grid.Row"));
                 Assert.Equal("1", (string)element.Attribute("Grid.Column"));
                 Assert.Equal("Center", (string)element.Attribute("HorizontalAlignment"));
             }
+        }
 
-            // Close is Playnite's own ButtonEx (it presses on the pad's A on KeyDown); the theme only styles it.
-            Assert.Empty(Named(doc, "PART_PanelActionButtons").Elements());
+        [Fact]
+        public void There_is_no_Close_and_B_or_Escape_leaves_the_view_as_Close_did()
+        {
+            var doc = View();
+
+            // Without the panel Playnite adds no Close.
+            Assert.DoesNotContain(doc.Descendants(), e => (string)e.Attribute("Name") == "PART_PanelActionButtons");
+
+            // Nothing in the view takes focus, so the view host does: Playnite focuses it as the view shows, and the
+            // presses reach its bindings. It draws no focus rectangle.
+            var host = Named(doc, "PART_ViewHost");
+            Assert.Equal("True", (string)host.Attribute("Focusable"));
+            Assert.Equal("{x:Null}", (string)host.Attribute("FocusVisualStyle"));
+
+            const string close = "{MainViewModel CloseGameStatusCommand, DirectValue=True}";
+            var bindings = host.Elements().Single(e => e.Name.LocalName == "Grid.InputBindings").Elements().ToList();
+            Assert.Contains(bindings, b => b.Name.LocalName == "GameControllerInputBinding"
+                && (string)b.Attribute("Button") == "B" && (string)b.Attribute("Command") == close);
+            Assert.Contains(bindings, b => b.Name.LocalName == "KeyBinding"
+                && (string)b.Attribute("Key") == "Escape" && (string)b.Attribute("Command") == close);
         }
     }
 }
