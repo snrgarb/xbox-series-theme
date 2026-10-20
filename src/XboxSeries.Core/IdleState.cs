@@ -77,8 +77,15 @@ namespace XboxSeries.Core
         public IReadOnlyList<TimeSpan?> ShowThingsAfterSteps => Steps;
 
         /// <summary>A step as its dropdown shows it: "1 min", "30 min", "1 h", "4 h", or "Never" for null.</summary>
-        // TODO(#90 core): the real words.
-        public static string Describe(TimeSpan? after) => after?.ToString() ?? "Never";
+        public static string Describe(TimeSpan? after)
+        {
+            if (!(after is TimeSpan span))
+            {
+                return "Never";
+            }
+
+            return span < TimeSpan.FromHours(1) ? $"{span.TotalMinutes:0} min" : $"{span.TotalHours:0} h";
+        }
 
         public IdleStage Stage
         {
