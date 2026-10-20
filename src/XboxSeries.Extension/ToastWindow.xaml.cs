@@ -64,6 +64,9 @@ namespace XboxSeries.Extension
         /// <summary>Counts the goings, so only the latest one's end hides the window.</summary>
         private int goings;
 
+        /// <summary>Whether a Toast cutting in waits to be shown, once the core has set all of its fields.</summary>
+        private bool cutInPending;
+
         public ToastWindow(ToastState toast)
         {
             InitializeComponent();
@@ -83,6 +86,35 @@ namespace XboxSeries.Extension
             };
         }
 
+        /// <summary>
+        /// A Toast that cut in: on its line first too, its tile placed or sliding in again as its kind has it, or the rare
+        /// pill played afresh.
+        /// </summary>
+        private void ShowCutIn()
+        {
+            cutInPending = false;
+            if (!toast.IsShown)
+            {
+                return;
+            }
+
+            if (IsRare)
+            {
+                PlayRare();
+                return;
+            }
+
+            // The banner grows in afresh only over a rare achievement's pill, which hid it.
+            var overRare = StopRare();
+            CycleText();
+            if (overRare)
+            {
+                GrowIn();
+            }
+
+            ComeIn();
+        }
+
         private void FitToScreen()
         {
             if (ActualHeight > 0)
@@ -95,22 +127,14 @@ namespace XboxSeries.Extension
         {
             if ((e.PropertyName == nameof(ToastState.Text) || e.PropertyName == nameof(ToastState.Kind)) && toast.IsShown)
             {
-                // Another Toast cutting in, as a call over a notification: on its line first too, its tile placed or sliding
-                // in again as its kind has it. The core sets the text and then the kind, so this runs for each, the kind's last.
-                if (IsRare)
+                // Another Toast cutting in, as a call over a notification. The core sets its text, kind and the rest one
+                // after another, so it is shown once they all are, not half-set with the last Toast's kind or fields.
+                if (!cutInPending)
                 {
-                    PlayRare();
-                    return;
+                    cutInPending = true;
+                    Dispatcher.BeginInvoke(new Action(ShowCutIn));
                 }
 
-                // The banner grows in afresh only over a rare achievement's pill, which hid it.
-                var overRare = StopRare();
-                CycleText();
-                if (overRare)
-                {
-                    GrowIn();
-                }
-                ComeIn();
                 return;
             }
 
