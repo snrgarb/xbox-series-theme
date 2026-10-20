@@ -245,8 +245,9 @@
         </Grid.ColumnDefinitions>
 
         <!--
-            The rail: the page's name, the Bundle's categories, then under a divider Playnite's own entries, which open its
-            windows rather than show beside the rail. Focusing a category shows it.
+            The rail: the page's name, the Bundle's categories, then under a divider Playnite's own: Playnite settings, a
+            category of boxes as the others are, and More Playnite options, which opens Playnite's main menu rather than
+            show beside the rail. Focusing a category shows it.
         -->
         <StackPanel Grid.Column="0" Margin="0,78,0,0">
             <TextBlock Text="Settings" Style="{StaticResource HeaderText}" FontSize="30" Height="54" Margin="75,0,0,58" />
@@ -261,7 +262,7 @@
                     <TextBlock Text="Discord" Style="{StaticResource RailText}" />
                 </Button>
                 <Border Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}" />
-                <Button x:Name="PlayniteSettingsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
+                <Button x:Name="PlayniteSettingsItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
                     <TextBlock Text="Playnite settings" Style="{StaticResource RailText}" />
                 </Button>
                 <Button x:Name="MorePlayniteOptionsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
@@ -421,6 +422,13 @@
 
                 <TextBlock Text="{Binding StatusText}" Style="{StaticResource Text}" TextWrapping="Wrap" />
             </StackPanel>
+
+            <!--
+                Playnite settings: its boxes, Download metadata, Playnite settings (Playnite's own Fullscreen Settings
+                window) and Update after downloads, as Personalisation's. Right or A on the rail's Playnite settings comes
+                in; Left from the first column or B from its boxes goes back to it.
+            -->
+            <local:PlaynitePane x:Name="PlaynitePane" Grid.Row="1" Visibility="Collapsed" />
 
             <!--
                 Debug builds only: the Debug menu (DebugPane), made by the code-behind and placed here, in the options' row.
