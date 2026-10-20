@@ -213,6 +213,9 @@ namespace XboxSeries.Core
         /// <summary>Its boxes, Start up's for now: the boot video, the profiles, and whether Who's playing today? asks.</summary>
         Personalisation,
 
+        /// <summary>The Idle screen's two dropdowns: Dim after and Show things after (<see cref="IdleState"/>).</summary>
+        Idle,
+
         /// <summary>The Guide's behaviour options, the Now Playing source for now.</summary>
         Guide,
 
