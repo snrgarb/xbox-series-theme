@@ -245,23 +245,16 @@
         </Grid.ColumnDefinitions>
 
         <!--
-            The rail: the page's name, the Bundle's categories, then under a divider Playnite's own: Playnite settings, a
-            category of boxes as the others are, and More Playnite options, which opens Playnite's main menu rather than
-            show beside the rail. Focusing a category shows it.
+            The rail: the page's name, the Bundle's own settings as one category, Theme settings, then Playnite's own:
+            Playnite settings, a category of boxes as Theme settings is, and More Playnite options, which opens Playnite's
+            main menu rather than show beside the rail. Focusing a category shows it.
         -->
         <StackPanel Grid.Column="0" Margin="0,78,0,0">
             <TextBlock Text="Settings" Style="{StaticResource HeaderText}" FontSize="30" Height="54" Margin="75,0,0,58" />
             <StackPanel x:Name="Rail" KeyDown="OnRailKeyDown">
-                <Button x:Name="PersonalisationItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
-                    <TextBlock Text="Personalisation" Style="{StaticResource RailText}" />
+                <Button x:Name="ThemeSettingsItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
+                    <TextBlock Text="Theme settings" Style="{StaticResource RailText}" />
                 </Button>
-                <Button x:Name="GuideItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
-                    <TextBlock Text="Guide" Style="{StaticResource RailText}" />
-                </Button>
-                <Button x:Name="DiscordItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
-                    <TextBlock Text="Discord" Style="{StaticResource RailText}" />
-                </Button>
-                <Border Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}" />
                 <Button x:Name="PlayniteSettingsItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
                     <TextBlock Text="Playnite settings" Style="{StaticResource RailText}" />
                 </Button>
@@ -293,17 +286,24 @@
             <TextBlock x:Name="Header" Style="{StaticResource HeaderText}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
 
             <!--
-                Personalisation: its boxes, Start up's for now, each opening a page of its own in their place, the header
-                following. Right or A on the rail's Personalisation comes in; Left from the first column or B from its
-                boxes goes back to it.
+                Theme settings: its boxes, Personalisation, Guide and Discord, each opening its page below in their place,
+                the header following (SettingsState.ThemePage). Right or A on the rail's Theme settings comes in; Left
+                from the first column or B from its boxes goes back to it. On a page, B, or Left from its first column,
+                goes back to the boxes, focus on the one it came from.
+            -->
+            <local:ThemeSettingsPane x:Name="ThemeSettingsPane" Grid.Row="1" Visibility="Collapsed" />
+
+            <!--
+                Theme settings > Personalisation: its boxes, Start up's for now, each opening a page of its own in their
+                place, the header following; B steps back a page at a time, then from its boxes to Theme settings'.
             -->
             <local:PersonalisationPane x:Name="PersonalisationPane" Grid.Row="1" Visibility="Collapsed" />
 
             <!--
-                Guide: its behaviour options, the Now Playing source for now, a dropdown as the Guide's Audio Output and
-                Input are: which app the Audio flyout's Now Playing follows. Its list opens under the box and as wide, laid
-                over what is below rather than pushing it down: the Canvas takes no height. Right or A on the rail's Guide
-                comes in; Left or B goes back to it.
+                Theme settings > Guide: its behaviour options, the Now Playing source for now, a dropdown as the Guide's
+                Audio Output and Input are: which app the Audio flyout's Now Playing follows. Its list opens under the box
+                and as wide, laid over what is below rather than pushing it down: the Canvas takes no height. A on Theme
+                settings' Guide comes in; Left or B goes back to it.
             -->
             <StackPanel x:Name="GuidePane" Grid.Row="1" DataContext="{Binding Guide}" Visibility="Collapsed"
                         HorizontalAlignment="Left" Width="560" KeyDown="OnGuidePaneKeyDown">
@@ -324,8 +324,8 @@
             <!--
                 Discord: the checklist for making the user's own Discord application, beside the QR code of the developer
                 portal it's made at; its Client ID and Secret, each typed over the page with Type or filled by Paste from the
-                Windows clipboard; Connect and Disconnect; and the status line. Right or A on the rail's Discord comes in;
-                Left from the first column or B goes back to it.
+                Windows clipboard; Connect and Disconnect; and the status line, under Theme settings. A on Theme settings'
+                Discord comes in; Left from the first column or B goes back to it.
             -->
             <StackPanel x:Name="DiscordPane" Grid.Row="1" DataContext="{Binding Discord}" Visibility="Collapsed"
                         KeyDown="OnDiscordPaneKeyDown">
@@ -425,7 +425,7 @@
 
             <!--
                 Playnite settings: its boxes, Download metadata, Playnite settings (Playnite's own Fullscreen Settings
-                window) and Update after downloads, as Personalisation's. Right or A on the rail's Playnite settings comes
+                window) and Update after downloads, as Theme settings'. Right or A on the rail's Playnite settings comes
                 in; Left from the first column or B from its boxes goes back to it.
             -->
             <local:PlaynitePane x:Name="PlaynitePane" Grid.Row="1" Visibility="Collapsed" />

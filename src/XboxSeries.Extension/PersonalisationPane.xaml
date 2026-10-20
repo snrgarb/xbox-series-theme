@@ -5,7 +5,7 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False" KeyDown="OnPaneKeyDown">
     <!--
-        Settings' Personalisation category, as the console's General and Account: a grid of dark boxes two wide, each a
+        Theme settings' Personalisation page, as the console's General and Account: a grid of dark boxes two wide, each a
         line icon and its name alone, opening a page of its own in their place, Start up's boxes doing the same. Its DataContext
         is the core's StartUpSettingsState; the page showing and its header follow the code-behind. In Settings' palette and 1080p units (SettingsControl.xaml).
     -->
@@ -116,7 +116,7 @@
     </UserControl.Resources>
 
     <Grid Margin="0,20,0,0">
-        <!-- The category: Start up for now. -->
+        <!-- Personalisation's boxes: Start up for now. -->
         <UniformGrid x:Name="PersonalisationPage" Columns="2" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Button x:Name="StartUpBox" Style="{StaticResource Box}" Tag="&#xE7E8;" Click="OnBoxClick">
                 <TextBlock Text="Start up" Style="{StaticResource Text}" />

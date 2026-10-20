@@ -16,12 +16,12 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Settings' Personalisation category: its boxes, Start up's for now, and the page each opens in their place (Start
+    /// Theme settings' Personalisation page: its boxes, Start up's for now, and the page each opens in their place (Start
     /// up's boxes, then Boot video, Who's playing today?, Profiles, a profile, its Picture). Every box shows its name
     /// alone; what it's set to shows on the page it opens. The pad moves between a page's boxes; A opens or
     /// sets, and B steps back a page at a time, focus going back to the box that opened it, then from Personalisation's
-    /// boxes to the rail. Every choice goes straight to the core, which saves it; the pane holds which page shows and
-    /// nothing else.
+    /// boxes to Theme settings' own. Every choice goes straight to the core, which saves it; the pane holds which page
+    /// shows and nothing else.
     /// </summary>
     public partial class PersonalisationPane : UserControl
     {
@@ -59,8 +59,8 @@ namespace XboxSeries.Extension
             Unloaded += (s, e) => { if (core != null) { Follow(false); } };
         }
 
-        /// <summary>B, or Left from the first column, on Personalisation's boxes: back to the rail's Personalisation.</summary>
-        public event EventHandler BackToRail;
+        /// <summary>B, or Left from the first column, on Personalisation's boxes: back to Theme settings' boxes.</summary>
+        public event EventHandler BackToThemeSettings;
 
         /// <summary>The page showing changed, and with it <see cref="Title"/>.</summary>
         public event EventHandler TitleChanged;
@@ -140,14 +140,14 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Right or A on the rail's Personalisation: the first box.</summary>
+        /// <summary>A on Theme settings' Personalisation, or Customise opening it: the first box.</summary>
         public void FocusFirst()
         {
             Reset();
             StartUpBox.Focus();
         }
 
-        /// <summary>The category left, or Settings closed: back to Personalisation's boxes, for next time.</summary>
+        /// <summary>The page left, or Settings closed: back to Personalisation's boxes, for next time.</summary>
         public void Reset()
         {
             opened.Clear();
@@ -247,7 +247,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The pad on a page: the D-pad moves between its boxes, row by row, and stays put at the edges; A presses the box
-        /// focused; B steps back a page, or from Personalisation's boxes to the rail, as Left from their first column does.
+        /// focused; B steps back a page, or from Personalisation's boxes to Theme settings' boxes, as Left from their
+        /// first column does.
         /// </summary>
         private void OnPaneKeyDown(object sender, KeyEventArgs e)
         {
@@ -400,12 +401,12 @@ namespace XboxSeries.Extension
             Show(next);
         }
 
-        /// <summary>B: the page before, focus on the box that opened this one; from Personalisation's boxes, the rail.</summary>
+        /// <summary>B: the page before, focus on the box that opened this one; from Personalisation's boxes, Theme settings' boxes.</summary>
         private void Back()
         {
             if (opened.Count == 0)
             {
-                BackToRail?.Invoke(this, EventArgs.Empty);
+                BackToThemeSettings?.Invoke(this, EventArgs.Empty);
                 return;
             }
 
