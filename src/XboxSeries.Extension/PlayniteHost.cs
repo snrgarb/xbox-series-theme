@@ -203,7 +203,30 @@ namespace XboxSeries.Extension
 
         public void OpenPlayniteSettings()
         {
-            Later(FullscreenCommand("OpenSettingsCommand"));
+            // Not a command of the main view model, but of the main menu's: its Settings builds the window's view model
+            // over the main one and opens it, as here.
+            var model = Application.Current?.MainWindow?.DataContext;
+            var app = model?.GetType().Assembly;
+            var factory = app?.GetType("Playnite.FullscreenApp.Windows.SettingsWindowFactory");
+            var settings = app?.GetType("Playnite.FullscreenApp.ViewModels.SettingsViewModel");
+            var open = settings?.GetMethod("OpenView", Type.EmptyTypes);
+            if (factory == null || open == null)
+            {
+                logger.Warn("Can't open Playnite's Fullscreen settings: this Playnite build has no SettingsViewModel");
+                return;
+            }
+
+            Later(() =>
+            {
+                try
+                {
+                    open.Invoke(Activator.CreateInstance(settings, Activator.CreateInstance(factory), model), null);
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e, "Couldn't open Playnite's Fullscreen settings");
+                }
+            });
         }
 
         public bool IsLibraryBusy => libraryTasks.IsBusy;
