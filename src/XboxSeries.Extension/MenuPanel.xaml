@@ -131,6 +131,25 @@
                             <DataTrigger Binding="{Binding Icon}" Value="MoreOptions">
                                 <Setter TargetName="Icon" Property="Text" Value="&#xE712;" />
                             </DataTrigger>
+                            <!-- More options' flyout: Hide, HDR, Extensions and Remove as GameMenu.xaml; Unhide the eye, a game's own action the bolt. -->
+                            <DataTrigger Binding="{Binding Icon}" Value="GameAction">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE945;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Hide">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xED1A;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Unhide">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE7B3;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Hdr">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE793;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="Extensions">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xEA86;" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Icon}" Value="RemoveGame">
+                                <Setter TargetName="Icon" Property="Text" Value="&#xE738;" />
+                            </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

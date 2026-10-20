@@ -202,5 +202,23 @@ namespace XboxSeries.Core
 
         /// <summary>The tile menu's last row, More options.</summary>
         MoreOptions,
+
+        /// <summary>More options' row for one of the game's actions that don't play it.</summary>
+        GameAction,
+
+        /// <summary>More options' Hide this game.</summary>
+        Hide,
+
+        /// <summary>More options' Unhide this game.</summary>
+        Unhide,
+
+        /// <summary>More options' Enable HDR and Disable HDR.</summary>
+        Hdr,
+
+        /// <summary>More options' Extensions: Playnite's own picker of extensions' items for the game.</summary>
+        Extensions,
+
+        /// <summary>More options' Remove, from the library, and its prompt's.</summary>
+        RemoveGame,
     }
 }

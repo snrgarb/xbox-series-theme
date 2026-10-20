@@ -25,8 +25,17 @@ namespace XboxSeries.Extension
         /// <summary>How far the menu flies up as it opens, and back down as it closes, at 1080p.</summary>
         private const double FlyDistance = 80;
 
+        /// <summary>How quickly More options' flyout comes in from the left, and from how far, as the Guide's Flyout.</summary>
+        private static readonly Duration FlyoutInDuration = TimeSpan.FromMilliseconds(120);
+
+        private const double FlyoutInDistance = 48;
+
+        /// <summary>The menu's opacity behind its flyout: dimmed, as the Guide's tab behind its Flyout.</summary>
+        private const double DimmedBehindFlyout = 0.45;
+
         private readonly ExtensionCore core;
         private readonly TranslateTransform rise = new TranslateTransform();
+        private readonly TranslateTransform flyoutSlide = new TranslateTransform();
         private Window window;
 #if DEBUG
         private readonly HashSet<Key> debugKeysDown = new HashSet<Key>();
@@ -39,6 +48,8 @@ namespace XboxSeries.Extension
             DataContext = core.Home;
             Panel.Core = core;
             Panel.RenderTransform = rise;
+            FlyoutPanel.Core = core;
+            FlyoutPanel.RenderTransform = flyoutSlide;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
@@ -69,6 +80,12 @@ namespace XboxSeries.Extension
 
         private void OnHomeChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(HomeState.TileMenuFlyout))
+            {
+                ShowFlyout(core.Home.TileMenuFlyout);
+                return;
+            }
+
             if (e.PropertyName != nameof(HomeState.TileMenu))
             {
                 return;
@@ -93,6 +110,25 @@ namespace XboxSeries.Extension
             Dim.Visibility = Visibility.Visible;
             Root.IsHitTestVisible = true;
             Fly(0, 1, OpenDuration, EasingMode.EaseOut, from: FlyDistance, completed: null);
+        }
+
+        /// <summary>
+        /// More options' flyout: in from the left, fading in, the menu dimmed behind it; a prompt in its place (Remove)
+        /// takes the same spot at once. Gone, the menu is lit again.
+        /// </summary>
+        private void ShowFlyout(Dialog flyout)
+        {
+            var wasShown = FlyoutPanel.DataContext != null;
+            FlyoutPanel.DataContext = flyout;
+            MenuLayer.Opacity = flyout == null ? 1 : DimmedBehindFlyout;
+            if (flyout == null || wasShown)
+            {
+                return;
+            }
+
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            flyoutSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-FlyoutInDistance, 0, FlyoutInDuration) { EasingFunction = ease });
+            FlyoutPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, FlyoutInDuration));
         }
 
         /// <summary>

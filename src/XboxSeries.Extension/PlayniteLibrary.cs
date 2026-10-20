@@ -59,7 +59,9 @@ namespace XboxSeries.Extension
                 g.Platforms?.FirstOrDefault()?.Name,
                 installing: g.IsInstalling,
                 installedAt: g.IsInstalled ? CreationTimeOf(directory) : null,
-                isCustom: g.IsCustomGame);
+                isCustom: g.IsCustomGame,
+                otherActions: g.GameActions?.Where(a => !a.IsPlayAction).Select(a => a.Name).ToList(),
+                systemHdr: g.EnableSystemHdr);
         }
 
         /// <summary>

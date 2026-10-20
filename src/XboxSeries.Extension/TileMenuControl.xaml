@@ -8,10 +8,21 @@
         The tile menu, placed by the Dashboard over the whole of Home: the screen dims, and the menu sits dead centre,
         as the Guide's do. The dim comes and goes at once; the menu flies up and fades in, and back down and out as it
         closes (TileMenuControl.xaml.cs).
+        More options' flyout is a second panel drawn alike, over the menu and as the Guide's Flyout sits beside its tab:
+        77 in past the menu's left edge, level with its top, the menu dimmed behind it. It sits on a Canvas, so it never
+        moves the menu, and comes in from the left quickly, as the Guide's does.
         Collapsed, and so never in the way, without one.
     -->
     <Grid x:Name="Root" Visibility="Collapsed">
         <Border x:Name="Dim" Background="#99000000" MouseLeftButtonDown="OnDimClick" />
-        <local:MenuPanel x:Name="Panel" DataContext="{x:Null}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+            <!-- Its own layer, so dimming it behind the flyout isn't undone by the opacity the menu flies in with. -->
+            <Grid x:Name="MenuLayer">
+                <local:MenuPanel x:Name="Panel" DataContext="{x:Null}" />
+            </Grid>
+            <Canvas HorizontalAlignment="Left" VerticalAlignment="Top">
+                <local:MenuPanel x:Name="FlyoutPanel" DataContext="{x:Null}" Canvas.Left="77" />
+            </Canvas>
+        </Grid>
     </Grid>
 </controls:PluginUserControl>

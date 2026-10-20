@@ -65,6 +65,34 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void OpenGameMenu(Guid gameId) => OpenedGameMenus.Add(gameId);
 
+        /// <summary>Every non-play action Playnite was asked to run, by its place among the game's, in order.</summary>
+        public List<(Guid GameId, int Index)> RanActions { get; } = new List<(Guid, int)>();
+
+        public void RunGameAction(Guid gameId, int index) => RanActions.Add((gameId, index));
+
+        /// <summary>Every change to a game's Hidden flag Playnite was asked to make, in order.</summary>
+        public List<(Guid GameId, bool Hidden)> HiddenChanges { get; } = new List<(Guid, bool)>();
+
+        public void SetHidden(Guid gameId, bool hidden) => HiddenChanges.Add((gameId, hidden));
+
+        /// <summary>Whether the display can show HDR; it can't until a test says so.</summary>
+        public bool IsHdrSupported { get; set; }
+
+        /// <summary>Every change to a game's HDR switch Playnite was asked to make, in order.</summary>
+        public List<(Guid GameId, bool Enabled)> HdrChanges { get; } = new List<(Guid, bool)>();
+
+        public void SetSystemHdr(Guid gameId, bool enabled) => HdrChanges.Add((gameId, enabled));
+
+        /// <summary>Every game whose Extensions picker Playnite was asked to open, in order.</summary>
+        public List<Guid> OpenedExtensionMenus { get; } = new List<Guid>();
+
+        public void OpenExtensionsMenu(Guid gameId) => OpenedExtensionMenus.Add(gameId);
+
+        /// <summary>Every game Playnite was asked to remove from its library, in order.</summary>
+        public List<Guid> RemovedGames { get; } = new List<Guid>();
+
+        public void RemoveGame(Guid gameId) => RemovedGames.Add(gameId);
+
         /// <summary>Every change to a game's Favourite flag Playnite was asked to make, in order.</summary>
         public List<(Guid GameId, bool Favourite)> FavouriteChanges { get; } = new List<(Guid, bool)>();
 

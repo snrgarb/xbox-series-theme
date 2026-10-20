@@ -33,6 +33,27 @@ namespace XboxSeries.Core
         /// <summary>Opens Playnite's own game menu for the game.</summary>
         void OpenGameMenu(Guid gameId);
 
+        /// <summary>
+        /// Runs one of the game's actions that don't play it, as Playnite's game menu does: the
+        /// <paramref name="index"/>th of <see cref="LibraryGame.OtherActions"/>.
+        /// </summary>
+        void RunGameAction(Guid gameId, int index);
+
+        /// <summary>Hides the game in Playnite's library, or shows it again.</summary>
+        void SetHidden(Guid gameId, bool hidden);
+
+        /// <summary>Whether the display can show HDR, so Playnite's per-game HDR switch means anything.</summary>
+        bool IsHdrSupported { get; }
+
+        /// <summary>Has Playnite turn Windows' HDR on while the game runs, or not.</summary>
+        void SetSystemHdr(Guid gameId, bool enabled);
+
+        /// <summary>Opens Playnite's own Extensions picker for the game: every extension's menu items for it.</summary>
+        void OpenExtensionsMenu(Guid gameId);
+
+        /// <summary>Removes the game from Playnite's library, without Playnite's own "Are you sure?".</summary>
+        void RemoveGame(Guid gameId);
+
         /// <summary>Marks the game as a favourite in Playnite's library, or unmarks it.</summary>
         void SetFavourite(Guid gameId, bool favourite);
 

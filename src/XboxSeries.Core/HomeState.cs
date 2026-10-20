@@ -12,6 +12,7 @@ namespace XboxSeries.Core
         private IReadOnlyList<HomeGroup> groups = new HomeGroup[0];
         private HeroArt hero;
         private Dialog menu;
+        private Dialog menuFlyout;
         private IReadOnlyList<GuideHint> hints = new GuideHint[0];
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -67,6 +68,16 @@ namespace XboxSeries.Core
         {
             get => menu;
             internal set => Set(ref menu, value, nameof(TileMenu));
+        }
+
+        /// <summary>
+        /// The tile menu's More options: a second panel over the menu, further right, with the menu dimmed behind it. It has
+        /// the pad until B closes it, back to the menu on More options; null when there is none.
+        /// </summary>
+        public Dialog TileMenuFlyout
+        {
+            get => menuFlyout;
+            internal set => Set(ref menuFlyout, value, nameof(TileMenuFlyout));
         }
 
         /// <summary>
