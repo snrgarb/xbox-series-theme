@@ -148,7 +148,7 @@ namespace XboxSeries.Core.Tests
             var cards = Cards(12);
 
             Assert.All(cards, c => Assert.Equal(IdleCardKind.Tip, c.Kind));
-            Assert.All(cards, c => Assert.Null(c.Detail));
+            Assert.All(cards, c => Assert.Null(c.Description));
             Assert.All(cards, c => Assert.Null(c.Art));
             Assert.All(cards, c => Assert.Null(c.Icon));
             Assert.Equal(12, cards.Select(c => c.Title).Distinct().Count());
@@ -266,7 +266,7 @@ namespace XboxSeries.Core.Tests
             library.WithGame("Hades", lastActivity: Start.Date.AddDays(-daysAgo).AddHours(9), playtime: playtime);
             LibraryChanged();
 
-            Assert.Equal(detail, FirstRound(IdleCardKind.RecentlyPlayed).Single().Detail);
+            Assert.Equal(detail, FirstRound(IdleCardKind.RecentlyPlayed).Single().Description);
         }
 
         [Theory]
@@ -289,7 +289,7 @@ namespace XboxSeries.Core.Tests
             library.WithGame("Hades", lastActivity: DateTime.Parse(at, System.Globalization.CultureInfo.InvariantCulture));
             LibraryChanged();
 
-            var detail = FirstRound(IdleCardKind.RecentlyPlayed).Single().Detail;
+            var detail = FirstRound(IdleCardKind.RecentlyPlayed).Single().Description;
 
             Assert.Equal(char.ToUpperInvariant(when[0]) + when.Substring(1), detail);
         }
@@ -374,7 +374,7 @@ namespace XboxSeries.Core.Tests
             var card = FirstRound(IdleCardKind.CloseAchievements).Single();
 
             Assert.Equal("Hades", card.Title);
-            Assert.Equal("2 of 6 unlocked · Next: Nameless", card.Detail);
+            Assert.Equal("2 of 6 unlocked · Next: Nameless", card.Description);
             Assert.Equal("hades.jpg", card.Art.Image);
             Assert.True(card.Art.IsCover);
             Assert.Null(card.Icon);
@@ -393,7 +393,7 @@ namespace XboxSeries.Core.Tests
             }));
             AchievementsRead();
 
-            Assert.Equal("1 of 3 unlocked · Next: Common", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
+            Assert.Equal("1 of 3 unlocked · Next: Common", FirstRound(IdleCardKind.CloseAchievements).Single().Description);
         }
 
         [Fact]
@@ -409,7 +409,7 @@ namespace XboxSeries.Core.Tests
             }));
             AchievementsRead();
 
-            Assert.Equal("1 of 3 unlocked", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
+            Assert.Equal("1 of 3 unlocked", FirstRound(IdleCardKind.CloseAchievements).Single().Description);
         }
 
         [Fact]
@@ -420,7 +420,7 @@ namespace XboxSeries.Core.Tests
 
             core.OnAchievementUnlocked(id, new Achievement("Hades1", "Hades 1", null, 50, Start));
 
-            Assert.Equal("2 of 3 unlocked · Next: Hades 2", FirstRound(IdleCardKind.CloseAchievements).Single().Detail);
+            Assert.Equal("2 of 3 unlocked · Next: Hades 2", FirstRound(IdleCardKind.CloseAchievements).Single().Description);
         }
 
         [Fact]
@@ -443,9 +443,9 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(new[] { "Celeste 1", "Celeste 2", "Hades 1", "Hades 2", "Hades 3" }, unlocks.Select(c => c.Title).OrderBy(t => t));
             var celeste2 = unlocks.Single(c => c.Title == "Celeste 2");
             Assert.Equal("c2.png", celeste2.Icon);
-            Assert.Equal("Celeste · Unlocked 5 days ago", celeste2.Detail);
+            Assert.Equal("Celeste · Unlocked 5 days ago", celeste2.Description);
             Assert.Null(celeste2.Art);
-            Assert.Equal("Hades · Unlocked 2 days ago", unlocks.Single(c => c.Title == "Hades 1").Detail);
+            Assert.Equal("Hades · Unlocked 2 days ago", unlocks.Single(c => c.Title == "Hades 1").Description);
         }
 
         [Fact]
@@ -460,7 +460,7 @@ namespace XboxSeries.Core.Tests
 
             var unlock = Assert.Single(FirstRound(IdleCardKind.RecentUnlock));
             Assert.Equal("Hades 0", unlock.Title);
-            Assert.Equal("Hades · Unlocked today", unlock.Detail);
+            Assert.Equal("Hades · Unlocked today", unlock.Description);
         }
 
         [Fact]

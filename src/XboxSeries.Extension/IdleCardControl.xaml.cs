@@ -51,8 +51,8 @@ namespace XboxSeries.Extension
             var isTip = card.Kind == IdleCardKind.Tip;
             Title.Text = card.Title;
             Title.TextWrapping = isTip ? TextWrapping.Wrap : TextWrapping.NoWrap;
-            Detail.Text = card.Detail;
-            Detail.Visibility = string.IsNullOrEmpty(card.Detail) ? Visibility.Collapsed : Visibility.Visible;
+            Detail.Text = card.Description;
+            Detail.Visibility = string.IsNullOrEmpty(card.Description) ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }
