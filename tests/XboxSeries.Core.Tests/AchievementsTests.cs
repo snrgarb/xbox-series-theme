@@ -101,7 +101,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal("Blessed", core.Toast.Detail);
 
-            clock.Advance(TimeSpan.FromSeconds(4.5));
+            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5 - 1));
             Assert.Equal("Escaped", core.Toast.Detail);
             Assert.Equal("Achievement unlocked", core.Toast.Text);
         }
@@ -280,7 +280,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(15, core.Toast.Score);
 
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated"), new Notification("b", "Update available") });
-            clock.Advance(TimeSpan.FromSeconds(5.5));
+            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5));
 
             Assert.Equal(ToastKind.Notification, core.Toast.Kind);
             Assert.Null(core.Toast.Detail);
@@ -536,7 +536,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void An_ordinary_unlock_has_no_rarity_or_description_on_its_Toast()
+        public void An_ordinary_unlock_has_its_description_on_its_Toast_but_no_rarity()
         {
             core.OnGameStarted(hades);
 
@@ -545,7 +545,118 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
             Assert.Null(core.Toast.Rarity);
+            Assert.Equal("Get a boon", core.Toast.Description);
+        }
+
+        [Fact]
+        public void An_ordinary_unlock_found_by_a_read_has_its_description_too()
+        {
+            Baseline();
+            core.OnGameStarted(hades);
+            clock.Advance(TimeSpan.FromMinutes(5));
+            Record(hades, Unlocked("boon", "Blessed", rarity: 30, description: "Get a boon"));
+
+            core.OnAchievementsChanged();
+
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+            Assert.Equal("Get a boon", core.Toast.Description);
+            Assert.Null(core.Toast.Rarity);
+        }
+
+        [Fact]
+        public void An_ordinary_unlock_without_a_description_has_none_on_its_Toast()
+        {
+            core.OnGameStarted(hades);
+
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
             Assert.Null(core.Toast.Description);
+        }
+
+        [Fact]
+        public void The_ordinary_Toast_plays_the_notification_sound()
+        {
+            core.OnGameStarted(hades);
+            sounds.Played.Clear();
+
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40));
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
+        }
+
+        [Fact]
+        public void The_ordinary_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_its_outro_and_the_usual_gap()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed", rarity: 40));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            clock.Advance(TimeSpan.FromSeconds(8.49));
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.AchievementUnlocked, core.Toast.Kind);
+
+            clock.Advance(TimeSpan.FromSeconds(0.01));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+        }
+
+        [Fact]
+        public void The_several_unlocks_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_its_outro_and_the_usual_gap()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed"));
+            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+
+            clock.Advance(TimeSpan.FromSeconds(8.49));
+            Assert.Equal("2 achievements unlocked", core.Toast.Text);
+            Assert.True(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(0.01));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+        }
+
+        [Fact]
+        public void A_notification_Toast_after_an_achievement_one_still_shows_for_5_seconds_then_the_next_after_the_usual_gap()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            core.OnGameStarted(hades);
+            core.OnAchievementUnlocked(hades, Unlocked("boon", "Blessed"));
+            clock.Advance(TimeSpan.FromSeconds(1));
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
+            core.OnNotificationsChanged(new[] { new Notification("a", "Library updated"), new Notification("b", "Update available") });
+
+            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5));
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+            Assert.True(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(5) - TimeSpan.FromMilliseconds(1));
+            Assert.True(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+            Assert.Equal(ToastKind.Notification, core.Toast.Kind);
+            Assert.True(core.Toast.IsShown);
         }
 
         [Fact]
@@ -601,7 +712,10 @@ namespace XboxSeries.Core.Tests
             Assert.Null(core.Toast.Description);
             Assert.Equal(new[] { UiSound.Notification }, sounds.Played);
 
-            clock.Advance(TimeSpan.FromSeconds(5));
+            clock.Advance(TimeSpan.FromSeconds(8.49));
+            Assert.True(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromSeconds(0.01));
             Assert.False(core.Toast.IsShown);
         }
 

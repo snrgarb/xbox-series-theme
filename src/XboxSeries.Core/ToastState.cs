@@ -27,9 +27,11 @@ namespace XboxSeries.Core
         Uninstalled,
 
         /// <summary>
-        /// "Achievement unlocked" as the game running now, or the one that just exited, unlocks one: the achievement's icon,
-        /// its name as <see cref="ToastState.Detail"/> and its <see cref="ToastState.Score"/>. Several recorded together are one
-        /// Toast, "&lt;n&gt; achievements unlocked", with no icon, name or Score. ⓧ opens the Guide at Profile &amp; system.
+        /// "Achievement unlocked" as the game running now, or the one that just exited, unlocks one: the console's pill, in
+        /// green, with the achievement's icon, paging from its header, its name as <see cref="ToastState.Detail"/> and its
+        /// <see cref="ToastState.Score"/> to its <see cref="ToastState.Description"/>, then the prompt. Several recorded
+        /// together are one Toast, "&lt;n&gt; achievements unlocked", the same pill with no icon, name, Score or
+        /// description. ⓧ opens the Guide at Profile &amp; system.
         /// </summary>
         AchievementUnlocked,
 
@@ -158,7 +160,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A rare achievement's description, its Toast's second page; null for none and for any other Toast. Like
+        /// An Achievement unlocked Toast's achievement's description, rare or not, its pill's second page; null for none,
+        /// for "&lt;n&gt; achievements unlocked" and for any other Toast. Like
         /// <see cref="Text"/>, it stays as the Toast hides.
         /// </summary>
         public string Description

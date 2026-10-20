@@ -5,8 +5,9 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// Achievements, from PlayniteAchievements: an Achievement unlocked Toast as the game running now, or the one that just
-    /// exited, unlocks one (its rare form for one few players have), and the totals on the Guide's Profile &amp; system.
+    /// Achievements, from PlayniteAchievements: an Achievement unlocked Toast, the console's pill, as the game running now,
+    /// or the one that just exited, unlocks one (its rare form for one few players have), and the totals on the Guide's
+    /// Profile &amp; system.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -23,22 +24,23 @@ namespace XboxSeries.Core
         private const double RareBelow = 10;
 
         /// <summary>
-        /// How long the rare Toast shows before its outro. On the console its sound starts, its circle pops, the diamond
-        /// flies out and its pill unfurls, then its three pages (the header, Score and name, from +2.27 s; the
-        /// description, from +4.54 s; the prompt, from +7.22 s) hold until the pill starts to collapse at +8.46 s, and
-        /// the outro the view plays as it hides takes the rest of the ~9.6 s.
+        /// How long an Achievement unlocked Toast shows before its outro, rare or not, and the "&lt;n&gt; achievements
+        /// unlocked" too: each is the console's pill. Its sound starts, its circle pops and its pill unfurls (the rare
+        /// one's diamond flying out), then its pages (the header, Score and name, from +2.27 s; the description, from
+        /// +4.54 s; the prompt, from +7.22 s) hold until the pill starts to collapse at +8.46 s, and the outro the view
+        /// plays as it hides takes the rest of the ~9.6 s.
         /// </summary>
-        private static readonly TimeSpan RareAchievementToastDuration = TimeSpan.FromSeconds(8.5);
+        private static readonly TimeSpan AchievementToastDuration = TimeSpan.FromSeconds(8.5);
 
         /// <summary>
-        /// How long the rare Toast's outro takes once it hides, the pill collapsing into its circle and the circle to a
-        /// dot: the next Toast waits for it, then the usual gap.
+        /// How long an Achievement unlocked Toast's outro takes once it hides, rare or not, the pill collapsing into its
+        /// circle and the circle to a dot: the next Toast waits for it, then the usual gap.
         /// </summary>
-        private static readonly TimeSpan RareAchievementOutro = TimeSpan.FromSeconds(1.12);
+        private static readonly TimeSpan AchievementToastOutro = TimeSpan.FromSeconds(1.12);
 
 #if DEBUG
 
-        /// <summary>The Debug menu's made-up unlocks' name, and its description for a rare one's second page.</summary>
+        /// <summary>The Debug menu's made-up unlocks' name, and their description for the pill's second page.</summary>
         private const string DebugAchievementName = "Two's Good, but I Want Three";
         private const string DebugAchievementDescription = "Earned at least 2 stars on 15 different maps in Frontier Defense";
 
@@ -212,9 +214,10 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Toast telling of these unlocks: one with its icon, "Achievement unlocked", its name and its Score, or when
-        /// <see cref="IsRare"/> the rare Toast, "Rare Achievement unlocked", with its rarity and description as well;
-        /// several as one ordinary Toast, "&lt;n&gt; achievements unlocked", rare ones among them or not.
+        /// The Toast telling of these unlocks: one with its icon, "Achievement unlocked", its name, its Score and its
+        /// description, or when <see cref="IsRare"/> the rare Toast, "Rare Achievement unlocked", with its rarity as well;
+        /// several as one ordinary Toast, "&lt;n&gt; achievements unlocked", rare ones among them or not. Only the rare
+        /// Toast has a rarity, so the view writes " - &lt;n&gt;%" on that one alone.
         /// </summary>
         private static WaitingToast UnlocksToast(IReadOnlyList<Achievement> unlocks)
         {
@@ -228,7 +231,9 @@ namespace XboxSeries.Core
                 ? new WaitingToast(
                     RareAchievementUnlockedLine, ToastKind.RareAchievementUnlocked, one.Icon, detail: one.Name, score: ScoreOf(one),
                     rarity: one.Rarity, description: one.Description)
-                : new WaitingToast(AchievementUnlockedLine, ToastKind.AchievementUnlocked, one.Icon, detail: one.Name, score: ScoreOf(one));
+                : new WaitingToast(
+                    AchievementUnlockedLine, ToastKind.AchievementUnlocked, one.Icon, detail: one.Name, score: ScoreOf(one),
+                    description: one.Description);
         }
 
         /// <summary>Whether fewer than <see cref="RareBelow"/> percent of players have an achievement; unknown rarity is never rare.</summary>
