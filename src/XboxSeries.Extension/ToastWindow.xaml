@@ -19,10 +19,10 @@
         The Toast: a strip along the bottom of the screen, above every window, that never takes focus or the mouse, so
         a running game keeps its input. It shows a new Playnite notification, a DM ringing, or a game joining the queue, as the
         console shows its own: a wide, solid Xbox green banner low at the bottom centre, a square tile of lighter green on its left with
-        the image for the Toast's kind (the bell, a camera, Discord's mark, a download arrow, a play mark, a bin; see ToastImages.xaml), or in
+        the image for the Toast's kind (the bell, a camera, Discord's mark, a download arrow, a play mark, a bin, sync arrows; see ToastImages.xaml), or in
         its place the Toast's own image, as the caller's avatar or a queued game's cover, bare on the banner,
         and large white text beside it that fades back and forth between the Toast's own line and "Press (Guide) to view",
-        but for the start-up's "Hi X!" greeting, which only greets.
+        but for the start-up's "Hi X!" greeting, which only greets. A Library updated Toast's line has "<n> games added" under it when the update added any.
         It comes in as the console's does: the banner grows from its centre as it fades in over 0.3 s. For a kind whose
         tile slides (ToastSlide.<Kind> in ToastImages.xaml), its text starts at its left where the tile will be, and
         0.7 s after the grow the tile slides out from behind the banner's left edge as it fades in, pushing the text right
@@ -46,7 +46,7 @@
                 the line for 2.2 s, a 0.3 s crossfade to the prompt, the prompt for 2.2 s, a 0.3 s crossfade back, again.
             -->
             <Storyboard x:Key="TextCycle" RepeatBehavior="Forever">
-                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Line" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
+                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Lines" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
                     <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
                     <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1" />
                     <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="0" />
@@ -126,6 +126,9 @@
                                             <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.Uninstalled}">
                                                 <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.Uninstalled}" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.LibraryUpdated}">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ToastImage.LibraryUpdated}" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </ContentControl.Style>
@@ -158,9 +161,33 @@
                             <Grid.RenderTransform>
                                 <TranslateTransform x:Name="TextShift" X="-120" />
                             </Grid.RenderTransform>
-                            <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="34"
-                                       Foreground="White" TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center" />
+                            <!--
+                                The line, and under it, for a Library updated Toast alone, its Detail ("<n> games added") when it
+                                has one; no other banner kind shows a Detail. They fade together.
+                            -->
+                            <StackPanel x:Name="Lines" VerticalAlignment="Center">
+                                <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="34"
+                                           Foreground="White" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="DetailLine" Text="{Binding Detail}" FontFamily="{DynamicResource XboxFont}" FontSize="24"
+                                           Foreground="White" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Kind}" Value="{x:Static core:ToastKind.LibraryUpdated}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Detail}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Detail}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                             <StackPanel x:Name="Prompt" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0">
                                 <TextBlock Text="Press" FontFamily="{DynamicResource XboxFont}" FontSize="34" Foreground="White"
                                            VerticalAlignment="Center" />
