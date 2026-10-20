@@ -73,7 +73,7 @@ namespace XboxSeries.Extension
         /// <summary>The top bar's Settings: the page, on its first category.</summary>
         public ICommand OpenSettingsCommand { get; }
 
-        /// <summary>The rail, top to bottom, the divider aside.</summary>
+        /// <summary>The rail, top to bottom, the dividers aside.</summary>
         private Button[] RailItems => new[]
         {
             ThemeSettingsItem, PlayniteSettingsItem, MorePlayniteOptionsItem,
@@ -314,7 +314,7 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Up and down move through the rail, over the divider, and stay put at its ends: Home is hidden behind the page.
+        /// Up and down move through the rail, over its dividers, and stay put at its ends: Home is hidden behind the page.
         /// The pad's A opens More Playnite options. Right or A on Theme settings or Playnite settings moves into its boxes;
         /// Left and Right go nowhere else: More Playnite options has no options to move into.
         /// </summary>

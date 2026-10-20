@@ -7,8 +7,8 @@ using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
-    // The view's side of Settings' one Theme settings entry (#86): the rail reads Theme settings, Playnite settings, More
-    // Playnite options, then Debug's divider and item; Theme settings' pane is Personalisation, Guide and Discord boxes in
+    // The view's side of Settings' one Theme settings entry (#86): the rail reads Theme settings and Playnite settings, a
+    // divider and More Playnite options, an action rather than a category, then Debug's divider and item; Theme settings' pane is Personalisation, Guide and Discord boxes in
     // Personalisation's design; and its pages are panes of the options row the code-behind shows by the core's ThemePage.
     // The XAML isn't run here; these checks guard what the page shows.
     public class ThemeSettingsXamlTests
@@ -23,12 +23,12 @@ namespace XboxSeries.Core.Tests
         private static string Code(string file) => File.ReadAllText(Path.Combine(ExtensionDir, file));
 
         [Fact]
-        public void The_rail_is_Theme_settings_Playnite_settings_More_Playnite_options_then_the_Debug_divider_and_item()
+        public void The_rail_is_Theme_settings_Playnite_settings_then_a_divider_More_Playnite_options_then_the_Debug_divider_and_item()
         {
             var rail = Named(Load("SettingsControl.xaml"), "Rail");
 
             Assert.Equal(
-                new[] { "ThemeSettingsItem", "PlayniteSettingsItem", "MorePlayniteOptionsItem", "DebugDivider", "DebugItem" },
+                new[] { "ThemeSettingsItem", "PlayniteSettingsItem", "MoreOptionsDivider", "MorePlayniteOptionsItem", "DebugDivider", "DebugItem" },
                 rail.Elements().Select(e => (string)e.Attribute(X + "Name")));
             Assert.Equal("Theme settings", (string)Named(Load("SettingsControl.xaml"), "ThemeSettingsItem")
                 .Descendants().Single(e => e.Name.LocalName == "TextBlock").Attribute("Text"));
