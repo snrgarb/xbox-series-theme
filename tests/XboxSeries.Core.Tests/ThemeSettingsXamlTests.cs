@@ -8,7 +8,7 @@ using static XboxSeries.Core.Tests.XamlFonts;
 namespace XboxSeries.Core.Tests
 {
     // The view's side of Settings' one Theme settings entry (#86): the rail reads Theme settings and Playnite settings, a
-    // divider and More Playnite options, an action rather than a category, then Debug's divider and item; Theme settings' pane is Personalisation, Guide and Discord boxes in
+    // divider and More Playnite options, an action rather than a category, then Debug's divider and item; Theme settings' pane is Personalisation, Idle, Guide and Discord boxes in
     // Personalisation's design; and its pages are panes of the options row the code-behind shows by the core's ThemePage.
     // The XAML isn't run here; these checks guard what the page shows.
     public class ThemeSettingsXamlTests
@@ -49,6 +49,7 @@ namespace XboxSeries.Core.Tests
         [Theory]
         [InlineData("ThemeSettingsPane", "ThemeSettingsPane")]
         [InlineData("PersonalisationPane", "PersonalisationPane")]
+        [InlineData("IdlePane", "StackPanel")]
         [InlineData("GuidePane", "StackPanel")]
         [InlineData("DiscordPane", "StackPanel")]
         [InlineData("PlaynitePane", "PlaynitePane")]
@@ -62,14 +63,14 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Its_boxes_are_Personalisation_Guide_then_Discord_two_wide_each_a_line_icon_and_a_title_alone()
+        public void Its_boxes_are_Personalisation_Idle_Guide_then_Discord_two_wide_each_a_line_icon_and_a_title_alone()
         {
             var pane = Load("ThemeSettingsPane.xaml");
             var boxes = pane.Descendants().Where(e => e.Name.LocalName == "Button").ToList();
             var grid = boxes[0].Parent;
 
-            Assert.Equal(new[] { "PersonalisationBox", "GuideBox", "DiscordBox" }, boxes.Select(b => (string)b.Attribute(X + "Name")));
-            Assert.Equal(new[] { "Personalisation", "Guide", "Discord" },
+            Assert.Equal(new[] { "PersonalisationBox", "IdleBox", "GuideBox", "DiscordBox" }, boxes.Select(b => (string)b.Attribute(X + "Name")));
+            Assert.Equal(new[] { "Personalisation", "Idle", "Guide", "Discord" },
                 boxes.Select(b => (string)b.Descendants().Single(e => e.Name.LocalName == "TextBlock").Attribute("Text")));
             Assert.Equal("UniformGrid", grid.Name.LocalName);
             Assert.Equal("2", (string)grid.Attribute("Columns"));
@@ -82,6 +83,16 @@ namespace XboxSeries.Core.Tests
                 Assert.Equal("OnBoxClick", (string)box.Attribute("Click"));
                 Assert.Single((string)box.Attribute("Tag"));
             });
+        }
+
+        [Fact]
+        public void The_pad_moves_over_the_boxes_two_to_a_row_and_each_box_opens_its_own_page()
+        {
+            var pane = Code("ThemeSettingsPane.xaml.cs");
+
+            Assert.Matches(new Regex(@"new\[\] \{ PersonalisationBox, IdleBox \},\s*new\[\] \{ GuideBox, DiscordBox \},"), pane);
+            Assert.Matches(new Regex(@"box == IdleBox \? ThemeSettingsPage\.Idle"), pane);
+            Assert.Matches(new Regex(@"case ThemeSettingsPage\.Idle: return IdleBox;"), pane);
         }
 
         [Fact]
@@ -113,7 +124,7 @@ namespace XboxSeries.Core.Tests
             var settings = Code("SettingsControl.xaml.cs");
 
             Assert.Contains("PersonalisationPane.BackToThemeSettings += (s, e) => core.LeaveThemePage();", settings);
-            // The Guide's box and Discord's buttons, each handled before the page's own B.
+            // The Guide's and Idle's dropdown boxes, shared, and Discord's buttons, each handled before the page's own B.
             Assert.Equal(2, Regex.Matches(settings, @"e\.Handled = true;\s*core\.LeaveThemePage\(\);").Count);
         }
     }
