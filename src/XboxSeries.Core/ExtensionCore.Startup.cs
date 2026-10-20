@@ -50,6 +50,7 @@ namespace XboxSeries.Core
                 {
                     isStartupShown = value;
                     RefreshHints();
+                    LookAtIdlePause();
                 }
             }
         }

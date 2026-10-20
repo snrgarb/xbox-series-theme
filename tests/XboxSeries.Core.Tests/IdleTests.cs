@@ -120,5 +120,248 @@ namespace XboxSeries.Core.Tests
             Wait(0.01);
             Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
         }
+
+        [Fact]
+        public void A_pad_press_counts_as_input_too()
+        {
+            Wait(1);
+            Press(ControllerButton.DPadDown);
+
+            Wait(1.99);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.01);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void The_first_key_or_mouse_input_while_dimmed_only_wakes_the_screen()
+        {
+            Assert.False(core.OnUserInput());
+            Wait(2);
+
+            Assert.True(core.OnUserInput());
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.False(core.IsStartupShown);
+            Assert.False(core.OnUserInput());
+        }
+
+        [Fact]
+        public void Showing_things_wakes_the_same_way()
+        {
+            Wait(5);
+
+            Assert.True(core.OnUserInput());
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void A_routed_to_a_tile_as_it_wakes_the_screen_is_swallowed_and_focus_stays_on_the_tile()
+        {
+            var tile = FocusRecentTile();
+            Wait(2);
+
+            Assert.True(core.OnUserInput(ControllerButton.A));
+            Press(ControllerButton.A);
+            Wait(0.1);
+            Assert.Empty(playnite.OpenedHubs);
+
+            Press(ControllerButton.A);
+            Wait(0.1);
+            Assert.Equal(new[] { tile.GameId }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void The_Guide_button_tapped_while_dimmed_wakes_the_screen_without_opening_the_Guide()
+        {
+            Wait(2);
+
+            Press(ControllerButton.Guide);
+            Wait(0.1);
+            Assert.False(core.Guide.IsOpen);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+
+            Press(ControllerButton.Guide);
+            Wait(0.1);
+            Assert.True(core.Guide.IsOpen);
+        }
+
+        [Fact]
+        public void B_pressed_while_dimmed_over_the_Guide_leaves_the_Guide_up()
+        {
+            Press(ControllerButton.Guide);
+            Wait(0.1);
+            Assert.True(core.Guide.IsOpen);
+            Wait(2);
+            Assert.True(core.Idle.IsDimmed);
+
+            Assert.True(core.OnUserInput(ControllerButton.B));
+            Press(ControllerButton.B);
+
+            Assert.True(core.Guide.IsOpen);
+        }
+
+        [Fact]
+        public void A_wake_press_that_never_reaches_the_pad_events_swallows_nothing_after_another_button()
+        {
+            var tile = FocusRecentTile();
+            Wait(2);
+            core.OnUserInput(ControllerButton.A);
+
+            Press(ControllerButton.DPadRight);
+            Press(ControllerButton.A);
+            Wait(0.1);
+
+            Assert.Equal(new[] { tile.GameId }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void A_wake_press_that_never_reaches_the_pad_events_swallows_nothing_a_moment_later()
+        {
+            var tile = FocusRecentTile();
+            Wait(2);
+            core.OnUserInput(ControllerButton.A);
+
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Press(ControllerButton.A);
+            Wait(0.1);
+
+            Assert.Equal(new[] { tile.GameId }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void No_idle_while_a_game_runs_and_the_timers_count_from_zero_once_it_stops()
+        {
+            var game = Guid.NewGuid();
+            Wait(1);
+            core.OnGameStarted(game);
+            Wait(10);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+
+            core.OnGameStopped(game);
+            Wait(1.99);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.01);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void A_game_starting_while_dimmed_wakes_the_screen()
+        {
+            Wait(2);
+
+            core.OnGameStarted(Guid.NewGuid());
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void No_idle_while_the_Launch_screen_shows_and_the_timers_count_from_zero_once_it_goes()
+        {
+            var game = FocusRecentTile().GameId;
+            core.SetDimAfter(TimeSpan.FromMinutes(1));
+            core.OnGameStarting(game);
+            Wait(1.2);
+            Assert.True(core.LaunchScreen.IsShown);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+
+            core.OnGameStartupCancelled(game);
+            Wait(0.99);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.01);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void No_idle_during_Start_up_and_the_timers_count_from_zero_once_it_ends()
+        {
+            core.OnStartup();
+            Wait(10);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+
+            core.OnStartupSignedIn(core.Settings.StartUp.Profiles[0]);
+            clock.Advance(TimeSpan.FromSeconds(3));
+            Assert.False(core.IsStartupShown);
+            Wait(1.99);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.01);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void No_idle_with_another_program_in_front_and_the_timers_count_from_zero_once_Playnite_is_back()
+        {
+            Wait(1.5);
+            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
+            Wait(10);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+
+            // Nothing tells of the foreground changing: the core looks now and then, so allow it a second.
+            playnite.BringToFront();
+            Wait(1.98);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.04);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void Another_program_coming_in_front_just_before_the_dim_keeps_the_screen_awake()
+        {
+            clock.Advance(TimeSpan.FromMinutes(2) - TimeSpan.FromMilliseconds(100));
+            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
+            clock.Advance(TimeSpan.FromMilliseconds(100));
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void Another_program_coming_in_front_while_dimmed_wakes_the_screen()
+        {
+            Wait(2);
+            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void The_Overlay_in_front_is_Playnites_so_the_screen_dims_over_the_Guide()
+        {
+            Press(ControllerButton.Guide);
+            Wait(2);
+
+            Assert.True(core.Guide.IsOpen);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void Toasts_neither_wake_the_screen_nor_reset_the_timers()
+        {
+            core.OnNotificationsChanged(new Notification[0]);
+            Wait(1);
+            core.OnNotificationsChanged(new[] { new Notification("1", "Library updated") });
+            Assert.True(core.Toast.IsShown);
+            Wait(1);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+
+            core.OnNotificationsChanged(new[] { new Notification("1", "Library updated"), new Notification("2", "Update ready") });
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        /// <summary>A game on the Recent row, with Home's focus on its tile.</summary>
+        private HomeTile FocusRecentTile()
+        {
+            core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12)).Snapshot());
+            var tile = core.Home.RecentRow[0];
+            core.FocusHomeTile(tile);
+            return tile;
+        }
+
+        /// <summary>A pad button pressed and let go, as the pad reports it.</summary>
+        private void Press(ControllerButton button)
+        {
+            core.OnControllerButton(button, ButtonState.Pressed);
+            core.OnControllerButton(button, ButtonState.Released);
+        }
     }
 }
