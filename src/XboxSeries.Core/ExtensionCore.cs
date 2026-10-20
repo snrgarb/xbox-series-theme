@@ -201,7 +201,7 @@ namespace XboxSeries.Core
             LoadGuideSettings();
             LoadPlayniteSettings();
             WatchHints();
-            RestartIdle();
+            WatchIdle();
         }
 
         public StatusState Status { get; } = new StatusState();
@@ -430,6 +430,7 @@ namespace XboxSeries.Core
             }
 
             runningGame = gameId;
+            LookAtIdlePause();
             startingGame = null;
             homeOwed = false;
             FollowAchievementsOf(gameId);
@@ -464,6 +465,7 @@ namespace XboxSeries.Core
             // Whatever of it is left frozen under the Guide is let go with it.
             ThawGame();
             runningGame = null;
+            LookAtIdlePause();
             RefreshHome();
 
             // Any menu or prompt was about the game that has just gone.
@@ -598,6 +600,12 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnControllerButton(ControllerButton button, ButtonState state, DateTime at)
         {
+            // The first press while the screen is dimmed only wakes it, the Guide button's too.
+            if (SwallowedByIdle(button, state))
+            {
+                return;
+            }
+
             // Start-up has the pad to itself, the Guide button too, on its own thread; a button held from before it lets
             // go as usual.
             if (IsStartupShown && (state == ButtonState.Pressed || button == ControllerButton.Guide))
