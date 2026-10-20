@@ -199,6 +199,7 @@ namespace XboxSeries.Core
             LoadRecentServers();
             LoadStartUp();
             LoadGuideSettings();
+            LoadPlayniteSettings();
             WatchHints();
         }
 
@@ -775,7 +776,8 @@ namespace XboxSeries.Core
         /// notification's, the Discord tab, focus on Answer, for a call's, and Profile &amp; system for the greeting's and
         /// an Achievement unlocked Toast's, where the Profile's totals and last unlocks are.
         /// A Queued Toast's subject isn't in the Guide but on Manage Queue, so the tap goes there instead, and a Ready
-        /// to play Toast's tap starts its game. An Uninstalled Toast's subject is gone, so its tap just opens the Guide.
+        /// to play Toast's tap starts its game. An Uninstalled Toast's subject is gone, and a Library updated Toast's is all
+        /// over the library, so their taps just open the Guide.
         /// </summary>
         private void OpenGuideFromTap()
         {

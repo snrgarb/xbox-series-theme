@@ -347,11 +347,15 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>A game seen to finish installing heads Recently installed, once only, however it was seen to finish.</summary>
+        /// <summary>
+        /// A game seen to finish installing heads Recently installed, once only, however it was seen to finish, and is
+        /// noted for the library update that follows downloads.
+        /// </summary>
         private void HeadRecentlyInstalled(Guid gameId)
         {
             installedThisSession.Remove(gameId);
             installedThisSession.Insert(0, gameId);
+            NoteFinishedDownload(gameId);
         }
 
         /// <summary>
