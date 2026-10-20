@@ -5,7 +5,7 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Idle screen's cards: at Showing things, a pool of the last games played and tips is shown one card at a time in shuffled turn, each
+    /// The Idle screen's cards: at Showing things, a pool of the nearly-finished games, the last games played and the tips is shown one card at a time in shuffled turn, each
     /// for <see cref="IdleCardShownFor"/>, reshuffled when it runs out; waking hides the card.
     /// </summary>
     public sealed partial class ExtensionCore
@@ -105,11 +105,49 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Every card of the Idle screen's pool, unshuffled: the last games played, then the tips.</summary>
+        /// <summary>
+        /// Every card of the Idle screen's pool, unshuffled: the nearly-finished games, the last games played, then the
+        /// tips. Without PlayniteAchievements, the achievement kinds are left out.
+        /// </summary>
         private List<IdleCard> IdleCardPool() =>
-            RecentlyPlayedCards()
+            (achievements.IsAvailable ? CloseAchievementsCards() : Enumerable.Empty<IdleCard>())
+                .Concat(RecentlyPlayedCards())
                 .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null)))
                 .ToList();
+
+        /// <summary>
+        /// The <see cref="IdleCardsOfAKind"/> nearly-finished games, in the library and never hidden: the most
+        /// achievements unlocked without having them all, as last read and with unlocks heard live since, those nearer
+        /// finished first among as many, then by name. Each card has the game's art, its name, how many are unlocked and
+        /// the locked achievement most players have, "42 of 48 unlocked · Next: Blessed", of unknown rarity only with no
+        /// other named. PlayniteAchievements has no progress counters, so this is as close as it gets.
+        /// </summary>
+        private IEnumerable<IdleCard> CloseAchievementsCards()
+        {
+            var live = new HashSet<string>(liveUnlocks.Select(u => u.Key));
+            return recordedAchievements
+                .Select(g => new
+                {
+                    Game = library.Games.FirstOrDefault(x => x.Id == g.GameId && !x.Hidden),
+                    Total = g.Achievements.Count,
+                    Locked = g.Achievements.Where(a => a.UnlockedAt == null && !live.Contains(UnlockKey(g.GameId, a.Key))).ToList(),
+                })
+                .Where(g => g.Game != null && g.Locked.Count > 0 && g.Locked.Count < g.Total)
+                .OrderByDescending(g => g.Total - g.Locked.Count)
+                .ThenByDescending(g => (double)(g.Total - g.Locked.Count) / g.Total)
+                .ThenBy(g => g.Game.Name, StringComparer.CurrentCultureIgnoreCase)
+                .Take(IdleCardsOfAKind)
+                .Select(g =>
+                {
+                    var next = g.Locked
+                        .Where(a => !string.IsNullOrEmpty(a.Name))
+                        .OrderByDescending(a => a.Rarity ?? double.MinValue)
+                        .FirstOrDefault();
+                    var detail = (g.Total - g.Locked.Count) + " of " + g.Total + " unlocked" + (next == null ? "" : " · Next: " + next.Name);
+                    return new IdleCard(IdleCardKind.CloseAchievements, g.Game.Name, detail, HeroArtOf(g.Game));
+                })
+                .ToList();
+        }
 
         /// <summary>
         /// The last <see cref="IdleCardsOfAKind"/> games played, never hidden ones: each with its art, its name, and its
