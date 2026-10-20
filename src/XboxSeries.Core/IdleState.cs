@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace XboxSeries.Core
 {
@@ -73,8 +74,10 @@ namespace XboxSeries.Core
         /// The steps Show things after's dropdown offers: <see cref="Steps"/> but those shorter than <see cref="DimAfter"/>,
         /// Never always among them.
         /// </summary>
-        // TODO(#90 core): leave out the steps shorter than DimAfter.
-        public IReadOnlyList<TimeSpan?> ShowThingsAfterSteps => Steps;
+        public IReadOnlyList<TimeSpan?> ShowThingsAfterSteps => Steps.Where(s => !IsShorter(s, dimAfter)).ToList();
+
+        /// <summary>Whether <paramref name="a"/> is shorter than <paramref name="b"/>, Never (null) longer than any time.</summary>
+        internal static bool IsShorter(TimeSpan? a, TimeSpan? b) => a is TimeSpan x && (!(b is TimeSpan y) || x < y);
 
         /// <summary>A step as its dropdown shows it: "1 min", "30 min", "1 h", "4 h", or "Never" for null.</summary>
         public static string Describe(TimeSpan? after)
