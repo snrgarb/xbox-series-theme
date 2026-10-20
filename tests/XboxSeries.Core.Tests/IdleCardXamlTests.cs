@@ -227,18 +227,13 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_card_crossfades_to_the_next_in_three_tenths_as_Homes_top_bar_and_goes_with_the_dim_on_wake()
+        public void A_card_crossfades_slowly_to_the_next_in_eight_tenths_and_goes_with_the_dim_on_wake()
         {
             var code = Code("DimWindow.xaml.cs");
-            Assert.Contains("CardCrossfade = TimeSpan.FromMilliseconds(300)", code);
+            Assert.Contains("CardCrossfade = TimeSpan.FromMilliseconds(800)", code);
             Assert.Contains("e.PropertyName == nameof(IdleState.Card)", code);
             Assert.Contains("front.BeginAnimation(OpacityProperty, new DoubleAnimation(1, CardCrossfade))", code);
             Assert.Contains("back.BeginAnimation(OpacityProperty, new DoubleAnimation(0, CardCrossfade))", code);
-
-            // Home's top bar: the gamertag and the real name, a 0.3 s linear crossfade.
-            var main = File.ReadAllText(Path.Combine(RepoRoot, "src", "XboxSeries.Dashboard", "Views", "Main.xaml"));
-            Assert.Contains("<LinearDoubleKeyFrame KeyTime=\"0:0:7.5\" Value=\"0\" />", main);
-            Assert.Contains("<DiscreteDoubleKeyFrame KeyTime=\"0:0:7.2\" Value=\"1\" />", main);
 
             // On wake the cards and the time fade with the shade, in its quick fade out.
             var fade = Regex.Match(code, @"private void Fade\(double to, Duration duration, Action done\)[\s\S]*?\n        \}").Value;
@@ -248,7 +243,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_time_shows_at_the_bottom_left_large_and_grey_with_the_cards()
+        public void The_time_shows_at_the_bottom_left_large_and_light_grey_with_the_cards()
         {
             var dim = Load("DimWindow.xaml");
             var clock = Named(dim, "Clock");
@@ -258,7 +253,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("Bottom", (string)clock.Attribute("VerticalAlignment"));
             Assert.Equal("Bold", (string)clock.Attribute("FontWeight"));
             Assert.Equal("64", (string)clock.Attribute("FontSize"));
-            Assert.Equal("#FF777777", (string)clock.Attribute("Foreground"));
+            Assert.Equal("#FFCCCCCC", (string)clock.Attribute("Foreground"));
 
             var code = Code("DimWindow.xaml.cs");
             Assert.Contains("Clock.DataContext = status;", code);

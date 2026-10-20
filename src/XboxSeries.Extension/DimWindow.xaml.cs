@@ -25,8 +25,8 @@ namespace XboxSeries.Extension
         /// <summary>The fade out, quick, as the screen wakes.</summary>
         internal static readonly Duration FadeOutDuration = TimeSpan.FromMilliseconds(250);
 
-        /// <summary>From one card to the next, as Home's top bar crossfades the gamertag and the real name.</summary>
-        internal static readonly Duration CardCrossfade = TimeSpan.FromMilliseconds(300);
+        /// <summary>From one card to the next, slowly, so the swap reads as calm.</summary>
+        internal static readonly Duration CardCrossfade = TimeSpan.FromMilliseconds(800);
 
         /// <summary>The panel flying in from the right with the first card, slowing as it lands, as the console's.</summary>
         internal static readonly Duration FlyInDuration = TimeSpan.FromMilliseconds(500);
