@@ -201,6 +201,7 @@ namespace XboxSeries.Core
             LoadGuideSettings();
             LoadPlayniteSettings();
             WatchHints();
+            RestartIdle();
         }
 
         public StatusState Status { get; } = new StatusState();
