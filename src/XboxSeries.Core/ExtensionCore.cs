@@ -281,9 +281,10 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own and for its longer
-        /// <see cref="RareAchievementToastDuration"/>, unless the call's or the greeting is showing, which
-        /// they wait behind, or Start-up covers the screen, which they wait for.
+        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own, unless the call's or
+        /// the greeting is showing, which they wait behind, or Start-up covers the screen, which they wait for. An
+        /// achievement's, rare or not, shows for the pill's longer <see cref="AchievementToastDuration"/>, and the next
+        /// waits for its <see cref="AchievementToastOutro"/> before the usual gap.
         /// </summary>
         private void ShowNextToast()
         {
@@ -295,13 +296,14 @@ namespace XboxSeries.Core
 
             shownToast = waitingToasts.Dequeue();
             var rare = shownToast.Kind == ToastKind.RareAchievementUnlocked;
+            var pill = rare || shownToast.Kind == ToastKind.AchievementUnlocked;
             Toast.Show(shownToast.Text, shownToast.Kind, shownToast.Image, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description);
             sounds.Play(rare ? UiSound.RareAchievement : UiSound.Notification);
-            toastTimer = clock.After(rare ? RareAchievementToastDuration : ToastDuration, () =>
+            toastTimer = clock.After(pill ? AchievementToastDuration : ToastDuration, () =>
             {
                 shownToast = null;
                 Toast.IsShown = false;
-                toastTimer = waitingToasts.Count == 0 ? null : clock.After(rare ? RareAchievementOutro + ToastGap : ToastGap, ShowNextToast);
+                toastTimer = waitingToasts.Count == 0 ? null : clock.After(pill ? AchievementToastOutro + ToastGap : ToastGap, ShowNextToast);
             });
         }
 

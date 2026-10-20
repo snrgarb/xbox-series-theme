@@ -102,7 +102,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_test_unlock_shows_the_Achievement_unlocked_Toast_with_a_made_up_name_and_its_Score_with_no_game_running()
+        public void A_test_unlock_shows_the_Achievement_unlocked_Toast_with_a_made_up_name_description_and_Score_with_no_game_running()
         {
             core.DebugAchievementsUnlocked(1, rare: false);
 
@@ -113,7 +113,22 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(15, core.Toast.Score);
             Assert.Null(core.Toast.Image);
             Assert.Null(core.Toast.Rarity);
-            Assert.Null(core.Toast.Description);
+            Assert.Equal("Earned at least 2 stars on 15 different maps in Frontier Defense", core.Toast.Description);
+            Assert.Equal(UiSound.Notification, sounds.Played.Last());
+        }
+
+        [Fact]
+        public void The_Toast_after_an_ordinary_test_unlock_waits_for_its_outro_before_the_usual_gap()
+        {
+            core.DebugAchievementsUnlocked(1, rare: false);
+            core.DebugAchievementsUnlocked(1, rare: true);
+
+            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
+            Assert.False(core.Toast.IsShown);
+
+            clock.Advance(TimeSpan.FromMilliseconds(1));
+            Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
+            Assert.True(core.Toast.IsShown);
         }
 
         [Fact]
