@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace XboxSeries.Core
 {
@@ -71,13 +72,7 @@ namespace XboxSeries.Core
                 wakeButton = null;
             }
 
-            RestartIdle();
-            if (woke && padButton == ControllerButton.Y)
-            {
-                SeeIdleCardsGame(card);
-            }
-
-            return woke;
+            return Woken(woke, padButton, card);
         }
 
         /// <summary>
@@ -119,6 +114,15 @@ namespace XboxSeries.Core
                 wakeButton = null;
             }
 
+            return Woken(woke, button, card);
+        }
+
+        /// <summary>
+        /// The screen is awake after a press, and the timers count again; when the press <paramref name="woke"/> it and
+        /// was Y, on <paramref name="card"/> as it showed, the card's game is seen. Returns whether it woke the screen.
+        /// </summary>
+        private bool Woken(bool woke, ControllerButton? button, IdleCard card)
+        {
             RestartIdle();
             if (woke && button == ControllerButton.Y)
             {
@@ -130,9 +134,11 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Y's wake press on a game's card, the half of it that came first: the screen wakes, and the game's Game hub
-        /// opens, on the Dashboard, the Guide closing first if it was up and a Tile menu going. Over Search the main list
-        /// takes every game, as a game Search found does, given back as the page goes; over Play history it lists Play
-        /// history's, as a tile there does. A tip's card, or none, only wakes.
+        /// opens, on the Dashboard, the Guide closing first if it was up, and the Console keyboard, Settings and a Tile
+        /// menu going. The hub is for the main list's selected game, so over Search, or where the main list's filter
+        /// leaves the game out (My games' Games, for one not installed), the main list takes every game, given back as
+        /// the page goes; over Play history it lists Play history's, as a tile there does. A tip's card, or none, only
+        /// wakes.
         /// </summary>
         private void SeeIdleCardsGame(IdleCard card)
         {
@@ -143,8 +149,19 @@ namespace XboxSeries.Core
 
             void OpenHub()
             {
+                if (TextEntry.IsShown)
+                {
+                    EndTextEntry(keep: false);
+                }
+
+                if (Settings.IsShown)
+                {
+                    CloseSettings();
+                }
+
                 CloseTileMenu();
-                if (Search.IsShown)
+                var game = GameById(gameId);
+                if (Search.IsShown || (mainListFilter != null && game != null && !mainListFilter.Apply(new[] { game }).Any()))
                 {
                     ShowInMainList(GameListFilter.LastPlayed);
                 }
@@ -153,16 +170,13 @@ namespace XboxSeries.Core
                     ListPlayHistoryInMainList();
                 }
 
+                playnite.BringToFront();
                 playnite.OpenGameHub(gameId);
             }
 
             if (Guide.IsOpen)
             {
-                DismissAtOnce(() =>
-                {
-                    playnite.BringToFront();
-                    OpenHub();
-                });
+                DismissAtOnce(OpenHub);
             }
             else
             {

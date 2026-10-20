@@ -773,6 +773,41 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Y_on_a_games_card_over_Settings_and_the_Console_keyboard_takes_both_down_and_opens_the_Game_hub()
+        {
+            var id = RecentlyPlayedGame();
+            core.OpenSettings();
+            core.TypeNewProfile();
+            Assert.True(core.TextEntry.IsShown);
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            core.OnUserInput(ControllerButton.Y);
+            Press(ControllerButton.Y);
+
+            Assert.False(core.TextEntry.IsShown);
+            Assert.False(core.Settings.IsShown);
+            Assert.Equal(playnite.Window, windows.Foreground);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Y_on_an_uninstalled_games_card_over_My_games_Games_lists_it_in_the_main_list_for_its_Game_hub()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Hades", lastActivity: Start, installed: false);
+            LibraryChanged();
+            core.OpenMyGames(MyGamesItem.Games);
+            Assert.DoesNotContain(playnite.MainListFilter.Apply(library.Snapshot().Games), g => g.Id == id);
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            core.OnUserInput(ControllerButton.Y);
+            Press(ControllerButton.Y);
+
+            Assert.Contains(playnite.MainListFilter.Apply(library.Snapshot().Games), g => g.Id == id);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
         public void Without_PlayniteAchievements_only_recently_played_and_tips_cycle()
         {
             GameWithAchievements("Hades", 3, 10);
