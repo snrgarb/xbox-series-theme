@@ -34,14 +34,34 @@ namespace XboxSeries.Extension
         /// <summary>Theme settings' page last shown, for the box focus goes back to as it's left.</summary>
         private ThemeSettingsPage shownPage;
 
-        /// <summary>The Now Playing source's choices its open list shows, in its order; empty while it is closed.</summary>
-        private List<string> shownSources = new List<string>();
+        /// <summary>The gap from a dropdown's box down to its list, and the least room its list leaves above the page's foot.</summary>
+        private const double DropListGap = 8, DropListFoot = 32;
+
+        /// <summary>The shortest a dropdown's list is cut to, three rows, however little room is left under its box.</summary>
+        private const double DropListMinHeight = 3 * 62 + 16;
+
+        /// <summary>The Guide page's dropdown, the Now Playing source, and the Idle page's, Dim after then Show things after.</summary>
+        private readonly Dropdown nowPlayingSource, dimAfter, showThingsAfter;
 
         internal SettingsControl(ExtensionCore core)
         {
             InitializeComponent();
             this.core = core;
             DataContext = core.Settings;
+            var guide = core.Settings.Guide;
+            nowPlayingSource = new Dropdown(NowPlayingSourceBox, NowPlayingSourceList, NowPlayingSourceOptions,
+                () => guide.NowPlayingSources.Select(source =>
+                    new DropChoice(source, source == guide.NowPlayingSource, () => core.SetNowPlayingSource(source))));
+            dimAfter = new Dropdown(DimAfterBox, DimAfterList, DimAfterOptions,
+                () => StepChoices(IdleState.Steps, core.Idle.DimAfter, core.SetDimAfter));
+            showThingsAfter = new Dropdown(ShowThingsAfterBox, ShowThingsAfterList, ShowThingsAfterOptions,
+                () => StepChoices(core.Idle.ShowThingsAfterSteps, core.Idle.ShowThingsAfter, core.SetShowThingsAfter));
+            foreach (var dropdown in new[] { nowPlayingSource, dimAfter, showThingsAfter })
+            {
+                dropdown.Options.KeyDown += (s, e) => OnDropListKeyDown(dropdown, e);
+            }
+
+            ShowIdle();
             categoryItems = new Dictionary<SettingsCategory, Button>
             {
                 [SettingsCategory.ThemeSettings] = ThemeSettingsItem,
@@ -97,6 +117,8 @@ namespace XboxSeries.Extension
         {
             core.Settings.PropertyChanged += OnStateChanged;
             core.Settings.Opened += OnOpened;
+            core.Idle.PropertyChanged += OnIdleChanged;
+            ShowIdle();
 
             // Put up before the page was loaded, as when the Guide brings Playnite back from a Game hub.
             shownCategory = core.Settings.Category;
@@ -119,6 +141,7 @@ namespace XboxSeries.Extension
         {
             core.Settings.PropertyChanged -= OnStateChanged;
             core.Settings.Opened -= OnOpened;
+            core.Idle.PropertyChanged -= OnIdleChanged;
 
             // Gone mid-slide, the category is left where it settles.
             PaneFlyIn.Stop(CategoryHost);
@@ -189,6 +212,7 @@ namespace XboxSeries.Extension
             switch (page)
             {
                 case ThemeSettingsPage.Personalisation: return PersonalisationPane;
+                case ThemeSettingsPage.Idle: return IdlePane;
                 case ThemeSettingsPage.Guide: return GuidePane;
                 case ThemeSettingsPage.Discord: return DiscordPane;
                 default: return null;
@@ -196,8 +220,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// A page of Theme settings' first option: Personalisation's first box, the Now Playing source's box, or Discord's
-        /// Type for the Client ID; for none, the first of Theme settings' own boxes.
+        /// A page of Theme settings' first option: Personalisation's first box, Dim after's box, the Now Playing source's
+        /// box, or Discord's Type for the Client ID; for none, the first of Theme settings' own boxes.
         /// </summary>
         private void FocusThemePage(ThemeSettingsPage page)
         {
@@ -205,6 +229,9 @@ namespace XboxSeries.Extension
             {
                 case ThemeSettingsPage.Personalisation:
                     PersonalisationPane.FocusFirst();
+                    break;
+                case ThemeSettingsPage.Idle:
+                    DimAfterBox.Focus();
                     break;
                 case ThemeSettingsPage.Guide:
                     NowPlayingSourceBox.Focus();
@@ -257,20 +284,28 @@ namespace XboxSeries.Extension
             }
 
             Header.Text = page == ThemeSettingsPage.Personalisation ? PersonalisationPane.Title
+                : page == ThemeSettingsPage.Idle ? "Idle"
                 : page == ThemeSettingsPage.Guide ? "Guide"
                 : page == ThemeSettingsPage.Discord ? "Discord"
                 : themeSettings ? "Theme settings"
                 : category == SettingsCategory.PlayniteSettings ? "Playnite settings"
                 : category.ToString();
 
-            // Left or closed, the Guide's dropdown is closed for next time.
+            // Left or closed, a page's dropdowns are closed for next time.
             if (page != ThemeSettingsPage.Guide || !core.Settings.IsShown)
             {
-                CloseNowPlayingSources();
+                CloseDropdown(nowPlayingSource);
+            }
+
+            if (page != ThemeSettingsPage.Idle || !core.Settings.IsShown)
+            {
+                CloseDropdown(dimAfter);
+                CloseDropdown(showThingsAfter);
             }
 
             ThemeSettingsPane.Visibility = themeSettings && page == ThemeSettingsPage.None ? Visibility.Visible : Visibility.Collapsed;
             PersonalisationPane.Visibility = page == ThemeSettingsPage.Personalisation ? Visibility.Visible : Visibility.Collapsed;
+            IdlePane.Visibility = page == ThemeSettingsPage.Idle ? Visibility.Visible : Visibility.Collapsed;
             GuidePane.Visibility = page == ThemeSettingsPage.Guide ? Visibility.Visible : Visibility.Collapsed;
             DiscordPane.Visibility = page == ThemeSettingsPage.Discord ? Visibility.Visible : Visibility.Collapsed;
             PlaynitePane.Visibility = category == SettingsCategory.PlayniteSettings ? Visibility.Visible : Visibility.Collapsed;
@@ -356,53 +391,75 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>
-        /// The pad in the Guide's options. On the Now Playing source's box: A opens its list, Left or B goes back to
-        /// Theme settings' boxes, focus on Guide. In the open list: up and down move through the choices, staying put at its ends, A chooses the
-        /// one focused and B closes it unchanged, focus going back to the box either way.
-        /// </summary>
-        private void OnGuidePaneKeyDown(object sender, KeyEventArgs e)
-        {
-            var pad = PlayniteInput.PadButtonOf(e);
-            if (e.OriginalSource == NowPlayingSourceBox)
-            {
-                if (pad == ControllerInput.A)
-                {
-                    e.Handled = true;
-                    OpenNowPlayingSources();
-                }
-                else if (pad == ControllerInput.B || e.Key == Key.Left)
-                {
-                    // Handled here, before the page's own B steps back to Theme settings' boxes.
-                    e.Handled = true;
-                    core.LeaveThemePage();
-                }
-                else if (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Right)
-                {
-                    e.Handled = true;
-                }
+        // The Guide's dropdown and the Idle page's two, top to bottom.
+        private void OnGuidePaneKeyDown(object sender, KeyEventArgs e) =>
+            OnDropdownsKeyDown(e, nowPlayingSource);
 
+        private void OnIdlePaneKeyDown(object sender, KeyEventArgs e) =>
+            OnDropdownsKeyDown(e, dimAfter, showThingsAfter);
+
+        /// <summary>
+        /// The pad on a page of dropdowns' boxes, <paramref name="dropdowns"/> top to bottom: A opens the box's list, up and
+        /// down move between the boxes, staying put at the ends, and Left or B goes back to Theme settings' boxes, focus on
+        /// the page's. An open list takes its own keys (<see cref="OnDropListKeyDown"/>).
+        /// </summary>
+        private void OnDropdownsKeyDown(KeyEventArgs e, params Dropdown[] dropdowns)
+        {
+            var box = Array.FindIndex(dropdowns, d => d.Box == e.OriginalSource);
+            if (box < 0)
+            {
                 return;
             }
 
-            var options = NowPlayingSourceOptions.Children.OfType<Button>().ToList();
+            var pad = PlayniteInput.PadButtonOf(e);
+            if (pad == ControllerInput.A)
+            {
+                e.Handled = true;
+                OpenDropdown(dropdowns[box]);
+            }
+            else if (pad == ControllerInput.B || e.Key == Key.Left)
+            {
+                // Handled here, before the page's own B steps back to Theme settings' boxes.
+                e.Handled = true;
+                core.LeaveThemePage();
+            }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+                dropdowns[Math.Max(0, Math.Min(dropdowns.Length - 1, box + (e.Key == Key.Up ? -1 : 1)))].Box.Focus();
+            }
+            else if (e.Key == Key.Right)
+            {
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// The pad in a dropdown's open list, taken on its rows before the scroller round them, which would otherwise move
+        /// focus itself, out of the list at its ends: up and down move through the choices, staying put at its ends, A
+        /// chooses the one focused and B closes it unchanged, focus going back to the box either way.
+        /// </summary>
+        private void OnDropListKeyDown(Dropdown dropdown, KeyEventArgs e)
+        {
+            var options = dropdown.Options.Children.OfType<Button>().ToList();
             var here = options.IndexOf(e.OriginalSource as Button);
             if (here < 0)
             {
                 return;
             }
 
+            var pad = PlayniteInput.PadButtonOf(e);
             if (pad == ControllerInput.A)
             {
                 e.Handled = true;
-                ChooseNowPlayingSource(here);
+                ChooseFromDropdown(dropdown, here);
             }
             else if (pad == ControllerInput.B)
             {
                 // Handled here, before the page's own B steps back to Theme settings' boxes.
                 e.Handled = true;
-                CloseNowPlayingSources();
-                NowPlayingSourceBox.Focus();
+                CloseDropdown(dropdown);
+                dropdown.Box.Focus();
             }
             else if (e.Key == Key.Up || e.Key == Key.Down)
             {
@@ -415,76 +472,145 @@ namespace XboxSeries.Extension
             }
         }
 
-        // The keyboard's Enter and the mouse; the pad's A arrives as OnGuidePaneKeyDown.
-        private void OnNowPlayingSourceBoxClick(object sender, RoutedEventArgs e)
+        // The keyboard's Enter and the mouse; the pad's A arrives as OnDropdownsKeyDown.
+        private void OnDropBoxClick(object sender, RoutedEventArgs e)
         {
-            if (NowPlayingSourceList.Visibility == Visibility.Visible)
+            var dropdown = new[] { nowPlayingSource, dimAfter, showThingsAfter }.Single(d => d.Box == sender);
+            if (dropdown.IsOpen)
             {
-                CloseNowPlayingSources();
+                CloseDropdown(dropdown);
             }
             else
             {
-                OpenNowPlayingSources();
+                OpenDropdown(dropdown);
             }
         }
 
-        // The keyboard's Enter and the mouse; the pad's A arrives as OnGuidePaneKeyDown.
-        private void OnNowPlayingSourceOptionClick(object sender, RoutedEventArgs e)
-        {
-            ChooseNowPlayingSource(NowPlayingSourceOptions.Children.IndexOf((UIElement)sender));
-        }
-
         /// <summary>
-        /// Opens the Now Playing source's list under its box, a row for each of the core's choices as they are now, the
-        /// one chosen ticked and focused.
+        /// Opens a dropdown's list under its box, a row for each of its choices as the core has them now, the one chosen
+        /// ticked and focused. Cut to the room left under the box above the page's foot, the list scrolls, focus keeping
+        /// its row in view.
         /// </summary>
-        private void OpenNowPlayingSources()
+        private void OpenDropdown(Dropdown dropdown)
         {
-            var state = core.Settings.Guide;
-            shownSources = state.NowPlayingSources.ToList();
-            NowPlayingSourceOptions.Children.Clear();
+            dropdown.Choices = dropdown.ReadChoices().ToList();
+            dropdown.Options.Children.Clear();
             Button chosen = null;
-            foreach (var source in shownSources)
+            for (var i = 0; i < dropdown.Choices.Count; i++)
             {
+                var index = i;
+                var choice = dropdown.Choices[i];
                 var option = new Button
                 {
                     Style = (Style)FindResource("DropOption"),
-                    Content = new TextBlock { Text = source, Style = (Style)FindResource("Text") },
-                    Tag = source == state.NowPlayingSource ? "Selected" : null,
+                    Content = new TextBlock { Text = choice.Label, Style = (Style)FindResource("Text") },
+                    Tag = choice.IsChosen ? "Selected" : null,
                 };
-                option.Click += OnNowPlayingSourceOptionClick;
-                NowPlayingSourceOptions.Children.Add(option);
-                if (source == state.NowPlayingSource)
+                option.Click += (s, e) => ChooseFromDropdown(dropdown, index);
+                dropdown.Options.Children.Add(option);
+                if (choice.IsChosen)
                 {
                     chosen = option;
                 }
             }
 
-            NowPlayingSourceBox.Tag = "Open";
-            NowPlayingSourceList.Visibility = Visibility.Visible;
-            (chosen ?? NowPlayingSourceOptions.Children.OfType<Button>().FirstOrDefault())?.Focus();
+            var top = dropdown.Box.TranslatePoint(new Point(0, dropdown.Box.ActualHeight + DropListGap), this).Y;
+            dropdown.List.MaxHeight = Math.Max(DropListMinHeight, ActualHeight - top - DropListFoot);
+            dropdown.Box.Tag = "Open";
+            dropdown.List.Visibility = Visibility.Visible;
+            dropdown.List.UpdateLayout();
+            (chosen ?? dropdown.Options.Children.OfType<Button>().FirstOrDefault())?.Focus();
         }
 
-        /// <summary>The choice at <paramref name="index"/> in the open list: the core takes and saves it, and the list closes onto its box.</summary>
-        private void ChooseNowPlayingSource(int index)
+        /// <summary>
+        /// The choice at <paramref name="index"/> in a dropdown's open list: the core takes and saves it, and the list
+        /// closes onto its box. The box shows what the core then holds: one it refuses, or one already set, changes nothing.
+        /// </summary>
+        private void ChooseFromDropdown(Dropdown dropdown, int index)
         {
-            if (index < 0 || index >= shownSources.Count)
+            if (index < 0 || index >= dropdown.Choices.Count)
             {
                 return;
             }
 
-            core.SetNowPlayingSource(shownSources[index]);
-            CloseNowPlayingSources();
-            NowPlayingSourceBox.Focus();
+            dropdown.Choices[index].Choose();
+            CloseDropdown(dropdown);
+            dropdown.Box.Focus();
         }
 
-        /// <summary>Closes the Now Playing source's list, if open, leaving focus to the caller.</summary>
-        private void CloseNowPlayingSources()
+        /// <summary>Closes a dropdown's list, if open, leaving focus to the caller.</summary>
+        private static void CloseDropdown(Dropdown dropdown)
         {
-            NowPlayingSourceBox.Tag = null;
-            NowPlayingSourceList.Visibility = Visibility.Collapsed;
-            NowPlayingSourceOptions.Children.Clear();
-            shownSources = new List<string>();
+            dropdown.Box.Tag = null;
+            dropdown.List.Visibility = Visibility.Collapsed;
+            dropdown.Options.Children.Clear();
+            dropdown.Choices = new List<DropChoice>();
+        }
+
+        /// <summary>The Idle page's boxes: the core's Dim after and Show things after, in its words.</summary>
+        private void ShowIdle()
+        {
+            DimAfterText.Text = IdleState.Describe(core.Idle.DimAfter);
+            ShowThingsAfterText.Text = IdleState.Describe(core.Idle.ShowThingsAfter);
+        }
+
+        // Dim after raised past Show things after raises it too: both boxes follow.
+        private void OnIdleChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(IdleState.DimAfter) || e.PropertyName == nameof(IdleState.ShowThingsAfter))
+            {
+                ShowIdle();
+            }
+        }
+
+        /// <summary>The Idle page's choices: its steps in the core's words, the one set now chosen, each setting its own.</summary>
+        private static IEnumerable<DropChoice> StepChoices(IEnumerable<TimeSpan?> steps, TimeSpan? now, Action<TimeSpan?> set) =>
+            steps.Select(step => new DropChoice(IdleState.Describe(step), step == now, () => set(step)));
+
+        /// <summary>
+        /// A dropdown on a page of Theme settings, as the Guide's Audio Output and Input: its box, the list that opens
+        /// under it, and the core's choices it reads as it opens.
+        /// </summary>
+        private sealed class Dropdown
+        {
+            public Dropdown(Button box, FrameworkElement list, Panel options, Func<IEnumerable<DropChoice>> readChoices)
+            {
+                Box = box;
+                List = list;
+                Options = options;
+                ReadChoices = readChoices;
+            }
+
+            public Button Box { get; }
+
+            public FrameworkElement List { get; }
+
+            /// <summary>The open list's rows.</summary>
+            public Panel Options { get; }
+
+            public Func<IEnumerable<DropChoice>> ReadChoices { get; }
+
+            /// <summary>The choices the open list shows, in its order; empty while it is closed.</summary>
+            public List<DropChoice> Choices { get; set; } = new List<DropChoice>();
+
+            public bool IsOpen => List.Visibility == Visibility.Visible;
+        }
+
+        /// <summary>A row of a dropdown's list: its words, whether it is the one set now, and what choosing it does.</summary>
+        private sealed class DropChoice
+        {
+            public DropChoice(string label, bool isChosen, Action choose)
+            {
+                Label = label;
+                IsChosen = isChosen;
+                Choose = choose;
+            }
+
+            public string Label { get; }
+
+            public bool IsChosen { get; }
+
+            public Action Choose { get; }
         }
 
         /// <summary>

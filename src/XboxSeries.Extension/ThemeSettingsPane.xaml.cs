@@ -8,8 +8,8 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Settings' Theme settings category: Personalisation and Guide side by side, then Discord, each opening its page in
-    /// the pane. A box asks the core for its page (<see cref="ExtensionCore.OpenThemePage"/>); Settings shows the page and
+    /// Settings' Theme settings category: Personalisation and Idle side by side, then Guide and Discord, each opening its
+    /// page in the pane. A box asks the core for its page (<see cref="ExtensionCore.OpenThemePage"/>); Settings shows the page and
     /// moves focus into it. The pane holds no logic.
     /// </summary>
     public partial class ThemeSettingsPane : UserControl
@@ -30,8 +30,8 @@ namespace XboxSeries.Extension
         /// </summary>
         private Button[][] Rows => new[]
         {
-            new[] { PersonalisationBox, GuideBox },
-            new[] { DiscordBox },
+            new[] { PersonalisationBox, IdleBox },
+            new[] { GuideBox, DiscordBox },
         };
 
         internal void Attach(ExtensionCore extensionCore)
@@ -55,8 +55,7 @@ namespace XboxSeries.Extension
         private void OnBoxClick(object sender, RoutedEventArgs e) => Press((Button)sender);
 
         /// <summary>
-        /// The pad on the boxes: the D-pad moves between them, row by row, staying put at the edges, Down from Guide
-        /// landing on Discord; A opens the box's page; B, or Left from the first column, goes back to the rail.
+        /// The pad on the boxes: the D-pad moves between them, row by row, staying put at the edges; A opens the box's page; B, or Left from the first column, goes back to the rail.
         /// </summary>
         private void OnPaneKeyDown(object sender, KeyEventArgs e)
         {
@@ -103,6 +102,7 @@ namespace XboxSeries.Extension
         private void Press(Button box)
         {
             var page = box == PersonalisationBox ? ThemeSettingsPage.Personalisation
+                : box == IdleBox ? ThemeSettingsPage.Idle
                 : box == GuideBox ? ThemeSettingsPage.Guide
                 : box == DiscordBox ? ThemeSettingsPage.Discord
                 : ThemeSettingsPage.None;
@@ -117,6 +117,7 @@ namespace XboxSeries.Extension
             switch (page)
             {
                 case ThemeSettingsPage.Personalisation: return PersonalisationBox;
+                case ThemeSettingsPage.Idle: return IdleBox;
                 case ThemeSettingsPage.Guide: return GuideBox;
                 case ThemeSettingsPage.Discord: return DiscordBox;
                 default: return null;
