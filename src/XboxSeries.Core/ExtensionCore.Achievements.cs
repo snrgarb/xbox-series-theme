@@ -288,7 +288,7 @@ namespace XboxSeries.Core
         /// <summary>
         /// The Profile's totals and last unlocks, over every game this PC has achievements for; none at all without
         /// PlayniteAchievements, with no game having any, or before the first read, so unlocks heard live never make
-        /// totals on their own. Profile &amp; system showing shows them in place.
+        /// totals on their own. Profile &amp; system showing shows them in place, and Home's top bar shows the Score.
         /// </summary>
         private void RefreshAchievements()
         {
@@ -308,6 +308,7 @@ namespace XboxSeries.Core
                 recentAchievements = unlocked.OrderByDescending(u => u.Achievement.UnlockedAt).Take(RecentAchievementCount).ToList();
             }
 
+            Status.Achievements = Guide.Achievements;
             ShowAchievementsInGuide();
         }
 

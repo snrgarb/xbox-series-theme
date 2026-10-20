@@ -40,9 +40,10 @@ namespace XboxSeries.Core
     /// <summary>One achievement of a game.</summary>
     public sealed class Achievement
     {
-        public Achievement(string key, string name, string icon, double? rarity, DateTime? unlockedAt, string description = null)
+        public Achievement(string key, string name, string icon, double? rarity, DateTime? unlockedAt, string description = null, int? points = null)
         {
             Description = description;
+            Points = points;
             Key = key;
             Name = name;
             Icon = icon;
@@ -64,6 +65,12 @@ namespace XboxSeries.Core
 
         /// <summary>The percentage of players who have unlocked it, 0 to 100; null when that isn't known.</summary>
         public double? Rarity { get; }
+
+        /// <summary>
+        /// Its points on its own platform, as PlayniteAchievements records them (Xbox's Gamerscore, RetroAchievements'
+        /// points, Epic's XP); null where the platform has none, as Steam, GOG and PSN.
+        /// </summary>
+        public int? Points { get; }
 
         /// <summary>When it was unlocked, in local time as <see cref="IClock.Now"/>; null while it is locked.</summary>
         public DateTime? UnlockedAt { get; }

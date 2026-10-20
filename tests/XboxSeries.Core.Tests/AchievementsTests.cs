@@ -368,6 +368,24 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Home_top_bar_shows_the_same_Score_total_under_the_gamertag_and_none_without_totals()
+        {
+            Assert.Null(core.Status.Achievements);
+
+            Record(hades, Unlocked("boon", "Blessed", rarity: 4, at: Start.AddDays(-5)), Locked("escape", "Escaped"));
+            Record(celeste, Unlocked("summit", "Summit", rarity: 60, at: Start.AddDays(-2)));
+            core.OnAchievementsChanged();
+
+            Assert.Equal(50 + 10, core.Status.Achievements.Score);
+            Assert.Same(core.Guide.Achievements, core.Status.Achievements);
+
+            achievements.IsAvailable = false;
+            core.OnAchievementsChanged();
+
+            Assert.Null(core.Status.Achievements);
+        }
+
+        [Fact]
         public void A_live_unlock_counts_in_the_totals_and_leads_the_recent_unlocks_before_any_read_shows_it()
         {
             Record(hades, Unlocked("boon", "Blessed", rarity: 4, at: Start.AddDays(-5)), Locked("escape", "Escaped"));
