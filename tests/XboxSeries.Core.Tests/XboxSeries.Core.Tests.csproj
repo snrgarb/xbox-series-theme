@@ -13,5 +13,7 @@
   <ItemGroup>
     <!-- The achievement Toast's paging, plain C# with no WPF, compiled in here too to be checked on its own. -->
     <Compile Include="..\..\src\XboxSeries.Extension\AchievementPages.cs" Link="Linked\AchievementPages.cs" />
+    <!-- The Idle screen's wake press swallowed whole, plain C# too. -->
+    <Compile Include="..\..\src\XboxSeries.Extension\WakeSwallow.cs" Link="Linked\WakeSwallow.cs" />
   </ItemGroup>
 </Project>

@@ -27,6 +27,15 @@ namespace XboxSeries.Extension
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X, Y;
+        }
+
+        /// <summary>Where the mouse is on the screen, for the Idle screen to tell a real move from WPF's own.</summary>
+        [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT point);
+
+        [StructLayout(LayoutKind.Sequential)]
         private struct MARGINS
         {
             public int Left, Right, Top, Bottom;

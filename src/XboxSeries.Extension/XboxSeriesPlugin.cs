@@ -31,6 +31,8 @@ namespace XboxSeries.Extension
         private bool libraryPushed;
         private ToastWindow toastWindow;
         private LaunchScreenWindow launchScreenWindow;
+        private DimWindow dimWindow;
+        private IdleInput idleInput;
 
         /// <summary>Whether Fullscreen's Start-up sequence has begun, which it does once.</summary>
         private bool startupBegun;
@@ -165,6 +167,12 @@ namespace XboxSeries.Extension
             // Beneath the Toast's and the Overlay, which it keeps above it as it shows, so Toasts and the Guide show over it.
             launchScreenWindow = launchScreenWindow ?? new LaunchScreenWindow(core.LaunchScreen, toastWindow, overlay);
 
+            // The Idle screen's dim, over the Overlay and the Launch screen's, going back over them when either shows
+            // while it is up, and beneath the Toast's, which it keeps above it, so Toasts show over it. Every input on
+            // this thread is told to the core for its timers, and the press that only wakes the screen swallowed.
+            dimWindow = new DimWindow(core.Idle, new Window[] { overlay, launchScreenWindow }, toastWindow);
+            idleInput = new IdleInput(core, controller);
+
             // So work left for when the UI thread is idle runs at once, not when something else next wakes it.
             DispatcherHeartbeat.Start(PlayniteApi.MainView.UIDispatcher);
 #if DEBUG
@@ -242,6 +250,8 @@ namespace XboxSeries.Extension
             windows.Overlay?.Close();
             toastWindow?.Close();
             launchScreenWindow?.Close();
+            idleInput?.Dispose();
+            dimWindow?.Close();
             if (startup != null)
             {
                 startup.Shutdown();
