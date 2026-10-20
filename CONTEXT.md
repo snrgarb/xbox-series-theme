@@ -118,6 +118,10 @@ _Avoid_: account, user (that is the Windows user), gamer
 **Start-up**'s profile picker: the **Profiles** in a row, focus on the one signed in last, and A signs the focused one in. It asks on every start and on waking from sleep, unless turned off on **Settings**, when the last Profile signs in by itself.
 _Avoid_: profile select, login, user switcher
 
+**Idle screen**:
+What shows when nobody has touched the controller, keyboard or mouse for a while, in stages counted from the last input: Dimmed, after Dim after (2 min by default), a slight dim fading in over everything on screen, the **Guide**, the **Tile menu**, dialogs and the **Console keyboard** included, with only **Toasts** above it; then Showing things, after Show things after (5 min by default), things shown over the dim. Never on either time switches that stage off; a Show things after no later than Dim after shows things at its own time, the dim with them. The first input while dimmed is the wake press: it only wakes the screen, swallowed, so A doesn't launch, B doesn't go back and the **Guide button** doesn't open the **Guide**, focus staying where it was, and **Who's playing today?** isn't asked. It waits during **Start-up**, a **Launch screen**, a running game, or with Playnite out of front, counting from zero again once that ends; Toasts neither wake it nor count as input.
+_Avoid_: screensaver, sleep (that is Windows'), attract mode
+
 **Spinner**:
 The console's loading spinner: a white arc with a green tail that grows clockwise from the top, its tail chasing its head round. In the **Dashboard**'s top bar it rests as a dot at the top before each turn; round the **Profile**'s picture and in the **Guide**'s **Flyouts** it turns on without a rest, its ends cut square. It turns round the **Profile**'s picture on Signing you in, and in the **Dashboard**'s top bar while Playnite updates the library, and in a **Flyout** while its entries load.
 _Avoid_: loading ring, progress ring, light
@@ -177,7 +181,7 @@ _Avoid_: home button, Xbox button
 - Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 - **Start-up** plays the **Boot video**, then **Who's playing today?** signs a **Profile** in; its "Hi" **Toast** shows first, Playnite's notifications and a ringing **Call**'s Toast after it, and pressing the **Guide button** during it opens the **Guide** on Profile & system
-- Waking from sleep asks **Who's playing today?** again, without the **Boot video**
+- Waking from sleep asks **Who's playing today?** again, without the **Boot video**; waking the **Idle screen** never does
 - **Home**'s top bar, the **Guide**'s Settings entry and the **Tile menu**'s Customise entries all open **Settings**; B returns to where it was opened from
 
 ## Flagged ambiguities
