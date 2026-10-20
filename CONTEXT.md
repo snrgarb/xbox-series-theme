@@ -13,7 +13,7 @@ The Playnite Fullscreen-mode theme that restyles Playnite's own screens to look 
 _Avoid_: skin, home screen (Home is one page of the Dashboard)
 
 **Home**:
-The Dashboard's landing page, modelled on the Xbox Home screen. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Discord), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
+The Dashboard's landing page, modelled on the Xbox Home screen. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
 
 **Recent row**:
 The row of most recently played games on **Home**, ending in the Play history tile.
@@ -44,7 +44,7 @@ A row on **Home** below the **Recent row**, showing the games of one Playnite fi
 _Avoid_: pin, collection, category
 
 **Tile menu**:
-The menu Menu opens on a game tile on **Home**: Play game (Quit while it runs), Add to / Remove from Favourites, Manage game, which opens Playnite's own game menu, and Customise Home (Customise games & apps on **My games & apps**' tiles), which opens **Settings** on Personalisation. It sits centred over the dimmed screen, drawn like the **Guide**'s menus and prompts.
+The menu Menu opens on a game tile on **Home**: Play game (Quit while it runs), Add to / Remove from Favourites, Manage game, which opens Playnite's own game menu, and Customise Home (Customise games & apps on **My games & apps**' tiles), which opens **Settings** on Theme settings' Personalisation. It sits centred over the dimmed screen, drawn like the **Guide**'s menus and prompts.
 _Avoid_: context menu, game menu (that is Playnite's own, behind Manage game)
 
 **Game hub**:
@@ -64,11 +64,11 @@ The extension's on-screen keyboard, laid out as the console's: the number row, Q
 _Avoid_: on-screen keyboard (Playnite's own, as `SelectString` shows it), OSK
 
 **Settings**:
-The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Personalisation, whose Start up box holds the boot video, the profiles and Who's playing today?; Guide; Discord; then **Playnite settings**, a category of boxes too, and More Playnite options) beside the selected category. It exists only when the extension is installed.
+The Dashboard's page for the **Bundle**'s own options, modelled on the console's Settings: a left rail (Theme settings, **Playnite settings** and More Playnite options, then in Debug builds a divider and the Debug menu) beside the selected category. Theme settings is boxes two wide, a line icon and a title each, that open their pages in its place: Personalisation, whose Start up box holds the boot video, the profiles and Who's playing today?; Guide; and Discord. B steps back one level at a time (Theme settings › Personalisation › Start up), focus on the box it came from, then from the rail to where the page was opened from. It exists only when the extension is installed.
 _Avoid_: Bundle settings, plugin settings, add-on settings
 
 **Playnite settings**:
-The category below **Settings**' divider for what the **Bundle** does with Playnite itself, boxes two wide as Personalisation's: Download metadata, which fills in the games missing metadata, blank fields only, under Playnite's own progress bar, B stopping it; Update after downloads, a box with a checkbox, on by default, which has a game finishing downloading followed by a library update across every integration and metadata for the games it brings, once no game is running, ending with the Library updated **Toast**; and Playnite settings, which opens Playnite's own Fullscreen Settings window, restyled by the **Dashboard**. That window can't hold the Bundle's options.
+The category on **Settings**' rail, under Theme settings, for what the **Bundle** does with Playnite itself, boxes two wide as Personalisation's: Download metadata, which fills in the games missing metadata, blank fields only, under Playnite's own progress bar, B stopping it; Update after downloads, a box with a checkbox, on by default, which has a game finishing downloading followed by a library update across every integration and metadata for the games it brings, once no game is running, ending with the Library updated **Toast**; and Playnite settings, which opens Playnite's own Fullscreen Settings window, restyled by the **Dashboard**. That window can't hold the Bundle's options.
 _Avoid_: Settings (that is the Dashboard's page)
 
 **Play session**:
@@ -147,7 +147,7 @@ The last entry of the Guide's Audio **Flyout**, under the mute switches after a 
 _Avoid_: media player, music
 
 **Now Playing source**:
-The option on **Settings**' Guide category naming the app **Now Playing** follows: Any (Windows' current media session), Spotify (the default), or any other app that has had a media session since Playnite started. Shared by every **Profile**.
+The option on **Settings**' Guide page, under Theme settings, naming the app **Now Playing** follows: Any (Windows' current media session), Spotify (the default), or any other app that has had a media session since Playnite started. Shared by every **Profile**.
 _Avoid_: media source, player setting
 
 **Rare**:
