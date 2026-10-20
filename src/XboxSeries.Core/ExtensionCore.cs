@@ -204,6 +204,7 @@ namespace XboxSeries.Core
             LoadRecentServers();
             LoadStartUp();
             LoadGuideSettings();
+            LoadIdleSettings();
             LoadPlayniteSettings();
             WatchHints();
             WatchIdle();
