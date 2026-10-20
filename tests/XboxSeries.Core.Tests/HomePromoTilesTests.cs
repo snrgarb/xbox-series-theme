@@ -26,9 +26,11 @@ namespace XboxSeries.Core.Tests
             Assert.False(Guide.IsOpen);
             Assert.True(core.Settings.IsShown);
             Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.Discord, core.Settings.ThemePage);
             Assert.True(core.Settings.OpensInPane);
             Assert.Equal(SettingsOrigin.HomeTile, core.Settings.OpenedFrom);
 
+            core.LeaveThemePage();
             core.LeaveSettings();
             Assert.False(core.Settings.IsShown);
         }
@@ -40,6 +42,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.True(core.Settings.IsShown);
             Assert.Equal(SettingsCategory.PlayniteSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.None, core.Settings.ThemePage);
             Assert.True(core.Settings.OpensInPane);
             Assert.Equal(SettingsOrigin.HomeTile, core.Settings.OpenedFrom);
         }
@@ -53,6 +56,7 @@ namespace XboxSeries.Core.Tests
             core.OpenSettings();
 
             Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.None, core.Settings.ThemePage);
             Assert.False(core.Settings.OpensInPane);
         }
 

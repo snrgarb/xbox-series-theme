@@ -1512,22 +1512,23 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>Opens Settings from Home's top bar, with the rail's first category showing; B goes back to the top bar.</summary>
+        /// <summary>Opens Settings from Home's top bar, on the rail's first category, Theme settings' boxes; B goes back to the top bar.</summary>
         public void OpenSettings() => ShowSettings(SettingsOrigin.TopBar);
 
         /// <summary>
-        /// Puts Settings up on the rail's first category, every time it opens, or on <paramref name="inPane"/>, focus in
-        /// that category's options. It takes My games &amp; apps' place, or Search's, which gives the user's own filter
-        /// and sort back. <paramref name="game"/> is the game whose tile menu opened it, by a Customise entry, which B goes
-        /// back to.
+        /// Puts Settings up on the rail's first category, Theme settings, on its boxes, every time it opens; or on
+        /// <paramref name="inPane"/>, focus in that category's options, on Theme settings' <paramref name="page"/> when
+        /// it's given. It takes My games &amp; apps' place, or Search's, which gives the user's own filter and sort back.
+        /// <paramref name="game"/> is the game whose tile menu opened it, by a Customise entry, which B goes back to.
         /// </summary>
-        private void ShowSettings(SettingsOrigin from, Guid? game = null, SettingsCategory? inPane = null)
+        private void ShowSettings(SettingsOrigin from, Guid? game = null, SettingsCategory? inPane = null, ThemeSettingsPage page = ThemeSettingsPage.None)
         {
             settingsReturnItem = MyGames.Item;
             CloseMyGames();
             CloseSearch();
             RefreshGamerpics();
             Settings.Category = inPane ?? SettingsCategory.ThemeSettings;
+            Settings.ThemePage = page;
             Settings.OpensInPane = inPane != null;
             Settings.OpenedFrom = from;
             Settings.OpenedFromGame = game;
@@ -1535,14 +1536,14 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Home's Discord tile: the Guide on the Discord tab, or with no Discord tab yet, Settings on Discord, focus on
-        /// its Client ID, to connect it. B goes back to the tile.
+        /// Home's Discord tile: the Guide on the Discord tab, or with no Discord tab yet, Settings on Theme settings'
+        /// Discord, focus on its Client ID, to connect it. B steps back to Theme settings' boxes, then to the tile.
         /// </summary>
         public void OpenDiscordFromHome()
         {
             if (!Settings.Discord.HasDiscordTab)
             {
-                ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.ThemeSettings);
+                ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.ThemeSettings, page: ThemeSettingsPage.Discord);
                 return;
             }
 
@@ -1573,29 +1574,50 @@ namespace XboxSeries.Core
         private MyGamesItem settingsReturnItem;
 
         /// <summary>
-        /// The tile menu's Customise Home, or on My games &amp; apps Customise games &amp; apps: Settings, on
-        /// Personalisation, B going back to the page and the tile whose menu opened it.
+        /// The tile menu's Customise Home, or on My games &amp; apps Customise games &amp; apps: Settings, on Theme
+        /// settings' Personalisation, focus in its boxes. B steps back to Theme settings' boxes, then to the page and the
+        /// tile whose menu opened it.
         /// </summary>
         private void Customise(Guid gameId) =>
-            ShowSettings(MyGames.IsShown ? SettingsOrigin.MyGamesTile : SettingsOrigin.HomeTile, gameId);
+            ShowSettings(MyGames.IsShown ? SettingsOrigin.MyGamesTile : SettingsOrigin.HomeTile, gameId,
+                inPane: SettingsCategory.ThemeSettings, page: ThemeSettingsPage.Personalisation);
 
-        /// <summary>The rail's focus moved to <paramref name="category"/>: the page shows it.</summary>
+        /// <summary>
+        /// The rail's focus moved to <paramref name="category"/>: the page shows it, Theme settings on its boxes, as focus
+        /// on the rail is never in a page of them.
+        /// </summary>
         public void FocusSettingsCategory(SettingsCategory category)
         {
             if (Settings.IsShown)
             {
                 Settings.Category = category;
+                Settings.ThemePage = ThemeSettingsPage.None;
             }
         }
 
-        /// <summary>A on one of Theme settings' boxes: its page, in the pane.</summary>
+        /// <summary>
+        /// A on one of Theme settings' boxes: its page, in the pane, the header following it. Nothing while the page is
+        /// gone or the rail is on another category.
+        /// </summary>
         public void OpenThemePage(ThemeSettingsPage page)
         {
+            if (Settings.IsShown && Settings.Category == SettingsCategory.ThemeSettings)
+            {
+                Settings.ThemePage = page;
+            }
         }
 
-        /// <summary>B, or Left from its first column, on one of Theme settings' pages: back to its boxes.</summary>
+        /// <summary>
+        /// B, or Left from its first column, on one of Theme settings' pages: back to its boxes, focus on the box it came
+        /// from. Focus stays on the boxes from then on, however the page was opened.
+        /// </summary>
         public void LeaveThemePage()
         {
+            if (Settings.IsShown)
+            {
+                Settings.OpensInPane = false;
+                Settings.ThemePage = ThemeSettingsPage.None;
+            }
         }
 
         /// <summary>The rail's Playnite settings: Playnite's own restyled Fullscreen Settings window, over the page.</summary>
@@ -1621,15 +1643,22 @@ namespace XboxSeries.Core
 #endif
 
         /// <summary>
-        /// B on the page: back to where it was opened from (<see cref="SettingsState.OpenedFrom"/>). Playnite's own B
-        /// reaches the page before the pad's reaches the core, so a menu or prompt still showing answers the B instead.
+        /// B on the page: on one of Theme settings' pages, back to its boxes, the page staying; otherwise back to where it
+        /// was opened from (<see cref="SettingsState.OpenedFrom"/>). Playnite's own B reaches the page before the pad's
+        /// reaches the core, so a menu or prompt still showing answers the B instead.
         /// </summary>
         public void LeaveSettings()
         {
             if (Settings.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
+                // B steps back one level at a time: a page of Theme settings goes back to its boxes first.
+                if (Settings.ThemePage != ThemeSettingsPage.None)
+                {
+                    LeaveThemePage();
+                }
+
                 // Opened by Customise games & apps, the page comes back in Settings' place, on its item and that tile.
-                if (Settings.OpenedFrom == SettingsOrigin.MyGamesTile)
+                else if (Settings.OpenedFrom == SettingsOrigin.MyGamesTile)
                 {
                     OpenMyGames(settingsReturnItem, Settings.OpenedFromGame);
                 }
@@ -1640,10 +1669,12 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>Takes the page down, with no Theme settings page left showing for next time.</summary>
         private void CloseSettings()
         {
             DropTextEntryOver(TextEntryPage.Settings);
             Settings.IsShown = false;
+            Settings.ThemePage = ThemeSettingsPage.None;
         }
 
         /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back, and a game frozen under the Guide thaws.</summary>

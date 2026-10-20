@@ -13,7 +13,7 @@ namespace XboxSeries.Core
     public sealed partial class ExtensionCore
     {
         /// <summary>
-        /// The secret store's name for the Guide category's options, as JSON: the Now Playing source. Not secret, but the
+        /// The secret store's name for Theme settings' Guide page's options, as JSON: the Now Playing source. Not secret, but the
         /// store keeps the extension's own options.
         /// </summary>
         private const string GuideSecret = "Guide";
@@ -96,7 +96,7 @@ namespace XboxSeries.Core
         private static bool SameApp(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
-        /// The Guide category's options saved before, read when the core is made, and the apps with a media session
+        /// Theme settings' Guide page's options saved before, read when the core is made, and the apps with a media session
         /// then noted; with none saved, or none readable, Spotify.
         /// </summary>
         private void LoadGuideSettings()
@@ -140,7 +140,7 @@ namespace XboxSeries.Core
             NowPlayingSource = Settings.Guide.NowPlayingSource,
         }));
 
-        /// <summary>What the secret store keeps of the Guide category's options.</summary>
+        /// <summary>What the secret store keeps of Theme settings' Guide page's options.</summary>
         private sealed class SavedGuide
         {
             public string NowPlayingSource { get; set; }

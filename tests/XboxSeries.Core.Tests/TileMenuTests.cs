@@ -251,6 +251,7 @@ namespace XboxSeries.Core.Tests
             Assert.Null(core.Home.TileMenu);
             Assert.True(core.Settings.IsShown);
             Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.Personalisation, core.Settings.ThemePage);
         }
 
         [Fact]
@@ -259,6 +260,7 @@ namespace XboxSeries.Core.Tests
             OpenMenuOn("Hades");
             Choose("Customise Home");
 
+            core.LeaveThemePage();
             core.LeaveSettings();
 
             Assert.False(core.Settings.IsShown);
@@ -274,6 +276,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.Start);
             Choose("Customise Home");
 
+            core.LeaveThemePage();
             core.LeaveSettings();
 
             Assert.False(core.Settings.IsShown);
@@ -304,6 +307,7 @@ namespace XboxSeries.Core.Tests
             Assert.Null(core.Home.TileMenu);
             Assert.True(core.Settings.IsShown);
             Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.Personalisation, core.Settings.ThemePage);
             Assert.False(core.MyGames.IsShown);
             Assert.Equal(SettingsOrigin.MyGamesTile, core.Settings.OpenedFrom);
         }
@@ -316,6 +320,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.Start);
             Choose("Customise games & apps");
 
+            core.LeaveThemePage();
             core.LeaveSettings();
 
             Assert.False(core.Settings.IsShown);
@@ -334,6 +339,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.Start);
             Choose("Customise games & apps");
 
+            core.LeaveThemePage();
             core.LeaveSettings();
 
             Assert.True(core.MyGames.IsShown);

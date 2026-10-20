@@ -56,8 +56,9 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Whether focus goes into the category's options as the page opens, rather than to its rail entry: as a tile under
-        /// Home's Recent row opens it on Discord or Playnite settings.
+        /// Whether focus goes into the category's options as the page opens, rather than to its rail entry: as Customise
+        /// opens it on Theme settings' Personalisation, or a tile under Home's Recent row on Theme settings' Discord or on
+        /// Playnite settings. Off again once B leaves that page for Theme settings' boxes.
         /// </summary>
         public bool OpensInPane { get; internal set; }
 
@@ -70,13 +71,13 @@ namespace XboxSeries.Core
         /// </summary>
         public Guid? OpenedFromGame { get; internal set; }
 
-        /// <summary>The Guide category: its behaviour options, the Now Playing source for now.</summary>
+        /// <summary>Theme settings' Guide page: its behaviour options, the Now Playing source for now.</summary>
         public GuideSettingsState Guide { get; } = new GuideSettingsState();
 
-        /// <summary>The Discord category: the Connect checklist, the Client ID and Secret, and the status line.</summary>
+        /// <summary>Theme settings' Discord page: the Connect checklist, the Client ID and Secret, and the status line.</summary>
         public DiscordSettingsState Discord { get; } = new DiscordSettingsState();
 
-        /// <summary>Personalisation's Start up: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+        /// <summary>Theme settings' Personalisation's Start up: the boot video, the profiles, and whether Who's playing today? asks.</summary>
         public StartUpSettingsState StartUp { get; } = new StartUpSettingsState();
 
         /// <summary>The Playnite settings category: Download metadata, Update after downloads, and Playnite's own window.</summary>
@@ -125,7 +126,7 @@ namespace XboxSeries.Core
         }
     }
 
-    /// <summary>Settings' Guide category, shared by every profile.</summary>
+    /// <summary>Theme settings' Guide page, shared by every profile.</summary>
     public sealed class GuideSettingsState : INotifyPropertyChanged
     {
         /// <summary>The Now Playing source that follows Windows' current media session.</summary>
@@ -175,8 +176,8 @@ namespace XboxSeries.Core
     }
 
     /// <summary>
-    /// The Settings rail's categories, in its order. Below its divider Playnite settings is a category of boxes, and More
-    /// Playnite options an action.
+    /// The Settings rail's categories, in its order: Theme settings and Playnite settings are each a category of boxes,
+    /// and More Playnite options, below them, an action.
     /// </summary>
     public enum SettingsCategory
     {
@@ -192,7 +193,10 @@ namespace XboxSeries.Core
 #endif
     }
 
-    /// <summary>Theme settings' pages, one for each of its boxes.</summary>
+    /// <summary>
+    /// Theme settings' pages, one for each of its boxes, which A on the box opens in the pane and B leaves for the boxes
+    /// again. Personalisation's own Start up page is one level further in, the view's own.
+    /// </summary>
     public enum ThemeSettingsPage
     {
         /// <summary>The boxes themselves.</summary>
@@ -218,14 +222,14 @@ namespace XboxSeries.Core
         Guide,
 
         /// <summary>
-        /// The tile menu's Customise Home, on a Home tile, or a tile under the Recent row: B goes back to Home, its rows
-        /// focusing that tile again.
+        /// The tile menu's Customise Home, on a Home tile, or a tile under the Recent row: B, once back on Theme settings'
+        /// boxes, goes back to Home, its rows focusing that tile again.
         /// </summary>
         HomeTile,
 
         /// <summary>
-        /// The tile menu's Customise games &amp; apps, on a tile of My games &amp; apps: B opens the page again on the
-        /// item it showed, focus on that tile.
+        /// The tile menu's Customise games &amp; apps, on a tile of My games &amp; apps: B, once back on Theme settings'
+        /// boxes, opens the page again on the item it showed, focus on that tile.
         /// </summary>
         MyGamesTile,
     }

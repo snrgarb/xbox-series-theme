@@ -191,7 +191,7 @@ namespace XboxSeries.Core
         /// <summary>Taking something away, as a Discord shortcut's Remove shortcut.</summary>
         Remove,
 
-        /// <summary>Customise Home and Customise games &amp; apps, on the tile menu: Settings, on Personalisation.</summary>
+        /// <summary>Customise Home and Customise games &amp; apps, on the tile menu: Settings, on Theme settings' Personalisation.</summary>
         Customise,
     }
 }
