@@ -117,7 +117,7 @@ namespace XboxSeries.Core
         private List<IdleCard> IdleCardPool() =>
             (achievements.IsAvailable && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
-                .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null)))
+                .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null, header: "Tip", prompt: "Got it")))
                 .ToList();
 
         /// <summary>
@@ -255,7 +255,5 @@ namespace XboxSeries.Core
             var years = months / 12;
             return years == 1 ? "a year ago" : years + " years ago";
         }
-
-        private static string Capitalised(string words) => char.ToUpperInvariant(words[0]) + words.Substring(1);
     }
 }
