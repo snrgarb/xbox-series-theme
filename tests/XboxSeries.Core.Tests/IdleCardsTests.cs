@@ -8,7 +8,7 @@ namespace XboxSeries.Core.Tests
 {
     /// <summary>
     /// The Idle screen's cards: at Showing things a pool of the nearly-finished games, the last unlocks, the last games
-    /// played and the tips, shown one at a time in shuffled turn, each for 10 s, reshuffled when it runs out; waking hides
+    /// played and the tips, shown one at a time in shuffled turn, each for 20 s, reshuffled when it runs out; waking hides
     /// the card.
     /// </summary>
     public class IdleCardsTests
@@ -40,7 +40,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
         }
 
-        private void NextCard() => clock.Advance(TimeSpan.FromSeconds(10));
+        private void NextCard() => clock.Advance(TimeSpan.FromSeconds(20));
 
         /// <summary>The cards shown from now, the one showing first, <paramref name="count"/> of them.</summary>
         private List<IdleCard> Cards(int count)
@@ -135,12 +135,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Each_card_shows_for_10_seconds_then_the_next()
+        public void Each_card_shows_for_20_seconds_then_the_next()
         {
             ShowThings();
             var first = core.Idle.Card;
 
-            clock.Advance(TimeSpan.FromSeconds(9.99));
+            clock.Advance(TimeSpan.FromSeconds(19.99));
             Assert.Same(first, core.Idle.Card);
 
             clock.Advance(TimeSpan.FromSeconds(0.01));

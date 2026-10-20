@@ -12,7 +12,7 @@ namespace XboxSeries.Core
     public sealed partial class ExtensionCore
     {
         /// <summary>How long each Idle screen card shows before the next.</summary>
-        private static readonly TimeSpan IdleCardShownFor = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan IdleCardShownFor = TimeSpan.FromSeconds(20);
 
         /// <summary>How many cards the pool holds of each kind but tips, which are all in it.</summary>
         private const int IdleCardsOfAKind = 5;

@@ -22,14 +22,14 @@ namespace XboxSeries.Core.Tests
         private static string Code(string file) => File.ReadAllText(Path.Combine(ExtensionDir, file));
 
         [Fact]
-        public void The_dim_is_a_40_percent_black_over_the_whole_window_starting_clear()
+        public void The_dim_is_a_70_percent_black_over_the_whole_window_starting_clear()
         {
             var shade = Dim().Descendants().Single(e => (string)e.Attribute(X + "Name") == "Shade");
             var color = (string)shade.Attribute("Background");
             Assert.Matches("^#[0-9A-Fa-f]{8}$", color);
             Assert.Equal("000000", color.Substring(3));
             var alpha = int.Parse(color.Substring(1, 2), NumberStyles.HexNumber) / 255.0;
-            Assert.InRange(alpha, 0.38, 0.42);
+            Assert.InRange(alpha, 0.68, 0.72);
             Assert.Equal("0", (string)shade.Attribute("Opacity"));
             Assert.Null(shade.Attribute("Width"));
             Assert.Null(shade.Attribute("Height"));
