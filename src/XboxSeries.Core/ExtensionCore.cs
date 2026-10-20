@@ -1533,6 +1533,7 @@ namespace XboxSeries.Core
             Settings.OpenedFrom = from;
             Settings.OpenedFromGame = game;
             Settings.IsShown = true;
+            Settings.RaiseOpened();
         }
 
         /// <summary>

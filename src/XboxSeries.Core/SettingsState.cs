@@ -13,6 +13,12 @@ namespace XboxSeries.Core
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        /// <summary>
+        /// The page was opened, by any route, also while it was up already: the Guide's Settings entry over it can leave
+        /// every property as it was, and focus still goes back to the rail.
+        /// </summary>
+        public event EventHandler Opened;
+
         /// <summary>Whether the page is up, in place of Home.</summary>
         public bool IsShown
         {
@@ -82,6 +88,8 @@ namespace XboxSeries.Core
 
         /// <summary>The Playnite settings category: Download metadata, Update after downloads, and Playnite's own window.</summary>
         public PlayniteSettingsState Playnite { get; } = new PlayniteSettingsState();
+
+        internal void RaiseOpened() => Opened?.Invoke(this, EventArgs.Empty);
 
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
