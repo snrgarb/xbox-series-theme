@@ -232,10 +232,10 @@
             </Border>
             <!--
                 A rare achievement's Toast in the banner's place: the console's blue pill with its spinning diamond, wider
-                than the banner and with a timeline of its own (RareAchievementToast.xaml). Shown, and the banner hidden,
+                than the banner and with a timeline of its own (AchievementToast.xaml). Shown, and the banner hidden,
                 for that kind alone.
             -->
-            <local:RareAchievementToast x:Name="Rare" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
+            <local:AchievementToast x:Name="Rare" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64"
                                         Visibility="Collapsed" />
         </Grid>
     </Viewbox>
