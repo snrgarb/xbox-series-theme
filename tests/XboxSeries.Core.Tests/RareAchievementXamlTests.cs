@@ -183,6 +183,16 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Its_first_page_leaves_by_the_consoles_distance_at_our_size_and_the_second_comes_from_below()
+        {
+            // The console's old page goes up about 50 and the new comes from about 120 below, in video pixels zoomed
+            // about 2.078 times: 24 and 58 at our 128-tall pill.
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "RareAchievementToast.xaml.cs"));
+
+            Assert.Contains("PushUp = -24, PushFrom = 58;", code);
+        }
+
+        [Fact]
         public void The_shine_is_a_gradient_band_clipped_to_the_pill_under_the_text()
         {
             var rare = Rare();

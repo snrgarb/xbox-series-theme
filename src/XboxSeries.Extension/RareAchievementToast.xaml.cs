@@ -39,7 +39,7 @@ namespace XboxSeries.Extension
         private const double ShineFrom = -95, ShineTo = 310;
 
         /// <summary>How far the first page goes up as it leaves, and how far below the second starts.</summary>
-        private const double PushUp = -50, PushFrom = 58;
+        private const double PushUp = -24, PushFrom = 58;
 
         /// <summary>One facet's turn to the next: the gem's eight-fold symmetry repeats every 0.66 s, as the console's.</summary>
         private const double SpinPeriod = 0.66;
