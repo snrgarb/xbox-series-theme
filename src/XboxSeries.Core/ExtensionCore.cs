@@ -177,8 +177,10 @@ namespace XboxSeries.Core
             ISecretStore secrets,
             IDownloads downloads,
             IMediaSessions mediaSessions = null,
-            IAchievements achievements = null)
+            IAchievements achievements = null,
+            Random random = null)
         {
+            this.random = random ?? new Random();
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
             this.achievements = achievements ?? NoAchievements.Instance;
             this.downloads = downloads;

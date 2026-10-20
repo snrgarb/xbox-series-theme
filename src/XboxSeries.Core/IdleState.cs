@@ -22,6 +22,7 @@ namespace XboxSeries.Core
     public sealed class IdleState : INotifyPropertyChanged
     {
         private IdleStage stage;
+        private IdleCard card;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -47,5 +48,63 @@ namespace XboxSeries.Core
 
         /// <summary>Whether the dim shows: while Dimmed or Showing things.</summary>
         public bool IsDimmed => stage != IdleStage.Awake;
+
+        /// <summary>
+        /// The card centred on the dim while Showing things, each for a while in shuffled turn; null while Awake or
+        /// Dimmed, or with nothing to show. The view crossfades from one to the next and hides it with the dim.
+        /// </summary>
+        public IdleCard Card
+        {
+            get => card;
+            internal set
+            {
+                if (card != value)
+                {
+                    card = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Card)));
+                }
+            }
+        }
+    }
+
+    /// <summary>What an Idle screen card tells of.</summary>
+    public enum IdleCardKind
+    {
+        /// <summary>A nearly-finished game: the most achievements unlocked without having them all.</summary>
+        CloseAchievements,
+
+        /// <summary>One of the last unlocks.</summary>
+        RecentUnlock,
+
+        /// <summary>One of the last games played.</summary>
+        RecentlyPlayed,
+
+        /// <summary>A tip, text only.</summary>
+        Tip,
+    }
+
+    /// <summary>One Idle screen card: art or an icon, a title line and a detail line.</summary>
+    public sealed class IdleCard
+    {
+        internal IdleCard(IdleCardKind kind, string title, string detail, HeroArt art = null, string icon = null)
+        {
+            Kind = kind;
+            Title = title;
+            Detail = detail;
+            Art = art;
+            Icon = icon;
+        }
+
+        public IdleCardKind Kind { get; }
+
+        public string Title { get; }
+
+        public string Detail { get; }
+
+        /// <summary>A game's art, falling back as Home's hero does, its cover for missing background art; null for none.</summary>
+        public HeroArt Art { get; }
+
+        /// <summary>A full path or URI to an achievement's icon; null for none.</summary>
+        public string Icon { get; }
     }
 }
