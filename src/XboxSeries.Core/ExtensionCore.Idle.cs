@@ -196,8 +196,10 @@ namespace XboxSeries.Core
             dimTimer = null;
             showThingsTimer?.Dispose();
             showThingsTimer = null;
-            StopIdleCards();
             Idle.Stage = IdleStage.Awake;
+
+            // After the stage, so the view sees the screen awake as the card goes and hides it with the dim.
+            StopIdleCards();
             if (idlePaused)
             {
                 return;

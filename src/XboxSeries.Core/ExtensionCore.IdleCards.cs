@@ -108,10 +108,11 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Every card of the Idle screen's pool, unshuffled: the nearly-finished games, the last unlocks, the last games
-        /// played, then the tips. Without PlayniteAchievements, the achievement kinds are left out.
+        /// played, then the tips. Without PlayniteAchievements, or before its first read, the achievement kinds are left
+        /// out, as the totals are.
         /// </summary>
         private List<IdleCard> IdleCardPool() =>
-            (achievements.IsAvailable ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
+            (achievements.IsAvailable && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
                 .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t, null)))
                 .ToList();
@@ -155,8 +156,7 @@ namespace XboxSeries.Core
         /// never hidden: each with its icon, its name, and its game and when, "Hades · Unlocked 2 days ago".
         /// </summary>
         private IEnumerable<IdleCard> RecentUnlockCards() =>
-            RecordedUnlocks()
-                .Concat(liveUnlocks)
+            AllUnlocks()
                 .Select(u => new { Unlock = u.Achievement, Game = library.Games.FirstOrDefault(g => g.Id == u.GameId && !g.Hidden) })
                 .Where(u => u.Game != null)
                 .OrderByDescending(u => u.Unlock.UnlockedAt)
