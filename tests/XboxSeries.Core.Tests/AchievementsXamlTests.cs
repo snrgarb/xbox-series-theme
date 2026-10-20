@@ -90,17 +90,40 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Under_the_profile_card_the_Profiles_Score_and_unlocked_count_gone_with_no_achievements()
+        public void The_profile_card_is_a_row_as_a_recent_games_is_and_Switch_profile_under_it_a_row_as_Settings_is()
+        {
+            var entry = GuideEntry();
+
+            // The card no taller than a recent game's row, its picture and gamertag kept.
+            var card = KindTrigger(entry, "Profile");
+            Assert.True(int.Parse(Set(card, "Entry", "Height")) < 138);
+            Assert.Equal("96", Set(card, "Entry", "Height"));
+            Assert.Equal("Visible", Set(card, "Avatar", "Visibility"));
+            Assert.Equal("24", Set(card, "Title", "FontSize"));
+
+            // Switch profile: the Switch user glyph on a Settings-sized row.
+            var switchProfile = KindTrigger(entry, "SwitchProfile");
+            var settings = KindTrigger(entry, "Settings");
+            Assert.Equal("", Set(switchProfile, "Glyph", "Text"));
+            foreach (var (target, property) in new[] { ("Entry", "Height"), ("Glyph", "FontSize"), ("Glyph", "Margin"), ("Text", "Margin"), ("Title", "FontSize") })
+            {
+                Assert.Equal(Set(settings, target, property), Set(switchProfile, target, property));
+            }
+        }
+
+        [Fact]
+        public void Under_Switch_profile_the_Profiles_Score_and_unlocked_count_gone_with_no_achievements()
         {
             var entry = GuideEntry();
             var section = Named(entry, "AchievementsSection");
 
-            // Under the card, outside its focus ring, shown only for the profile card.
-            var card = Named(entry, "Entry");
-            Assert.Same(card.Parent, section.Parent);
-            Assert.True(card.IsBefore(section));
+            // Under Switch profile, outside its focus ring, shown only for it: not between the card and Switch profile.
+            var row = Named(entry, "Entry");
+            Assert.Same(row.Parent, section.Parent);
+            Assert.True(row.IsBefore(section));
             Assert.Equal("Collapsed", (string)section.Attribute("Visibility"));
-            Assert.Equal("Visible", Set(KindTrigger(entry, "Profile"), "AchievementsSection", "Visibility"));
+            Assert.Equal("Visible", Set(KindTrigger(entry, "SwitchProfile"), "AchievementsSection", "Visibility"));
+            Assert.Null(Set(KindTrigger(entry, "Profile"), "AchievementsSection", "Visibility"));
 
             // From the Guide's totals, and gone altogether while there are none.
             const string totals = "DataContext.Achievements, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}";

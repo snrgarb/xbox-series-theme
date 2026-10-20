@@ -422,11 +422,11 @@
                         </Border>
                     </Grid>
                     <!--
-                        Under the profile card, Profile &amp; system's achievements: a divider, then the Profile's Score across
+                        Under Switch profile, Profile &amp; system's achievements: a divider, then the Profile's Score across
                         every game beside how many achievements are unlocked, as "(trophy) 12,345 G   56 achievements", the
-                        recent unlocks following as entries of their own. Only under the profile card, and gone altogether
+                        recent unlocks following as entries of their own. Only under Switch profile, and gone altogether
                         while there are no totals (PlayniteAchievements not installed, or no achievements). It isn't an entry:
-                        focus goes from the card to the first recent unlock.
+                        focus goes from Switch profile to the first recent unlock.
                     -->
                     <Border x:Name="AchievementsSection" Visibility="Collapsed">
                         <StackPanel>
@@ -524,11 +524,20 @@
                         <Setter TargetName="Avatar" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" />
                         <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Avatar" Property="Visibility" Value="Visible" />
-                        <Setter TargetName="Entry" Property="Height" Value="138" />
-                        <Setter TargetName="AchievementsSection" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Entry" Property="Height" Value="96" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
                         <Setter TargetName="Title" Property="FontSize" Value="24" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
+                    </DataTrigger>
+                    <!-- Switch profile, under the profile card: a row like Settings', the achievements following it. -->
+                    <DataTrigger Binding="{Binding Kind}" Value="SwitchProfile">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE748;" />
+                        <Setter TargetName="Entry" Property="Height" Value="75" />
+                        <Setter TargetName="Glyph" Property="FontSize" Value="26" />
+                        <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
+                        <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
+                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="AchievementsSection" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <!-- Settings and Power: smaller rows, the icon further left, as on the console. -->
                     <DataTrigger Binding="{Binding Kind}" Value="Settings">

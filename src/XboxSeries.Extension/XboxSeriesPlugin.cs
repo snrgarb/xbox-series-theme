@@ -85,6 +85,14 @@ namespace XboxSeries.Extension
                 achievements: achievements);
             core.StartupEnded += () => startup?.End();
 
+            // The Guide's Switch profile: Who's playing today? over everything, as on waking. Raised on the UI thread
+            // from the Guide's A press, and shown once that press has been handled.
+            core.WhosPlayingAsked += plan => OnUiThread(() =>
+            {
+                StartupTiming.Begin("Start-up shown on Switch profile");
+                ShowStartup(plan);
+            });
+
             // Home's elements, its top bar's status area, My games & apps, Settings, the Game hub's Install, Search, text entry and the hint bar, placed by
             // the Dashboard as ContentControls named XboxSeries_<element>.
             AddCustomElementSupport(new AddCustomElementSupportArgs
