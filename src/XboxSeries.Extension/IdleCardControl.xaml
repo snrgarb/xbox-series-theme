@@ -4,70 +4,137 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False"
              IsHitTestVisible="False"
-             HorizontalAlignment="Center"
-             VerticalAlignment="Center"
              Opacity="0">
     <!--
-        One Idle screen card, centred on the dim, in the Bundle's style: a panel as the Guide's menus and prompts are
-        (MenuPanel), dark grey with softly rounded corners and their shadow, its title in the header font and its detail
-        in the body font in grey, with their margins. Sized at 1080p, 640 wide, as wide as a Toast's banner may be.
-        A game's card leads with its art across the panel's top, 640 by 360, as Home's hero shows it (HeroLayer):
-        background art as it is, or a cover blurred and darkened, with the cover itself on it. An achievement's has its
-        icon on a rounded square beside the text, as the Guide's recent achievements, over a grey one with the trophy for
-        none (or one that won't load). A tip, and a game without art, is text alone. The detail collapses when there is none.
-        The DimWindow holds two, crossfading from one card to the next; each starts unseen.
+        One Idle screen card, the console's idle panel: the whole height of the right half of the screen, flown in from
+        the right by the DimWindow, which holds two, crossfading from one card to the next; each starts unseen.
+        Measured from the console's captures at 1080p: the text 72 in from the panel's left edge and 78 from its right,
+        dark grey for a game or an achievement and slate blue for a tip (see IdleCardControl.xaml.cs).
+        From the top: the top line, a Score (the rare diamond, the G and the number) with the percentage on the right
+        and the bar under it, or the light header in their place; the bold title, a few lines at most, the bold label and
+        the description. In the lower half, the game's art rising from the panel's bottom out of the panel's colour, a
+        cover blurred and darkened as Home's hero has it with the cover itself on it, and an achievement's icon large over
+        the art. A tip has a controller drawn in white in place of the art. At the bottom, the Y prompt.
     -->
-    <Border x:Name="Panel" Width="640" Background="#FF2B2B2B" CornerRadius="6">
-        <Border.Effect>
-            <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.5" Color="Black" />
-        </Border.Effect>
-        <!-- Clipped to the panel's rounded bounds, so the art's top corners follow the panel's. -->
-        <Grid local:RoundedClip.Radius="6">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <!--
-                The game's art, filled in from the code-behind with a HeroLayer. A cover, blurred and darkened there, reads
-                as colour alone, so the cover itself stands on it too, whole and centred, 288 tall (36 clear above and below),
-                its corners rounded as a tile's.
-            -->
-            <Grid x:Name="Art" Height="360" Visibility="Collapsed">
-                <Border x:Name="Cover" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
-                    <Border.Effect>
-                        <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.5" Color="Black" />
-                    </Border.Effect>
-                    <Image x:Name="CoverImage" Height="288" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
-                           local:RoundedClip.Radius="4" />
-                </Border>
-            </Grid>
-            <DockPanel Grid.Row="1" Margin="28,32,28,32">
-                <Grid x:Name="Icon" DockPanel.Dock="Left" Width="120" Height="120" Margin="0,0,24,0" VerticalAlignment="Center"
-                      Visibility="Collapsed">
-                    <Border CornerRadius="4" Background="#FF4A4A4A">
-                        <!-- The trophy, U+1F3C6, isn't in the icon font, so it is in the body font, drawn from Segoe UI Symbol. -->
-                        <TextBlock Text="&#x1F3C6;" FontFamily="{DynamicResource XboxFont}" FontSize="52" Foreground="#B3FFFFFF"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <Border CornerRadius="4">
-                        <Border.Background>
-                            <ImageBrush x:Name="IconImage" Stretch="UniformToFill" />
-                        </Border.Background>
-                    </Border>
-                </Grid>
-                <StackPanel VerticalAlignment="Center">
-                    <!--
-                        A game's or an achievement's name on one line, cut short as a menu's title is; a tip wraps, to be
-                        read whole, as a prompt's question does (see IdleCardControl.xaml.cs).
-                    -->
-                    <TextBlock x:Name="Title" FontFamily="{DynamicResource XboxHeaderFont}" FontSize="33" Foreground="White"
-                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                    <!-- Under it, at most two lines, cut short after them. -->
-                    <TextBlock x:Name="Detail" Margin="0,8,0,0" FontFamily="{DynamicResource XboxFont}" FontSize="22"
-                               Foreground="#B3FFFFFF" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
-                               LineStackingStrategy="BlockLineHeight" LineHeight="30" MaxHeight="60" />
-                </StackPanel>
-            </DockPanel>
+    <Grid x:Name="Panel" Background="#FF303030" ClipToBounds="True">
+        <!--
+            The game's art, filled in from the code-behind with a HeroLayer: the bottom half of the panel, rising out of
+            the panel's colour from a tenth of the way down to six tenths, where it is whole.
+        -->
+        <Grid x:Name="Art" Height="540" VerticalAlignment="Bottom" Visibility="Collapsed">
+            <Grid.OpacityMask>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0.1" Color="#00000000" />
+                    <GradientStop Offset="0.35" Color="#80000000" />
+                    <GradientStop Offset="0.6" Color="#FF000000" />
+                </LinearGradientBrush>
+            </Grid.OpacityMask>
+            <!-- A little shade under the prompt, so it reads over bright art. -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Offset="0.5" Color="#00000000" />
+                        <GradientStop Offset="1" Color="#59000000" />
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
         </Grid>
-    </Border>
+
+        <!--
+            Over the art's middle, a cover standing in for background art, whole, or an achievement's icon, large, as the
+            console's unlocked achievement's, its corners rounded as a tile's.
+        -->
+        <Border x:Name="Picture" Height="320" Margin="0,600,0,0" HorizontalAlignment="Center" VerticalAlignment="Top"
+                Visibility="Collapsed">
+            <Border.Effect>
+                <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.5" Color="Black" />
+            </Border.Effect>
+            <Image x:Name="PictureImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                   local:RoundedClip.Radius="4" />
+        </Border>
+
+        <!--
+            A tip's controller, outlined in white as the console's tip has it, 438 by 309, centred across the panel with
+            its top 507 down. The Y is filled, with its letter in the panel's colour.
+        -->
+        <Canvas x:Name="Controller" Width="438" Height="310" Margin="0,504,4,0" HorizontalAlignment="Center"
+                VerticalAlignment="Top" Visibility="Collapsed">
+            <Path Stroke="White" StrokeThickness="3.5" StrokeLineJoin="Round"
+                  Data="M 219,24 C 195,24 172,19 157,10 C 127,0 87,2 62,26 C 35,55 14,120 5,190 C -1,240 0,285 12,300 C 25,314 45,312 58,300 C 80,280 100,248 118,232 C 135,220 160,218 219,218 C 278,218 303,220 320,232 C 338,248 358,280 380,300 C 393,312 413,314 426,300 C 438,285 439,240 433,190 C 424,120 403,55 376,26 C 351,2 311,0 281,10 C 266,19 243,24 219,24 Z" />
+            <!-- The bumpers, filled, along the shoulders. -->
+            <Path Fill="White"
+                  Data="M 62,26 C 87,2 127,0 157,10 L 164,24 C 132,14 96,16 70,36 Z M 376,26 C 351,2 311,0 281,10 L 274,24 C 306,14 342,16 368,36 Z" />
+            <!-- The sticks, View and Menu, the D-pad. -->
+            <Path Stroke="White" StrokeThickness="3.5" StrokeLineJoin="Round"
+                  Data="M 77,87 A 25,25 0 1 1 127,87 A 25,25 0 1 1 77,87 Z M 254,158 A 25,25 0 1 1 304,158 A 25,25 0 1 1 254,158 Z M 176,88 A 10,10 0 1 1 196,88 A 10,10 0 1 1 176,88 Z M 241,88 A 10,10 0 1 1 261,88 A 10,10 0 1 1 241,88 Z M 148,124 L 170,124 L 170,146 L 192,146 L 192,168 L 170,168 L 170,190 L 148,190 L 148,168 L 126,168 L 126,146 L 148,146 Z" />
+            <!-- The Xbox button: a ring with the sphere's two crossing swooshes. -->
+            <Path Stroke="White" StrokeThickness="3"
+                  Data="M 201,41 A 17,17 0 1 1 235,41 A 17,17 0 1 1 201,41 Z M 207,30 C 214,34 224,44 230,54 M 229,30 C 222,34 212,44 206,54" />
+            <!-- X, B and A, outlined. -->
+            <Path Stroke="White" StrokeThickness="3.5"
+                  Data="M 290,87 A 14,14 0 1 1 318,87 A 14,14 0 1 1 290,87 Z M 351,87 A 14,14 0 1 1 379,87 A 14,14 0 1 1 351,87 Z M 321,117 A 14,14 0 1 1 349,117 A 14,14 0 1 1 321,117 Z" />
+            <Ellipse Canvas.Left="320" Canvas.Top="42" Width="30" Height="30" Fill="White" />
+            <TextBlock Canvas.Left="320" Canvas.Top="42" Width="30" Height="30" Text="Y" TextAlignment="Center"
+                       FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="19" Padding="0,3,0,0"
+                       Foreground="{Binding Background, ElementName=Panel}" />
+        </Canvas>
+
+        <StackPanel Margin="72,75,78,0" VerticalAlignment="Top">
+            <!--
+                The top line, 46 tall: the Score on the left, the percentage or the header on the right, or the header alone
+                on the left. Their words have room above and below the line, so it never cuts their descenders.
+            -->
+            <Grid x:Name="TopLine" Height="46">
+                <StackPanel x:Name="ScoreRow" Orientation="Horizontal">
+                    <!-- The rare diamond, outlined, with its facets. -->
+                    <Path x:Name="Rare" Width="44" Height="38" Margin="0,0,12,0" VerticalAlignment="Center" Stroke="White"
+                          StrokeThickness="3" StrokeLineJoin="Round"
+                          Data="M 10,2 L 34,2 L 42,13 L 22,36 L 2,13 Z M 2,13 L 42,13 M 15,2 L 12,13 L 22,36 L 32,13 L 29,2" />
+                    <!-- The G, knocked out of a white disc in the panel's colour. -->
+                    <Grid Width="46" Height="46">
+                        <Ellipse Fill="White" />
+                        <TextBlock Text="G" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="30"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,2"
+                                   Foreground="{Binding Background, ElementName=Panel}" />
+                    </Grid>
+                    <TextBlock x:Name="Score" Margin="13,-12,0,-6" VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}"
+                               FontWeight="Bold" FontSize="46" Foreground="White" />
+                </StackPanel>
+                <TextBlock x:Name="Percent" Margin="0,-12,0,-6" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           FontFamily="{DynamicResource XboxFont}" FontSize="46" Foreground="#E6FFFFFF" />
+                <TextBlock x:Name="Header" Margin="0,-12,0,-6" VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontWeight="350"
+                           FontSize="46" Foreground="#E6FFFFFF" TextTrimming="CharacterEllipsis" />
+            </Grid>
+
+            <!-- The bar, 10 tall: the progress in teal on a grey track. -->
+            <Grid x:Name="Bar" Height="10" Margin="0,29,0,0" Background="#FF838383">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="Done" Width="0*" />
+                    <ColumnDefinition x:Name="ToDo" Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Rectangle Fill="#FF008080" />
+            </Grid>
+
+            <!-- A game's or an achievement's name, 64 bold, up to three lines; a tip's text, 46 bold, read whole (see IdleCardControl.xaml.cs). -->
+            <TextBlock x:Name="Title" Margin="0,40,37,0" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="64"
+                       Foreground="White" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                       LineStackingStrategy="BlockLineHeight" LineHeight="76" MaxHeight="228" />
+            <TextBlock x:Name="Label" Margin="0,26,37,0" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="46"
+                       Foreground="White" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="Description" Margin="0,30,37,0" FontFamily="{DynamicResource XboxFont}" FontSize="46"
+                       Foreground="White" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                       LineStackingStrategy="BlockLineHeight" LineHeight="60" MaxHeight="180" />
+        </StackPanel>
+
+        <!-- The Y prompt: an outlined Y, 72 round, and its words, 63 up from the bottom. -->
+        <StackPanel x:Name="Prompt" Orientation="Horizontal" Margin="72,0,78,62" VerticalAlignment="Bottom">
+            <Grid Width="72" Height="72">
+                <Ellipse Stroke="White" StrokeThickness="4.5" />
+                <TextBlock Text="Y" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="42"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,3" Foreground="White" />
+            </Grid>
+            <TextBlock x:Name="PromptText" Margin="26,0,0,6" VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}"
+                       FontWeight="Bold" FontSize="46" Foreground="White" />
+        </StackPanel>
+    </Grid>
 </UserControl>
