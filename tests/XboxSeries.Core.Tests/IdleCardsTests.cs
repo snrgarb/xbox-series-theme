@@ -101,6 +101,13 @@ namespace XboxSeries.Core.Tests
             return id;
         }
 
+        /// <summary>The game a card's title names, before its achievement's: "Hades" of "Hades - Blessed".</summary>
+        private static string GameOf(IdleCard card)
+        {
+            var dash = card.Title.IndexOf(" - ", StringComparison.Ordinal);
+            return dash < 0 ? card.Title : card.Title.Substring(0, dash);
+        }
+
         private void AchievementsRead()
         {
             LibraryChanged();
@@ -330,7 +337,7 @@ namespace XboxSeries.Core.Tests
 
             var close = FirstRound(IdleCardKind.CloseAchievements);
 
-            Assert.Equal(new[] { "Eight", "Four", "Nine", "Seven", "Twenty" }, close.Select(c => c.Title).OrderBy(t => t));
+            Assert.Equal(new[] { "Eight", "Four", "Nine", "Seven", "Twenty" }, close.Select(GameOf).OrderBy(t => t));
         }
 
         [Fact]
@@ -347,7 +354,7 @@ namespace XboxSeries.Core.Tests
             GameWithAchievements("Alpha five of ten", 5, 10);
             AchievementsRead();
 
-            var titles = FirstRound(IdleCardKind.CloseAchievements).Select(c => c.Title).ToList();
+            var titles = FirstRound(IdleCardKind.CloseAchievements).Select(GameOf).ToList();
 
             Assert.Contains("Zeta five of six", titles);
             Assert.DoesNotContain("Five of fifty", titles);
@@ -356,7 +363,7 @@ namespace XboxSeries.Core.Tests
             achievements.Recorded.RemoveAll(g => library.Snapshot().Games.Single(x => x.Id == g.GameId).Name == "Zeta five of six");
             core.OnUserInput();
             AchievementsRead();
-            titles = FirstRound(IdleCardKind.CloseAchievements).Select(c => c.Title).ToList();
+            titles = FirstRound(IdleCardKind.CloseAchievements).Select(GameOf).ToList();
 
             Assert.Contains("Alpha five of ten", titles);
             Assert.DoesNotContain("Beta five of ten", titles);
@@ -374,11 +381,11 @@ namespace XboxSeries.Core.Tests
 
             var close = FirstRound(IdleCardKind.CloseAchievements);
 
-            Assert.Equal("Close", Assert.Single(close).Title);
+            Assert.Equal("Close", GameOf(Assert.Single(close)));
         }
 
         [Fact]
-        public void A_close_achievements_card_shows_the_games_art_how_many_are_unlocked_and_the_locked_one_most_players_have()
+        public void A_close_achievements_card_is_the_game_and_the_locked_achievement_most_players_have_with_its_Score_and_the_games_progress()
         {
             var id = Guid.NewGuid();
             library.WithGame(id, "Hades", coverImage: "hades.jpg");
@@ -388,18 +395,46 @@ namespace XboxSeries.Core.Tests
                 new Achievement("b", "Escaped", null, 90, Start.AddDays(-1)),
                 new Achievement("c", "Unknown", null, null, null),
                 new Achievement("d", "Petted Cerberus", null, 40, null),
-                new Achievement("e", "Nameless", null, 60, null),
+                new Achievement("e", "Nameless", null, 60, null, "Clear an escape without a name."),
                 new Achievement("f", "Rare", null, 2, null),
             }));
             AchievementsRead();
 
             var card = FirstRound(IdleCardKind.CloseAchievements).Single();
 
-            Assert.Equal("Hades", card.Title);
-            Assert.Equal("2 of 6 unlocked · Next: Nameless", card.Description);
+            Assert.Equal("Hades - Nameless", card.Title);
+            Assert.Equal("Close achievement", card.Label);
+            Assert.Equal("Clear an escape without a name.", card.Description);
+            Assert.Equal(10, card.Score);
+            Assert.False(card.IsRare);
+            Assert.Equal(2.0 / 6, card.Progress.Value, 6);
+            Assert.Null(card.Header);
             Assert.Equal("hades.jpg", card.Art.Image);
             Assert.True(card.Art.IsCover);
             Assert.Null(card.Icon);
+            Assert.Equal("See game", card.Prompt);
+            Assert.Equal(id, card.GameId);
+        }
+
+        [Fact]
+        public void A_close_achievements_card_shows_its_next_ones_Score_and_whether_it_is_rare()
+        {
+            var id = Guid.NewGuid();
+            library.WithGame(id, "Halo 5: Guardians");
+            achievements.Recorded.Add(new GameAchievements(id, new[]
+            {
+                new Achievement("a", "Blessed", null, 80, Start),
+                new Achievement("k", "Kraken Lackin'", null, 4, null, null, 30),
+            }));
+            AchievementsRead();
+
+            var card = FirstRound(IdleCardKind.CloseAchievements).Single();
+
+            Assert.Equal("Halo 5: Guardians - Kraken Lackin'", card.Title);
+            Assert.Equal(30, card.Score);
+            Assert.True(card.IsRare);
+            Assert.Null(card.Description);
+            Assert.Equal(0.5, card.Progress);
         }
 
         [Fact]
@@ -415,11 +450,11 @@ namespace XboxSeries.Core.Tests
             }));
             AchievementsRead();
 
-            Assert.Equal("1 of 3 unlocked · Next: Common", FirstRound(IdleCardKind.CloseAchievements).Single().Description);
+            Assert.Equal("Hades - Common", FirstRound(IdleCardKind.CloseAchievements).Single().Title);
         }
 
         [Fact]
-        public void With_no_locked_achievement_named_the_card_only_counts()
+        public void With_no_locked_achievement_named_the_card_is_the_game_alone_with_its_progress()
         {
             var id = Guid.NewGuid();
             library.WithGame(id, "Hades");
@@ -428,10 +463,18 @@ namespace XboxSeries.Core.Tests
                 new Achievement("a", "Blessed", null, 80, Start),
                 new Achievement("b", "", null, 50, null),
                 new Achievement("c", null, null, null, null),
+                new Achievement("d", "Escaped", null, 90, Start),
             }));
             AchievementsRead();
 
-            Assert.Equal("1 of 3 unlocked", FirstRound(IdleCardKind.CloseAchievements).Single().Description);
+            var card = FirstRound(IdleCardKind.CloseAchievements).Single();
+
+            Assert.Equal("Hades", card.Title);
+            Assert.Null(card.Description);
+            Assert.Null(card.Score);
+            Assert.False(card.IsRare);
+            Assert.Equal(0.5, card.Progress);
+            Assert.Equal("Close achievement", card.Label);
         }
 
         [Fact]
@@ -442,7 +485,9 @@ namespace XboxSeries.Core.Tests
 
             core.OnAchievementUnlocked(id, new Achievement("Hades1", "Hades 1", null, 50, Start));
 
-            Assert.Equal("2 of 3 unlocked · Next: Hades 2", FirstRound(IdleCardKind.CloseAchievements).Single().Description);
+            var card = FirstRound(IdleCardKind.CloseAchievements).Single();
+            Assert.Equal("Hades - Hades 2", card.Title);
+            Assert.Equal(2.0 / 3, card.Progress.Value, 6);
         }
 
         [Fact]
