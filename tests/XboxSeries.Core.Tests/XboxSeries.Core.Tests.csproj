@@ -17,5 +17,10 @@
     <Compile Include="..\..\src\XboxSeries.Extension\WakeSwallow.cs" Link="Linked\WakeSwallow.cs" />
     <!-- An Idle screen tip's buttons named in its text, plain C# too. -->
     <Compile Include="..\..\src\XboxSeries.Extension\ButtonTokens.cs" Link="Linked\ButtonTokens.cs" />
+    <!-- The popular gamerpics fetched and saved, plain C# too, checked against a fake xboxgamer.pics. -->
+    <Compile Include="..\..\src\XboxSeries.Extension\PopularGamerpics.cs" Link="Linked\PopularGamerpics.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>
