@@ -22,6 +22,9 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly IPlayniteAPI api;
 
+        /// <summary>Playnite's own library update and metadata download, with its progress bar.</summary>
+        private readonly PlayniteLibraryTasks libraryTasks;
+
         /// <summary>
         /// The user's own filter and sort while My games &amp; apps keeps them, so a session that closes or crashes before
         /// they are back in Playnite's saved settings gives them back at the next start; there is none otherwise.
@@ -55,6 +58,7 @@ namespace XboxSeries.Extension
         public PlayniteHost(IPlayniteAPI api, string dataDirectory)
         {
             this.api = api;
+            libraryTasks = new PlayniteLibraryTasks(api);
             userFilterFile = Path.Combine(dataDirectory, "UserFilter.json");
         }
 
@@ -202,23 +206,15 @@ namespace XboxSeries.Extension
             Later(FullscreenCommand("OpenSettingsCommand"));
         }
 
-        public bool IsLibraryBusy => false;
+        public bool IsLibraryBusy => libraryTasks.IsBusy;
 
-        public void UpdateLibrary(Action<IReadOnlyList<Guid>> done)
-        {
-        }
+        public void UpdateLibrary(Action<IReadOnlyList<Guid>> done) => libraryTasks.UpdateLibrary(done);
 
-        public void DownloadMetadata(IReadOnlyList<Guid> games, Action done)
-        {
-        }
+        public void DownloadMetadata(IReadOnlyList<Guid> games, Action done) => libraryTasks.DownloadMetadata(games, done);
 
-        public void DownloadMissingMetadata(Action done)
-        {
-        }
+        public void DownloadMissingMetadata(Action done) => libraryTasks.DownloadMissingMetadata(done);
 
-        public void CancelLibraryTask()
-        {
-        }
+        public void CancelLibraryTask() => libraryTasks.CancelRun();
 
         public void OpenMainMenu()
         {
