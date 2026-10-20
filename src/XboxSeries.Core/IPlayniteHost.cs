@@ -95,23 +95,23 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Updates every integration's library, as Fullscreen's Update library does but downloading no metadata itself,
-        /// with Playnite's progress bar; then calls <paramref name="done"/> on the UI thread with the games it added, none
-        /// when it was cancelled or failed.
+        /// with Playnite's progress bar; then calls <paramref name="done"/> once, on the UI thread, with the games it added
+        /// (an empty list when it ran and added none), or with null when it was cancelled, failed or couldn't run.
         /// </summary>
         void UpdateLibrary(Action<IReadOnlyList<Guid>> done);
 
         /// <summary>
         /// Downloads metadata for <paramref name="games"/> from Playnite's saved metadata sources, filling blank fields only
         /// whatever those settings say about overwriting, with Playnite's progress bar; then calls <paramref name="done"/>
-        /// on the UI thread, also when it was cancelled or failed.
+        /// once, on the UI thread, with true when it finished, or false when it was cancelled, failed or couldn't run.
         /// </summary>
-        void DownloadMetadata(IReadOnlyList<Guid> games, Action done);
+        void DownloadMetadata(IReadOnlyList<Guid> games, Action<bool> done);
 
         /// <summary>
         /// <see cref="DownloadMetadata"/> for every game missing metadata: one with a blank field among those Playnite's
-        /// saved metadata settings download.
+        /// saved metadata settings download. <paramref name="done"/> is called as <see cref="DownloadMetadata"/>'s is.
         /// </summary>
-        void DownloadMissingMetadata(Action done);
+        void DownloadMissingMetadata(Action<bool> done);
 
         /// <summary>Stops the library update or metadata download running with Playnite's progress bar, as its Cancel does.</summary>
         void CancelLibraryTask();

@@ -80,6 +80,32 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_library_update_cancelled_or_failed_downloads_no_metadata_brings_no_Toast_and_isn_t_tried_again()
+        {
+            InstallThroughPlaynite(hades);
+            clock.Advance(TimeSpan.FromSeconds(10));
+
+            playnite.LibraryUpdates.Single()(null);
+
+            AssertNoLibraryUpdatedToastFor(TimeSpan.FromMinutes(5));
+            Assert.Empty(playnite.MetadataDownloads);
+            Assert.Single(playnite.LibraryUpdates);
+        }
+
+        [Fact]
+        public void A_metadata_download_cancelled_or_failed_after_the_update_brings_no_Toast()
+        {
+            InstallThroughPlaynite(hades);
+            clock.Advance(TimeSpan.FromSeconds(10));
+            playnite.LibraryUpdates.Single()(new[] { added });
+
+            playnite.MetadataDownloads.Single().Done(false);
+
+            AssertNoLibraryUpdatedToastFor(TimeSpan.FromMinutes(5));
+            Assert.Single(playnite.LibraryUpdates);
+        }
+
+        [Fact]
         public void A_game_Steam_installs_alone_is_followed_by_a_library_update_and_its_metadata()
         {
             core.OnLibraryChanged(new FakeLibrary().WithGame(hades, "Hades", source: "Steam", installed: false).Snapshot());
@@ -119,7 +145,7 @@ namespace XboxSeries.Core.Tests
             Assert.Single(playnite.LibraryUpdates);
 
             playnite.LibraryUpdates[0](new Guid[0]);
-            playnite.MetadataDownloads[0].Done();
+            playnite.MetadataDownloads[0].Done(true);
             Assert.Single(playnite.LibraryUpdates);
             clock.Advance(TimeSpan.FromSeconds(10));
             playnite.LibraryUpdates[1](new Guid[0]);
@@ -137,7 +163,7 @@ namespace XboxSeries.Core.Tests
             playnite.LibraryUpdates.Single()(new Guid[0]);
             core.OnNotificationsChanged(new[] { new Notification("a", "Steam is updating") });
 
-            playnite.MetadataDownloads.Single().Done();
+            playnite.MetadataDownloads.Single().Done(true);
             Assert.Equal(ToastKind.Notification, core.Toast.Kind);
             clock.Advance(TimeSpan.FromSeconds(5.5));
 
@@ -159,6 +185,30 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(5));
 
             Assert.Single(playnite.LibraryUpdates);
+        }
+
+        [Fact]
+        public void A_game_started_during_the_library_update_holds_the_metadata_and_Toast_until_its_Play_session_ends()
+        {
+            var played = Guid.NewGuid();
+            InstallThroughPlaynite(hades);
+            clock.Advance(TimeSpan.FromSeconds(10));
+            core.OnGameStarting(played);
+
+            playnite.LibraryUpdates.Single()(new[] { added });
+            Assert.Empty(playnite.MetadataDownloads);
+            core.OnGameStarted(played);
+            clock.Advance(TimeSpan.FromMinutes(30));
+            Assert.Empty(playnite.MetadataDownloads);
+
+            core.OnGameStopped(played);
+            clock.Advance(TimeSpan.FromSeconds(5));
+            playnite.MetadataDownloads.Single().Done(true);
+
+            Assert.Equal(new[] { hades, added }, playnite.MetadataDownloads.Single().Games);
+            Assert.True(core.Toast.IsShown);
+            Assert.Equal(ToastKind.LibraryUpdated, core.Toast.Kind);
+            Assert.Equal("1 game added", core.Toast.Detail);
         }
 
         [Fact]
@@ -251,7 +301,7 @@ namespace XboxSeries.Core.Tests
             Assert.Single(playnite.MissingMetadataDownloads);
             Assert.True(core.Settings.Playnite.IsDownloadingMetadata);
 
-            playnite.MissingMetadataDownloads[0]();
+            playnite.MissingMetadataDownloads[0](true);
 
             Assert.False(core.Settings.Playnite.IsDownloadingMetadata);
             Assert.False(core.Toast.IsShown);
@@ -296,7 +346,7 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromMinutes(1));
             Assert.Empty(playnite.LibraryUpdates);
 
-            playnite.MissingMetadataDownloads[0]();
+            playnite.MissingMetadataDownloads[0](true);
             clock.Advance(TimeSpan.FromSeconds(5));
 
             Assert.Single(playnite.LibraryUpdates);
@@ -311,7 +361,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal(1, playnite.LibraryTaskCancels);
             Assert.True(core.Settings.Playnite.IsDownloadingMetadata);
-            playnite.MissingMetadataDownloads[0]();
+            playnite.MissingMetadataDownloads[0](true);
             Assert.False(core.Settings.Playnite.IsDownloadingMetadata);
         }
 
@@ -353,7 +403,17 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(10));
             clock.Advance(TimeSpan.FromSeconds(10));
             playnite.LibraryUpdates.Single()(gamesAdded);
-            playnite.MetadataDownloads.Single().Done();
+            playnite.MetadataDownloads.Single().Done(true);
+        }
+
+        /// <summary>Time passes a second at a time, the Library updated Toast showing at none of them.</summary>
+        private void AssertNoLibraryUpdatedToastFor(TimeSpan time)
+        {
+            for (var passed = TimeSpan.Zero; passed <= time; passed += TimeSpan.FromSeconds(1))
+            {
+                Assert.False(core.Toast.IsShown && core.Toast.Kind == ToastKind.LibraryUpdated);
+                clock.Advance(TimeSpan.FromSeconds(1));
+            }
         }
 
         /// <summary>The game joins the queue as Playnite installs it, and finishes installing; no time passes after.</summary>
