@@ -11,6 +11,7 @@ namespace XboxSeries.Core
     {
         private string time = "";
         private Profile profile;
+        private ProfileAchievements achievements;
         private ControllerBattery battery = ControllerBattery.None;
         private int notificationCount;
         private bool isInDiscordCall;
@@ -25,6 +26,16 @@ namespace XboxSeries.Core
         {
             get => profile;
             internal set => Set(ref profile, value, nameof(Profile));
+        }
+
+        /// <summary>
+        /// The achievement totals, the same as Profile &amp; system's (<see cref="GuideState.Achievements"/>), whose Score
+        /// Home's top bar shows under the gamertag; null while there are none.
+        /// </summary>
+        public ProfileAchievements Achievements
+        {
+            get => achievements;
+            internal set => Set(ref achievements, value, nameof(Achievements));
         }
 
         /// <summary>The time to the minute, in the user's own short format.</summary>
