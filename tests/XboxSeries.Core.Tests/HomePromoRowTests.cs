@@ -7,7 +7,7 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
-    // Home's first screen: the Recent row, and under it the console's row of four wide tiles, placeholders for now (#65).
+    // Home's first screen: the Recent row, and under it the console's row of four wide tiles, each going somewhere the Bundle has (#65).
     // The XAML isn't run here; these checks guard what the row shows, that focus only lights a tile, and that it lines
     // up with the Recent row and fits on the first screen whatever the screen's width at 1080 tall.
     public class HomePromoRowTests
@@ -16,26 +16,24 @@ namespace XboxSeries.Core.Tests
         private static readonly string ExtensionDir = Path.Combine(FindRepoRoot(), "src", "XboxSeries.Extension");
 
         [Fact]
-        public void The_row_shows_four_placeholder_tiles_with_dummy_text()
+        public void The_row_shows_Discord_Playnite_settings_Achievements_and_Downloads()
         {
             var tiles = Tiles();
 
-            Assert.Equal(4, tiles.Length);
-            Assert.Equal("Browse the store", Title(tiles[0]));
-            Assert.Equal("Best-rated games", Title(tiles[2]));
+            Assert.Equal(new[] { "Discord", "Playnite settings", "Achievements", "Downloads" }, tiles.Select(Title).ToArray());
 
-            // The promos, 2 and 4, carry a title and a dimmer subtitle, as the console's.
-            foreach (var promo in new[] { tiles[1], tiles[3] })
+            // Achievements and Downloads carry a dimmer subtitle, the Score total and what the Queue holds.
+            foreach (var tile in new[] { tiles[2], tiles[3] })
             {
-                var text = promo.Descendants().Where(e => e.Name.LocalName == "TextBlock").ToArray();
-                Assert.Equal(2, text.Length);
-                Assert.All(text, t => Assert.False(string.IsNullOrWhiteSpace((string)t.Attribute("Text"))));
-                Assert.Equal("{DynamicResource XboxTextDimBrush}", (string)text[1].Attribute("Foreground"));
+                var subtitle = tile.Descendants().Where(e => e.Name.LocalName == "TextBlock").Last();
+                Assert.Equal("{DynamicResource XboxTextDimBrush}", (string)subtitle.Attribute("Foreground"));
             }
 
-            // Browse the store wears the store glyph, and Best-rated games five stars, centred.
-            Assert.Contains(Glyphs(tiles[0]), g => g == "");
-            Assert.Equal(5, Glyphs(tiles[2]).Single().Count(c => c == ''));
+            // Each tile wears its mark, centred: Discord's, a gear, the trophy and the download glyph.
+            Assert.Contains(tiles[0].Descendants(), e => e.Name.LocalName == "Path" && (string)e.Attribute("Data") == "{StaticResource DiscordLogo}");
+            Assert.Equal(new[] { "" }, Glyphs(tiles[1]));
+            Assert.Equal(new[] { "🏆" }, Glyphs(tiles[2]));
+            Assert.Equal(new[] { "" }, Glyphs(tiles[3]));
         }
 
         [Fact]

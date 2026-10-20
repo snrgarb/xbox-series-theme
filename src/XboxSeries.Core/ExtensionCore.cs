@@ -1341,6 +1341,7 @@ namespace XboxSeries.Core
         private void OpenMyGames(MyGamesItem item, Guid? returnsToGame)
         {
             CancelNavSettle();
+            queueLeavesForHome = false;
 
             // Search goes first, giving back any filter of its own, before Games puts its filter on.
             CloseSearch();
@@ -1487,7 +1488,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it, or on Full library narrowed by
+        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it (Home, from its Downloads tile), or on Full library narrowed by
         /// name, back to its whole tab. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
         /// prompt still showing answers the B instead.
         /// </summary>
@@ -1495,7 +1496,7 @@ namespace XboxSeries.Core
         {
             if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
-                if (MyGames.Item == MyGamesItem.ManageQueue)
+                if (MyGames.Item == MyGamesItem.ManageQueue && !queueLeavesForHome)
                 {
                     MyGames.Item = MyGamesItem.Manage;
                 }
@@ -1515,21 +1516,58 @@ namespace XboxSeries.Core
         public void OpenSettings() => ShowSettings(SettingsOrigin.TopBar);
 
         /// <summary>
-        /// Puts Settings up on the rail's first category, every time it opens. It takes My games &amp; apps' place, or
-        /// Search's, which gives the user's own filter and sort back. <paramref name="game"/> is the game whose tile menu
-        /// opened it, by a Customise entry, which B goes back to.
+        /// Puts Settings up on the rail's first category, every time it opens, or on <paramref name="inPane"/>, focus in
+        /// that category's options. It takes My games &amp; apps' place, or Search's, which gives the user's own filter
+        /// and sort back. <paramref name="game"/> is the game whose tile menu opened it, by a Customise entry, which B goes
+        /// back to.
         /// </summary>
-        private void ShowSettings(SettingsOrigin from, Guid? game = null)
+        private void ShowSettings(SettingsOrigin from, Guid? game = null, SettingsCategory? inPane = null)
         {
             settingsReturnItem = MyGames.Item;
             CloseMyGames();
             CloseSearch();
             RefreshGamerpics();
-            Settings.Category = SettingsCategory.Personalisation;
+            Settings.Category = inPane ?? SettingsCategory.Personalisation;
+            Settings.OpensInPane = inPane != null;
             Settings.OpenedFrom = from;
             Settings.OpenedFromGame = game;
             Settings.IsShown = true;
         }
+
+        /// <summary>
+        /// Home's Discord tile: the Guide on the Discord tab, or with no Discord tab yet, Settings on Discord, focus on
+        /// its Client ID, to connect it. B goes back to the tile.
+        /// </summary>
+        public void OpenDiscordFromHome()
+        {
+            if (!Settings.Discord.HasDiscordTab)
+            {
+                ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.Discord);
+                return;
+            }
+
+            if (Guide.IsOpen)
+            {
+                return;
+            }
+
+            sounds.Play(UiSound.OpenMenu);
+            OpenGuide();
+            ShowTab(GuideTabKind.Discord);
+        }
+
+        /// <summary>Home's Playnite settings tile: Settings on Playnite settings, focus on its Playnite settings box. B goes back to the tile.</summary>
+        public void OpenPlayniteSettingsFromHome() => ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.PlayniteSettings);
+
+        /// <summary>Home's Downloads tile: My games &amp; apps on Manage Queue, B going back to the tile rather than to Manage.</summary>
+        public void OpenQueueFromHome()
+        {
+            OpenMyGames(MyGamesItem.ManageQueue);
+            queueLeavesForHome = true;
+        }
+
+        /// <summary>Whether Manage Queue was opened from Home's Downloads tile, so B on it goes back to Home.</summary>
+        private bool queueLeavesForHome;
 
         /// <summary>The item My games &amp; apps showed as Settings took its place, which Customise games &amp; apps' B opens again.</summary>
         private MyGamesItem settingsReturnItem;

@@ -4,10 +4,11 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False">
     <!--
-        The console's row of four wide tiles under Home's Recent row (#65): Browse the store, a promo, Best-rated games
-        and a second promo. Placeholders with dummy text for now: nothing is read from Playnite, and A does nothing.
-        Laid out at the Recent row's 1080p width, in RecentRowControl, which scales the two alike and moves focus in
-        and out of the row. Focus only lights a tile, as the console's: the accent ring and its glow, no growing.
+        The console's row of four wide tiles under Home's Recent row (#65), each going somewhere the Bundle has rather than
+        to the console's store and promos: Discord, Playnite settings, Achievements (its Score total under it) and
+        Downloads (what the Queue holds under it). Laid out at the Recent row's 1080p width, in RecentRowControl, which
+        scales the two alike and moves focus in and out of the row. Focus only lights a tile, as the console's: the
+        accent ring and its glow, no growing.
     -->
     <UserControl.Resources>
         <!-- A tile: its art (Background) clipped to the console's rounded corners, ringed in the accent when focused. -->
@@ -39,7 +40,7 @@
             </Setter>
         </Style>
 
-        <!-- A tile's text, bottom left: its title, and a promo's dimmer subtitle under it. -->
+        <!-- A tile's text, bottom left: its title, and a dimmer subtitle under it on Achievements and Downloads. -->
         <Style x:Key="Title" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource XboxFontSemibold}" />
             <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
@@ -66,11 +67,8 @@
             <Setter Property="Margin" Value="0,0,0,24" />
         </Style>
 
-        <!-- A promo's placeholder art fades to black at its foot, so its text reads over it, as on the console. -->
-        <LinearGradientBrush x:Key="PromoScrim" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#00000000" Offset="0.35" />
-            <GradientStop Color="#CC000000" Offset="1" />
-        </LinearGradientBrush>
+        <!-- Discord's own mark, as the Guide's and the Status area's. -->
+        <Geometry x:Key="DiscordLogo">M 20.317 4.3698 a 19.7913 19.7913 0 0 0 -4.8851 -1.5152 .0741 .0741 0 0 0 -.0785 .0371 c -.211 .3753 -.4447 .8648 -.6083 1.2495 -1.8447 -.2762 -3.68 -.2762 -5.4868 0 -.1636 -.3933 -.4058 -.8742 -.6177 -1.2495 a .077 .077 0 0 0 -.0785 -.037 19.7363 19.7363 0 0 0 -4.8852 1.515 .0699 .0699 0 0 0 -.0321 .0277 C .5334 9.0458 -.319 13.5799 .0992 18.0578 a .0824 .0824 0 0 0 .0312 .0561 c 2.0528 1.5076 4.0413 2.4228 5.9929 3.0294 a .0777 .0777 0 0 0 .0842 -.0276 c .4616 -.6304 .8731 -1.2952 1.226 -1.9942 a .076 .076 0 0 0 -.0416 -.1057 c -.6528 -.2476 -1.2743 -.5495 -1.8722 -.8923 a .077 .077 0 0 1 -.0076 -.1277 c .1258 -.0943 .2517 -.1923 .3718 -.2914 a .0743 .0743 0 0 1 .0776 -.0105 c 3.9278 1.7933 8.18 1.7933 12.0614 0 a .0739 .0739 0 0 1 .0785 .0095 c .1202 .099 .246 .1981 .3728 .2924 a .077 .077 0 0 1 -.0066 .1276 12.2986 12.2986 0 0 1 -1.873 .8914 .0766 .0766 0 0 0 -.0407 .1067 c .3604 .698 .7719 1.3628 1.225 1.9932 a .076 .076 0 0 0 .0842 .0286 c 1.961 -.6067 3.9495 -1.5219 6.0023 -3.0294 a .077 .077 0 0 0 .0313 -.0552 c .5004 -5.177 -.8382 -9.6739 -3.5485 -13.6604 a .061 .061 0 0 0 -.0312 -.0286 z M 8.02 15.3312 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9555 -2.4189 2.157 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.9555 2.4189 -2.1569 2.4189 z m 7.9748 0 c -1.1825 0 -2.1569 -1.0857 -2.1569 -2.419 0 -1.3332 .9554 -2.4189 2.1569 -2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332 -.946 2.4189 -2.1568 2.4189 Z</Geometry>
     </UserControl.Resources>
 
     <!-- 24 under the Recent row; four 359 x 190 tiles 30 apart spanning its 1526. -->
@@ -85,41 +83,44 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- 1. Browse the store: the store's purple, its glyph centred. -->
-        <Button Grid.Column="0" Style="{StaticResource PromoTile}">
+        <!-- 1. Discord: Discord's blurple, its mark centred. -->
+        <Button x:Name="DiscordTile" Grid.Column="0" Style="{StaticResource PromoTile}" Click="OnTileClick" KeyDown="OnTileKeyDown">
             <Button.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#FF9A6CF2" Offset="0" />
-                    <GradientStop Color="#FF5B34C9" Offset="1" />
+                    <GradientStop Color="#FF7983F5" Offset="0" />
+                    <GradientStop Color="#FF4752C4" Offset="1" />
                 </LinearGradientBrush>
             </Button.Background>
             <Grid>
-                <TextBlock Text="&#xE719;" Style="{StaticResource Glyph}" />
+                <Path Data="{StaticResource DiscordLogo}" Fill="{DynamicResource XboxTextBrush}" Width="48" Height="48" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,24" />
                 <StackPanel Style="{StaticResource Caption}">
-                    <TextBlock Text="Browse the store" Style="{StaticResource Title}" />
+                    <TextBlock Text="Discord" Style="{StaticResource Title}" />
                 </StackPanel>
             </Grid>
         </Button>
 
-        <!-- 2. A promo: art filling the tile (a placeholder gradient), a title and a dimmer subtitle. -->
-        <Button Grid.Column="2" Style="{StaticResource PromoTile}">
+        <!-- 2. Playnite settings: slate, a gear centred. -->
+        <Button x:Name="PlayniteSettingsTile" Grid.Column="2" Style="{StaticResource PromoTile}" Click="OnTileClick" KeyDown="OnTileKeyDown">
             <Button.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#FF4C7A9E" Offset="0" />
-                    <GradientStop Color="#FF2A4632" Offset="0.6" />
-                    <GradientStop Color="#FF1C2A1E" Offset="1" />
+                    <GradientStop Color="#FF5F6B7A" Offset="0" />
+                    <GradientStop Color="#FF2B323C" Offset="1" />
                 </LinearGradientBrush>
             </Button.Background>
-            <Grid Background="{StaticResource PromoScrim}">
+            <Grid>
+                <TextBlock Text="&#xE713;" Style="{StaticResource Glyph}" />
                 <StackPanel Style="{StaticResource Caption}">
-                    <TextBlock Text="Campaign Early Access" Style="{StaticResource Title}" />
-                    <TextBlock Text="Pre-order, play now" Style="{StaticResource Subtitle}" Foreground="{DynamicResource XboxTextDimBrush}" />
+                    <TextBlock Text="Playnite settings" Style="{StaticResource Title}" />
                 </StackPanel>
             </Grid>
         </Button>
 
-        <!-- 3. Best-rated games: green, five stars centred. -->
-        <Button Grid.Column="4" Style="{StaticResource PromoTile}">
+        <!--
+            3. Achievements: green, the trophy centred (U+1F3C6, not in the icon font, so in the body font, as the Guide's),
+            the Score total under the title; with no totals there is no subtitle.
+        -->
+        <Button x:Name="AchievementsTile" Grid.Column="4" Style="{StaticResource PromoTile}" Click="OnTileClick" KeyDown="OnTileKeyDown">
             <Button.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                     <GradientStop Color="#FF3FA34D" Offset="0" />
@@ -127,26 +128,48 @@
                 </LinearGradientBrush>
             </Button.Background>
             <Grid>
-                <TextBlock Text="&#xE735;&#xE735;&#xE735;&#xE735;&#xE735;" Style="{StaticResource Glyph}" FontSize="30" />
+                <TextBlock Text="&#x1F3C6;" Style="{StaticResource Glyph}" FontFamily="{DynamicResource XboxFont}" />
                 <StackPanel Style="{StaticResource Caption}">
-                    <TextBlock Text="Best-rated games" Style="{StaticResource Title}" />
+                    <TextBlock Text="Achievements" Style="{StaticResource Title}" />
+                    <TextBlock Text="{Binding Achievements.Score, StringFormat={}{0:N0} Score}" Foreground="{DynamicResource XboxTextDimBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Subtitle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Achievements}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </Grid>
         </Button>
 
-        <!-- 4. A promo, as 2. -->
-        <Button Grid.Column="6" Style="{StaticResource PromoTile}">
+        <!-- 4. Downloads: blue, the download glyph centred, what the Queue holds under the title. -->
+        <Button x:Name="DownloadsTile" Grid.Column="6" Style="{StaticResource PromoTile}" Click="OnTileClick" KeyDown="OnTileKeyDown">
             <Button.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#FFE0A04A" Offset="0" />
-                    <GradientStop Color="#FF8C3B1E" Offset="0.55" />
-                    <GradientStop Color="#FF2E1712" Offset="1" />
+                    <GradientStop Color="#FF3A8EE6" Offset="0" />
+                    <GradientStop Color="#FF1A4C8F" Offset="1" />
                 </LinearGradientBrush>
             </Button.Background>
-            <Grid Background="{StaticResource PromoScrim}">
+            <Grid>
+                <TextBlock Text="&#xE896;" Style="{StaticResource Glyph}" />
                 <StackPanel Style="{StaticResource Caption}">
-                    <TextBlock Text="Pre-order Deluxe Edition" Style="{StaticResource Title}" />
-                    <TextBlock Text="Get a month of Ultimate" Style="{StaticResource Subtitle}" Foreground="{DynamicResource XboxTextDimBrush}" />
+                    <TextBlock Text="Downloads" Style="{StaticResource Title}" />
+                    <TextBlock Foreground="{DynamicResource XboxTextDimBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Subtitle}">
+                                <Setter Property="Text" Value="{Binding QueueCount, StringFormat={}{0} in queue}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasQueue}" Value="False">
+                                        <Setter Property="Text" Value="Nothing queued" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </Grid>
         </Button>

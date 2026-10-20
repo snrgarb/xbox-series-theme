@@ -45,6 +45,7 @@ namespace XboxSeries.Extension
             InitializeComponent();
             this.core = core;
             this.homeScreen = homeScreen;
+            Promos.Attach(core);
             growth = new TileGrowth(AllTiles);
             DataContext = core.Home;
             Loaded += OnLoaded;
