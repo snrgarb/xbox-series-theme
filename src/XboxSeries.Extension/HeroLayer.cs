@@ -22,8 +22,13 @@ namespace XboxSeries.Extension
 
         private readonly Rectangle darken = new Rectangle { Fill = new SolidColorBrush(Color.FromArgb(0x99, 0, 0, 0)) };
 
-        public HeroLayer()
+        /// <summary>The width background art is decoded at; a cover, blurred, needs less.</summary>
+        private readonly int artDecodeWidth;
+
+        /// <param name="artDecodeWidth">The width background art is decoded at: the full screen's unless the layer is smaller.</param>
+        public HeroLayer(int artDecodeWidth = 1920)
         {
+            this.artDecodeWidth = artDecodeWidth;
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             Root.Children.Add(image);
             Root.Children.Add(darken);
@@ -41,7 +46,7 @@ namespace XboxSeries.Extension
             }
 
             var isCover = art.IsCover;
-            image.Source = DecodedImageConverter.Load(art.Image, isCover ? 480 : 1920);
+            image.Source = DecodedImageConverter.Load(art.Image, isCover ? 480 : artDecodeWidth);
 
             // A cover is small and portrait: blurred, it reads as colour behind what is over it rather than as a stretched picture.
             // It overhangs the layer so the blur's soft edges fall outside it.
