@@ -35,6 +35,9 @@ namespace XboxSeries.Core
         /// <summary>Until when the half of the wake press still to come is that press.</summary>
         private DateTime wakePressBy;
 
+        /// <summary>What the Idle screen's cards are shuffled with.</summary>
+        private readonly Random random;
+
         public IdleState Idle { get; } = new IdleState();
 
         /// <summary>
