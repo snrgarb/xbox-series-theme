@@ -246,8 +246,8 @@
 
         <!--
             The rail: the page's name, the Bundle's own settings as one category, Theme settings, then Playnite's own:
-            Playnite settings, a category of boxes as Theme settings is, and More Playnite options, which opens Playnite's
-            main menu rather than show beside the rail. Focusing a category shows it.
+            Playnite settings, a category of boxes as Theme settings is, and under a divider, More Playnite options, which
+            opens Playnite's main menu rather than show beside the rail. Focusing a category shows it.
         -->
         <StackPanel Grid.Column="0" Margin="0,78,0,0">
             <TextBlock Text="Settings" Style="{StaticResource HeaderText}" FontSize="30" Height="54" Margin="75,0,0,58" />
@@ -258,6 +258,8 @@
                 <Button x:Name="PlayniteSettingsItem" Style="{StaticResource RailItem}" GotKeyboardFocus="OnCategoryFocused">
                     <TextBlock Text="Playnite settings" Style="{StaticResource RailText}" />
                 </Button>
+                <!-- More Playnite options is an action, not a category: a divider sets it apart. -->
+                <Border x:Name="MoreOptionsDivider" Height="2" Margin="75,0,43,14" Background="{StaticResource DividerBrush}" />
                 <Button x:Name="MorePlayniteOptionsItem" Style="{StaticResource RailItem}" Click="OnPlayniteEntryClick">
                     <TextBlock Text="More Playnite options" Style="{StaticResource RailText}" />
                 </Button>
