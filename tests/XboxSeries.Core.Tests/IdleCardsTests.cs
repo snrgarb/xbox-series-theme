@@ -148,7 +148,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Without_achievements_or_games_the_twelve_tips_cycle_text_only()
+        public void Without_achievements_or_games_the_twelve_tips_cycle_headed_Tip_text_only_and_Y_got_it()
         {
             ShowThings();
 
@@ -158,6 +158,13 @@ namespace XboxSeries.Core.Tests
             Assert.All(cards, c => Assert.Null(c.Description));
             Assert.All(cards, c => Assert.Null(c.Art));
             Assert.All(cards, c => Assert.Null(c.Icon));
+            Assert.All(cards, c => Assert.Equal("Tip", c.Header));
+            Assert.All(cards, c => Assert.Null(c.Label));
+            Assert.All(cards, c => Assert.Null(c.Score));
+            Assert.All(cards, c => Assert.Null(c.Progress));
+            Assert.All(cards, c => Assert.False(c.IsRare));
+            Assert.All(cards, c => Assert.Equal("Got it", c.Prompt));
+            Assert.All(cards, c => Assert.Null(c.GameId));
             Assert.Equal(12, cards.Select(c => c.Title).Distinct().Count());
             Assert.Contains("Press Y on Home to search your games and apps.", cards.Select(c => c.Title));
             Assert.Contains("Pick a boot video, original Xbox to Series X, in Personalisation › Start up.", cards.Select(c => c.Title));
