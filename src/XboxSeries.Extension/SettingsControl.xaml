@@ -192,6 +192,27 @@
             </Style>
 
             <!--
+                A dropdown's open list, under its box and as wide. Taller than the room left under
+                its box, as Show things after's eleven steps, it is cut to that room and scrolls, the focused choice kept in
+                view (SettingsControl.OpenDropdown). Its scroller stands out past the list's sides, its choices as far in, so
+                a focused choice's ring and glow aren't cut off there.
+            -->
+            <Style x:Key="DropList" TargetType="Border">
+                <Setter Property="Width" Value="560" />
+                <Setter Property="CornerRadius" Value="4" />
+                <Setter Property="Background" Value="#FF2E2E2E" />
+                <Setter Property="BorderBrush" Value="#33FFFFFF" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <Style x:Key="DropScroller" TargetType="ScrollViewer">
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Margin" Value="-16,0" />
+                <Setter Property="VerticalScrollBarVisibility" Value="Hidden" />
+                <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+            </Style>
+
+            <!--
                 A choice in a dropdown's open list, as the Guide's devices: a shorter row, its name cut short when long, the
                 one chosen (Tag "Selected") ticked where the Guide's rows have their icon. Focused, it lightens and the accent
                 ring stands off it carrying the glow, drawn over the rows round it.
@@ -288,7 +309,7 @@
             <TextBlock x:Name="Header" Style="{StaticResource HeaderText}" FontSize="42" FontWeight="350" VerticalAlignment="Top" />
 
             <!--
-                Theme settings: its boxes, Personalisation, Guide and Discord, each opening its page below in their place,
+                Theme settings: its boxes, Personalisation, Idle, Guide and Discord, each opening its page below in their place,
                 the header following (SettingsState.ThemePage). Right or A on the rail's Theme settings comes in; Left
                 from the first column or B from its boxes goes back to it. On a page, B, or Left from its first column,
                 goes back to the boxes, focus on the one it came from.
@@ -302,6 +323,47 @@
             <local:PersonalisationPane x:Name="PersonalisationPane" Grid.Row="1" Visibility="Collapsed" />
 
             <!--
+                Theme settings > Idle: how long with nothing pressed before the screen dims, and before the Idle screen
+                shows things, each a dropdown as the Guide page's Now Playing source is, from the core's IdleState. Each
+                box and its list are raised together while focus is in them, so Dim after's open list lies over Show things
+                after. The core keeps Show things after no shorter than Dim after, leaving the shorter steps out of its
+                list. A on Theme settings' Idle comes in; Left or B goes back to it.
+            -->
+            <StackPanel x:Name="IdlePane" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Left" Width="560"
+                        KeyDown="OnIdlePaneKeyDown">
+                <Grid Style="{StaticResource RaisedWhenFocused}" Margin="0,0,0,40">
+                    <StackPanel>
+                        <TextBlock Text="Dim after" Style="{StaticResource Text}" Margin="0,0,0,14" />
+                        <Button x:Name="DimAfterBox" Style="{StaticResource DropBox}" Click="OnDropBoxClick">
+                            <TextBlock x:Name="DimAfterText" Style="{StaticResource Text}" />
+                        </Button>
+                        <Canvas Height="0" Margin="0,8,0,0">
+                            <Border x:Name="DimAfterList" Style="{StaticResource DropList}" Visibility="Collapsed">
+                                <ScrollViewer Style="{StaticResource DropScroller}">
+                                    <StackPanel x:Name="DimAfterOptions" Margin="16,8" />
+                                </ScrollViewer>
+                            </Border>
+                        </Canvas>
+                    </StackPanel>
+                </Grid>
+                <Grid Style="{StaticResource RaisedWhenFocused}">
+                    <StackPanel>
+                        <TextBlock Text="Show things after" Style="{StaticResource Text}" Margin="0,0,0,14" />
+                        <Button x:Name="ShowThingsAfterBox" Style="{StaticResource DropBox}" Click="OnDropBoxClick">
+                            <TextBlock x:Name="ShowThingsAfterText" Style="{StaticResource Text}" />
+                        </Button>
+                        <Canvas Height="0" Margin="0,8,0,0">
+                            <Border x:Name="ShowThingsAfterList" Style="{StaticResource DropList}" Visibility="Collapsed">
+                                <ScrollViewer Style="{StaticResource DropScroller}">
+                                    <StackPanel x:Name="ShowThingsAfterOptions" Margin="16,8" />
+                                </ScrollViewer>
+                            </Border>
+                        </Canvas>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+
+            <!--
                 Theme settings > Guide: its behaviour options, the Now Playing source for now, a dropdown as the Guide's
                 Audio Output and Input are: which app the Audio flyout's Now Playing follows. Its list opens under the box
                 and as wide, laid over what is below rather than pushing it down: the Canvas takes no height. A on Theme
@@ -312,13 +374,14 @@
                 <TextBlock Text="Now Playing source" Style="{StaticResource Text}" />
                 <TextBlock Text="The app the Audio flyout's Now Playing follows while it plays or is paused, else whatever Windows shows."
                            Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,18" />
-                <Button x:Name="NowPlayingSourceBox" Style="{StaticResource DropBox}" Click="OnNowPlayingSourceBoxClick">
+                <Button x:Name="NowPlayingSourceBox" Style="{StaticResource DropBox}" Click="OnDropBoxClick">
                     <TextBlock Text="{Binding NowPlayingSource}" Style="{StaticResource Text}" />
                 </Button>
                 <Canvas Height="0" Margin="0,8,0,0">
-                    <Border x:Name="NowPlayingSourceList" Width="560" Padding="0,6"
-                            CornerRadius="4" Background="#FF2E2E2E" BorderBrush="#33FFFFFF" BorderThickness="1" Visibility="Collapsed">
-                        <StackPanel x:Name="NowPlayingSourceOptions" />
+                    <Border x:Name="NowPlayingSourceList" Style="{StaticResource DropList}" Visibility="Collapsed">
+                        <ScrollViewer Style="{StaticResource DropScroller}">
+                            <StackPanel x:Name="NowPlayingSourceOptions" Margin="16,8" />
+                        </ScrollViewer>
                     </Border>
                 </Canvas>
             </StackPanel>
