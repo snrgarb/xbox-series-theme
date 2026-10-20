@@ -76,7 +76,7 @@ namespace XboxSeries.Core.Tests
         public void The_dim_is_made_over_the_Overlay_and_the_Launch_screen_and_beneath_the_Toast()
         {
             var plugin = Code("XboxSeriesPlugin.cs");
-            var made = Regex.Match(plugin, @"new DimWindow\(core\.Idle, new Window\[\] \{ (?<below>[^}]*) \}, (?<above>[^)]*)\)");
+            var made = Regex.Match(plugin, @"new DimWindow\(core\.Idle, core\.Status, new Window\[\] \{ (?<below>[^}]*) \}, (?<above>[^)]*)\)");
             Assert.True(made.Success, "The plugin makes the dim with the windows below it and above it.");
             Assert.Equal(new[] { "overlay", "launchScreenWindow" }, made.Groups["below"].Value.Split(',').Select(s => s.Trim()));
             Assert.Equal("toastWindow", made.Groups["above"].Value.Trim());

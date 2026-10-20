@@ -19,20 +19,30 @@
         and the Overlay with the Guide, while the screen is idle. Toasts show over it. Whatever is under it stays as it
         was. It never takes focus or the mouse, so the first press goes to Playnite, where the extension swallows it as
         the wake (see IdleInput.cs). It fades in slowly, and out quickly as the screen wakes (see DimWindow.xaml.cs). Once
-        the screen is Showing things, the Idle screen's cards show over it.
+        the screen is Showing things, the Idle screen's cards fly in over it.
     -->
     <Grid IsHitTestVisible="False">
         <Grid x:Name="Shade" Background="#66000000" Opacity="0" />
         <!--
-            Over the dim once the screen is Showing things, the core's cards, one at a time, centred: two, crossfading from
-            one card to the next, and the two hidden together with the dim as the screen wakes (see DimWindow.xaml.cs).
-            Laid out at 1080 tall and the screen's aspect, as the Overlay is, and scaled to the screen.
+            Over the dim once the screen is Showing things, the core's cards, one at a time, as the console's idle panel:
+            over the right half of the screen, the whole of its height, flown in from the right with the first card and
+            out again with none. Two, crossfading from one card to the next, and the two hidden together with the dim as
+            the screen wakes (see DimWindow.xaml.cs). With them, the time at the bottom left over the dim, large and grey,
+            as the console's. Laid out at 1080 tall and the screen's aspect, as the Overlay is, and scaled to the screen.
         -->
         <Viewbox Stretch="Uniform">
             <Grid x:Name="Root" Height="1080" Width="1920">
                 <Grid x:Name="Cards" Opacity="0">
-                    <local:IdleCardControl x:Name="CardA" />
-                    <local:IdleCardControl x:Name="CardB" />
+                    <TextBlock x:Name="Clock" Text="{Binding Time}" Opacity="0" Margin="80,0,0,57" HorizontalAlignment="Left"
+                               VerticalAlignment="Bottom" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="64"
+                               Foreground="#FF777777" />
+                    <Grid x:Name="Flyout" HorizontalAlignment="Right" Width="962">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="FlyoutSlide" X="962" />
+                        </Grid.RenderTransform>
+                        <local:IdleCardControl x:Name="CardA" />
+                        <local:IdleCardControl x:Name="CardB" />
+                    </Grid>
                 </Grid>
             </Grid>
         </Viewbox>
