@@ -131,6 +131,8 @@ namespace XboxSeries.Core.Tests
 
             Assert.True(core.Settings.IsShown);
             Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.None, core.Settings.ThemePage);
+            Assert.False(core.Settings.OpensInPane);
             Assert.Equal(SettingsOrigin.Guide, core.Settings.OpenedFrom);
             Assert.Equal(DashboardPage.Settings, playnite.Page);
             Assert.Equal(playnite.Window, windows.Foreground);

@@ -4,7 +4,7 @@ using System.ComponentModel;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// What Settings' Discord category shows: the Connect checklist, the user's own Discord application, and the
+    /// What Theme settings' Discord page shows: the Connect checklist, the user's own Discord application, and the
     /// connection's status line. Views bind to it and hold no logic of their own; the Client Secret itself is never in it.
     /// </summary>
     public sealed class DiscordSettingsState : INotifyPropertyChanged

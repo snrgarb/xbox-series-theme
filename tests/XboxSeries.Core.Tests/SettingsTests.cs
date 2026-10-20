@@ -30,6 +30,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.True(core.Settings.IsShown);
             Assert.Equal(SettingsCategory.ThemeSettings, core.Settings.Category);
+            Assert.Equal(ThemeSettingsPage.None, core.Settings.ThemePage);
             Assert.Equal(SettingsOrigin.TopBar, core.Settings.OpenedFrom);
         }
 

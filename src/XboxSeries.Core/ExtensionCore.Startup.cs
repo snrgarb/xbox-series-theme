@@ -6,8 +6,9 @@ using Newtonsoft.Json;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Start-up sequence (boot video, Who's playing today?, Signing you in, then "Hi X!") and Settings' Start up
-    /// category, which chooses the boot video, keeps the profiles, and says whether Who's playing today? asks.
+    /// The Start-up sequence (boot video, Who's playing today?, Signing you in, then "Hi X!") and Theme settings'
+    /// Personalisation's Start up page, which chooses the boot video, keeps the profiles, and says whether Who's playing
+    /// today? asks.
     /// </summary>
     public sealed partial class ExtensionCore
     {
