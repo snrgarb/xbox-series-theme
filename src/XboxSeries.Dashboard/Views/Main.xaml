@@ -159,8 +159,11 @@
     <!--
         The top bar's profile: the user's picture and name. With the extension, a button that opens the Guide on Profile &
         system, ringed like the round icons when focused, showing the profile signed in (its Tag, the extension's
-        State.Profile) by its picture and gamertag, taking turns with its real name when it has one; theme-only, or before anyone has signed in, the person glyph and the
-        Windows user's name, and never focused theme-only. A picture that won't load leaves the glyph showing.
+        Status State, read as Tag.Profile) by its picture and gamertag, taking turns with its real name when it has one; theme-only, or before anyone has signed in, the person glyph and the
+        Windows user's name, and never focused theme-only. A picture that won't load leaves the glyph showing. Under the
+        gamertag, made smaller for it, the achievement Score as on the console: a white G disc and the Score with thousands
+        separators, from Tag.Achievements; with no totals (no PlayniteAchievements, no achievements, or theme-only) there is
+        no Score and the gamertag keeps its full size.
     -->
     <Style x:Key="XboxTopBarProfile" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
@@ -176,7 +179,7 @@
                         <Grid Width="56" Height="56">
                             <Ellipse Fill="{DynamicResource GlyphBrush}" />
                             <TextBlock Text="&#xE77B;" Style="{StaticResource XboxIcon}" />
-                            <Image Source="{Binding Tag.Picture, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Null}}"
+                            <Image Source="{Binding Tag.Profile.Picture, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Null}}"
                                    Width="56" Height="56" Stretch="UniformToFill">
                                 <Image.Clip>
                                     <EllipseGeometry Center="28,28" RadiusX="28" RadiusY="28" />
@@ -192,10 +195,22 @@
                             </Border>
                         </Grid>
                         <Grid VerticalAlignment="Center" Margin="16,0,0,0">
-                            <TextBlock x:Name="Gamertag" Text="{Binding Tag.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
-                                       Style="{StaticResource XboxText}" />
-                            <TextBlock x:Name="RealName" Text="{Binding Tag.RealName, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Null}}"
-                                       Style="{StaticResource XboxText}" Opacity="0" />
+                            <!-- The gamertag and the Score under it show and fade together, taking turns with the real name. -->
+                            <StackPanel x:Name="GamertagAndScore" VerticalAlignment="Center">
+                                <TextBlock x:Name="Gamertag" Text="{Binding Tag.Profile.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
+                                           Style="{StaticResource XboxText}" FontSize="19" />
+                                <StackPanel x:Name="Score" Orientation="Horizontal">
+                                    <Grid Width="19" Height="19" VerticalAlignment="Center">
+                                        <Ellipse Fill="White" />
+                                        <TextBlock Text="G" FontFamily="{DynamicResource XboxFont}" FontWeight="Bold" FontSize="13" Foreground="Black"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding Tag.Achievements.Score, RelativeSource={RelativeSource TemplatedParent}, StringFormat={}{0:N0}, FallbackValue={x:Null}}"
+                                               Style="{StaticResource XboxText}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock x:Name="RealName" Text="{Binding Tag.Profile.RealName, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Null}}"
+                                       Style="{StaticResource XboxText}" VerticalAlignment="Center" Opacity="0" />
                         </Grid>
                     </StackPanel>
                     <ControlTemplate.Triggers>
@@ -204,14 +219,23 @@
                         </Trigger>
 
                         <!--
-                            With a real name, the gamertag and the real name take turns in the name's place, as on the
-                            console, crossfading on the Toast's text cycle: each for 2.2 s, a 0.3 s crossfade to the other.
+                            No totals, or theme-only where the binding fails to its null fallback: no Score, and the
+                            gamertag back to the name's full size.
                         -->
-                        <DataTrigger Binding="{Binding Tag.HasRealName, RelativeSource={RelativeSource Self}, FallbackValue=False}" Value="True">
+                        <DataTrigger Binding="{Binding Tag.Achievements, RelativeSource={RelativeSource Self}, FallbackValue={x:Null}}" Value="{x:Null}">
+                            <Setter TargetName="Score" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="Gamertag" Property="FontSize" Value="22" />
+                        </DataTrigger>
+
+                        <!--
+                            With a real name, the gamertag (with the Score under it) and the real name take turns in the
+                            name's place, as on the console, crossfading on the Toast's text cycle: each for 2.2 s, a 0.3 s crossfade to the other.
+                        -->
+                        <DataTrigger Binding="{Binding Tag.Profile.HasRealName, RelativeSource={RelativeSource Self}, FallbackValue=False}" Value="True">
                             <DataTrigger.EnterActions>
                                 <BeginStoryboard x:Name="NameSwap">
                                     <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Gamertag" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GamertagAndScore" Storyboard.TargetProperty="Opacity" Duration="0:0:5">
                                             <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
                                             <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1" />
                                             <LinearDoubleKeyFrame KeyTime="0:0:2.5" Value="0" />
@@ -427,7 +451,7 @@
                                     <!-- With the extension, the profile signed in, and the Guide on Profile & system. -->
                                     <ButtonEx Style="{StaticResource XboxTopBarProfile}"
                                               Command="{Binding Content.OpenProfileCommand, ElementName=XboxSeries_Status}"
-                                              Tag="{Binding Content.State.Profile, ElementName=XboxSeries_Status}" />
+                                              Tag="{Binding Content.State, ElementName=XboxSeries_Status}" />
 
                                     <!-- Install notice: theme-only users, never clickable. -->
                                     <Border Margin="28,0,0,0" Padding="14,6" CornerRadius="4" VerticalAlignment="Center"
