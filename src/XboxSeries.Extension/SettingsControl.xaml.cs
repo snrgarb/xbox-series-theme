@@ -37,6 +37,9 @@ namespace XboxSeries.Extension
         /// <summary>The gap from a dropdown's box down to its list, and the least room its list leaves above the page's foot.</summary>
         private const double DropListGap = 8, DropListFoot = 32;
 
+        /// <summary>How far past a list's row is kept in view as it is focused: its focus ring's 8, and a little more.</summary>
+        private const double DropRingReach = 10;
+
         /// <summary>The shortest a dropdown's list is cut to, three rows, however little room is left under its box.</summary>
         private const double DropListMinHeight = 3 * 62 + 16;
 
@@ -464,7 +467,7 @@ namespace XboxSeries.Extension
             else if (e.Key == Key.Up || e.Key == Key.Down)
             {
                 e.Handled = true;
-                options[Math.Max(0, Math.Min(options.Count - 1, here + (e.Key == Key.Up ? -1 : 1)))].Focus();
+                FocusDropRow(options[Math.Max(0, Math.Min(options.Count - 1, here + (e.Key == Key.Up ? -1 : 1)))]);
             }
             else if (e.Key == Key.Left || e.Key == Key.Right)
             {
@@ -519,7 +522,19 @@ namespace XboxSeries.Extension
             dropdown.Box.Tag = "Open";
             dropdown.List.Visibility = Visibility.Visible;
             dropdown.List.UpdateLayout();
-            (chosen ?? dropdown.Options.Children.OfType<Button>().FirstOrDefault())?.Focus();
+            FocusDropRow(chosen ?? dropdown.Options.Children.OfType<Button>().FirstOrDefault());
+        }
+
+        /// <summary>
+        /// Focuses a row of an open list, scrolled into view with its focus ring, which stands 8 off it: the row alone,
+        /// as focus brings it, would leave the ring cut at the list's top or foot.
+        /// </summary>
+        private static void FocusDropRow(Button row)
+        {
+            if (row != null && row.Focus())
+            {
+                row.BringIntoView(new Rect(0, -DropRingReach, row.ActualWidth, row.ActualHeight + 2 * DropRingReach));
+            }
         }
 
         /// <summary>
