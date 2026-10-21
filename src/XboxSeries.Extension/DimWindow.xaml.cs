@@ -13,9 +13,10 @@ namespace XboxSeries.Extension
     /// <summary>
     /// The Idle screen's dim. It follows the core's <see cref="IdleState.IsDimmed"/> and holds no logic: it fades in over
     /// the whole monitor as the screen dims, over every window but the Toast's, and fades out, then hides, as it wakes. It
-    /// never takes focus, the foreground or the mouse. Over the dim, it flies in the core's <see cref="IdleState.Card"/>
-    /// from the right with the time at the bottom left, crossfades from one card to the next, flies it out again for
-    /// none, and hides it with the dim.
+    /// never takes focus, the foreground or the mouse, and is no window of Playnite's, so it dims over a game or another
+    /// app in front as over Playnite, where the press that wakes it goes on to the game. Over the dim, it flies in the
+    /// core's <see cref="IdleState.Card"/> from the right with the time at the bottom left, crossfades from one card to
+    /// the next, flies it out again for none, and hides it with the dim.
     /// </summary>
     public partial class DimWindow : Window
     {
@@ -49,6 +50,16 @@ namespace XboxSeries.Extension
         /// <summary>Whether the panel is in, or flying in; out, the next card flies it in rather than crossfading.</summary>
         private bool flownIn;
 
+        /// <summary>
+        /// While it is up, it goes back to the top now and then, with the Toast's over it: a game or another app's
+        /// window, made topmost after the dim showed, or raising itself as some borderless games do, would otherwise
+        /// cover it, and no Loaded is heard for a window of another process's.
+        /// </summary>
+        private readonly DispatcherTimer keepOnTop;
+
+        /// <summary>How often <see cref="keepOnTop"/> raises it.</summary>
+        internal static readonly TimeSpan KeepOnTopEvery = TimeSpan.FromSeconds(1);
+
         /// <param name="status">The time, shown at the bottom left with the cards.</param>
         /// <param name="below">
         /// Windows of the extension's own that raise themselves to the top as they show, the Overlay and the Launch
@@ -64,6 +75,15 @@ namespace XboxSeries.Extension
             this.above = above;
             front = CardA;
             back = CardB;
+            keepOnTop = new DispatcherTimer(DispatcherPriority.Background, Dispatcher) { Interval = KeepOnTopEvery };
+            keepOnTop.Tick += (_, __) =>
+            {
+                if (IsVisible && idle.IsDimmed)
+                {
+                    Raise(this);
+                    RaiseAbove();
+                }
+            };
             SizeChanged += (_, __) => FitToScreen();
             idle.PropertyChanged += OnIdleChanged;
             SourceInitialized += (_, __) =>
@@ -123,9 +143,11 @@ namespace XboxSeries.Extension
                 Cards.Opacity = 1;
                 ShowOverForeground();
                 Fade(1, FadeInDuration, null);
+                keepOnTop.Start();
             }
             else
             {
+                keepOnTop.Stop();
                 var going = ++goings;
                 Fade(0, FadeOutDuration, () =>
                 {
@@ -139,7 +161,7 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Over the whole monitor of the window in front, Playnite's while it idles, in physical pixels, without
+        /// Over the whole monitor of the window in front, Playnite's or a game's, in physical pixels, without
         /// activating, above every window already there; then the Toast's raised over it again.
         /// </summary>
         private void ShowOverForeground()

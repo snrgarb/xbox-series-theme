@@ -32,6 +32,9 @@ namespace XboxSeries.Extension
         private readonly DiscordPipe discordPipe = new DiscordPipe();
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private readonly PopularGamerpics popularGamerpics;
+
+        /// <summary>Input anywhere in Windows, a game's too, for the Idle screen, which dims over a game as over Playnite.</summary>
+        private readonly WindowsInputActivity inputActivity = new WindowsInputActivity();
         private bool libraryPushed;
         private ToastWindow toastWindow;
         private LaunchScreenWindow launchScreenWindow;
@@ -82,7 +85,7 @@ namespace XboxSeries.Extension
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath(), popularGamerpics), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions,
-                achievements: achievements);
+                achievements: achievements, inputActivity: inputActivity);
             core.StartupEnded += () => startup?.End();
 
             // The Guide's Switch profile: Who's playing today? over everything, as on waking. Raised on the UI thread
@@ -281,6 +284,7 @@ namespace XboxSeries.Extension
             toastWindow?.Close();
             launchScreenWindow?.Close();
             idleInput?.Dispose();
+            inputActivity.Dispose();
             dimWindow?.Close();
             if (startup != null)
             {
