@@ -10,7 +10,8 @@ namespace XboxSeries.Extension
     /// The hint bar, injected over the Dashboard as a custom element. It shows the core's <see cref="HomeState.Hints"/>
     /// and decides nothing itself: it shows while there are any and hides once there are none.
     /// It also tells the core when focus is on Playnite's own parts with a menu, which no control of the extension's is
-    /// on to report: a game in My games &amp; apps' grid (Playnite's main list) and the Game hub. Each loses focus as
+    /// on to report: a game in My games &amp; apps' grid (Playnite's main list) and the Game hub; and when it is on Home's
+    /// top bar, where Y opens Search with no menu. Each loses focus as
     /// Playnite leaves the foreground, as when a dialog opens in its own window.
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
@@ -19,6 +20,7 @@ namespace XboxSeries.Extension
         private readonly ExtensionCore core;
         private FrameworkElement mainList;
         private FrameworkElement gameHub;
+        private FrameworkElement topBar;
 
         internal HintBarControl(ExtensionCore core)
         {
@@ -44,6 +46,12 @@ namespace XboxSeries.Extension
             {
                 gameHub.IsKeyboardFocusWithinChanged += OnGameHubFocusChanged;
             }
+
+            topBar = HomeRows.FindPart(this, "XboxTopBar");
+            if (topBar != null)
+            {
+                topBar.IsKeyboardFocusWithinChanged += OnTopBarFocusChanged;
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -61,6 +69,13 @@ namespace XboxSeries.Extension
                 gameHub.IsKeyboardFocusWithinChanged -= OnGameHubFocusChanged;
                 gameHub = null;
                 core.LeaveGameHub();
+            }
+
+            if (topBar != null)
+            {
+                topBar.IsKeyboardFocusWithinChanged -= OnTopBarFocusChanged;
+                topBar = null;
+                core.LeaveTopBar();
             }
         }
 
@@ -85,6 +100,18 @@ namespace XboxSeries.Extension
             else
             {
                 core.LeaveGameHub();
+            }
+        }
+
+        private void OnTopBarFocusChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if ((bool)e.NewValue)
+            {
+                core.FocusTopBar();
+            }
+            else
+            {
+                core.LeaveTopBar();
             }
         }
 
