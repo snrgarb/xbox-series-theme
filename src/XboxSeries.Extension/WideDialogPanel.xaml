@@ -59,7 +59,7 @@
                             </StackPanel>
                             <Border x:Name="FocusRing" Style="{StaticResource Ring}">
                                 <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                                    <Control Style="{DynamicResource XboxFocusGlow}" />
                                 </Border>
                             </Border>
                         </Grid>
@@ -113,7 +113,7 @@
                         </Style>
                     </Border.Style>
                     <Border Style="{DynamicResource XboxFocusGlowCache}">
-                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                        <Control Style="{DynamicResource XboxFocusGlow}" />
                     </Border>
                 </Border>
             </Grid>

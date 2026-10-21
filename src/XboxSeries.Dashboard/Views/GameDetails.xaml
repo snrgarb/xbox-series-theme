@@ -79,7 +79,7 @@
                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
             <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}">
                 <Border Style="{DynamicResource XboxFocusGlowCache}">
-                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                    <Control Style="{DynamicResource XboxFocusGlow}" />
                 </Border>
             </Border>
             <!-- What an icon-only action does, shown above it while it has focus. -->
@@ -182,7 +182,7 @@
             <ContentPresenter Margin="{TemplateBinding Padding}" />
             <Border x:Name="Ring" Style="{StaticResource XboxHubFocusRing}">
                 <Border Style="{DynamicResource XboxFocusGlowCache}">
-                    <Border Style="{DynamicResource XboxFocusGlow}" />
+                    <Control Style="{DynamicResource XboxFocusGlow}" />
                 </Border>
             </Border>
         </Grid>

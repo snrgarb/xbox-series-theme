@@ -148,7 +148,8 @@ namespace XboxSeries.Core.Tests
             {
                 var rings = t.template.Descendants().Where(e => e.Name.LocalName == "Border"
                     && (string)e.Attribute("BorderBrush") == "{DynamicResource GlyphLightBrush}"
-                    && e.Descendants().Any(g => (string)g.Attribute("Style") == "{DynamicResource XboxFocusGlow}"))
+                    && e.Descendants().Any(g => ((string)g.Attribute("Style") ?? "").StartsWith("{DynamicResource XboxFocusGlow")
+                                                && (string)g.Attribute("Style") != "{DynamicResource XboxFocusGlowCache}"))
                     .Select(e => (string)e.Attribute(X + "Name")).ToList();
                 var shown = t.template.Descendants().Where(e => e.Name.LocalName == "Trigger"
                         && new[] { "IsFocused", "IsKeyboardFocused" }.Contains((string)e.Attribute("Property"))

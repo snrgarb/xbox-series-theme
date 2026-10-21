@@ -9,33 +9,177 @@
     <SolidColorBrush x:Key="GlyphBrush" Color="#FF107C10" />
     <SolidColorBrush x:Key="GlyphLightBrush" Color="#FF2CA243" />
     <!--
-        The faint green glow the console gives whatever has focus: a blurred band, inside the Border that draws the
-        focus shape (a ring, slab or bar), under an XboxFocusGlowCache, so it shows and hides with it. From a 4 px ring's inside, -7.5 centres its 11 on
-        the ring. A ring's own drop shadow is too thin to show; this is matched to the console's recording, drawn 30%
-        tighter. A round ring sets CornerRadius 999 on its band, as on itself.
+        The faint green glow the console gives whatever has focus, inside the Border that draws the focus shape (a ring,
+        slab or bar), under an XboxFocusGlowCache, so it shows and hides with it. It was a band 11 wide, -7.5 out from a
+        4 px ring's inside so centred on the ring, at half opacity and blurred by 17: matched to the console's
+        recording, drawn 30% tighter. A blur is redrawn on the CPU, at the 4K screen's size, in every glow's cache when
+        Windows sleeps and WPF loses the GPU, hidden glows included, and Playnite froze for minutes on the wake; so the
+        blur is drawn instead, with no effect at all. Ten rings, each 12 round at its middle as the band was, nested
+        widest first, each faint, so the green builds up in steps of a tenth of the blurred band's peak, each ring's
+        edges where the blur crossed halfway between steps; a ring's edge never meets another's, which would leave a
+        seam. Inside each corner the blur gathered from both sides, so a soft spot of green makes it up there. Each is
+        faint by its brush's opacity, not its own: an element's opacity is drawn apart and laid on, which on the CPU
+        took three times as long. So the brushes are the accent's colour, GlyphLightColor, as GlyphLightBrush's
+        opacity can't be set; the spot fades to the same green, transparent. Against the blurred band, drawn at the 4K
+        screen's 2 pixels to a 1080p one, no pixel is more than 7/255 off, and on the CPU it draws ten times faster.
     -->
-    <Style x:Key="XboxFocusGlow" TargetType="Border">
-        <Setter Property="BorderThickness" Value="11" />
+    <Style x:Key="XboxFocusGlow" TargetType="Control">
         <Setter Property="Margin" Value="-7.5" />
-        <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Opacity" Value="0.5" />
         <Setter Property="IsHitTestVisible" Value="False" />
-        <Setter Property="BorderBrush" Value="{DynamicResource GlyphLightBrush}" />
-        <Setter Property="Effect">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
             <Setter.Value>
-                <BlurEffect Radius="17" />
+                <ControlTemplate TargetType="Control">
+                    <Grid>
+                        <Grid.Resources>
+                            <RadialGradientBrush x:Key="Corner" Opacity="0.075">
+                                <GradientStop Color="{StaticResource GlyphLightColor}" Offset="0" />
+                                <GradientStop Color="#002CA243" Offset="1" />
+                            </RadialGradientBrush>
+                        </Grid.Resources>
+                        <Border Margin="-10" BorderThickness="31" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.034" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-7.25" BorderThickness="25.5" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.035" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-5.5" BorderThickness="22" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.036" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-4" BorderThickness="19" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.038" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-2.75" BorderThickness="16.5" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.039" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-1.75" BorderThickness="14.5" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.041" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-0.75" BorderThickness="12.5" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.042" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="0.5" BorderThickness="10" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.044" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="1.75" BorderThickness="7.5" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.046" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="3.5" BorderThickness="4" CornerRadius="12">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.048" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5.5,5.5,0,0"
+                                Background="{StaticResource Corner}" />
+                        <Border Width="18" Height="18" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5.5,5.5,0"
+                                Background="{StaticResource Corner}" />
+                        <Border Width="18" Height="18" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="5.5,0,0,5.5"
+                                Background="{StaticResource Corner}" />
+                        <Border Width="18" Height="18" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5.5,5.5"
+                                Background="{StaticResource Corner}" />
+                    </Grid>
+                </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
     <!--
-        The band's parent, which blurs it once into a picture, at the 4K screen's 2 pixels to a 1080p one, that is then
-        only laid on the screen: WPF caches an element's content and children under its own effect and opacity, so a
-        cache on the band itself kept the band unblurred and blurred it again every frame anything round it moved, as a
-        tile grows on focus, at the 4K screen's size. Whatever shows and hides the glow (the ring, or this parent where
-        there's no ring) does it with Hidden, never Collapsed: Hidden only draws it at opacity 0, which the screen skips
-        without throwing the picture away, where Collapsed takes it out of layout and draws it again as it comes back.
-        Hidden keeps its place in layout, which is nothing here, as the band and its ring stand out of their element
-        by negative margins; Opacity 0 would draw the same but leave it to be pointed at and fight the band's own 0.5.
+        The same glow for a ring drawn right round, at CornerRadius 999 like the ring. Its rings round off as the band
+        did, each to its own size; as the band, it is a circle on a square and an ellipse on anything wider. On a
+        circle no pixel is more than 5/255 off the blurred band; at an ellipse's points, which the blur gathered into
+        from every side, up to 18/255 dimmer.
+    -->
+    <Style x:Key="XboxFocusGlowRound" TargetType="Control">
+        <Setter Property="Margin" Value="-7.5" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Control">
+                    <Grid>
+                        <Border Margin="-10" BorderThickness="31" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.034" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-7.25" BorderThickness="25.5" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.035" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-5.5" BorderThickness="22" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.036" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-4" BorderThickness="19" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.038" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-2.75" BorderThickness="16.5" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.039" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-1.75" BorderThickness="14.5" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.041" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="-0.75" BorderThickness="12.5" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.042" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="0.5" BorderThickness="10" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.044" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="1.75" BorderThickness="7.5" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.046" />
+                            </Border.BorderBrush>
+                        </Border>
+                        <Border Margin="3.5" BorderThickness="4" CornerRadius="999">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="{StaticResource GlyphLightColor}" Opacity="0.048" />
+                            </Border.BorderBrush>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!--
+        The glow's parent, which draws its rings once into a picture, at the 4K screen's 2 pixels to a 1080p one, that is
+        then only laid on the screen, as a tile grows on focus or anything round it moves; without it every ring would
+        be drawn again each frame. With no blur in it, the picture costs next to nothing to draw again on the CPU when
+        the GPU is lost. Whatever shows and hides the glow (the ring, or this parent where there's no ring) does it with
+        Hidden, never Collapsed: Hidden only draws it at opacity 0, which the screen skips without throwing the picture
+        away, where Collapsed takes it out of layout and draws it again as it comes back. Hidden keeps its place in
+        layout, which is nothing here, as the glow and its ring stand out of their element by negative margins; Opacity
+        0 would draw the same but leave it to be pointed at.
     -->
     <Style x:Key="XboxFocusGlowCache" TargetType="Border">
         <Setter Property="IsHitTestVisible" Value="False" />

@@ -24,7 +24,7 @@ namespace XboxSeries.Extension
             "XboxFont",
             "XboxHeaderFont",
             "XboxIconFont",
-            "XboxFocusGlow",
+            "XboxFocusGlowRound",
             "XboxFocusGlowCache",
         };
 
@@ -66,8 +66,9 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// A style's setters, each value frozen, in a style sealed so any thread may use it; a resource a setter asks
-        /// for is looked up where the style is used, among the window's copies.
+        /// A style's setters, each value frozen, in a style sealed so any thread may use it; a template, as the focus
+        /// glow's, is sealed with it, which frees it to any thread too. A resource a setter asks for is looked up where
+        /// the style is used, among the window's copies.
         /// </summary>
         private static Style CopyOf(Style style)
         {

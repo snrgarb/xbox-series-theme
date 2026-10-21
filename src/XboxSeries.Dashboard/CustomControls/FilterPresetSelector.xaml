@@ -21,7 +21,7 @@
                     <Grid Height="56">
                         <Border x:Name="Tab" Background="{TemplateBinding Background}" CornerRadius="2">
                             <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlowCache}" Visibility="Hidden">
-                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                                <Control Style="{DynamicResource XboxFocusGlow}" />
                             </Border>
                         </Border>
                         <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource XboxFont}" FontSize="24" Margin="22,0,22,0"

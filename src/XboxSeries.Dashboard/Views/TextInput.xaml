@@ -32,7 +32,7 @@
                         <Border x:Name="FocusRing" Margin="-3" BorderThickness="3" CornerRadius="4"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">
                             <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                                <Control Style="{DynamicResource XboxFocusGlow}" />
                             </Border>
                         </Border>
                     </Grid>
@@ -78,7 +78,7 @@
                         <Border x:Name="FocusRing" Margin="-5" BorderThickness="4" CornerRadius="32"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">
                             <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" />
+                                <Control Style="{DynamicResource XboxFocusGlowRound}" />
                             </Border>
                         </Border>
                     </Grid>
