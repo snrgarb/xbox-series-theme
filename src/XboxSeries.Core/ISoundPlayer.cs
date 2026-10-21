@@ -35,5 +35,8 @@ namespace XboxSeries.Core
 
         /// <summary>A rare achievement's Toast showed, with the console's chime and flourish, in place of <see cref="Notification"/>.</summary>
         RareAchievement,
+
+        /// <summary>A rare achievement's Toast hid as its time ran out, its pill collapsing: the console's closing flourish.</summary>
+        RareAchievementClose,
     }
 }
