@@ -1,6 +1,7 @@
 <UserControl x:Class="XboxSeries.Extension.MenuPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False">
     <!--
         A menu or prompt (a Dialog), drawn after the console's context menu (the user's capture at ~3:04, Menu on DayZ):
@@ -28,10 +29,13 @@
         </Style>
     </UserControl.Style>
 
+    <!--
+        Its soft shadow is a SoftShadow over the panel's background, which draws only outside the panel, rather than an
+        effect, which is worked out again on the CPU at the 4K screen's size whenever WPF loses the graphics card (#95).
+    -->
     <Border Width="450" Background="#FF2B2B2B" CornerRadius="6">
-        <Border.Effect>
-            <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.5" Color="Black" />
-        </Border.Effect>
+        <Grid>
+        <local:SoftShadow BlurRadius="24" ShadowOpacity="0.5" CornerRadius="6" />
         <StackPanel>
             <!-- A menu's title (the game's name) on one line, cut short as the console's; a prompt's question wraps, to be read whole. -->
             <TextBlock Text="{Binding Title}" Margin="28,36,28,24"
@@ -155,5 +159,6 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
+        </Grid>
     </Border>
 </UserControl>

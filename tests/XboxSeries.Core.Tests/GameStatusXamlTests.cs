@@ -76,14 +76,21 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal("UniformToFill", (string)cover.Attribute("Stretch"));
             Assert.Equal("Top", (string)cover.Attribute("VerticalAlignment"));
-            Assert.Equal("-120", (string)cover.Attribute("Margin"));
+            // Blurred small and stretched (#95): laid out a fifteenth of the 1080p screen, 128 by 72, in a picture that size,
+            // so its overhang and blur are a fifteenth of the Launch screen's 120 and 60.
+            var small = cover.Parent;
+            Assert.Equal(("128", "72"), ((string)small.Attribute("Width"), (string)small.Attribute("Height")));
+            Assert.Contains(small.Elements(), e => e.Name.LocalName == "Grid.CacheMode");
+            var stretched = small.Parent;
+            Assert.Equal(("Viewbox", "UniformToFill", "Top"), (stretched.Name.LocalName, (string)stretched.Attribute("Stretch"), (string)stretched.Attribute("VerticalAlignment")));
+            Assert.Equal("-8", (string)cover.Attribute("Margin"));
             var blur = cover.Descendants().Single(e => e.Name.LocalName == "BlurEffect");
-            Assert.Equal("60", (string)blur.Attribute("Radius"));
+            Assert.Equal("4", (string)blur.Attribute("Radius"));
             Assert.Equal("Performance", (string)blur.Attribute("RenderingBias"));
 
             var darken = layer.Elements().Single(e => e.Name.LocalName == "Rectangle");
             Assert.Equal("#99000000", (string)darken.Attribute("Fill"));
-            Assert.True(layer.Elements().ToList().IndexOf(cover) < layer.Elements().ToList().IndexOf(darken));
+            Assert.True(layer.Elements().ToList().IndexOf(stretched) < layer.Elements().ToList().IndexOf(darken));
         }
 
         [Fact]
@@ -116,6 +123,9 @@ namespace XboxSeries.Core.Tests
             var effects = View().Descendants().Where(e => e.Name.LocalName.EndsWith("Effect") && !e.Name.LocalName.Contains(".")).ToList();
             Assert.Equal(new[] { "BlurEffect" }, effects.Select(e => e.Name.LocalName));
             Assert.DoesNotContain(View().Descendants().SelectMany(e => e.Attributes()), a => a.Name.LocalName == "OpacityMask" || a.Value.Contains("BitmapCache"));
+            // The one picture is the cover's, the small one it is blurred in.
+            var cache = View().Descendants().Single(e => e.Name.LocalName == "BitmapCache");
+            Assert.Equal("XboxGameStatusCover", (string)cache.Parent.Parent.Elements().Single(e => e.Name.LocalName == "Image").Attribute(X + "Name"));
         }
 
         [Fact]
