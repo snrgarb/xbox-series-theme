@@ -34,7 +34,7 @@ namespace XboxSeries.Core
             new IdleTip("Connect Discord in Settings to see your calls in the Guide.", new[] { ControllerButton.Guide }),
             new IdleTip("Rejoin a recent Discord call in one press from the Discord tab.", new[] { ControllerButton.Guide }),
             new IdleTip("See what's playing in the Guide's Audio, under Now Playing.", new[] { ControllerButton.Guide }),
-            new IdleTip("Pick a boot video, original Xbox to Series X, in Personalisation › Start up.", new ControllerButton[0]),
+            new IdleTip("Pick a boot video, original Xbox to Series X, in Settings › Theme settings › Personalisation.", new ControllerButton[0]),
         };
 
         /// <summary>The Y prompt of a game's card, whose Game hub Y opens.</summary>

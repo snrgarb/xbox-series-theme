@@ -168,7 +168,7 @@ namespace XboxSeries.Core.Tests
             Assert.All(cards, c => Assert.Null(c.GameId));
             Assert.Equal(12, cards.Select(c => c.Title).Distinct().Count());
             Assert.Contains("Press {Y} on Home to search your games and apps.", cards.Select(c => c.Title));
-            Assert.Contains("Pick a boot video, original Xbox to Series X, in Personalisation › Start up.", cards.Select(c => c.Title));
+            Assert.Contains("Pick a boot video, original Xbox to Series X, in Settings › Theme settings › Personalisation.", cards.Select(c => c.Title));
         }
 
         [Fact]

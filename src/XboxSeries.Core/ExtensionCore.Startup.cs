@@ -7,13 +7,13 @@ namespace XboxSeries.Core
 {
     /// <summary>
     /// The Start-up sequence (boot video, Who's playing today?, Signing you in, then "Hi X!") and Theme settings'
-    /// Personalisation's Start up page, which chooses the boot video, keeps the profiles, and says whether Who's playing
+    /// Personalisation page, which chooses the boot video, keeps the profiles, and says whether Who's playing
     /// today? asks.
     /// </summary>
     public sealed partial class ExtensionCore
     {
         /// <summary>
-        /// The secret store's name for the Start up options, as JSON: the boot video, whether Who's playing today? asks,
+        /// The secret store's name for the Personalisation options, as JSON: the boot video, whether Who's playing today? asks,
         /// the profiles and the one last signed in. They aren't secret, but the store keeps the extension's own options.
         /// </summary>
         private const string StartUpSecret = "StartUp";
@@ -255,7 +255,7 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Start up options saved before, read when the core is made; with none, or none readable, the Xbox Series X
+        /// The Personalisation options saved before, read when the core is made; with none, or none readable, the Xbox Series X
         /// boot video, asking Who's playing today?, and one profile of the Windows user.
         /// </summary>
         private void LoadStartUp()
@@ -363,7 +363,7 @@ namespace XboxSeries.Core
         /// <summary>Settings shows the profiles as they are now; a Start-up sequence is handed them as it begins.</summary>
         private void ShowProfiles() => Settings.StartUp.Profiles = profiles.ToList();
 
-        /// <summary>What the secret store keeps of the Start up options.</summary>
+        /// <summary>What the secret store keeps of the Personalisation options.</summary>
         private sealed class SavedStartUp
         {
             public BootVideo BootVideo { get; set; } = BootVideo.XboxSeriesX;

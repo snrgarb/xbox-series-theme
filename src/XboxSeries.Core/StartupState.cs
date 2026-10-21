@@ -177,7 +177,7 @@ namespace XboxSeries.Core
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
 
-    /// <summary>Personalisation's Start up, in Settings: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+    /// <summary>Personalisation, in Settings: the boot video, the profiles, and whether Who's playing today? asks.</summary>
     public sealed class StartUpSettingsState : INotifyPropertyChanged
     {
         private BootVideo bootVideo = BootVideo.XboxSeriesX;
