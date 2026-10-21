@@ -71,4 +71,43 @@ namespace XboxSeries.Extension
 
         private static bool Pushed(short x, short y, int deadzone) => (long)x * x + (long)y * y > (long)deadzone * deadzone;
     }
+
+    /// <summary>
+    /// The pads in XInput's four slots, each reading compared with that pad's last: one used, held off its rest or moved,
+    /// is kept until the core next looks, so a tap between two looks still counts. Read on a timer's thread and looked at
+    /// on the UI thread.
+    /// </summary>
+    internal sealed class PadWatch
+    {
+        public const int Slots = 4;
+
+        private readonly object gate = new object();
+        private readonly PadReading?[] last = new PadReading?[Slots];
+        private bool used;
+
+        /// <summary><paramref name="reading"/> read from <paramref name="slot"/>, or null with no pad there.</summary>
+        public void Saw(int slot, PadReading? reading)
+        {
+            lock (gate)
+            {
+                var before = last[slot];
+                last[slot] = reading;
+                if (reading is PadReading now
+                    && (PadActivity.IsOffRest(now) || (before is PadReading was && PadActivity.MovedSince(was, now))))
+                {
+                    used = true;
+                }
+            }
+        }
+
+        public bool UsedSinceLastLook()
+        {
+            lock (gate)
+            {
+                var seen = used;
+                used = false;
+                return seen;
+            }
+        }
+    }
 }

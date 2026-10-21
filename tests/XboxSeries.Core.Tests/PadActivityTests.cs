@@ -78,5 +78,63 @@ namespace XboxSeries.Core.Tests
             Assert.True(PadActivity.MovedSince(AtRest, new PadReading(0, 0, 0, 0, 0, 0, -5000)));
             Assert.True(PadActivity.MovedSince(new PadReading(0, 0, 0, 30000, 0, 0, 0), new PadReading(0, 0, 0, 20000, 0, 0, 0)));
         }
+        // Every pad sampled more often than the core looks, so a tap between two looks isn't missed.
+        private readonly PadWatch watch = new PadWatch();
+
+        [Fact]
+        public void A_pad_lying_still_is_never_used_however_often_it_is_seen()
+        {
+            watch.Saw(0, AtRest);
+            watch.Saw(0, new PadReading(0, 3, 0, 900, -400, 0, 0));
+            Assert.False(watch.UsedSinceLastLook());
+            watch.Saw(0, AtRest);
+            Assert.False(watch.UsedSinceLastLook());
+        }
+
+        [Fact]
+        public void A_tap_between_two_looks_is_used_at_the_next_look_alone()
+        {
+            watch.Saw(0, AtRest);
+            watch.Saw(0, new PadReading(0x1000, 0, 0, 0, 0, 0, 0));
+            watch.Saw(0, AtRest);
+
+            Assert.True(watch.UsedSinceLastLook());
+            watch.Saw(0, AtRest);
+            Assert.False(watch.UsedSinceLastLook());
+        }
+
+        [Fact]
+        public void A_held_accelerator_is_used_at_every_look_while_it_is_held()
+        {
+            var accelerating = new PadReading(0, 0, 255, 0, 0, 0, 0);
+            watch.Saw(0, accelerating);
+            Assert.True(watch.UsedSinceLastLook());
+            watch.Saw(0, accelerating);
+            Assert.True(watch.UsedSinceLastLook());
+        }
+
+        [Fact]
+        public void A_pad_coming_back_at_rest_is_not_used_though_it_went_with_a_stick_pushed()
+        {
+            watch.Saw(1, new PadReading(0, 0, 0, 20000, 0, 0, 0));
+            watch.UsedSinceLastLook();
+            watch.Saw(1, null);
+            watch.Saw(1, AtRest);
+
+            Assert.False(watch.UsedSinceLastLook());
+        }
+
+        [Fact]
+        public void Each_pad_is_compared_with_its_own_last_reading()
+        {
+            var pushed = new PadReading(0, 0, 0, 0, 0, 0, 6000);
+            watch.Saw(0, AtRest);
+            watch.Saw(2, pushed);
+            watch.UsedSinceLastLook();
+            watch.Saw(0, AtRest);
+            watch.Saw(2, pushed);
+
+            Assert.False(watch.UsedSinceLastLook());
+        }
     }
 }
