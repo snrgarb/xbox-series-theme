@@ -298,10 +298,10 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Whether the Idle screen waits: Start-up or a Launch screen shows, a game runs, or Playnite isn't in front.
+        /// Whether the Idle screen waits: Start-up or a Launch screen shows. Over a running game, or with another app in
+        /// front, it counts as over Playnite.
         /// </summary>
-        private bool IsIdlePausedNow =>
-            IsStartupShown || LaunchScreen.IsShown || runningGame != null || !windowSystem.IsPlaynites(windowSystem.ForegroundWindow);
+        private bool IsIdlePausedNow => IsStartupShown || LaunchScreen.IsShown;
 
         /// <summary>
         /// Starts the Idle screen's timers as the core is made. Start-up, a game and the Launch screen tell the core as
