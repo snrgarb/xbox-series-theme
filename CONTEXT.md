@@ -188,7 +188,7 @@ _Avoid_: home button, Xbox button
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
 - Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
-- The **Boot shell** owns everything from sign-in to **Start-up**'s first frame; the **Bundle** owns everything from it
+- The **Boot shell** owns everything from sign-in to **Start-up**'s first frame; the **Bundle** owns everything from it, but for the Boot shell starting explorer, then Steam, Discord and Spotify, as the **Boot video** ends, every other startup app following them
 - **Start-up** plays the **Boot video**, then **Who's playing today?** signs a **Profile** in; its "Hi" **Toast** shows first, Playnite's notifications and a ringing **Call**'s Toast after it, and pressing the **Guide button** during it opens the **Guide** on Profile & system
 - Waking from sleep asks **Who's playing today?** again, without the **Boot video**; waking the **Idle screen** never does
 - **Switch profile** on the **Guide** asks **Who's playing today?** too, also without the **Boot video**, whether or not it asks on start
