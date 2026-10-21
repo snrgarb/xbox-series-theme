@@ -102,6 +102,10 @@ _Avoid_: popup, notification (Notifications are Playnite's own messages)
 The launching game's art, full screen above every window, as on the console: its background art, or its cover blurred and darkened, chosen as **Home**'s hero chooses it. It fades in as a game is launched from anywhere in the **Bundle**, hides Steam, the Xbox app, Epic's launcher and any splash or update windows behind it, and fades out once the game is running, or the launch is cancelled, fails or times out. It steps aside sooner for a window that needs the user, such as a EULA, a sign-in or an error: a launcher's or game's window that holds the foreground for 5 s, or, at once, Steam saying its launch waits on the user, when Steam's own window, where it asks and which it keeps hidden while it runs in the tray, is put in front; and B, with the **Guide** closed, dismisses it, putting Steam's question in front too should there be one. It never takes focus, so the game gets the pad as soon as it starts. It is separate from the **Overlay**.
 _Avoid_: splash, loading screen
 
+**Boot shell**:
+This TV PC's own sign-in shell, which Windows starts in explorer's place and which brings Playnite up to **Start-up**. It is this PC's alone, not part of the **Bundle**.
+_Avoid_: the tool, launcher (a launcher is Steam's, Epic's or the Xbox app's)
+
 **Start-up**:
 The console's start-up sequence, shown full screen over Playnite as it starts in Fullscreen, before **Home**: the **Boot video**, **Who's playing today?**, Signing you in, then a **Toast** saying "Hi" and the **Profile**'s first name. It has the pad to itself, the **Guide button** too.
 _Avoid_: splash, intro, login screen
@@ -184,6 +188,7 @@ _Avoid_: home button, Xbox button
 - Every **Call** makes its channel a **Known channel**, at the front; the first six are the **Discord tab**'s **Shortcuts**
 - Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
+- The **Boot shell** owns everything from sign-in to **Start-up**'s first frame; the **Bundle** owns everything from it
 - **Start-up** plays the **Boot video**, then **Who's playing today?** signs a **Profile** in; its "Hi" **Toast** shows first, Playnite's notifications and a ringing **Call**'s Toast after it, and pressing the **Guide button** during it opens the **Guide** on Profile & system
 - Waking from sleep asks **Who's playing today?** again, without the **Boot video**; waking the **Idle screen** never does
 - **Switch profile** on the **Guide** asks **Who's playing today?** too, also without the **Boot video**, whether or not it asks on start
