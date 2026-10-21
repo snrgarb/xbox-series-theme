@@ -16,8 +16,8 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Theme settings' Personalisation page: its boxes, Start up's for now, and the page each opens in their place (Start
-    /// up's boxes, then Boot video, Who's playing today?, Profiles, a profile, its Picture). Every box shows its name
+    /// Theme settings' Personalisation page: its boxes, and the page each opens in their place (Boot video, Profiles, a
+    /// profile, its Picture, Who's playing today?). Every box shows its name
     /// alone; what it's set to shows on the page it opens. The pad moves between a page's boxes; A opens or
     /// sets, and B steps back a page at a time, focus going back to the box that opened it, then from Personalisation's
     /// boxes to Theme settings' own. Every choice goes straight to the core, which saves it; the pane holds which page
@@ -68,7 +68,6 @@ namespace XboxSeries.Extension
         private enum Page
         {
             Personalisation,
-            StartUp,
             BootVideo,
             WhosPlaying,
             Profiles,
@@ -88,7 +87,6 @@ namespace XboxSeries.Extension
                     case Page.Profiles: return "Profiles";
                     case Page.Profile: return Profile?.Gamertag ?? "";
                     case Page.Pictures: return "Picture";
-                    case Page.StartUp: return "Start up";
                     default: return "Personalisation";
                 }
             }
@@ -144,7 +142,7 @@ namespace XboxSeries.Extension
         public void FocusFirst()
         {
             Reset();
-            StartUpBox.Focus();
+            BootVideoBox.Focus();
         }
 
         /// <summary>The page left, or Settings closed: back to Personalisation's boxes, for next time.</summary>
@@ -161,7 +159,6 @@ namespace XboxSeries.Extension
         {
             page = next;
             PersonalisationPage.Visibility = next == Page.Personalisation ? Visibility.Visible : Visibility.Collapsed;
-            StartUpPage.Visibility = next == Page.StartUp ? Visibility.Visible : Visibility.Collapsed;
             BootVideoPage.Visibility = next == Page.BootVideo ? Visibility.Visible : Visibility.Collapsed;
             WhosPlayingPage.Visibility = next == Page.WhosPlaying ? Visibility.Visible : Visibility.Collapsed;
             ProfilesPage.Visibility = next == Page.Profiles ? Visibility.Visible : Visibility.Collapsed;
@@ -302,12 +299,7 @@ namespace XboxSeries.Extension
 
         private void Press(Button button)
         {
-            if (button == StartUpBox)
-            {
-                Open(Page.StartUp, button);
-                FocusSoon(() => BootVideoBox);
-            }
-            else if (button == BootVideoBox)
+            if (button == BootVideoBox)
             {
                 Open(Page.BootVideo, button);
                 FocusSoon(() => AtIndex(BootVideoNames.ToList().FindIndex(name => name.Key == State.BootVideo)));
@@ -430,7 +422,6 @@ namespace XboxSeries.Extension
                 case Page.Profiles: shown = ProfileBoxes; break;
                 case Page.Profile: shown = ProfilePage; break;
                 case Page.Pictures: shown = PictureButtons; break;
-                case Page.StartUp: shown = StartUpPage; break;
                 default: shown = PersonalisationPage; break;
             }
 

@@ -83,7 +83,7 @@ namespace XboxSeries.Core
         /// <summary>Theme settings' Discord page: the Connect checklist, the Client ID and Secret, and the status line.</summary>
         public DiscordSettingsState Discord { get; } = new DiscordSettingsState();
 
-        /// <summary>Theme settings' Personalisation's Start up: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+        /// <summary>Theme settings' Personalisation: the boot video, the profiles, and whether Who's playing today? asks.</summary>
         public StartUpSettingsState StartUp { get; } = new StartUpSettingsState();
 
         /// <summary>The Playnite settings category: Download metadata, Update after downloads, and Playnite's own window.</summary>
@@ -203,14 +203,14 @@ namespace XboxSeries.Core
 
     /// <summary>
     /// Theme settings' pages, one for each of its boxes, which A on the box opens in the pane and B leaves for the boxes
-    /// again. Personalisation's own Start up page is one level further in, the view's own.
+    /// again. The pages Personalisation's own boxes open are one level further in, the view's own.
     /// </summary>
     public enum ThemeSettingsPage
     {
         /// <summary>The boxes themselves.</summary>
         None,
 
-        /// <summary>Its boxes, Start up's for now: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+        /// <summary>Its boxes: the boot video, the profiles, and whether Who's playing today? asks.</summary>
         Personalisation,
 
         /// <summary>The Idle screen's two dropdowns: Dim after and Show things after (<see cref="IdleState"/>).</summary>

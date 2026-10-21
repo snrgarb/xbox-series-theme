@@ -317,7 +317,7 @@
             <local:ThemeSettingsPane x:Name="ThemeSettingsPane" Grid.Row="1" Visibility="Collapsed" />
 
             <!--
-                Theme settings > Personalisation: its boxes, Start up's for now, each opening a page of its own in their
+                Theme settings > Personalisation: its boxes, each opening a page of its own in their
                 place, the header following; B steps back a page at a time, then from its boxes to Theme settings'.
             -->
             <local:PersonalisationPane x:Name="PersonalisationPane" Grid.Row="1" Visibility="Collapsed" />
