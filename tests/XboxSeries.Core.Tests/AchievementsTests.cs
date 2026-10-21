@@ -430,7 +430,7 @@ namespace XboxSeries.Core.Tests
             Record(hades, Unlocked("boon", "Blessed", rarity: 4, at: Start.AddDays(-5)), Locked("escape", "Escaped"));
             core.OnAchievementsChanged();
             core.OnGameStarted(hades);
-            clock.Advance(TimeSpan.FromMinutes(5));
+            clock.Advance(TimeSpan.FromMinutes(1));
 
             core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 0.2));
             Record(hades, Unlocked("boon", "Blessed", rarity: 4, at: Start.AddDays(-5)), Locked("escape", "Escaped"));
