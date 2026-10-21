@@ -6,7 +6,7 @@ How the Bundle gets achievements, what a user has to set up today for them to wo
 
 - **The Achievement unlocked Toast.** It shows when the game running now, or the one that just exited, unlocks something. It comes in three forms:
   - one unlock gets the green pill;
-  - one **Rare** unlock gets the blue pill with the diamond and its own sound;
+  - one **Rare** unlock gets the blue pill with the diamond, its own sound, and its closing flourish as the pill collapses;
   - several unlocks together get "<n> achievements unlocked".
 - **Home's top bar** shows the **Score** total under the gamertag, as the console's.
 - **The Guide's Profile & system** shows the **Score** total, the number of achievements unlocked, and the last three unlocks.

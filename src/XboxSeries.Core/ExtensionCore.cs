@@ -294,7 +294,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own, unless the call's or
+        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own and its closing one as
+        /// its pill collapses, however many pages its description held it for, unless the call's or
         /// the greeting is showing, which they wait behind, or Start-up covers the screen, which they wait for. An
         /// achievement's, rare or not, shows for the pill's longer <see cref="AchievementToastDuration"/>, and the next
         /// waits for its <see cref="AchievementToastOutro"/> before the usual gap.
@@ -319,6 +320,11 @@ namespace XboxSeries.Core
             {
                 shownToast = null;
                 Toast.IsShown = false;
+                if (rare)
+                {
+                    sounds.Play(UiSound.RareAchievementClose);
+                }
+
                 toastTimer = waitingToasts.Count == 0 ? null : clock.After(pill ? AchievementToastOutro + ToastGap : ToastGap, ShowNextToast);
             });
         }
