@@ -14,9 +14,10 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Debug builds only (the csproj leaves it out of others): Settings' Debug menu, laid out as Personalisation. Its boxes
     /// open Notifications, the Toasts and calls to try, and Steam, the install trials of #59 with their target and tools,
-    /// whose kinds of install each open a page of their own. The pad moves between a page's boxes; A opens or presses,
-    /// and B steps back a page at a time, focus going back to the box that opened it, then from the menu's boxes to the
-    /// rail.
+    /// whose kinds of install each open a page of their own. Notifications' achievement boxes show only while
+    /// PlayniteAchievements is read (#83), as checked each time the page shows. The pad moves between a page's boxes; A
+    /// opens or presses, and B steps back a page at a time, focus going back to the box that opened it, then from the
+    /// menu's boxes to the rail.
     /// </summary>
     public partial class DebugPane : UserControl
     {
@@ -30,6 +31,7 @@ namespace XboxSeries.Extension
             InitializeComponent();
             this.core = core;
 
+            Func<bool> withAchievements = () => core.HasAchievements;
             var notifications = new DebugPage("Notifications", "Each puts up a Toast, as Playnite's own would.", new[]
             {
                 new DebugBox("Notification", "", () => core.DebugNotify("Library updated")),
@@ -43,9 +45,9 @@ namespace XboxSeries.Extension
                     core.DebugNotify("Screenshot failed 0x82323018");
                     core.DebugNotify("Controller disconnected");
                 }),
-                new DebugBox("Achievement", "", () => core.DebugAchievementsUnlocked(1, false)),
-                new DebugBox("Rare achievement", "", () => core.DebugAchievementsUnlocked(1, true)),
-                new DebugBox("Three achievements", "", () => core.DebugAchievementsUnlocked(3, false)),
+                new DebugBox("Achievement", "", () => core.DebugAchievementsUnlocked(1, false)) { ShowsWhen = withAchievements },
+                new DebugBox("Rare achievement", "", () => core.DebugAchievementsUnlocked(1, true)) { ShowsWhen = withAchievements },
+                new DebugBox("Three achievements", "", () => core.DebugAchievementsUnlocked(3, false)) { ShowsWhen = withAchievements },
                 new DebugBox("Call", "", () => core.DebugRing("Jakob", null)),
                 new DebugBox("Call with avatar", "", () => core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/0.png")),
                 new DebugBox("Call, avatar fails", "", () => core.DebugRing("Jakob", "https://cdn.discordapp.com/embed/avatars/does-not-exist.png")),
@@ -133,6 +135,7 @@ namespace XboxSeries.Extension
         private void Show(DebugPage next)
         {
             page = next;
+            next.ShowBoxes();
             Boxes.ItemsSource = next.Boxes;
             ShowHint();
             TitleChanged?.Invoke(this, EventArgs.Empty);
@@ -275,21 +278,28 @@ namespace XboxSeries.Extension
     /// <summary>A page of the Debug menu: its header, the line over its boxes, and the boxes.</summary>
     internal sealed class DebugPage
     {
+        private readonly IReadOnlyList<DebugBox> all;
+
         public DebugPage(string title, string hint, IReadOnlyList<DebugBox> boxes)
         {
             Title = title;
             Hint = hint;
-            Boxes = boxes.ToList();
+            all = boxes;
+            ShowBoxes();
         }
 
         public string Title { get; }
 
         public string Hint { get; }
 
-        public List<DebugBox> Boxes { get; }
+        /// <summary>The boxes showing, in their order, as of the last <see cref="ShowBoxes"/>.</summary>
+        public List<DebugBox> Boxes { get; private set; }
 
         /// <summary>One of Steam's pages, whose line starts with the target and whether CEF debugging is on.</summary>
         public bool ShowsSteam { get; set; }
+
+        /// <summary>The page is about to show: <see cref="Boxes"/> are those whose <see cref="DebugBox.ShowsWhen"/> holds now.</summary>
+        public void ShowBoxes() => Boxes = all.Where(b => b.ShowsWhen == null || b.ShowsWhen()).ToList();
     }
 
     /// <summary>A box on a Debug menu page: what it does when pressed, or the page it opens.</summary>
@@ -317,5 +327,8 @@ namespace XboxSeries.Extension
         public Action Press { get; }
 
         public DebugPage Opens { get; }
+
+        /// <summary>Whether it shows on its page, asked each time the page shows; null for always.</summary>
+        public Func<bool> ShowsWhen { get; set; }
     }
 }

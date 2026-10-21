@@ -516,6 +516,46 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(new[] { GuideItemKind.Profile, GuideItemKind.SwitchProfile, GuideItemKind.Settings, GuideItemKind.Power }, core.Guide.Items.Select(i => i.Kind));
         }
 
+        // Not installed, disabled, or a version the adapter can't bind to: the port is unavailable in each, and every
+        // form of the Toast stays away, live or from a read, with the Home top bar's Score.
+        [Theory]
+        [InlineData(1, 40)]
+        [InlineData(1, 1)]
+        [InlineData(3, 40)]
+        public void Without_PlayniteAchievements_no_form_of_the_Achievement_unlocked_Toast_ever_shows(int count, double rarity)
+        {
+            achievements.IsAvailable = false;
+            Baseline();
+            core.OnGameStarted(hades);
+            clock.Advance(TimeSpan.FromMinutes(5));
+
+            for (var i = 0; i < count; i++)
+            {
+                core.OnAchievementUnlocked(hades, Unlocked("live" + i, "Live " + i, rarity: rarity));
+            }
+
+            Record(hades, Enumerable.Range(0, count).Select(i => Unlocked("read" + i, "Read " + i, rarity: rarity)).ToArray());
+            core.OnAchievementsChanged();
+            clock.Advance(TimeSpan.FromSeconds(30));
+
+            Assert.False(core.HasAchievements);
+            Assert.False(core.Toast.IsShown);
+            Assert.Empty(sounds.Played);
+            Assert.Null(core.Status.Achievements);
+        }
+
+        [Fact]
+        public void HasAchievements_follows_the_port_and_is_false_for_a_core_given_none()
+        {
+            Assert.True(core.HasAchievements);
+
+            var bare = new ExtensionCore(
+                clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(), new FakeAudio(),
+                new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+
+            Assert.False(bare.HasAchievements);
+        }
+
         [Fact]
         public void With_no_game_having_any_achievements_there_are_no_totals()
         {

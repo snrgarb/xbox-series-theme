@@ -125,6 +125,12 @@ namespace XboxSeries.Core
         private IReadOnlyList<GameAchievement> recentAchievements = new GameAchievement[0];
 
         /// <summary>
+        /// Whether PlayniteAchievements is installed, enabled and read: without it, nothing of achievements shows anywhere,
+        /// not even the Debug menu's made-up unlocks.
+        /// </summary>
+        public bool HasAchievements => achievements.IsAvailable;
+
+        /// <summary>
         /// PlayniteAchievements recorded unlocks or refreshed a game: <see cref="IAchievements.Games"/> is read again.
         /// Unlocks it shows that weren't heard of before, from the game whose unlocks are told of since it started, are
         /// one Toast at once, with any heard live still waiting; the first read after start-up tells of none. The totals
@@ -132,7 +138,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnAchievementsChanged()
         {
-            recordedAchievements = achievements.IsAvailable ? achievements.Games() : new GameAchievements[0];
+            recordedAchievements = HasAchievements ? achievements.Games() : new GameAchievements[0];
             var unlocked = RecordedUnlocks().ToList();
             var shown = new HashSet<string>(unlocked.Select(u => u.Key));
             liveUnlocks.RemoveAll(u => shown.Contains(u.Key));
@@ -157,7 +163,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void OnAchievementUnlocked(Guid gameId, Achievement achievement)
         {
-            if (!achievements.IsAvailable || achievement == null)
+            if (!HasAchievements || achievement == null)
             {
                 return;
             }
@@ -192,9 +198,15 @@ namespace XboxSeries.Core
         /// The Debug menu: tells of <paramref name="count"/> made-up unlocks, rare ones (unlocked by 1% of players) or not,
         /// as unlocks heard live are, without counting them in the totals. Whatever game runs, or none, their Toast waits
         /// its turn: one is its own Toast, the rare one's for a rare unlock, and several the "&lt;n&gt; achievements unlocked".
+        /// Without <see cref="HasAchievements"/>, none.
         /// </summary>
         public void DebugAchievementsUnlocked(int count, bool rare)
         {
+            if (!HasAchievements)
+            {
+                return;
+            }
+
             var made = Enumerable.Range(0, count)
                 .Select(i => new Achievement(
                     "xbox-series-debug-" + i,
@@ -315,7 +327,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void RefreshAchievements()
         {
-            var any = achievements.IsAvailable && achievementsRead
+            var any = HasAchievements && achievementsRead
                 && (liveUnlocks.Count > 0 || recordedAchievements.Any(g => g.Achievements.Count > 0));
             if (!any)
             {
