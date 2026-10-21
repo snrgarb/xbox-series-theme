@@ -103,7 +103,7 @@ The launching game's art, full screen above every window, as on the console: its
 _Avoid_: splash, loading screen
 
 **Boot shell**:
-This TV PC's own sign-in shell, which Windows starts in explorer's place and which brings Playnite up to **Start-up**. It is this PC's alone, not part of the **Bundle**.
+This TV PC's own sign-in shell, which Windows starts in explorer's place and which brings Playnite up to **Start-up**, then keeps Fullscreen up: it starts Playnite again after a crash, and falls back to the desktop when Playnite crashes three times in five minutes. It is this PC's alone, not part of the **Bundle**.
 _Avoid_: the tool, launcher (a launcher is Steam's, Epic's or the Xbox app's)
 
 **Start-up**:
@@ -189,6 +189,7 @@ _Avoid_: home button, Xbox button
 - Someone else joining a known DM the user isn't in rings it: a **Toast** for up to 30 s and Answer atop the **Discord tab** until they hang up or the user joins; a server's voice channel never rings
 - Selecting the profile on **Home**'s top bar opens the **Guide** on Profile & system
 - The **Boot shell** owns everything from sign-in to **Start-up**'s first frame; the **Bundle** owns everything from it, but for the Boot shell starting explorer, then Steam, Discord and Spotify, as the **Boot video** ends, every other startup app following them
+- On this PC, Exit Playnite leaves the desktop, and holding View+Menu for 5 s closes Playnite to it from anywhere; while no Fullscreen runs, Playnite closed or in Desktop mode, the **Guide button** brings Fullscreen back through the **Boot shell**
 - **Start-up** plays the **Boot video**, then **Who's playing today?** signs a **Profile** in; its "Hi" **Toast** shows first, Playnite's notifications and a ringing **Call**'s Toast after it, and pressing the **Guide button** during it opens the **Guide** on Profile & system
 - Waking from sleep asks **Who's playing today?** again, without the **Boot video**; waking the **Idle screen** never does
 - **Switch profile** on the **Guide** asks **Who's playing today?** too, also without the **Boot video**, whether or not it asks on start
@@ -197,3 +198,4 @@ _Avoid_: home button, Xbox button
 ## Flagged ambiguities
 
 - "Full screen overlay" in the original idea meant the **Overlay** window hosting the **Guide** flyout, not a full-screen copy of **Home**.
+- "The desktop" is Windows' own, explorer's, which the **Boot shell** falls back to; Playnite's Desktop mode is Playnite in its other mode, not the desktop.
