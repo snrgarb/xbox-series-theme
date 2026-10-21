@@ -63,9 +63,16 @@ namespace XboxSeries.Core.Tests
             var icon = Named(face, "Icon");
 
             Assert.Equal("White", (string)Named(face, "Art").Attribute("Background"));
-            Assert.Contains(icon.Descendants(), e => e.Name.LocalName == "DropShadowEffect");
-            // The cache is the icon's parent's, as WPF caches an element under its own effect.
-            Assert.Contains(icon.Parent.Descendants(), e => e.Name.LocalName == "BitmapCache");
+            // The shadow is the icon's own shape, made once into a picture under it (#95), the effect's numbers.
+            var shadow = Named(face, "IconShadow");
+            Assert.Equal("ImageShadow", shadow.Name.LocalName);
+            Assert.Equal("{Binding Source, ElementName=Icon}", (string)shadow.Attribute("Source"));
+            Assert.Equal(("18", "3", "0.3"), ((string)shadow.Attribute("BlurRadius"), (string)shadow.Attribute("ShadowDepth"), (string)shadow.Attribute("ShadowOpacity")));
+            Assert.Equal(icon.Parent, shadow.Parent);
+            Assert.True(icon.Parent.Elements().ToList().IndexOf(shadow) < icon.Parent.Elements().ToList().IndexOf(icon));
+            Assert.DoesNotContain(icon.Descendants(), e => e.Name.LocalName.EndsWith("Effect"));
+            // The two are drawn once into a picture.
+            Assert.Contains(icon.Parent.Parent.Descendants(), e => e.Name.LocalName == "BitmapCache");
             Assert.Equal("#FF333333", (string)Named(face, "NoIconGlyph").Attribute("Foreground"));
         }
 
@@ -81,7 +88,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("True", (string)store.Attribute("Value"));
             Assert.Equal("{DynamicResource GlyphBrush}", Set("Art", "Background"));
             Assert.Equal("0", Set("Shadowed", "Margin"));
-            Assert.Equal("{x:Null}", Set("Icon", "Effect"));
+            Assert.Equal("Collapsed", Set("IconShadow", "Visibility"));
             Assert.Equal("White", Set("NoIconGlyph", "Foreground"));
         }
 

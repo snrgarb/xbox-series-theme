@@ -295,7 +295,14 @@ namespace XboxSeries.Core.Tests
                             || (string)e.Attribute("Style") == "{DynamicResource XboxFocusGlow}")
                 .ToList();
 
-            Assert.Equal(2, effected.Count);
+            // The source badge's shadow is a picture made once (#95); only the glow is an effect.
+            Assert.Single(effected);
+            var badge = tile.Descendants().Single(e => (string)e.Attribute((XNamespace)"http://schemas.microsoft.com/winfx/2006/xaml" + "Name") == "SourceBadge");
+            Assert.Equal("2", (string)badge.Descendants().Single(e => e.Name.LocalName == "BitmapCache").Attribute("RenderAtScale"));
+            var shadows = tile.Descendants().Where(e => (string)e.Attribute("TargetName") == "SourceShadow" && (string)e.Attribute("Property") == "Source")
+                .Select(e => (string)e.Attribute("Value"));
+            Assert.Equal(new[] { "{StaticResource XboxSourceSteamShadow}", "{StaticResource XboxSourceXboxShadow}" }, shadows);
+            Assert.All(new[] { "steam", "xbox" }, source => Assert.True(File.Exists(Path.Combine(DashboardDir, "Images", $"source-{source}-shadow.png"))));
             Assert.All(effected, e =>
             {
                 // Cached by its parent, as WPF caches an element under its own effect: a cache on the element itself
