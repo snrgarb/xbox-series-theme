@@ -18,14 +18,10 @@ namespace XboxSeries.Core
         /// <summary>One list for as long as it shows, so the bar isn't handed a new one at every tile focus moves to.</summary>
         private static readonly IReadOnlyList<GuideHint> MoreOptionsHints = new[] { new GuideHint(ControllerButton.Start, "More options") };
 
-        /// <summary>Y Search alone, where Y opens Search with no menu: Home's top bar.</summary>
-        private static readonly IReadOnlyList<GuideHint> SearchHints = new[] { new GuideHint(ControllerButton.Y, "Search") };
-
         /// <summary>More options, then Y Search to its right: a Group's tile on Home, a game in Games' grid.</summary>
-        private static readonly IReadOnlyList<GuideHint> MoreOptionsAndSearchHints = MoreOptionsHints.Concat(SearchHints).ToArray();
+        private static readonly IReadOnlyList<GuideHint> MoreOptionsAndSearchHints = MoreOptionsHints.Concat(new[] { new GuideHint(ControllerButton.Y, "Search") }).ToArray();
 
         private bool gameGridFocused;
-        private bool topBarFocused;
         private bool gameHubFocused;
 
         /// <summary>
@@ -66,25 +62,12 @@ namespace XboxSeries.Core
             RefreshHints();
         }
 
-        /// <summary>Home's top bar got focus: Y there opens Search, with no menu.</summary>
-        public void FocusTopBar()
-        {
-            topBarFocused = true;
-            RefreshHints();
-        }
-
-        /// <summary>Focus left Home's top bar, to Home's rows, a page in Home's place, or with Playnite leaving the foreground.</summary>
-        public void LeaveTopBar()
-        {
-            topBarFocused = false;
-            RefreshHints();
-        }
-
         /// <summary>
         /// More options while a tile with a Tile menu has focus, other than on Home's Recent row, or a game in My games
         /// &amp; apps' grid, or the Game hub; Y Search after it where Y opens Search (<see cref="SearchFromHome"/>,
-        /// <see cref="SearchFromMyGames"/>): a Group's tile or the top bar on Home with no page in its place, the top bar
-        /// alone, and a game in Games' grid, not Full library's, where Y opens its name box. Nothing while a Tile menu,
+        /// <see cref="SearchFromMyGames"/>) on a tile with a menu: a Group's tile on Home with no page in its place, and a
+        /// game in Games' grid, not Full library's, where Y opens its name box. Never Y Search alone: elsewhere on Home,
+        /// the top bar and the Recent row, the bar stays away until focus is down on the Groups. Nothing while a Tile menu,
         /// the Guide, a prompt, Start-up or the Idle screen's dim is up (where Y opens the card's game), nor Y Search with
         /// text entry up.
         /// </summary>
@@ -99,13 +82,12 @@ namespace XboxSeries.Core
 
             var tileHasMenu = focusedTile != null && (MyGames.IsShown || !hintedTileOnRecentRow);
             var hasMenu = tileHasMenu || (gameGridFocused && MyGames.ShowsGameGrid) || gameHubFocused;
-            var homeOpensSearch = HomeAnswersYWithSearch && (topBarFocused || (focusedTile != null && !hintedTileOnRecentRow));
+            var homeOpensSearch = HomeAnswersYWithSearch && focusedTile != null && !hintedTileOnRecentRow;
             var gamesOpensSearch = GamesAnswersYWithSearch && gameGridFocused;
             var opensSearch = !gameHubFocused && (homeOpensSearch || gamesOpensSearch);
-            Home.Hints = covered ? NoHints
-                : hasMenu ? (opensSearch ? MoreOptionsAndSearchHints : MoreOptionsHints)
-                : opensSearch ? SearchHints
-                : NoHints;
+            Home.Hints = covered || !hasMenu ? NoHints
+                : opensSearch ? MoreOptionsAndSearchHints
+                : MoreOptionsHints;
         }
 
         /// <summary>The hints follow whatever covers the Dashboard or changes its page, however it came about.</summary>

@@ -6,8 +6,8 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
-    // "Y Search" on the hint bar, right of More options, wherever Y opens Search: Home's Group tiles, beside More options,
-    // Home's top bar, alone, and a game in My games & apps' Games grid, beside More options (#69).
+    // "Y Search" on the hint bar, right of More options, on the tiles with a menu where Y opens Search: Home's Group tiles
+    // and a game in My games & apps' Games grid (#69). Never alone: elsewhere on Home, Y opens Search with no hint.
     public class YSearchHintTests
     {
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 18, 20, 0, 0));
@@ -28,83 +28,11 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Homes_top_bar_with_focus_shows_Y_Search_alone()
-        {
-            core.FocusTopBar();
-
-            var hint = Assert.Single(core.Home.Hints);
-            Assert.Equal(ControllerButton.Y, hint.Button);
-            Assert.Equal("Search", hint.Text);
-        }
-
-        [Fact]
         public void A_Group_tile_with_focus_shows_Y_Search_right_of_More_options()
         {
             core.FocusHomeTile(GroupTile("Tunic"));
 
             Assert.Equal(new[] { ControllerButton.Start, ControllerButton.Y }, core.Home.Hints.Select(h => h.Button));
-            Assert.Equal(new[] { "More options", "Search" }, HintTexts());
-        }
-
-        [Fact]
-        public void Search_opened_from_the_top_bar_takes_Y_Search_away_with_Home()
-        {
-            core.FocusTopBar();
-
-            core.OpenSearch();
-
-            Assert.Empty(core.Home.Hints);
-        }
-
-        [Fact]
-        public void Settings_opened_from_the_top_bar_takes_Y_Search_away_with_Home()
-        {
-            core.FocusTopBar();
-
-            core.OpenSettings();
-
-            Assert.Empty(core.Home.Hints);
-        }
-
-        [Fact]
-        public void My_games_and_apps_opened_from_the_top_bar_takes_Y_Search_away_with_Home()
-        {
-            core.FocusTopBar();
-
-            core.OpenMyGames(MyGamesItem.Apps);
-
-            Assert.Empty(core.Home.Hints);
-        }
-
-        [Fact]
-        public void Back_on_Home_the_top_bar_shows_Y_Search_again()
-        {
-            core.FocusTopBar();
-            core.OpenSettings();
-
-            core.LeaveSettings();
-
-            Assert.Equal(new[] { "Search" }, HintTexts());
-        }
-
-        [Fact]
-        public void Focus_leaving_the_top_bar_for_Homes_rows_hides_Y_Search()
-        {
-            core.FocusTopBar();
-
-            core.LeaveTopBar();
-
-            Assert.Empty(core.Home.Hints);
-        }
-
-        [Fact]
-        public void Focus_moving_from_the_top_bar_down_to_a_Group_tile_shows_both()
-        {
-            core.FocusTopBar();
-
-            core.LeaveTopBar();
-            core.FocusHomeTile(GroupTile("Tunic"));
-
             Assert.Equal(new[] { "More options", "Search" }, HintTexts());
         }
 
@@ -127,42 +55,6 @@ namespace XboxSeries.Core.Tests
         public void The_Recent_row_shows_no_hint()
         {
             core.FocusHomeTile(RecentTile("Hades"));
-
-            Assert.Empty(core.Home.Hints);
-        }
-
-        [Fact]
-        public void The_Guide_over_the_top_bar_hides_Y_Search_until_it_has_handed_focus_back()
-        {
-            core.FocusTopBar();
-
-            Tap(ControllerButton.Guide);
-
-            Assert.Empty(core.Home.Hints);
-
-            Tap(ControllerButton.B);
-
-            Assert.Equal(new[] { "Search" }, HintTexts());
-        }
-
-        [Fact]
-        public void A_prompt_over_the_top_bar_hides_Y_Search()
-        {
-            core.OnGameStarted(library.Id("Halo Infinite"));
-            core.FocusTopBar();
-
-            core.PlayGame(library.Id("Hades"));
-
-            Assert.NotNull(core.Guide.Dialog);
-            Assert.Empty(core.Home.Hints);
-        }
-
-        [Fact]
-        public void Start_up_hides_Y_Search()
-        {
-            core.FocusTopBar();
-
-            core.OnStartup();
 
             Assert.Empty(core.Home.Hints);
         }
@@ -226,18 +118,6 @@ namespace XboxSeries.Core.Tests
             core.FocusHomeTile(GroupTile("Hades"));
 
             Assert.Same(hints, core.Home.Hints);
-        }
-
-        [Fact]
-        public void Y_Search_shows_and_hides_with_a_change_the_bar_can_bind_to()
-        {
-            var changed = new List<string>();
-            core.Home.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
-
-            core.FocusTopBar();
-            core.LeaveTopBar();
-
-            Assert.Equal(2, changed.Count(n => n == nameof(HomeState.Hints)));
         }
 
         private string[] HintTexts() => core.Home.Hints.Select(h => h.Text).ToArray();
