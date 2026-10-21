@@ -109,6 +109,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void The_Idle_screens_dim_hides_the_hints_as_Y_there_opens_the_cards_game_until_the_wake_press()
+        {
+            core.FocusHomeTile(GroupTile("Tunic"));
+
+            clock.Advance(TimeSpan.FromMinutes(2));
+            Assert.True(core.Idle.IsDimmed);
+            Assert.Empty(core.Home.Hints);
+
+            Tap(ControllerButton.A);
+
+            Assert.False(core.Idle.IsDimmed);
+            Assert.Equal(new[] { "More options", "Search" }, core.Home.Hints.Select(h => h.Text));
+        }
+
+        [Fact]
         public void The_Recent_row_shows_no_hint()
         {
             core.FocusHomeTile(RecentTile("Hades"));
