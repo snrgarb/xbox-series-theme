@@ -249,9 +249,10 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void A_pause_hides_the_card()
         {
+            var game = RecentlyPlayedGame();
             ShowThings();
 
-            core.OnGameStarted(Guid.NewGuid());
+            core.OnGameStarting(game);
 
             Assert.Null(core.Idle.Card);
         }

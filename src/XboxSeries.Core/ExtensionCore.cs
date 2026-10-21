@@ -441,7 +441,6 @@ namespace XboxSeries.Core
             }
 
             runningGame = gameId;
-            LookAtIdlePause();
             startingGame = null;
             homeOwed = false;
             FollowAchievementsOf(gameId);
@@ -476,7 +475,6 @@ namespace XboxSeries.Core
             // Whatever of it is left frozen under the Guide is let go with it.
             ThawGame();
             runningGame = null;
-            LookAtIdlePause();
             RefreshHome();
 
             // Any menu or prompt was about the game that has just gone.

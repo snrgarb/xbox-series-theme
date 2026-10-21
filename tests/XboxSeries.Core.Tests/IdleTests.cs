@@ -244,28 +244,49 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void No_idle_while_a_game_runs_and_the_timers_count_from_zero_once_it_stops()
+        public void Over_a_running_game_the_screen_dims_then_shows_things_counted_from_the_Launch_screen_going()
         {
-            var game = Guid.NewGuid();
+            var game = FocusRecentTile().GameId;
             Wait(1);
+            core.OnGameStarting(game);
+            Wait(1.5);
             core.OnGameStarted(game);
-            Wait(10);
-            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            windows.OpenWindow(@"C:\Games\Halo\halo.exe");
+            Assert.False(core.LaunchScreen.IsShown);
 
-            core.OnGameStopped(game);
             Wait(1.99);
             Assert.Equal(IdleStage.Awake, core.Idle.Stage);
             Wait(0.01);
             Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+            Wait(3);
+            Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
         }
 
         [Fact]
-        public void A_game_starting_while_dimmed_wakes_the_screen()
+        public void A_game_stopping_neither_wakes_the_screen_nor_resets_the_timers()
         {
+            var game = FocusRecentTile().GameId;
+            core.OnGameStarting(game);
+            core.OnGameStarted(game);
+            Wait(1);
+            core.OnGameStopped(game);
+
+            Wait(1);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+            core.OnGameStarted(game);
+            core.OnGameStopped(game);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void A_game_starting_while_dimmed_wakes_the_screen_as_its_Launch_screen_shows()
+        {
+            var game = FocusRecentTile().GameId;
             Wait(2);
 
-            core.OnGameStarted(Guid.NewGuid());
+            core.OnGameStarting(game);
 
+            Assert.True(core.LaunchScreen.IsShown);
             Assert.Equal(IdleStage.Awake, core.Idle.Stage);
         }
 
@@ -303,39 +324,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void No_idle_with_another_program_in_front_and_the_timers_count_from_zero_once_Playnite_is_back()
+        public void With_another_app_in_front_the_screen_dims_then_shows_things_all_the_same()
         {
-            Wait(1.5);
+            Wait(1);
             windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
-            Wait(10);
-            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
 
-            // Nothing tells of the foreground changing: the core looks now and then, so allow it a second.
-            playnite.BringToFront();
-            Wait(1.98);
+            Wait(0.99);
             Assert.Equal(IdleStage.Awake, core.Idle.Stage);
-            Wait(0.04);
+            Wait(0.01);
             Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
-        }
+            Wait(3);
+            Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
 
-        [Fact]
-        public void Another_program_coming_in_front_just_before_the_dim_keeps_the_screen_awake()
-        {
-            clock.Advance(TimeSpan.FromMinutes(2) - TimeSpan.FromMilliseconds(100));
-            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
-            clock.Advance(TimeSpan.FromMilliseconds(100));
-
-            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
-        }
-
-        [Fact]
-        public void Another_program_coming_in_front_while_dimmed_wakes_the_screen()
-        {
-            Wait(2);
-            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
-            clock.Advance(TimeSpan.FromSeconds(1));
-
-            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            playnite.BringToFront();
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
         }
 
         [Fact]
