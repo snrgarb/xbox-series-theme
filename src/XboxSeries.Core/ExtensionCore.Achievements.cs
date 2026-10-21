@@ -34,6 +34,12 @@ namespace XboxSeries.Core
         private static readonly TimeSpan AchievementToastDuration = TimeSpan.FromSeconds(8.5);
 
         /// <summary>
+        /// How long the rare Toast shows before its outro, whatever its description: its sound's closing flourish starts
+        /// 8.45 s in, and the pill collapses with it, as on the console. A long description's pages are held for less.
+        /// </summary>
+        private static readonly TimeSpan RareAchievementToastDuration = TimeSpan.FromSeconds(8.45);
+
+        /// <summary>
         /// How long an Achievement unlocked Toast's outro takes once it hides, rare or not, the pill collapsing into its
         /// circle and the circle to a dot: the next Toast waits for it, then the usual gap.
         /// </summary>

@@ -31,7 +31,6 @@ namespace XboxSeries.Extension
             [UiSound.PowerOff] = new[] { "PowerOff.wav" },
             [UiSound.Notification] = new[] { "Notification.wav" },
             [UiSound.RareAchievement] = new[] { "RareAchievement.wav" },
-            [UiSound.RareAchievementClose] = new[] { "RareAchievementClose.wav" },
         };
 
         private readonly Engine engine;
