@@ -199,3 +199,4 @@ _Avoid_: home button, Xbox button
 
 - "Full screen overlay" in the original idea meant the **Overlay** window hosting the **Guide** flyout, not a full-screen copy of **Home**.
 - "The desktop" is Windows' own, explorer's, which the **Boot shell** falls back to; Playnite's Desktop mode is Playnite in its other mode, not the desktop.
+- "**Start-up**'s first frame" is the first frame that shows something: the **Boot video**'s first frame, or **Who's playing today?**'s with the Boot video Off. Start-up's window may draw black before it, and that isn't it.
