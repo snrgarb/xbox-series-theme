@@ -29,6 +29,16 @@ namespace XboxSeries.Core
         /// <summary>The pad button whose press woke the screen, swallowed as routed and as reported; null for none.</summary>
         private ControllerButton? wakeButton;
 
+        /// <summary>
+        /// How long a dimmed screen waits, after the look sees input, for Playnite to hand on a press of it, which wakes
+        /// the screen with the press swallowed; a stick, a trigger or a button held still, which Playnite hands on nothing
+        /// of, wakes it once this is up.
+        /// </summary>
+        private static readonly TimeSpan WakeGrace = TimeSpan.FromMilliseconds(500);
+
+        /// <summary>The wake waiting <see cref="WakeGrace"/> on Playnite after the look saw input while dimmed; null for none.</summary>
+        private IDisposable graceWake;
+
         /// <summary>Whether Playnite's routing of the wake button's press has come.</summary>
         private bool wakeRouted;
 
@@ -324,32 +334,40 @@ namespace XboxSeries.Core
 
         private void WatchIdleInput() => clock.After(IdleWatchInterval, () =>
         {
-            LookForInputOutsidePlaynite();
+            LookForInput();
             WatchIdleInput();
         });
 
         /// <summary>
         /// Input anywhere in Windows since the last look, a pad held off its rest included: it counts as input, the timers
-        /// counting again from now and a dimmed screen waking, swallowing nothing, the input not being Playnite's to
-        /// swallow. Input in Playnite's windows is seen here too, after <see cref="OnUserInput(ControllerButton?)"/> or
-        /// <see cref="OnControllerButton(ControllerButton, ButtonState)"/> has woken the screen and set the wake press
-        /// swallowing, which it leaves alone; so a dimmed screen with Playnite in front is left for those to wake, should
-        /// the look come between the input and Playnite handing it on, which would let the wake press through. Returns
-        /// whether it counted.
+        /// counting again from now. A dimmed screen wakes <see cref="WakeGrace"/> later, swallowing nothing, the input not
+        /// being Playnite's to swallow, unless Playnite hands on a press first, as <see cref="OnUserInput(ControllerButton?)"/>
+        /// or <see cref="OnControllerButton(ControllerButton, ButtonState)"/>, which then wakes it with the wake press
+        /// swallowed: the pad is read apart from Playnite, so the look can come between a press and Playnite's report of
+        /// it, which would let the Guide button's wake press over a game open the Guide. Input in Playnite's windows is
+        /// seen here too, after those have woken the screen, and changes nothing more. Returns whether input counted, or
+        /// a wake waits on Playnite still.
         /// </summary>
-        private bool LookForInputOutsidePlaynite()
+        private bool LookForInput()
         {
             if (!inputActivity.InputSinceLastLook())
             {
-                return false;
+                return graceWake != null;
             }
 
-            if (Idle.IsDimmed && windowSystem.IsPlaynites(windowSystem.ForegroundWindow))
+            if (!Idle.IsDimmed)
             {
-                return false;
+                RestartIdle();
+            }
+            else if (graceWake == null)
+            {
+                graceWake = clock.After(WakeGrace, () =>
+                {
+                    graceWake = null;
+                    RestartIdle();
+                });
             }
 
-            RestartIdle();
             return true;
         }
 
@@ -370,7 +388,7 @@ namespace XboxSeries.Core
         /// A timer fell due: whether it may change the stage, input outside Playnite looked for first, since there may
         /// have been some since the last look; input counted has the timers count again instead.
         /// </summary>
-        private bool IdleTimerMayAct() => !LookForInputOutsidePlaynite();
+        private bool IdleTimerMayAct() => !LookForInput();
 
         /// <summary>The screen is awake, and unless the Idle screen waits, the timers count again from now.</summary>
         private void RestartIdle()
@@ -379,6 +397,8 @@ namespace XboxSeries.Core
             dimTimer = null;
             showThingsTimer?.Dispose();
             showThingsTimer = null;
+            graceWake?.Dispose();
+            graceWake = null;
             Idle.Stage = IdleStage.Awake;
 
             // After the stage, so the view sees the screen awake as the card goes and hides it with the dim.
