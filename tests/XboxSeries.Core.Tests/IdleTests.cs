@@ -12,6 +12,7 @@ namespace XboxSeries.Core.Tests
     {
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 10, 15, 20, 0, 0));
         private readonly FakeWindowSystem windows = new FakeWindowSystem();
+        private readonly FakeInputActivity input = new FakeInputActivity();
         private readonly FakePlayniteHost playnite;
         private readonly ExtensionCore core;
 
@@ -19,7 +20,7 @@ namespace XboxSeries.Core.Tests
         {
             // Playnite's Fullscreen window opens in front.
             playnite = new FakePlayniteHost(windows);
-            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+            core = new ExtensionCore(clock, windows, playnite, new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(), new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads(), inputActivity: input);
         }
 
         private void Wait(double minutes) => clock.Advance(TimeSpan.FromMinutes(minutes));
@@ -339,6 +340,99 @@ namespace XboxSeries.Core.Tests
             playnite.BringToFront();
             clock.Advance(TimeSpan.FromSeconds(2));
             Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void Input_outside_Playnite_has_the_timers_count_again_from_it()
+        {
+            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
+            Wait(1.5);
+            input.Use();
+
+            // The core looks for it every second, so it counts from the next look.
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Wait(1.99);
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Wait(0.01);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void Input_outside_Playnite_wakes_a_dimmed_screen_swallowing_nothing()
+        {
+            windows.OpenWindow(@"C:\Games\Halo\halo.exe");
+            Wait(5);
+            Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
+
+            input.Use();
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.False(core.OnUserInput());
+            Press(ControllerButton.Guide);
+            Wait(0.1);
+            Assert.True(core.Guide.IsOpen);
+        }
+
+        [Fact]
+        public void A_pad_held_outside_Playnite_never_lets_the_screen_dim()
+        {
+            windows.OpenWindow(@"C:\Games\Forza\forza.exe");
+            input.IsHeld = true;
+
+            Wait(60);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void Input_outside_Playnite_just_before_the_dim_keeps_the_screen_awake()
+        {
+            // Dim after set half a second after a look, so the dim falls due between two looks.
+            windows.OpenWindow(@"C:\Apps\Browser\browser.exe");
+            clock.Advance(TimeSpan.FromMilliseconds(500));
+            core.SetDimAfter(TimeSpan.FromMinutes(1));
+            clock.Advance(TimeSpan.FromMinutes(1) - TimeSpan.FromMilliseconds(300));
+            input.Use();
+            clock.Advance(TimeSpan.FromMilliseconds(300));
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void A_wake_press_in_Playnite_seen_outside_it_too_is_still_swallowed_whole()
+        {
+            var tile = FocusRecentTile();
+            Wait(2);
+            clock.Advance(TimeSpan.FromMilliseconds(500));
+
+            Assert.True(core.OnUserInput(ControllerButton.A));
+            input.Use();
+            clock.Advance(TimeSpan.FromMilliseconds(600));
+            Press(ControllerButton.A);
+            Wait(0.1);
+            Assert.Empty(playnite.OpenedHubs);
+
+            Press(ControllerButton.A);
+            Wait(0.1);
+            Assert.Equal(new[] { tile.GameId }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void Input_seen_outside_Playnite_before_Playnite_hands_it_on_leaves_Playnite_to_wake_the_screen()
+        {
+            FocusRecentTile();
+            Wait(2);
+            clock.Advance(TimeSpan.FromMilliseconds(500));
+
+            input.Use();
+            clock.Advance(TimeSpan.FromMilliseconds(600));
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+
+            Assert.True(core.OnUserInput(ControllerButton.A));
+            Press(ControllerButton.A);
+            Wait(0.1);
+            Assert.Empty(playnite.OpenedHubs);
         }
 
         [Fact]
