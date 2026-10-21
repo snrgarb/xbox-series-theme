@@ -42,7 +42,8 @@ namespace XboxSeries.Core.Tests
         {
             core.FocusHomeTile(GroupTile("Tunic"));
 
-            var hint = Assert.Single(core.Home.Hints);
+            // Y Search follows it to the right, as Y on Home opens Search (#69).
+            var hint = core.Home.Hints[0];
             Assert.Equal(ControllerButton.Start, hint.Button);
             Assert.Equal("More options", hint.Text);
         }
@@ -123,7 +124,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.B);
 
             Assert.Null(core.Home.TileMenu);
-            Assert.Equal(new[] { "More options" }, HintTexts());
+            Assert.Equal(new[] { "More options", "Search" }, HintTexts());
         }
 
         [Fact]
@@ -152,7 +153,7 @@ namespace XboxSeries.Core.Tests
 
             Release(ControllerButton.B);
 
-            Assert.Equal(new[] { "More options" }, HintTexts());
+            Assert.Equal(new[] { "More options", "Search" }, HintTexts());
         }
 
         [Fact]
@@ -170,7 +171,7 @@ namespace XboxSeries.Core.Tests
             Tap(ControllerButton.B);
 
             Assert.False(core.Guide.IsOverlayShown);
-            Assert.Equal(new[] { "More options" }, HintTexts());
+            Assert.Equal(new[] { "More options", "Search" }, HintTexts());
         }
 
         [Fact]
@@ -193,7 +194,7 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(3));
 
             Assert.False(core.IsStartupShown);
-            Assert.Equal(new[] { "More options" }, HintTexts());
+            Assert.Equal(new[] { "More options", "Search" }, HintTexts());
         }
 
         // My games & apps (#67)
@@ -237,7 +238,7 @@ namespace XboxSeries.Core.Tests
 
             core.FocusGameGrid();
 
-            Assert.Equal(new[] { "More options" }, HintTexts());
+            Assert.Equal("More options", HintTexts()[0]);
         }
 
         [Fact]

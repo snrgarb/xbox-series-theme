@@ -5,7 +5,8 @@ using System.Linq;
 namespace XboxSeries.Core
 {
     /// <summary>
-    /// The Dashboard's hint bar (<see cref="HomeState.Hints"/>): More options while what has focus has a menu. A game tile
+    /// The Dashboard's hint bar (<see cref="HomeState.Hints"/>): More options while what has focus has a menu, and Y Search
+    /// to its right wherever Y opens Search, alone on Home's top bar, which has no menu. A game tile
     /// with a Tile menu tells the core it has focus already, for Menu; Playnite's own grid and the Game hub, where Menu
     /// opens the Tile menu through Playnite's own binding (<see cref="OpenTileMenu"/>), say so here. The bar only binds to
     /// the result.
@@ -17,7 +18,14 @@ namespace XboxSeries.Core
         /// <summary>One list for as long as it shows, so the bar isn't handed a new one at every tile focus moves to.</summary>
         private static readonly IReadOnlyList<GuideHint> MoreOptionsHints = new[] { new GuideHint(ControllerButton.Start, "More options") };
 
+        /// <summary>Y Search alone, where Y opens Search with no menu: Home's top bar.</summary>
+        private static readonly IReadOnlyList<GuideHint> SearchHints = new[] { new GuideHint(ControllerButton.Y, "Search") };
+
+        /// <summary>More options, then Y Search to its right: a Group's tile on Home, a game in Games' grid.</summary>
+        private static readonly IReadOnlyList<GuideHint> MoreOptionsAndSearchHints = MoreOptionsHints.Concat(SearchHints).ToArray();
+
         private bool gameGridFocused;
+        private bool topBarFocused;
         private bool gameHubFocused;
 
         /// <summary>
@@ -61,16 +69,23 @@ namespace XboxSeries.Core
         /// <summary>Home's top bar got focus: Y there opens Search, with no menu.</summary>
         public void FocusTopBar()
         {
+            topBarFocused = true;
+            RefreshHints();
         }
 
         /// <summary>Focus left Home's top bar, to Home's rows, a page in Home's place, or with Playnite leaving the foreground.</summary>
         public void LeaveTopBar()
         {
+            topBarFocused = false;
+            RefreshHints();
         }
 
         /// <summary>
         /// More options while a tile with a Tile menu has focus, other than on Home's Recent row, or a game in My games
-        /// &amp; apps' grid, or the Game hub; nothing while a Tile menu, the Guide, a prompt or Start-up is up.
+        /// &amp; apps' grid, or the Game hub; Y Search after it where Y opens Search (<see cref="SearchFromHome"/>,
+        /// <see cref="SearchFromMyGames"/>): a Group's tile or the top bar on Home with no page in its place, the top bar
+        /// alone, and a game in Games' grid, not Full library's, where Y opens its name box. Nothing while a Tile menu,
+        /// the Guide, a prompt or Start-up is up, nor Y Search with text entry up.
         /// </summary>
         private void RefreshHints()
         {
@@ -83,7 +98,14 @@ namespace XboxSeries.Core
 
             var tileHasMenu = focusedTile != null && (MyGames.IsShown || !hintedTileOnRecentRow);
             var hasMenu = tileHasMenu || (gameGridFocused && MyGames.ShowsGameGrid) || gameHubFocused;
-            Home.Hints = !covered && hasMenu ? MoreOptionsHints : NoHints;
+            var homeShown = !MyGames.IsShown && !Settings.IsShown && !Search.IsShown;
+            var homeOpensSearch = homeShown && (topBarFocused || (focusedTile != null && !hintedTileOnRecentRow));
+            var gamesOpensSearch = gameGridFocused && MyGames.IsShown && MyGames.Item == MyGamesItem.Games;
+            var opensSearch = !TextEntry.IsShown && !gameHubFocused && (homeOpensSearch || gamesOpensSearch);
+            Home.Hints = covered ? NoHints
+                : hasMenu ? (opensSearch ? MoreOptionsAndSearchHints : MoreOptionsHints)
+                : opensSearch ? SearchHints
+                : NoHints;
         }
 
         /// <summary>The hints follow whatever covers the Dashboard or changes its page, however it came about.</summary>
@@ -93,6 +115,9 @@ namespace XboxSeries.Core
             Home.PropertyChanged += refresh;
             Guide.PropertyChanged += refresh;
             MyGames.PropertyChanged += refresh;
+            Settings.PropertyChanged += refresh;
+            Search.PropertyChanged += refresh;
+            TextEntry.PropertyChanged += refresh;
         }
     }
 }
