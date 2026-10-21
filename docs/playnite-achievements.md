@@ -12,7 +12,14 @@ How the Bundle gets achievements, what a user has to set up today for them to wo
 - **The Guide's Profile & system** shows the **Score** total, the number of achievements unlocked, and the last three unlocks.
 - Not built yet: the **Achievements page** in the Game hub (#34).
 
-Without PlayniteAchievements (not installed, disabled, or a version the adapter can't read), every achievement feature is off and nothing fails: #83.
+Without PlayniteAchievements (not installed, disabled, or a version the adapter can't read), every achievement feature is off and nothing fails (#83):
+
+- no Achievement unlocked **Toast** of any form;
+- no **Score** on Home's top bar;
+- no totals line and no recent unlocks on the **Guide**'s Profile & system, with no gap left where they were;
+- in Debug builds, no **Achievement**, **Rare achievement** or **Three achievements** box on the Debug menu's Notifications page.
+
+The core sees all three cases the same way: `IAchievements.IsAvailable` is false, and `ExtensionCore.HasAchievements` passes that on to the views. The Achievements page (#34) must follow the same rule.
 
 ## How it works
 
@@ -38,7 +45,7 @@ PlayniteAchievements ── cache ──► PlayniteAchievementsSource (adapter,
   - `AchievementDataService.GetAllGameAchievementData` and `GetGameAchievementData(Guid)`;
   - per achievement: `ApiName`, `DisplayName`, `Description` (optional), `UnlockedIconPath`, `GlobalPercentUnlocked`, `UnlockTimeUtc` and `Unlocked`.
   - per achievement, on both the cached detail and the unlock event: `Points` (optional), the platform's own points; its `GamerScore` (a rarity stand-in, not Xbox Gamerscore) and `ScaledPoints` are not read.
-- **Binding and failure.** It binds once Playnite has loaded every plugin. If the plugin isn't installed, or a member has been renamed or reshaped, the adapter logs one line and reports no achievements. It never throws into Playnite.
+- **Binding and failure.** It binds once Playnite has loaded every plugin. If the plugin isn't installed or is disabled (Playnite loads no disabled add-on, so the two look the same), or a member has been renamed or reshaped, the adapter logs one line and reports no achievements. It never throws into Playnite. For an unreadable version, the line gives the version from PlayniteAchievements' `extension.yaml`, because its assembly version is always 0.0.0.0.
 - **What it listens to:**
   - the static `PlayniteAchievementsPlugin.AchievementUnlocked` event, which is raised live while a game runs;
   - `CacheManager.CacheInvalidated` and `CacheDeltaUpdated`, and `RefreshRuntime.GameRefreshed`, which are raised when a refresh or an edit saves.
@@ -127,6 +134,9 @@ An onboarding system (first run, and re-runnable from Settings) should take the 
 
 ## Testing
 
-- **Debug build** → Settings → Debug → Notifications: **Achievement**, **Rare achievement** and **Three achievements** fire made-up unlocks through the core. These need no PlayniteAchievements and are not counted in the totals.
+- **Debug build** → Settings → Debug → Notifications: **Achievement**, **Rare achievement** and **Three achievements** fire made-up unlocks through the core. They aren't counted in the totals, and they show only while PlayniteAchievements is read.
 - **A real unlock:** install and set up PlayniteAchievements as above, start a signed-in Steam game, and unlock something. The Toast should follow within a second or two.
-- **Logs:** Playnite's `extensions.log` has one line on start, "Achievements are read from PlayniteAchievements", or the reason it isn't.
+- **Logs:** Playnite's `extensions.log` has one line on start, saying which case applies:
+  - "Achievements are read from PlayniteAchievements";
+  - "PlayniteAchievements isn't installed, or is disabled; no achievements";
+  - "PlayniteAchievements <version> isn't one the extension can read (…); no achievements".

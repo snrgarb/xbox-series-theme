@@ -188,6 +188,21 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
         }
 
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(1, true)]
+        [InlineData(3, false)]
+        public void Without_PlayniteAchievements_test_unlocks_show_no_Toast(int count, bool rare)
+        {
+            achievements.IsAvailable = false;
+
+            core.DebugAchievementsUnlocked(count, rare);
+            clock.Advance(TimeSpan.FromSeconds(1));
+
+            Assert.False(core.Toast.IsShown);
+            Assert.Empty(sounds.Played);
+        }
+
         [Fact]
         public void Test_unlocks_never_count_in_the_Profiles_totals_or_its_last_unlocks()
         {

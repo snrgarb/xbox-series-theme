@@ -38,7 +38,8 @@ namespace XboxSeries.Extension
 
             if (plugin == null)
             {
-                logger.Info("PlayniteAchievements isn't installed; no achievements");
+                // Playnite loads no disabled add-on, so one disabled is missing here as one not installed is.
+                logger.Info("PlayniteAchievements isn't installed, or is disabled; no achievements");
                 return null;
             }
 
@@ -48,10 +49,34 @@ namespace XboxSeries.Extension
             }
             catch (Exception e) when (!(e is OutOfMemoryException))
             {
-                var version = plugin.GetType().Assembly.GetName().Version;
+                var version = VersionOf(plugin);
                 logger.Warn($"PlayniteAchievements {version} isn't one the extension can read ({e.Message}); no achievements");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The version PlayniteAchievements' manifest, extension.yaml beside its assembly, gives, as Playnite's add-ons
+        /// list shows it; its assembly's own when that can't be read, as its build leaves the assembly's at 0.0.0.0.
+        /// </summary>
+        private static string VersionOf(object plugin)
+        {
+            var assembly = plugin.GetType().Assembly;
+            try
+            {
+                var manifest = Path.Combine(Path.GetDirectoryName(assembly.Location), "extension.yaml");
+                var line = File.ReadLines(manifest).FirstOrDefault(l => l.StartsWith("Version:", StringComparison.Ordinal));
+                if (line != null)
+                {
+                    return line.Substring("Version:".Length).Trim().Trim('\'', '"');
+                }
+            }
+            catch (Exception e) when (!(e is OutOfMemoryException))
+            {
+                // No manifest to read, or no folder to look in: the assembly's version is all there is to log.
+            }
+
+            return assembly.GetName().Version.ToString();
         }
 
         /// <summary>PlayniteAchievements' data directory, which its icon paths are kept relative to; null if Playnite won't say.</summary>

@@ -118,7 +118,7 @@ namespace XboxSeries.Core
         /// out, as the totals are.
         /// </summary>
         private List<IdleCard> IdleCardPool() =>
-            (achievements.IsAvailable && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
+            (HasAchievements && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
                 .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t.Text, null, header: "Tip", prompt: "Got it", buttons: t.Buttons)))
                 .ToList();
