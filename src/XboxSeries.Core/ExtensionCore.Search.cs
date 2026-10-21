@@ -51,7 +51,7 @@ namespace XboxSeries.Core
         /// </summary>
         public void SearchFromMyGames(Guid? game)
         {
-            if (MyGames.IsShown && MyGames.Item == MyGamesItem.Games && !TextEntry.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            if (GamesAnswersYWithSearch)
             {
                 searchReturnGame = game;
                 ShowSearch(SearchOrigin.MyGames);
@@ -64,11 +64,20 @@ namespace XboxSeries.Core
         /// </summary>
         public void SearchFromHome()
         {
-            if (!MyGames.IsShown && !Settings.IsShown && !Search.IsShown && !TextEntry.IsShown && ActiveDialog == null && !Guide.IsOverlayShown)
+            if (HomeAnswersYWithSearch)
             {
                 ShowSearch(SearchOrigin.Home);
             }
         }
+
+        /// <summary>Whether Y on Home opens Search: wherever on Home focus is, which the hint bar narrows to where it shows.</summary>
+        private bool HomeAnswersYWithSearch => !MyGames.IsShown && !Settings.IsShown && !Search.IsShown && NothingOverThePage;
+
+        /// <summary>Whether Y on My games &amp; apps' Games opens Search: on a game in its grid.</summary>
+        private bool GamesAnswersYWithSearch => MyGames.IsShown && MyGames.Item == MyGamesItem.Games && NothingOverThePage;
+
+        /// <summary>No text entry, prompt or Guide over the page, any of which takes Y first.</summary>
+        private bool NothingOverThePage => !TextEntry.IsShown && ActiveDialog == null && !Guide.IsOverlayShown;
 
         /// <summary>The game on Games that Y opened Search from, which B goes back to.</summary>
         private Guid? searchReturnGame;

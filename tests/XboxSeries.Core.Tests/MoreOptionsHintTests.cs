@@ -43,6 +43,7 @@ namespace XboxSeries.Core.Tests
             core.FocusHomeTile(GroupTile("Tunic"));
 
             // Y Search follows it to the right, as Y on Home opens Search (#69).
+            Assert.Equal(2, core.Home.Hints.Count);
             var hint = core.Home.Hints[0];
             Assert.Equal(ControllerButton.Start, hint.Button);
             Assert.Equal("More options", hint.Text);
@@ -238,7 +239,7 @@ namespace XboxSeries.Core.Tests
 
             core.FocusGameGrid();
 
-            Assert.Equal("More options", HintTexts()[0]);
+            Assert.Equal(item == MyGamesItem.Games ? new[] { "More options", "Search" } : new[] { "More options" }, HintTexts());
         }
 
         [Fact]

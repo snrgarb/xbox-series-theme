@@ -85,11 +85,12 @@ namespace XboxSeries.Core
         /// &amp; apps' grid, or the Game hub; Y Search after it where Y opens Search (<see cref="SearchFromHome"/>,
         /// <see cref="SearchFromMyGames"/>): a Group's tile or the top bar on Home with no page in its place, the top bar
         /// alone, and a game in Games' grid, not Full library's, where Y opens its name box. Nothing while a Tile menu,
-        /// the Guide, a prompt or Start-up is up, nor Y Search with text entry up.
+        /// the Guide, a prompt, Start-up or the Idle screen's dim is up (where Y opens the card's game), nor Y Search with
+        /// text entry up.
         /// </summary>
         private void RefreshHints()
         {
-            var covered = Home.TileMenu != null || ActiveDialog != null || Guide.IsOverlayShown || IsStartupShown;
+            var covered = Home.TileMenu != null || ActiveDialog != null || Guide.IsOverlayShown || IsStartupShown || Idle.IsDimmed;
             if (focusedTile != hintedTile)
             {
                 hintedTile = focusedTile;
@@ -98,10 +99,9 @@ namespace XboxSeries.Core
 
             var tileHasMenu = focusedTile != null && (MyGames.IsShown || !hintedTileOnRecentRow);
             var hasMenu = tileHasMenu || (gameGridFocused && MyGames.ShowsGameGrid) || gameHubFocused;
-            var homeShown = !MyGames.IsShown && !Settings.IsShown && !Search.IsShown;
-            var homeOpensSearch = homeShown && (topBarFocused || (focusedTile != null && !hintedTileOnRecentRow));
-            var gamesOpensSearch = gameGridFocused && MyGames.IsShown && MyGames.Item == MyGamesItem.Games;
-            var opensSearch = !TextEntry.IsShown && !gameHubFocused && (homeOpensSearch || gamesOpensSearch);
+            var homeOpensSearch = HomeAnswersYWithSearch && (topBarFocused || (focusedTile != null && !hintedTileOnRecentRow));
+            var gamesOpensSearch = GamesAnswersYWithSearch && gameGridFocused;
+            var opensSearch = !gameHubFocused && (homeOpensSearch || gamesOpensSearch);
             Home.Hints = covered ? NoHints
                 : hasMenu ? (opensSearch ? MoreOptionsAndSearchHints : MoreOptionsHints)
                 : opensSearch ? SearchHints
@@ -118,6 +118,7 @@ namespace XboxSeries.Core
             Settings.PropertyChanged += refresh;
             Search.PropertyChanged += refresh;
             TextEntry.PropertyChanged += refresh;
+            Idle.PropertyChanged += refresh;
         }
     }
 }
