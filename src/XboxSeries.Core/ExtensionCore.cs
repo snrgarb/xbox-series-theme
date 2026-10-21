@@ -294,10 +294,10 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own and its closing one as
-        /// its pill collapses, however many pages its description held it for, unless the call's or
+        /// The next waiting Toast, with the notification sound, or a rare achievement's with its own, unless the call's or
         /// the greeting is showing, which they wait behind, or Start-up covers the screen, which they wait for. An
-        /// achievement's, rare or not, shows for the pill's longer <see cref="AchievementToastDuration"/>, and the next
+        /// achievement's shows for the pill's longer <see cref="AchievementToastDuration"/>, a rare one's for its sound's
+        /// <see cref="RareAchievementToastDuration"/>, and the next
         /// waits for its <see cref="AchievementToastOutro"/> before the usual gap.
         /// </summary>
         private void ShowNextToast()
@@ -311,7 +311,7 @@ namespace XboxSeries.Core
             shownToast = waitingToasts.Dequeue();
             var rare = shownToast.Kind == ToastKind.RareAchievementUnlocked;
             var pill = rare || shownToast.Kind == ToastKind.AchievementUnlocked;
-            var shownFor = pill ? AchievementShownFor(shownToast.Description) : ToastDuration;
+            var shownFor = rare ? RareAchievementToastDuration : pill ? AchievementShownFor(shownToast.Description) : ToastDuration;
             Toast.Show(
                 shownToast.Text, shownToast.Kind, shownToast.Image, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description,
                 pill ? shownFor : TimeSpan.Zero);
@@ -320,11 +320,6 @@ namespace XboxSeries.Core
             {
                 shownToast = null;
                 Toast.IsShown = false;
-                if (rare)
-                {
-                    sounds.Play(UiSound.RareAchievementClose);
-                }
-
                 toastTimer = waitingToasts.Count == 0 ? null : clock.After(pill ? AchievementToastOutro + ToastGap : ToastGap, ShowNextToast);
             });
         }

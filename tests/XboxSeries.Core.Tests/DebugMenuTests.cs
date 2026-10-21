@@ -137,7 +137,7 @@ namespace XboxSeries.Core.Tests
             core.DebugAchievementsUnlocked(1, rare: true);
             core.DebugAchievementsUnlocked(1, rare: false);
 
-            clock.Advance(TimeSpan.FromSeconds(8.5 + 1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
+            clock.Advance(TimeSpan.FromSeconds(8.45 + 1.12 + 0.5) - TimeSpan.FromMilliseconds(1));
             Assert.False(core.Toast.IsShown);
 
             clock.Advance(TimeSpan.FromMilliseconds(1));

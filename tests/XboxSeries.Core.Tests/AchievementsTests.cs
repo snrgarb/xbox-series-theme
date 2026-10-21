@@ -764,38 +764,24 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_rare_Toast_plays_its_closing_sound_as_its_pill_collapses_after_every_page_of_a_long_description()
+        public void The_rare_Toast_starts_to_collapse_as_its_sound_closes_however_long_its_description()
         {
             core.OnGameStarted(hades);
-            sounds.Played.Clear();
             var threePages = new string('x', 170);
 
             core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 2, description: threePages));
             clock.Advance(TimeSpan.FromSeconds(1));
-            clock.Advance(TimeSpan.FromSeconds(8.5 + 2 * 3) - TimeSpan.FromMilliseconds(1));
-            Assert.Equal(new[] { UiSound.RareAchievement }, sounds.Played);
+            Assert.Equal(TimeSpan.FromSeconds(8.45), core.Toast.ShownFor);
+
+            clock.Advance(TimeSpan.FromSeconds(8.45) - TimeSpan.FromMilliseconds(1));
+            Assert.True(core.Toast.IsShown);
 
             clock.Advance(TimeSpan.FromMilliseconds(1));
             Assert.False(core.Toast.IsShown);
-            Assert.Equal(new[] { UiSound.RareAchievement, UiSound.RareAchievementClose }, sounds.Played);
         }
 
         [Fact]
-        public void The_rare_Toast_cut_short_by_the_Guide_never_plays_its_closing_sound()
-        {
-            core.OnGameStarted(hades);
-            core.OnAchievementUnlocked(hades, Unlocked("escape", "Escaped", rarity: 2));
-            clock.Advance(TimeSpan.FromSeconds(1));
-            sounds.Played.Clear();
-
-            Tap(ControllerButton.Guide);
-            clock.Advance(TimeSpan.FromSeconds(10));
-
-            Assert.DoesNotContain(UiSound.RareAchievementClose, sounds.Played);
-        }
-
-        [Fact]
-        public void The_rare_Toast_shows_for_8_and_a_half_seconds_then_the_next_after_its_outro_and_the_usual_gap()
+        public void The_rare_Toast_shows_for_8_45_seconds_then_the_next_after_its_outro_and_the_usual_gap()
         {
             core.OnNotificationsChanged(new Notification[0]);
             core.OnGameStarted(hades);
@@ -803,7 +789,7 @@ namespace XboxSeries.Core.Tests
             clock.Advance(TimeSpan.FromSeconds(1));
             core.OnNotificationsChanged(new[] { new Notification("a", "Library updated") });
 
-            clock.Advance(TimeSpan.FromSeconds(8.49));
+            clock.Advance(TimeSpan.FromSeconds(8.44));
             Assert.True(core.Toast.IsShown);
             Assert.Equal(ToastKind.RareAchievementUnlocked, core.Toast.Kind);
 
