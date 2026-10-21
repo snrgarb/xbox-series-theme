@@ -695,6 +695,39 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Y_on_a_games_card_while_a_game_runs_only_wakes_the_screen_leaving_the_game_in_front()
+        {
+            RecentlyPlayedGame();
+            var running = Guid.NewGuid();
+            library.WithGame(running, "Halo Infinite");
+            LibraryChanged();
+            core.OnGameStarting(running);
+            core.OnGameStarted(running);
+            var game = windows.OpenWindow(@"C:\Games\Halo\halo.exe");
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            Assert.True(core.OnUserInput(ControllerButton.Y));
+            Press(ControllerButton.Y);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Empty(playnite.OpenedHubs);
+            Assert.Equal(game, windows.Foreground);
+        }
+
+        [Fact]
+        public void Y_reported_first_on_a_games_card_while_a_game_runs_only_wakes_the_screen_too()
+        {
+            RecentlyPlayedGame();
+            core.OnGameStarted(Guid.NewGuid());
+            ShowThingsOn(IdleCardKind.RecentlyPlayed);
+
+            Press(ControllerButton.Y);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Empty(playnite.OpenedHubs);
+        }
+
+        [Fact]
         public void Y_on_a_tip_only_wakes_the_screen()
         {
             ShowThingsOn(IdleCardKind.Tip);

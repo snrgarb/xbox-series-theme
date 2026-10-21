@@ -149,11 +149,11 @@ namespace XboxSeries.Core
         /// menu going. The hub is for the main list's selected game, so over Search, or where the main list's filter
         /// leaves the game out (My games' Games, for one not installed), the main list takes every game, given back as
         /// the page goes; over Play history it lists Play history's, as a tile there does. A tip's card, or none, only
-        /// wakes.
+        /// wakes, as does any card while a game runs: the game keeps the front, and the press reaches it too.
         /// </summary>
         private void SeeIdleCardsGame(IdleCard card)
         {
-            if (!(card?.GameId is Guid gameId))
+            if (!(card?.GameId is Guid gameId) || runningGame != null)
             {
                 return;
             }
