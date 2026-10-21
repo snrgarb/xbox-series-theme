@@ -17,21 +17,22 @@
         <Grid>
             <Grid x:Name="Art" Background="White">
                 <!--
-                    The shadow is drawn once into a picture, at the 4K screen's 2 pixels to a 1080p one, rather than again
-                    every frame the tile is redrawn. The picture is the icon's parent's: WPF caches an element under its own
-                    effect, so a cache on the icon itself would hold it unshadowed.
+                    The shadow is an ImageShadow, the icon's own shape made once into a picture, not an effect, which is
+                    worked out again on the CPU, at the 4K screen's size, whenever WPF loses the graphics card (#95). The
+                    two are drawn once into a picture, at the 4K screen's 2 pixels to a 1080p one, rather than again every
+                    frame the tile is redrawn.
                 -->
                 <Border x:Name="Shadowed" Margin="18">
                     <Border.CacheMode>
                         <BitmapCache RenderAtScale="2" SnapsToDevicePixels="True" />
                     </Border.CacheMode>
-                    <Image x:Name="Icon"
-                           Source="{Binding Icon, Converter={StaticResource Image}, ConverterParameter=480}"
-                           Stretch="Uniform" RenderOptions.BitmapScalingMode="Fant">
-                        <Image.Effect>
-                            <DropShadowEffect Color="Black" BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.3" />
-                        </Image.Effect>
-                    </Image>
+                    <Grid>
+                        <local:ImageShadow x:Name="IconShadow" Source="{Binding Source, ElementName=Icon}"
+                                           BlurRadius="18" ShadowDepth="3" ShadowOpacity="0.3" />
+                        <Image x:Name="Icon"
+                               Source="{Binding Icon, Converter={StaticResource Image}, ConverterParameter=480}"
+                               Stretch="Uniform" RenderOptions.BitmapScalingMode="Fant" />
+                    </Grid>
                 </Border>
                 <Viewbox x:Name="NoIcon" Margin="18" Visibility="Collapsed">
                     <TextBlock x:Name="NoIconGlyph" Text="&#xECAA;" FontFamily="{DynamicResource XboxIconFont}" Foreground="#FF333333" />
@@ -49,7 +50,7 @@
                 <Setter TargetName="Art" Property="Background" Value="{DynamicResource GlyphBrush}" />
                 <Setter TargetName="Shadowed" Property="Margin" Value="0" />
                 <Setter TargetName="Shadowed" Property="CacheMode" Value="{x:Null}" />
-                <Setter TargetName="Icon" Property="Effect" Value="{x:Null}" />
+                <Setter TargetName="IconShadow" Property="Visibility" Value="Collapsed" />
                 <Setter TargetName="NoIconGlyph" Property="Foreground" Value="White" />
             </DataTrigger>
             <!-- The band fades in and out with the tile's focus, at Home's game tiles' pace. -->

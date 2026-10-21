@@ -26,6 +26,8 @@
     <None Remove="extension.yaml" />
     <!-- The QR code of Discord's developer portal, on Settings' Discord, pre-rendered: its address never changes. -->
     <Resource Include="DiscordPortalQr.png" />
+    <!-- A library source icon's soft shadow, pre-rendered, shared with the Dashboard's library tiles (SourceBadge). -->
+    <Resource Include="$(DashboardDir)Images\source-*-shadow.png" Link="%(Filename)%(Extension)" />
     <AssemblyMetadata Include="PluginGuid" Value="$(PluginGuid)" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' != 'Debug'">

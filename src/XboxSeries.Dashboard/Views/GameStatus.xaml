@@ -50,17 +50,29 @@
                             edges fall outside) and darkened; the triggers below give it its picture only when there is
                             no background art, so under background art it is neither decoded nor blurred. Background
                             art gets no effect: it is full size.
+                            The cover is blurred small and stretched to fill the screen, as the Game hub's: laid out 128 by
+                            72, a fifteenth of the 1080p screen, drawn once into a picture that size (times the screen's
+                            scaling) and blurred there, by a fifteenth of the radius and overhanging by a fifteenth. Blurred
+                            at the screen's own size, the blur is worked out again on the CPU, at 4K, whenever WPF loses the
+                            graphics card, as it does when Windows sleeps (#95); at this size it is nothing.
                         -->
                         <Grid x:Name="XboxGameStatusArt" Grid.RowSpan="4" Grid.ColumnSpan="3"
                               ClipToBounds="True" IsHitTestVisible="False">
                             <Grid x:Name="XboxGameStatusCoverArt" Visibility="Collapsed">
-                                <Image x:Name="XboxGameStatusCover" Stretch="UniformToFill" Margin="-120"
-                                       HorizontalAlignment="Center" VerticalAlignment="Top"
-                                       RenderOptions.BitmapScalingMode="HighQuality">
-                                    <Image.Effect>
-                                        <BlurEffect Radius="60" RenderingBias="Performance" />
-                                    </Image.Effect>
-                                </Image>
+                                <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Top">
+                                    <Grid Width="128" Height="72" ClipToBounds="True">
+                                        <Grid.CacheMode>
+                                            <BitmapCache RenderAtScale="1" />
+                                        </Grid.CacheMode>
+                                        <Image x:Name="XboxGameStatusCover" Stretch="UniformToFill" Margin="-8"
+                                               HorizontalAlignment="Center" VerticalAlignment="Top"
+                                               RenderOptions.BitmapScalingMode="HighQuality">
+                                            <Image.Effect>
+                                                <BlurEffect Radius="4" RenderingBias="Performance" />
+                                            </Image.Effect>
+                                        </Image>
+                                    </Grid>
+                                </Viewbox>
                                 <Rectangle Fill="#99000000" />
                             </Grid>
                             <Image x:Name="XboxGameStatusBackground" Stretch="UniformToFill"
