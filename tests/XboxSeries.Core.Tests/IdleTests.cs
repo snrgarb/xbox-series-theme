@@ -364,8 +364,9 @@ namespace XboxSeries.Core.Tests
             Wait(5);
             Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
 
+            // Seen at the next look, it wakes the screen once Playnite has had its while to hand on a press of it.
             input.Use();
-            clock.Advance(TimeSpan.FromSeconds(1));
+            clock.Advance(TimeSpan.FromSeconds(1.5));
 
             Assert.Equal(IdleStage.Awake, core.Idle.Stage);
             Assert.False(core.OnUserInput());
@@ -461,6 +462,50 @@ namespace XboxSeries.Core.Tests
         }
 
         /// <summary>A game on the Recent row, with Home's focus on its tile.</summary>
+        [Fact]
+        public void A_pad_held_still_while_dimmed_with_Playnite_in_front_keeps_things_from_showing_and_wakes_the_screen()
+        {
+            FocusRecentTile();
+            Wait(2);
+            Assert.Equal(IdleStage.Dimmed, core.Idle.Stage);
+
+            input.IsHeld = true;
+            Wait(4);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.Null(core.Idle.Card);
+        }
+
+        [Fact]
+        public void A_timer_falling_due_while_a_wake_seen_outside_Playnite_waits_on_Playnite_leaves_the_stage_alone()
+        {
+            FocusRecentTile();
+            Wait(2);
+
+            // Just before Show things after falls due, the look sees input Playnite has yet to hand on.
+            clock.Advance(TimeSpan.FromMinutes(3) - TimeSpan.FromMilliseconds(1100));
+            input.Use();
+            clock.Advance(TimeSpan.FromMilliseconds(1150));
+
+            Assert.NotEqual(IdleStage.ShowingThings, core.Idle.Stage);
+        }
+
+        [Fact]
+        public void The_Guide_buttons_wake_press_over_a_game_seen_by_the_pad_before_Playnite_reports_it_is_still_swallowed()
+        {
+            windows.OpenWindow(@"C:\Games\Halo\halo.exe");
+            Wait(5);
+            Assert.Equal(IdleStage.ShowingThings, core.Idle.Stage);
+
+            input.Use();
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Press(ControllerButton.Guide);
+            Wait(0.1);
+
+            Assert.Equal(IdleStage.Awake, core.Idle.Stage);
+            Assert.False(core.Guide.IsOpen);
+        }
+
         private HomeTile FocusRecentTile()
         {
             core.OnLibraryChanged(new FakeLibrary().WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12)).Snapshot());
