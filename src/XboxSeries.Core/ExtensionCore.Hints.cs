@@ -58,6 +58,16 @@ namespace XboxSeries.Core
             RefreshHints();
         }
 
+        /// <summary>Home's top bar got focus: Y there opens Search, with no menu.</summary>
+        public void FocusTopBar()
+        {
+        }
+
+        /// <summary>Focus left Home's top bar, to Home's rows, a page in Home's place, or with Playnite leaving the foreground.</summary>
+        public void LeaveTopBar()
+        {
+        }
+
         /// <summary>
         /// More options while a tile with a Tile menu has focus, other than on Home's Recent row, or a game in My games
         /// &amp; apps' grid, or the Game hub; nothing while a Tile menu, the Guide, a prompt or Start-up is up.
