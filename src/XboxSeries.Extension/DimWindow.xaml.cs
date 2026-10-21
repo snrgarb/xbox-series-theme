@@ -76,14 +76,8 @@ namespace XboxSeries.Extension
             front = CardA;
             back = CardB;
             keepOnTop = new DispatcherTimer(DispatcherPriority.Background, Dispatcher) { Interval = KeepOnTopEvery };
-            keepOnTop.Tick += (_, __) =>
-            {
-                if (IsVisible && idle.IsDimmed)
-                {
-                    Raise(this);
-                    RaiseAbove();
-                }
-            };
+            keepOnTop.Tick += (_, __) => RaiseIfDimmed();
+            Closed += (_, __) => keepOnTop.Stop();
             SizeChanged += (_, __) => FitToScreen();
             idle.PropertyChanged += OnIdleChanged;
             SourceInitialized += (_, __) =>
@@ -179,6 +173,16 @@ namespace XboxSeries.Extension
             RaiseAbove();
         }
 
+        /// <summary>Back to the top, the Toast's over it, while it is up.</summary>
+        private void RaiseIfDimmed()
+        {
+            if (IsVisible && idle.IsDimmed)
+            {
+                Raise(this);
+                RaiseAbove();
+            }
+        }
+
         /// <summary>
         /// Back over a window that has just shown while the dim is up, once it has placed itself, which it does after
         /// showing: the Guide opened by the core, or a dialog of Playnite's.
@@ -190,14 +194,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-            {
-                if (IsVisible && idle.IsDimmed)
-                {
-                    Raise(this);
-                    RaiseAbove();
-                }
-            }));
+            Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(RaiseIfDimmed));
         }
 
         private void RaiseAbove()
