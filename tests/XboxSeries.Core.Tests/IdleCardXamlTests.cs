@@ -223,7 +223,11 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(640, Const("PictureDecodeWidth"));
             Assert.Contains("DecodedImageConverter.Load(picture, PictureDecodeWidth)", code);
             Assert.Equal("320", (string)Named(Load("IdleCardControl.xaml"), "Picture").Attribute("Height"));
-            Assert.Contains("isCover ? 480 : artDecodeWidth", Code("HeroLayer.cs"));
+            // A cover is blurred once into a picture of its own, so it is decoded no wider than its blur keeps.
+            var hero = Code("HeroLayer.cs");
+            Assert.Equal(120, int.Parse(Regex.Match(hero, @"CoverDecodeWidth = (\d+);").Groups[1].Value));
+            Assert.Contains("DecodedImageConverter.Load(art.Image, CoverDecodeWidth)", hero);
+            Assert.Contains("DecodedImageConverter.Load(art.Image, artDecodeWidth)", hero);
         }
 
         [Fact]
