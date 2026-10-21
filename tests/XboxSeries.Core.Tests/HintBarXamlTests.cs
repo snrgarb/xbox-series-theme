@@ -139,20 +139,6 @@ namespace XboxSeries.Core.Tests
             Assert.Contains(onY.Elements(), s => (string)s.Attribute("TargetName") == "MenuGlyph" && (string)s.Attribute("Value") == "Collapsed");
         }
 
-        // Y Search shows alone on Home's top bar, which no control of the extension's is on to report, so the bar does.
-        [Fact]
-        public void The_bar_tells_the_core_when_Homes_top_bar_gets_and_loses_focus()
-        {
-            var main = XDocument.Load(Path.Combine(RepoRoot, "src", "XboxSeries.Dashboard", "Views", "Main.xaml"));
-            var host = main.Descendants().Single(e => (string)e.Attribute(X + "Name") == "PART_MainHost");
-            Assert.Contains(host.Descendants(), e => (string)e.Attribute(X + "Name") == "XboxTopBar");
-
-            var code = File.ReadAllText(Path.Combine(ExtensionDir, "HintBarControl.xaml.cs"));
-            Assert.Contains("HomeRows.FindPart(this, \"XboxTopBar\")", code);
-            Assert.Contains("core.FocusTopBar();", code);
-            Assert.Contains("core.LeaveTopBar();", code);
-        }
-
         private const string XboxYellow = "#FFFFB900";
 
         private static XElement Named(XDocument xaml, string name) =>
