@@ -18,8 +18,6 @@ namespace XboxSeries.Core.Tests
         // Blurs left in, each with its reason, by the file and the key or name of what wears it.
         private static readonly (string File, string Key)[] Kept =
         {
-            // The focus glow, being replaced on its own (#95).
-            (Path.Combine("XboxSeries.Dashboard", "Constants.xaml"), "XboxFocusGlow"),
             // Blurred art the theme can't make once in code, as the extension does: each is laid out small, drawn into a
             // picture that size and blurred there, then stretched to fill the screen, so the blur is of a picture 128
             // wide (times the screen's scaling), not of the 4K screen (see Every_blur_left_is_of_a_small_picture).
@@ -46,7 +44,7 @@ namespace XboxSeries.Core.Tests
         {
             // A Viewbox stretches it to the screen; under it, the blurred element, or what holds it, is at most 128 wide and
             // drawn into a picture its own size: a BitmapCache, or a FadeImage, which caches itself.
-            foreach (var (file, name) in Kept.Skip(1))
+            foreach (var (file, name) in Kept)
             {
                 var doc = XDocument.Load(Path.Combine(RepoRoot, "src", file));
                 var blurred = doc.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);

@@ -29,6 +29,9 @@ namespace XboxSeries.Extension
         /// <summary>The cover's blur, an eighth of its width as at any size.</summary>
         private const double CoverBlurRadius = CoverDecodeWidth / 8.0;
 
+        /// <summary>The cover last asked for while it was still downloading, to be blurred and shown as it arrives.</summary>
+        private BitmapSource pendingCover;
+
         /// <summary>The width background art is decoded at; a cover, blurred, needs less.</summary>
         private readonly int artDecodeWidth;
 
@@ -55,9 +58,16 @@ namespace XboxSeries.Extension
             // A cover is small and portrait: blurred, it reads as colour behind what is over it rather than as a stretched
             // picture. It overhangs the layer so the blur's soft edges fall outside it.
             var isCover = art.IsCover;
-            image.Source = isCover
-                ? BlurredOnce(DecodedImageConverter.Load(art.Image, CoverDecodeWidth))
-                : DecodedImageConverter.Load(art.Image, artDecodeWidth);
+            pendingCover = null;
+            if (isCover)
+            {
+                ShowCover(DecodedImageConverter.Load(art.Image, CoverDecodeWidth));
+            }
+            else
+            {
+                image.Source = DecodedImageConverter.Load(art.Image, artDecodeWidth);
+            }
+
             image.Margin = isCover ? new Thickness(-120) : new Thickness(0);
             darken.Visibility = isCover ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -66,15 +76,30 @@ namespace XboxSeries.Extension
         /// The cover blurred once, into a picture of its own, then only scaled up to fill the layer. A blur effect on
         /// the image would blur it again every frame it is drawn in: nothing on the GPU, but seconds a frame on the CPU,
         /// as WPF draws just after Windows wakes, at the 4K screen's size and three times over in the Idle card's cache.
-        /// A cover still downloading shows unblurred.
+        /// A cover still downloading shows nothing until it has arrived, as stretched sharp it is a few big pixels.
         /// </summary>
-        private static BitmapSource BlurredOnce(BitmapSource cover)
+        private void ShowCover(BitmapSource cover)
         {
-            if (cover == null || cover.IsDownloading)
+            if (cover == null || !cover.IsDownloading)
             {
-                return cover;
+                image.Source = cover == null ? null : BlurredOnce(cover);
+                return;
             }
 
+            image.Source = null;
+            cover.DownloadCompleted += (_, __) =>
+            {
+                // Not if other art has shown since.
+                if (pendingCover == cover)
+                {
+                    image.Source = BlurredOnce(cover);
+                }
+            };
+            pendingCover = cover;
+        }
+
+        private static BitmapSource BlurredOnce(BitmapSource cover)
+        {
             var size = new Size(cover.PixelWidth, cover.PixelHeight);
             var blurred = new Image { Source = cover, Stretch = Stretch.Fill, Effect = new BlurEffect { Radius = CoverBlurRadius } };
             blurred.Measure(size);

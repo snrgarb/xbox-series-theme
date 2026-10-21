@@ -231,6 +231,14 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_cover_still_downloading_is_blurred_once_it_arrives_never_shown_sharp()
+        {
+            var hero = Code("HeroLayer.cs");
+            Assert.Contains("DownloadCompleted +=", hero);
+            Assert.DoesNotContain("return cover;", hero);
+        }
+
+        [Fact]
         public void The_card_asks_only_for_the_extensions_own_or_the_shared_resources_never_a_StaticResource_of_the_theme()
         {
             foreach (var file in new[] { "IdleCardControl.xaml", "DimWindow.xaml" })

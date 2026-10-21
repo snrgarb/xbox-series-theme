@@ -11,7 +11,7 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// The Guide's panel and its contents behind a menu or prompt, blurred as a BlurEffect of radius 12 on each of them
-    /// blurred them: drawn together into one picture, blurred as it is drawn, once. The picture is a unit's pixel to a 1080p one;
+    /// used to blur them, but drawn together into one picture and blurred as it is drawn, once. The picture is a unit's pixel to a 1080p one;
     /// the blur is soft enough that the 4K screen's 2 pixels to one add nothing, and it is quick to make.
     /// </summary>
     internal static class PanelBlur
