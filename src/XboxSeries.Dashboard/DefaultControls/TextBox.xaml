@@ -30,7 +30,7 @@
                         <Border x:Name="FocusRing" Margin="-5" BorderThickness="4" CornerRadius="9"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">
                             <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                <Border Style="{DynamicResource XboxFocusGlow}" />
+                                <Control Style="{DynamicResource XboxFocusGlow}" />
                             </Border>
                         </Border>
                     </Grid>

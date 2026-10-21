@@ -121,7 +121,7 @@
                                                 <Border x:Name="Ring" Margin="-12" CornerRadius="999" BorderThickness="7"
                                                         BorderBrush="{DynamicResource GlyphLightBrush}" Opacity="0">
                                                     <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                                        <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-9" />
+                                                        <Control Style="{DynamicResource XboxFocusGlowRound}" Margin="-9" />
                                                     </Border>
                                                 </Border>
                                             </Grid>

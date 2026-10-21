@@ -53,7 +53,7 @@
                             <Grid Background="Transparent">
                                 <Border x:Name="Back">
                                     <Border x:Name="Glow" Style="{DynamicResource XboxFocusGlowCache}" Visibility="Hidden">
-                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                        <Control Style="{DynamicResource XboxFocusGlow}" />
                                     </Border>
                                 </Border>
                                 <ContentPresenter Margin="75,0,43,0" VerticalAlignment="Center" />
@@ -106,7 +106,7 @@
                                 <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="10"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                                     <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                        <Control Style="{DynamicResource XboxFocusGlow}" />
                                     </Border>
                                 </Border>
                             </Grid>
@@ -165,13 +165,13 @@
                                         Visibility="Hidden">
                                     <!-- The band centred on this thinner edge: half its 2 and 8 more out. -->
                                     <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                        <Border Style="{DynamicResource XboxFocusGlow}" Margin="-6.5" />
+                                        <Control Style="{DynamicResource XboxFocusGlow}" Margin="-6.5" />
                                     </Border>
                                 </Border>
                                 <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="12"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                                     <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                        <Control Style="{DynamicResource XboxFocusGlow}" />
                                     </Border>
                                 </Border>
                             </Grid>
@@ -233,7 +233,7 @@
                                 <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="12"
                                         BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                                     <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                        <Border Style="{DynamicResource XboxFocusGlow}" />
+                                        <Control Style="{DynamicResource XboxFocusGlow}" />
                                     </Border>
                                 </Border>
                             </Grid>

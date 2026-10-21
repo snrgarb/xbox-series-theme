@@ -104,7 +104,7 @@
                         <Border x:Name="Ring" Background="#33FFFFFF" BorderThickness="3" CornerRadius="999"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                             <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-7" />
+                                <Control Style="{DynamicResource XboxFocusGlowRound}" Margin="-7" />
                             </Border>
                         </Border>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -190,7 +190,7 @@
                             <Border x:Name="Ring" Margin="-7" BorderThickness="3" CornerRadius="999"
                                     BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
                                 <Border Style="{DynamicResource XboxFocusGlowCache}">
-                                    <Border Style="{DynamicResource XboxFocusGlow}" CornerRadius="999" Margin="-7" />
+                                    <Control Style="{DynamicResource XboxFocusGlowRound}" Margin="-7" />
                                 </Border>
                             </Border>
                         </Grid>
