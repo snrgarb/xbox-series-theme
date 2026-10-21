@@ -103,6 +103,10 @@ namespace XboxSeries.Extension
             {
                 ScrollFocusedIntoView();
             }
+            else if (e.PropertyName == nameof(GuideState.Dialog))
+            {
+                BlurPanelBehindDialog(guide.Dialog != null);
+            }
             else if (e.PropertyName == nameof(GuideState.Tab))
             {
                 // Switched with the panel in, the new tab's content comes in from the side it was switched towards;
@@ -141,6 +145,50 @@ namespace XboxSeries.Extension
                     closeDeadline.Start();
                 }
             }
+        }
+
+        /// <summary>
+        /// Behind a menu or prompt, shows the panel and its contents blurred: drawn together once into a picture, as they
+        /// are once laid out, blurred as they're drawn, and shown in their place until the dialog goes. Nothing on them
+        /// changes while a dialog has the pad, and the picture slides with the panel. Its own effect would be worked out
+        /// again every frame, and on the CPU, at the 4K screen's size, while WPF is without the graphics card (#95).
+        /// One dialog following another keeps the picture.
+        /// </summary>
+        private void BlurPanelBehindDialog(bool blurred)
+        {
+            if (!blurred)
+            {
+                PanelBlurred.Visibility = Visibility.Collapsed;
+                PanelBlurred.Source = null;
+                GuidePanel.Visibility = PanelContents.Visibility = Visibility.Visible;
+                return;
+            }
+
+            if (PanelBlurred.Visibility == Visibility.Visible)
+            {
+                return;
+            }
+
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (core.Guide.Dialog == null || PanelBlurred.Visibility == Visibility.Visible)
+                {
+                    return;
+                }
+
+                var picture = PanelBlur.Draw(Sliding, new FrameworkElement[] { GuidePanel, PanelContents }, out var bounds);
+                if (picture == null)
+                {
+                    return;
+                }
+
+                PanelBlurred.Source = picture;
+                PanelBlurred.Margin = new Thickness(bounds.Left, bounds.Top, 0, 0);
+                PanelBlurred.Width = bounds.Width;
+                PanelBlurred.Height = bounds.Height;
+                PanelBlurred.Visibility = Visibility.Visible;
+                GuidePanel.Visibility = PanelContents.Visibility = Visibility.Hidden;
+            }));
         }
 
         /// <summary>

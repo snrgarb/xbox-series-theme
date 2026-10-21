@@ -47,15 +47,17 @@
 
         <!--
             Over the art's middle, a cover standing in for background art, whole, or an achievement's icon, large, as the
-            console's unlocked achievement's, its corners rounded as a tile's.
+            console's unlocked achievement's, its corners rounded as a tile's, a soft shadow round it. The shadow is a
+            SoftShadow, not an effect: the card is on screen as the PC sleeps, and an effect in its picture is worked out
+            again on the CPU, at the 4K screen's size, once WPF loses the graphics card (#95).
         -->
         <Border x:Name="Picture" Height="320" Margin="0,600,0,0" HorizontalAlignment="Center" VerticalAlignment="Top"
                 Visibility="Collapsed">
-            <Border.Effect>
-                <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.5" Color="Black" />
-            </Border.Effect>
-            <Image x:Name="PictureImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
-                   local:RoundedClip.Radius="4" />
+            <Grid>
+                <local:SoftShadow BlurRadius="24" ShadowOpacity="0.5" CornerRadius="4" />
+                <Image x:Name="PictureImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
+                       local:RoundedClip.Radius="4" />
+            </Grid>
         </Border>
 
         <!--

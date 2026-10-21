@@ -363,34 +363,49 @@
                         <!--
                             Background: the game's own background art, blurred and dimmed; without one, its cover, blurred and
                             dimmed; without either, the plain dashboard background behind them.
+                            Each is blurred small and stretched to fill the screen: laid out 128 by 72, a fifteenth of the
+                            1080p screen, drawn once into a picture that size (times the screen's scaling) and blurred there,
+                            by a fifteenth of the radius. Blurred at the screen's own size, the blur is worked out again on the
+                            CPU, at 4K, whenever WPF loses the graphics card, as it does when Windows sleeps, and one frame of
+                            that took minutes (#95); at this size it is nothing. The stretch smooths it further.
                         -->
                         <Grid ClipToBounds="True" IsHitTestVisible="False">
-                            <Image Source="{Binding CoverImageObject}" Stretch="UniformToFill"
-                                   RenderOptions.BitmapScalingMode="LowQuality" RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform>
-                                    <!-- Grown so the blur's soft edges fall off screen. -->
-                                    <ScaleTransform ScaleX="1.15" ScaleY="1.15" />
-                                </Image.RenderTransform>
-                                <Image.Effect>
-                                    <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
-                                </Image.Effect>
-                                <Image.Style>
-                                    <Style TargetType="Image">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
-                                                    <Condition Binding="{Binding CoverImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="False" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Image.Style>
-                            </Image>
+                            <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid Width="128" Height="72" ClipToBounds="True">
+                                    <Grid.CacheMode>
+                                        <BitmapCache RenderAtScale="1" />
+                                    </Grid.CacheMode>
+                                    <Image x:Name="XboxGameDetailsCover" Source="{Binding CoverImageObject}" Stretch="UniformToFill"
+                                           RenderOptions.BitmapScalingMode="HighQuality" RenderTransformOrigin="0.5,0.5">
+                                        <Image.RenderTransform>
+                                            <!-- Grown so the blur's soft edges fall off screen. -->
+                                            <ScaleTransform ScaleX="1.15" ScaleY="1.15" />
+                                        </Image.RenderTransform>
+                                        <Image.Effect>
+                                            <BlurEffect Radius="4" KernelType="Gaussian" RenderingBias="Performance" />
+                                        </Image.Effect>
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                            <Condition Binding="{Binding CoverImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Grid>
+                            </Viewbox>
 
-                            <!-- Playnite sets the part's source, so it is hidden through a wrapper when the game has no art of its own. -->
+                            <!--
+                                Playnite sets the part's source, so it is hidden through a wrapper when the game has no art of its
+                                own. A FadeImage draws itself into a picture its own size, so laid out small it is blurred small.
+                            -->
                             <Grid>
                                 <Grid.Style>
                                     <Style TargetType="Grid">
@@ -401,8 +416,10 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Grid.Style>
-                                <FadeImage x:Name="PART_ImageBackground" Stretch="UniformToFill"
-                                           IsBlurEnabled="True" BlurAmount="30" />
+                                <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <FadeImage x:Name="PART_ImageBackground" Width="128" Height="72" Stretch="UniformToFill"
+                                               IsBlurEnabled="True" BlurAmount="2" />
+                                </Viewbox>
                             </Grid>
 
                             <Rectangle>

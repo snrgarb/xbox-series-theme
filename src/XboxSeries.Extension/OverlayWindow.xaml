@@ -82,13 +82,16 @@
                                 <TextBlock Text="&#xE7FC;" Style="{StaticResource GuideIcon}" FontSize="36" HorizontalAlignment="Center" />
                             </Border>
                             <Image x:Name="CoverArt" Stretch="UniformToFill" />
-                            <!-- The game's library source, bottom left, where the console badges its covers. -->
-                            <Path x:Name="SourceIcon" Width="18" Height="18" Margin="6" Stretch="Uniform"
-                                  HorizontalAlignment="Left" VerticalAlignment="Bottom" Fill="White" Visibility="Collapsed">
-                                <Path.Effect>
-                                    <DropShadowEffect ShadowDepth="0" BlurRadius="6" Opacity="0.8" Color="Black" />
-                                </Path.Effect>
-                            </Path>
+                            <!--
+                                The game's library source, bottom left, where the console badges its covers, its shadow the
+                                Home tiles' picture (see HomeTiles.xaml), 8 out round 20 so 7.2 round 18, not an effect,
+                                which is worked out again on the CPU whenever WPF loses the graphics card (#95).
+                            -->
+                            <Grid x:Name="SourceBadge" Width="18" Height="18" Margin="6" HorizontalAlignment="Left"
+                                  VerticalAlignment="Bottom" Visibility="Collapsed">
+                                <Image x:Name="SourceShadow" Margin="-7.2" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" />
+                                <Path x:Name="SourceIcon" Stretch="Uniform" Fill="White" />
+                            </Grid>
                         </Grid>
                         <Grid x:Name="Avatar" Width="60" Height="60" HorizontalAlignment="Left" Margin="18,0,0,0" Visibility="Collapsed">
                             <Ellipse Fill="#FF4A4A4A" />
@@ -487,11 +490,13 @@
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding Source}" Value="Steam">
                         <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceSteam}" />
-                        <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="SourceShadow" Property="Source" Value="{StaticResource SourceSteamShadow}" />
+                        <Setter TargetName="SourceBadge" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Source}" Value="Xbox">
                         <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceXbox}" />
-                        <Setter TargetName="SourceIcon" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="SourceShadow" Property="Source" Value="{StaticResource SourceXboxShadow}" />
+                        <Setter TargetName="SourceBadge" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding HasDividerAbove}" Value="True">
                         <Setter TargetName="Divider" Property="Visibility" Value="Visible" />
@@ -992,21 +997,6 @@
                         <GradientStop Color="#FF132A0E" Offset="1" />
                     </LinearGradientBrush>
                 </Border.Background>
-                <!-- Blurred behind a menu or prompt, so the dialog reads clearly over it. -->
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Effect">
-                            <Setter.Value>
-                                <BlurEffect Radius="12" />
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Dialog}" Value="{x:Null}">
-                                <Setter Property="Effect" Value="{x:Null}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
                 <Grid local:RoundedClip.Radius="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="102" />
@@ -1046,21 +1036,6 @@
                 <Grid.RenderTransform>
                     <TranslateTransform x:Name="ContentSlide" X="-700" />
                 </Grid.RenderTransform>
-                <!-- Blurred behind a menu or prompt with the panel. -->
-                <Grid.Style>
-                    <Style TargetType="Grid">
-                        <Setter Property="Effect">
-                            <Setter.Value>
-                                <BlurEffect Radius="12" />
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Dialog}" Value="{x:Null}">
-                                <Setter Property="Effect" Value="{x:Null}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Grid.Style>
                     <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="21,0,0,0">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -1231,6 +1206,14 @@
                         </ScrollViewer>
                     </DockPanel>
             </Grid>
+            <!--
+                Behind a menu or prompt, the panel and its contents blurred, so the dialog reads clearly over them: a
+                picture of the two, blurred once as the dialog opens (OverlayWindow.xaml.cs), shown in their place. A live
+                blur is worked out again every frame, and once WPF loses the graphics card, as it does whenever Windows
+                sleeps, on the CPU at the 4K screen's size (#95).
+            -->
+            <Image x:Name="PanelBlurred" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="Fill"
+                   IsHitTestVisible="False" Visibility="Collapsed" RenderOptions.BitmapScalingMode="Linear" />
             <!-- The panel and its contents dimmed behind a flyout, as on the console, so the flyout in front stands out. -->
             <Border Width="536" Margin="78,33,0,35" HorizontalAlignment="Left" CornerRadius="12" Background="#73000000">
                 <Border.Style>
@@ -1251,9 +1234,6 @@
             -->
             <Border x:Name="FlyoutPanel" Width="536" Margin="155,33,0,0" HorizontalAlignment="Left"
                     CornerRadius="12,12,0,0" Background="#FF1F1F1F">
-                <Border.Effect>
-                    <DropShadowEffect ShadowDepth="0" BlurRadius="24" Opacity="0.7" Color="Black" />
-                </Border.Effect>
                 <Border.RenderTransform>
                     <TranslateTransform />
                 </Border.RenderTransform>
@@ -1279,6 +1259,12 @@
                     </Style>
                 </Border.Style>
                 <Grid>
+                    <!--
+                        Its shadow, drawn only outside the panel, so over its background; a SoftShadow rather than an effect,
+                        which is worked out again on the CPU at the 4K screen's size whenever WPF loses the graphics card
+                        (#95). Inside the panel, it slides in the panel's picture with it.
+                    -->
+                    <local:SoftShadow BlurRadius="24" ShadowOpacity="0.7" CornerRadius="12,12,0,0" />
                     <DockPanel local:RoundedClip.Radius="12">
                         <!-- Its heading, the utility's name. -->
                         <TextBlock DockPanel.Dock="Top" Text="{Binding Flyout.Title}" Style="{StaticResource GuideHeader}" FontSize="33" Margin="28,36,0,24" />
