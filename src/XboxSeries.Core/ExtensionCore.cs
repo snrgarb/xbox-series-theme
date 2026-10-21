@@ -90,6 +90,9 @@ namespace XboxSeries.Core
         private readonly IController controller;
         private readonly IMediaSessions mediaSessions;
         private readonly IAchievements achievements;
+
+        /// <summary>Input anywhere in Windows, which the Idle screen counts outside Playnite's windows too.</summary>
+        private readonly IInputActivity inputActivity;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
         private IReadOnlyList<Notification> notifications = new Notification[0];
 
@@ -181,9 +184,11 @@ namespace XboxSeries.Core
             IDownloads downloads,
             IMediaSessions mediaSessions = null,
             IAchievements achievements = null,
-            Random random = null)
+            Random random = null,
+            IInputActivity inputActivity = null)
         {
             this.random = random ?? new Random();
+            this.inputActivity = inputActivity ?? NoInputActivity.Instance;
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
             this.achievements = achievements ?? NoAchievements.Instance;
             this.downloads = downloads;
