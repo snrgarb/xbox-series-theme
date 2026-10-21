@@ -14,7 +14,7 @@ namespace XboxSeries.Core
         /// <summary>Show things after's timer, counting from the last input too, not from the dim; null while it isn't counting.</summary>
         private IDisposable showThingsTimer;
 
-        /// <summary>How often the Idle screen looks at whether Playnite is in front, which nothing tells of.</summary>
+        /// <summary>How often the Idle screen looks for input outside Playnite's windows, which nothing tells of.</summary>
         private static readonly TimeSpan IdleWatchInterval = TimeSpan.FromSeconds(1);
 
         /// <summary>Whether the Idle screen waits, as last looked at: the timers don't count meanwhile.</summary>
@@ -304,9 +304,9 @@ namespace XboxSeries.Core
         private bool IsIdlePausedNow => IsStartupShown || LaunchScreen.IsShown;
 
         /// <summary>
-        /// Starts the Idle screen's timers as the core is made. Start-up, a game and the Launch screen tell the core as
-        /// they begin and end, but nothing tells of the foreground changing, so it is looked at every
-        /// <see cref="IdleWatchInterval"/>.
+        /// Starts the Idle screen's timers as the core is made. Start-up and the Launch screen tell the core as they begin
+        /// and end, but Playnite's windows see no input made outside them, over a game or another app, so the
+        /// <see cref="IInputActivity"/> port is looked at every <see cref="IdleWatchInterval"/>.
         /// </summary>
         private void WatchIdle()
         {
@@ -319,14 +319,39 @@ namespace XboxSeries.Core
             };
             idlePaused = IsIdlePausedNow;
             RestartIdle();
-            WatchIdleForeground();
+            WatchIdleInput();
         }
 
-        private void WatchIdleForeground() => clock.After(IdleWatchInterval, () =>
+        private void WatchIdleInput() => clock.After(IdleWatchInterval, () =>
         {
-            LookAtIdlePause();
-            WatchIdleForeground();
+            LookForInputOutsidePlaynite();
+            WatchIdleInput();
         });
+
+        /// <summary>
+        /// Input anywhere in Windows since the last look, a pad held off its rest included: it counts as input, the timers
+        /// counting again from now and a dimmed screen waking, swallowing nothing, the input not being Playnite's to
+        /// swallow. Input in Playnite's windows is seen here too, after <see cref="OnUserInput(ControllerButton?)"/> or
+        /// <see cref="OnControllerButton(ControllerButton, ButtonState)"/> has woken the screen and set the wake press
+        /// swallowing, which it leaves alone; so a dimmed screen with Playnite in front is left for those to wake, should
+        /// the look come between the input and Playnite handing it on, which would let the wake press through. Returns
+        /// whether it counted.
+        /// </summary>
+        private bool LookForInputOutsidePlaynite()
+        {
+            if (!inputActivity.InputSinceLastLook())
+            {
+                return false;
+            }
+
+            if (Idle.IsDimmed && windowSystem.IsPlaynites(windowSystem.ForegroundWindow))
+            {
+                return false;
+            }
+
+            RestartIdle();
+            return true;
+        }
 
         /// <summary>
         /// A pause beginning wakes the screen and stops the timers; one ending has them count again from zero.
@@ -342,14 +367,10 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// A timer fell due: whether it may change the stage, the pause looked at first, since the foreground may have
-        /// changed since the last look.
+        /// A timer fell due: whether it may change the stage, input outside Playnite looked for first, since there may
+        /// have been some since the last look; input counted has the timers count again instead.
         /// </summary>
-        private bool IdleTimerMayAct()
-        {
-            LookAtIdlePause();
-            return !idlePaused;
-        }
+        private bool IdleTimerMayAct() => !LookForInputOutsidePlaynite();
 
         /// <summary>The screen is awake, and unless the Idle screen waits, the timers count again from now.</summary>
         private void RestartIdle()
