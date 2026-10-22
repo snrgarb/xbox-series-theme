@@ -1,6 +1,8 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using static XboxSeries.BootShell.NativeMethods;
 
@@ -28,15 +30,36 @@ namespace XboxSeries.BootShell
         /// <summary>Starts <paramref name="exe"/> with <paramref name="arguments"/>, in its own folder, and logs it or why it didn't start.</summary>
         public static void Start(SignInLog log, string exe, string arguments = "")
         {
-            var commandLine = arguments.Length == 0 ? $"\"{exe}\"" : $"\"{exe}\" {arguments}";
-            try
+            if (StartHeld(log, exe, arguments) is (_, var handle))
             {
-                log.Write($"started pid {StartProcess(exe, commandLine)}: {commandLine}");
+                CloseHandle(handle);
             }
-            catch (Win32Exception e)
+        }
+
+        /// <summary>
+        /// Starts Playnite's Fullscreen with --hidesplashscreen and returns its pid and process handle, which the caller
+        /// closes; or null, logged, if it didn't start.
+        /// </summary>
+        public static (int Pid, nint Handle)? StartFullscreen(SignInLog log) => StartHeld(log, FullscreenApp, "--hidesplashscreen");
+
+        /// <summary>Starts <paramref name="exe"/> as <see cref="Start"/> does, unless it already runs in this session.</summary>
+        public static void StartUnlessRunning(SignInLog log, string exe, string arguments)
+        {
+            var session = Process.GetCurrentProcess().SessionId;
+            var running = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(exe));
+            var up = running.Any(p => p.SessionId == session);
+            foreach (var process in running)
             {
-                log.Write($"ERROR: couldn't start {commandLine}: {e.Message}");
+                process.Dispose();
             }
+
+            if (up)
+            {
+                log.Write($"not started, already running: {exe}");
+                return;
+            }
+
+            Start(log, exe, arguments);
         }
 
         /// <summary>Starts explorer, only while no shell is up, so never a second one.</summary>
@@ -53,8 +76,24 @@ namespace XboxSeries.BootShell
             Start(log, Explorer);
         }
 
-        /// <summary>Starts one process and returns its pid; throws if Windows won't.</summary>
-        private static int StartProcess(string exe, string commandLine)
+        private static (int Pid, nint Handle)? StartHeld(SignInLog log, string exe, string arguments)
+        {
+            var commandLine = arguments.Length == 0 ? $"\"{exe}\"" : $"\"{exe}\" {arguments}";
+            try
+            {
+                var started = StartProcess(exe, commandLine);
+                log.Write($"started pid {started.Pid}: {commandLine}");
+                return started;
+            }
+            catch (Win32Exception e)
+            {
+                log.Write($"ERROR: couldn't start {commandLine}: {e.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>Starts one process and returns its pid and process handle; throws if Windows won't.</summary>
+        private static (int Pid, nint Handle) StartProcess(string exe, string commandLine)
         {
             // CreateProcess may write to the command line, so it gets a copy.
             var buffer = (commandLine + '\0').ToCharArray();
@@ -68,8 +107,7 @@ namespace XboxSeries.BootShell
                 }
 
                 CloseHandle(process.hThread);
-                CloseHandle(process.hProcess);
-                return process.dwProcessId;
+                return (process.dwProcessId, process.hProcess);
             }
         }
     }

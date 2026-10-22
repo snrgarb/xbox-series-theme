@@ -13,11 +13,17 @@ namespace XboxSeries.BootShell
         public const uint WS_EX_TOPMOST = 0x00000008;
         public const uint WS_EX_TOOLWINDOW = 0x00000080;
         public const uint WS_EX_NOACTIVATE = 0x08000000;
+        public static readonly nint HWND_TOPMOST = -1;
+        public const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOACTIVATE = 0x0010, SWP_SHOWWINDOW = 0x0040;
         public const int SW_HIDE = 0;
         public const int SW_SHOWNOACTIVATE = 4;
         public const int SM_XVIRTUALSCREEN = 76, SM_YVIRTUALSCREEN = 77, SM_CXVIRTUALSCREEN = 78, SM_CYVIRTUALSCREEN = 79;
+        public const int SM_SHUTTINGDOWN = 0x2000;
         public const int BLACK_BRUSH = 4;
+        public const uint WM_PAINT = 0x000F;
         public const uint WM_CLOSE = 0x0010;
+        public const uint WM_QUERYENDSESSION = 0x0011;
+        public const uint WM_ENDSESSION = 0x0016;
         public const uint WM_SETCURSOR = 0x0020;
 
         public const uint INFINITE = 0xFFFFFFFF;
@@ -25,6 +31,16 @@ namespace XboxSeries.BootShell
         public const uint QS_ALLINPUT = 0x04FF;
         public const uint MWMO_INPUTAVAILABLE = 0x0004;
         public const uint PM_REMOVE = 0x0001;
+
+        public const uint SYNCHRONIZE = 0x00100000;
+        public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        public const uint WAIT_OBJECT_0 = 0;
+        public const int ProcessCommandLineInformation = 60;
+
+        public const int TRANSPARENT = 1;
+        public const uint DT_CENTER = 0x0001, DT_VCENTER = 0x0004, DT_SINGLELINE = 0x0020, DT_NOPREFIX = 0x0800;
+        public const int FW_NORMAL = 400;
+        public const uint CLEARTYPE_QUALITY = 5;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct WNDCLASSEXW
@@ -57,6 +73,29 @@ namespace XboxSeries.BootShell
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int left, top, right, bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PAINTSTRUCT
+        {
+            public nint hdc;
+            public int fErase;
+            public RECT rcPaint;
+            public int fRestore, fIncUpdate;
+            public fixed byte rgbReserved[32];
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct UNICODE_STRING
+        {
+            public ushort Length, MaximumLength;
+            public char* Buffer;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
         public struct STARTUPINFOW
         {
             public int cb;
@@ -84,6 +123,23 @@ namespace XboxSeries.BootShell
         [LibraryImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CloseHandle(nint handle);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        public static partial nint OpenProcess(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, int processId);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        public static partial uint WaitForSingleObject(nint handle, uint milliseconds);
+
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool GetExitCodeProcess(nint process, out uint exitCode);
+
+        [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool QueryFullProcessImageName(nint process, uint flags, char* name, ref uint size);
+
+        [LibraryImport("ntdll.dll")]
+        public static partial int NtQueryInformationProcess(nint process, int informationClass, void* information, uint length, out uint returnLength);
 
         [LibraryImport("kernel32.dll", EntryPoint = "OpenEventW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
         public static partial nint OpenEvent(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name);
@@ -122,6 +178,28 @@ namespace XboxSeries.BootShell
         [LibraryImport("user32.dll")]
         public static partial int GetSystemMetrics(int index);
 
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int width, int height, uint flags);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool InvalidateRect(nint hwnd, nint rect, [MarshalAs(UnmanagedType.Bool)] bool erase);
+
+        [LibraryImport("user32.dll")]
+        public static partial nint BeginPaint(nint hwnd, PAINTSTRUCT* paint);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool EndPaint(nint hwnd, PAINTSTRUCT* paint);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool GetClientRect(nint hwnd, out RECT rect);
+
+        [LibraryImport("user32.dll", EntryPoint = "DrawTextW")]
+        public static partial int DrawText(nint hdc, char* text, int length, RECT* rect, uint format);
+
         [LibraryImport("user32.dll")]
         public static partial nint SetCursor(nint cursor);
 
@@ -155,6 +233,19 @@ namespace XboxSeries.BootShell
 
         [LibraryImport("gdi32.dll")]
         public static partial nint GetStockObject(int index);
+
+        [LibraryImport("gdi32.dll", EntryPoint = "CreateFontW", StringMarshalling = StringMarshalling.Utf16)]
+        public static partial nint CreateFont(int height, int width, int escapement, int orientation, int weight, uint italic,
+            uint underline, uint strikeOut, uint charSet, uint outPrecision, uint clipPrecision, uint quality, uint pitchAndFamily, string face);
+
+        [LibraryImport("gdi32.dll")]
+        public static partial nint SelectObject(nint hdc, nint obj);
+
+        [LibraryImport("gdi32.dll")]
+        public static partial uint SetTextColor(nint hdc, uint color);
+
+        [LibraryImport("gdi32.dll")]
+        public static partial int SetBkMode(nint hdc, int mode);
 
         [LibraryImport("dwmapi.dll")]
         public static partial int DwmFlush();
