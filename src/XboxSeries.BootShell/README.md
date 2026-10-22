@@ -36,5 +36,6 @@ The exe is `src\XboxSeries.BootShell\bin\Release\net10.0-windows\win-x64\publish
 Until `--install` comes:
 
 - set `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell` to the published exe's full path, and delete the value to undo;
-- switch Steam's, Discord's and Spotify's entries off in Settings > Apps > Startup;
+- switch Steam's, Discord's and Spotify's entries off in Settings > Apps > Startup, and any other app you don't want trailing Start-up;
+- switch off Playnite's own *Start Playnite on computer startup* (Settings > General in Desktop mode): while it's on, Playnite rewrites `Startup\Playnite.lnk` at every start, and that shortcut's Desktop app tells the running Fullscreen to switch to Desktop mode as explorer's startup run reaches it;
 - keep a safety net like the prototype's `safety-net.vbs` registered (on the `prototype/boot-shell` branch), so a Boot shell that dies before explorer still lets Orca come up.
