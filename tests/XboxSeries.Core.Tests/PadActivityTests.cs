@@ -1,3 +1,5 @@
+using System.Linq;
+using XboxSeries.Core;
 using XboxSeries.Extension;
 using Xunit;
 
@@ -135,6 +137,74 @@ namespace XboxSeries.Core.Tests
             watch.Saw(2, pushed);
 
             Assert.False(watch.UsedSinceLastLook());
+        }
+    }
+
+    // The buttons a pad holds down as the core names them, read through XInput for the Start-up sequence, as
+    // Windows.Gaming.Input reads every pad at rest for a program that isn't in the foreground. The mapping is plain C#
+    // (PadActivity.cs, compiled in here).
+    public class PadButtonsTests
+    {
+        private static ControllerButton[] Read(ushort buttons, short leftX = 0, short leftY = 0) =>
+            PadActivity.ButtonsOf(new PadReading(buttons, 0, 0, leftX, leftY, 0, 0)).OrderBy(b => b).ToArray();
+
+        [Fact]
+        public void The_face_buttons_read_as_themselves()
+        {
+            Assert.Equal(new[] { ControllerButton.A }, Read(0x1000));
+            Assert.Equal(new[] { ControllerButton.B }, Read(0x2000));
+            Assert.Equal(new[] { ControllerButton.X }, Read(0x4000));
+            Assert.Equal(new[] { ControllerButton.Y }, Read(0x8000));
+        }
+
+        [Fact]
+        public void View_reads_as_Back_and_Menu_as_Start()
+        {
+            Assert.Equal(new[] { ControllerButton.Back }, Read(0x0020));
+            Assert.Equal(new[] { ControllerButton.Start }, Read(0x0010));
+        }
+
+        [Fact]
+        public void The_D_pad_shoulders_and_stick_presses_read_as_themselves()
+        {
+            Assert.Equal(new[] { ControllerButton.DPadUp }, Read(0x0001));
+            Assert.Equal(new[] { ControllerButton.DPadDown }, Read(0x0002));
+            Assert.Equal(new[] { ControllerButton.DPadLeft }, Read(0x0004));
+            Assert.Equal(new[] { ControllerButton.DPadRight }, Read(0x0008));
+            Assert.Equal(new[] { ControllerButton.LeftShoulder }, Read(0x0100));
+            Assert.Equal(new[] { ControllerButton.RightShoulder }, Read(0x0200));
+            Assert.Equal(new[] { ControllerButton.LeftStick }, Read(0x0040));
+            Assert.Equal(new[] { ControllerButton.RightStick }, Read(0x0080));
+        }
+
+        [Fact]
+        public void Buttons_held_together_all_read()
+        {
+            Assert.Equal(new[] { ControllerButton.A, ControllerButton.DPadRight }, Read(0x1008));
+        }
+
+        [Fact]
+        public void The_Guide_bit_and_a_pad_at_rest_read_nothing()
+        {
+            Assert.Empty(Read(0x0400));
+            Assert.Empty(Read(0));
+        }
+
+        [Fact]
+        public void The_left_stick_past_halfway_reads_as_the_D_pad_and_short_of_it_as_nothing()
+        {
+            Assert.Equal(new[] { ControllerButton.DPadLeft }, Read(0, leftX: -16384));
+            Assert.Equal(new[] { ControllerButton.DPadRight }, Read(0, leftX: 16384));
+            Assert.Equal(new[] { ControllerButton.DPadUp }, Read(0, leftY: 16384));
+            Assert.Equal(new[] { ControllerButton.DPadDown }, Read(0, leftY: -16384));
+            Assert.Equal(new[] { ControllerButton.DPadDown, ControllerButton.DPadRight }, Read(0, leftX: 32767, leftY: -32768));
+            Assert.Empty(Read(0, leftX: 16383, leftY: -16383));
+        }
+
+        [Fact]
+        public void The_left_stick_and_the_D_pad_pushed_the_same_way_read_once()
+        {
+            Assert.Equal(new[] { ControllerButton.DPadLeft }, Read(0x0004, leftX: -32768));
         }
     }
 }

@@ -8,10 +8,9 @@ namespace XboxSeries.Extension
 {
     /// <summary>
     /// Input anywhere in Windows, for the Idle screen to count while a game or another app is in front: the keyboard and
-    /// the mouse from Windows' last input time, and every pad read through XInput, as Playnite reads them, which keeps
-    /// reading while another app has the foreground. The pads are read more often than the core looks, on a timer's
-    /// thread, so a tap between two looks isn't missed (<see cref="PadWatch"/>); a slot with no pad is tried again only
-    /// every few seconds, as reading an empty one is slow. Nothing here throws: without XInput, the pads go unread.
+    /// the mouse from Windows' last input time, and every pad read through <see cref="XInput"/>, which keeps reading while
+    /// another app has the foreground. The pads are read more often than the core looks, on a timer's thread, so a tap
+    /// between two looks isn't missed (<see cref="PadWatch"/>). Nothing here throws: without XInput, the pads go unread.
     /// </summary>
     internal sealed class WindowsInputActivity : IInputActivity, IDisposable
     {
@@ -20,20 +19,9 @@ namespace XboxSeries.Extension
         /// <summary>How often the pads are read: quicker than a tap, so one between two looks is still seen.</summary>
         private const int ReadEveryMs = 50;
 
-        /// <summary>How long a slot with no pad goes untried.</summary>
-        private const int EmptySlotUntriedMs = 3000;
-
-        private const uint ERROR_SUCCESS = 0;
-        private const uint ERROR_DEVICE_NOT_CONNECTED = 1167;
-
         private readonly PadWatch pads = new PadWatch();
-        private readonly int[] emptySince = new int[PadWatch.Slots];
-        private readonly bool[] empty = new bool[PadWatch.Slots];
         private readonly Timer timer;
 
-        /// <summary>The XInput the pads are read through, found on the first read; null once neither DLL loads.</summary>
-        private GetState getState;
-        private bool xinputFailed;
         private bool readFailedLogged;
         private volatile bool disposed;
 
@@ -77,38 +65,9 @@ namespace XboxSeries.Extension
         {
             try
             {
-                if (getState == null && !xinputFailed)
-                {
-                    getState = FindXInput();
-                    xinputFailed = getState == null;
-                }
-
-                if (getState == null)
-                {
-                    return;
-                }
-
-                var now = Environment.TickCount;
                 for (var slot = 0; slot < PadWatch.Slots; slot++)
                 {
-                    if (empty[slot] && unchecked(now - emptySince[slot]) < EmptySlotUntriedMs)
-                    {
-                        continue;
-                    }
-
-                    var result = getState((uint)slot, out var state);
-                    if (result == ERROR_SUCCESS)
-                    {
-                        empty[slot] = false;
-                        var pad = state.Gamepad;
-                        pads.Saw(slot, new PadReading(pad.wButtons, pad.bLeftTrigger, pad.bRightTrigger, pad.sThumbLX, pad.sThumbLY, pad.sThumbRX, pad.sThumbRY));
-                    }
-                    else
-                    {
-                        empty[slot] = result == ERROR_DEVICE_NOT_CONNECTED;
-                        emptySince[slot] = now;
-                        pads.Saw(slot, null);
-                    }
+                    pads.Saw(slot, XInput.Read(slot));
                 }
             }
             catch (Exception e)
@@ -134,33 +93,6 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>XInput 1.4, Windows' own since 8, or 9.1.0, which every Windows has; null, logged, when neither loads.</summary>
-        private static GetState FindXInput()
-        {
-            try
-            {
-                XInputGetState14(0, out _);
-                return XInputGetState14;
-            }
-            catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
-            {
-                logger.Info($"No XInput 1.4 ({e.Message}); trying XInput 9.1.0");
-            }
-
-            try
-            {
-                XInputGetState910(0, out _);
-                return XInputGetState910;
-            }
-            catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException)
-            {
-                logger.Error(e, "No XInput: the Idle screen can't see the pads outside Playnite");
-                return null;
-            }
-        }
-
-        private delegate uint GetState(uint userIndex, out XINPUT_STATE state);
-
         [StructLayout(LayoutKind.Sequential)]
         private struct LASTINPUTINFO
         {
@@ -168,29 +100,6 @@ namespace XboxSeries.Extension
             public uint dwTime;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_GAMEPAD
-        {
-            public ushort wButtons;
-            public byte bLeftTrigger;
-            public byte bRightTrigger;
-            public short sThumbLX;
-            public short sThumbLY;
-            public short sThumbRX;
-            public short sThumbRY;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct XINPUT_STATE
-        {
-            public uint dwPacketNumber;
-            public XINPUT_GAMEPAD Gamepad;
-        }
-
         [DllImport("user32.dll")] private static extern bool GetLastInputInfo(ref LASTINPUTINFO info);
-
-        [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")] private static extern uint XInputGetState14(uint userIndex, out XINPUT_STATE state);
-
-        [DllImport("xinput9_1_0.dll", EntryPoint = "XInputGetState")] private static extern uint XInputGetState910(uint userIndex, out XINPUT_STATE state);
     }
 }

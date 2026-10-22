@@ -11,34 +11,13 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Adapter: pad 1's battery, and the buttons the pads hold down for the Start-up sequence. Windows.Gaming.Input finds the
     /// pad and says whether it is on a cable; the percentage of a pad on Bluetooth LE, as Xbox pads on a PC usually are,
-    /// comes from <see cref="BluetoothBattery"/>. XInput isn't used: it reports no battery for a pad on Bluetooth.
+    /// comes from <see cref="BluetoothBattery"/>, as XInput reports no battery for a pad on Bluetooth. The buttons come
+    /// from <see cref="XInput"/>, as Windows.Gaming.Input reads a pad at rest while another program has the foreground.
     /// </summary>
     internal sealed class GamingInputController : IController
     {
-        /// <summary>How far the left stick is pushed before it counts as the D-pad, as Playnite's own does.</summary>
-        private const double StickAsDPad = 0.5;
-
         private static readonly ILogger logger = LogManager.GetLogger();
         private static readonly ControllerButton[] NoButtons = new ControllerButton[0];
-
-        /// <summary>The pad's buttons as the core names them, the Guide button aside, which Windows.Gaming.Input never reads.</summary>
-        private static readonly KeyValuePair<GamepadButtons, ControllerButton>[] Buttons =
-        {
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.A, ControllerButton.A),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.B, ControllerButton.B),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.X, ControllerButton.X),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.Y, ControllerButton.Y),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.LeftShoulder, ControllerButton.LeftShoulder),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.RightShoulder, ControllerButton.RightShoulder),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.View, ControllerButton.Back),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.Menu, ControllerButton.Start),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.LeftThumbstick, ControllerButton.LeftStick),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.RightThumbstick, ControllerButton.RightStick),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.DPadUp, ControllerButton.DPadUp),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.DPadDown, ControllerButton.DPadDown),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.DPadLeft, ControllerButton.DPadLeft),
-            new KeyValuePair<GamepadButtons, ControllerButton>(GamepadButtons.DPadRight, ControllerButton.DPadRight),
-        };
 
         private bool unavailable;
 
@@ -68,49 +47,23 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The buttons any pad holds down now, read straight from Windows on the calling thread, so the Start-up thread can
-        /// read the pads while Playnite's UI thread, through which its own controller callback comes, is busy. Every pad
-        /// is read, as Playnite reads every pad through XInput: the first Windows lists may be one nobody holds, as the
-        /// virtual pad a streaming host such as Sunshine leaves connected. The left stick pushed counts as the D-pad, as it
-        /// does through Playnite. Empty with no pad, without Windows.Gaming.Input, or when the reading fails, which is
-        /// logged the first time. It keeps nothing between calls, so any thread may call it.
+        /// read the pads while Playnite's UI thread, through which its own controller callback comes, is busy, and while
+        /// another program has the foreground, as a startup app may take it while Who's playing today? shows, and
+        /// explorer and the startup apps do under the Boot shell. Every slot is read, as Playnite reads them: the first
+        /// may hold a pad nobody holds, as the virtual pad a streaming host such as Sunshine leaves connected. The left
+        /// stick pushed counts as the D-pad, as it does through Playnite (<see cref="PadActivity.ButtonsOf"/>). Empty with
+        /// no pad, without XInput, or when the reading fails, which is logged the first time. Any thread may call it.
         /// </summary>
         public IReadOnlyCollection<ControllerButton> ButtonsDown()
         {
-            if (unavailable)
-            {
-                return NoButtons;
-            }
-
             try
             {
                 var down = new HashSet<ControllerButton>();
-                foreach (var pad in Gamepad.Gamepads)
+                for (var slot = 0; slot < PadWatch.Slots; slot++)
                 {
-                    var reading = pad.GetCurrentReading();
-                    foreach (var button in Buttons)
+                    if (XInput.Read(slot) is PadReading pad)
                     {
-                        if ((reading.Buttons & button.Key) != 0)
-                        {
-                            down.Add(button.Value);
-                        }
-                    }
-
-                    if (reading.LeftThumbstickX <= -StickAsDPad)
-                    {
-                        down.Add(ControllerButton.DPadLeft);
-                    }
-                    else if (reading.LeftThumbstickX >= StickAsDPad)
-                    {
-                        down.Add(ControllerButton.DPadRight);
-                    }
-
-                    if (reading.LeftThumbstickY >= StickAsDPad)
-                    {
-                        down.Add(ControllerButton.DPadUp);
-                    }
-                    else if (reading.LeftThumbstickY <= -StickAsDPad)
-                    {
-                        down.Add(ControllerButton.DPadDown);
+                        down.UnionWith(PadActivity.ButtonsOf(pad));
                     }
                 }
 

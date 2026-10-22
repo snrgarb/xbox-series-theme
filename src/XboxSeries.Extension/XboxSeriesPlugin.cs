@@ -353,7 +353,7 @@ namespace XboxSeries.Extension
             {
                 logger.Info($"Guide button {state} at {at:HH:mm:ss.fff}");
 
-                // The Start-up sequence reads the pad itself, but Windows.Gaming.Input never sees the Guide button. The
+                // The Start-up sequence reads the pad itself, but XInputGetState never reads the Guide button. The
                 // core, which it reaches too, swallows it meanwhile.
                 startup?.Press(button.Value, state);
             }

@@ -22,7 +22,7 @@ namespace XboxSeries.Extension
     /// <see cref="StartupSequence"/>'s <see cref="StartupState"/> and holds no logic: shown over the monitor Playnite's
     /// window is on while <see cref="StartupState.IsShown"/>, holding the foreground so no key reaches Home behind it,
     /// and fading out to reveal Home once the sequence ends, the foreground handed back to Playnite's window. While it
-    /// shows it reads the pads itself, every frame, through Windows.Gaming.Input, since Playnite's controller callback waits
+    /// shows it reads the pads itself, every frame, through XInput, since Playnite's controller callback waits
     /// on its UI thread; every key here is marked handled, and the keyboard's own arrows, Enter, Space and Escape stand
     /// in for the pad's. A click on a profile signs it in. A boot video that is missing or can't play ends as one that
     /// finished would; the sequence ends one that runs long. It tells the Boot shell, where one runs, of its first frame
@@ -475,7 +475,7 @@ namespace XboxSeries.Extension
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
-            // The pad is read from Windows.Gaming.Input, so every key, Playnite's own for the pad and Alt+F4 too, is
+            // The pad is read from XInput, so every key, Playnite's own for the pad and Alt+F4 too, is
             // marked handled; the real keys standing in for the pad's buttons drive the sequence.
             e.Handled = true;
             if (!e.IsRepeat && ButtonFor(e) is ControllerButton button)

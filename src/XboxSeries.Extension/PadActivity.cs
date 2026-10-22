@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using XboxSeries.Core;
+
 namespace XboxSeries.Extension
 {
     /// <summary>One pad's state as XInput reads it: its buttons, its triggers and its sticks.</summary>
@@ -23,7 +26,10 @@ namespace XboxSeries.Extension
         public short RightY { get; }
     }
 
-    /// <summary>What counts as someone using a pad, apart from XInput so it can be checked on its own.</summary>
+    /// <summary>
+    /// What a pad's reading says: whether someone is using it, for the Idle screen, and the buttons it holds down, for the
+    /// Start-up sequence; apart from XInput so it can be checked on its own.
+    /// </summary>
     internal static class PadActivity
     {
         /// <summary>XINPUT_GAMEPAD_TRIGGER_THRESHOLD: a trigger pressed past it is pressed.</summary>
@@ -66,6 +72,64 @@ namespace XboxSeries.Extension
             || Moved(before.LeftY, now.LeftY, StickStep)
             || Moved(before.RightX, now.RightX, StickStep)
             || Moved(before.RightY, now.RightY, StickStep);
+
+        /// <summary>XInput's button bits as the core names them, the Guide button aside, which XInputGetState never reads.</summary>
+        private static readonly KeyValuePair<ushort, ControllerButton>[] ButtonBits =
+        {
+            new KeyValuePair<ushort, ControllerButton>(0x0001, ControllerButton.DPadUp),
+            new KeyValuePair<ushort, ControllerButton>(0x0002, ControllerButton.DPadDown),
+            new KeyValuePair<ushort, ControllerButton>(0x0004, ControllerButton.DPadLeft),
+            new KeyValuePair<ushort, ControllerButton>(0x0008, ControllerButton.DPadRight),
+            new KeyValuePair<ushort, ControllerButton>(0x0010, ControllerButton.Start),
+            new KeyValuePair<ushort, ControllerButton>(0x0020, ControllerButton.Back),
+            new KeyValuePair<ushort, ControllerButton>(0x0040, ControllerButton.LeftStick),
+            new KeyValuePair<ushort, ControllerButton>(0x0080, ControllerButton.RightStick),
+            new KeyValuePair<ushort, ControllerButton>(0x0100, ControllerButton.LeftShoulder),
+            new KeyValuePair<ushort, ControllerButton>(0x0200, ControllerButton.RightShoulder),
+            new KeyValuePair<ushort, ControllerButton>(0x1000, ControllerButton.A),
+            new KeyValuePair<ushort, ControllerButton>(0x2000, ControllerButton.B),
+            new KeyValuePair<ushort, ControllerButton>(0x4000, ControllerButton.X),
+            new KeyValuePair<ushort, ControllerButton>(0x8000, ControllerButton.Y),
+        };
+
+        /// <summary>How far the left stick's axis, of 32767 each way, is pushed before it counts as the D-pad, as Playnite's own does.</summary>
+        public const int StickAsDPad = 16384;
+
+        /// <summary>
+        /// The buttons <paramref name="pad"/> holds down as the core names them, View as Back and Menu as Start, with the
+        /// left stick pushed past halfway counting as the D-pad, as it does through Playnite.
+        /// </summary>
+        public static IReadOnlyCollection<ControllerButton> ButtonsOf(PadReading pad)
+        {
+            var down = new HashSet<ControllerButton>();
+            foreach (var bit in ButtonBits)
+            {
+                if ((pad.Buttons & bit.Key) != 0)
+                {
+                    down.Add(bit.Value);
+                }
+            }
+
+            if (pad.LeftX <= -StickAsDPad)
+            {
+                down.Add(ControllerButton.DPadLeft);
+            }
+            else if (pad.LeftX >= StickAsDPad)
+            {
+                down.Add(ControllerButton.DPadRight);
+            }
+
+            if (pad.LeftY >= StickAsDPad)
+            {
+                down.Add(ControllerButton.DPadUp);
+            }
+            else if (pad.LeftY <= -StickAsDPad)
+            {
+                down.Add(ControllerButton.DPadDown);
+            }
+
+            return down;
+        }
 
         private static bool Moved(int before, int now, int step) => System.Math.Abs(now - before) > step;
 
