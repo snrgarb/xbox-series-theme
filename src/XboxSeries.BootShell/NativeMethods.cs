@@ -34,6 +34,8 @@ namespace XboxSeries.BootShell
 
         public const uint SYNCHRONIZE = 0x00100000;
         public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        public const uint PROCESS_TERMINATE = 0x0001;
+        public const uint GW_OWNER = 4;
         public const uint WAIT_OBJECT_0 = 0;
         public const int ProcessCommandLineInformation = 60;
 
@@ -141,6 +143,14 @@ namespace XboxSeries.BootShell
         [LibraryImport("ntdll.dll")]
         public static partial int NtQueryInformationProcess(nint process, int informationClass, void* information, uint length, out uint returnLength);
 
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool TerminateProcess(nint process, uint exitCode);
+
+        /// <summary>An export by its ordinal, as <paramref name="ordinal"/> below 0x10000 is taken for one.</summary>
+        [LibraryImport("kernel32.dll")]
+        public static partial nint GetProcAddress(nint module, nint ordinal);
+
         [LibraryImport("kernel32.dll", EntryPoint = "OpenEventW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
         public static partial nint OpenEvent(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name);
 
@@ -228,6 +238,26 @@ namespace XboxSeries.BootShell
         [LibraryImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool AllowSetForegroundWindow(int processId);
+
+        // user32: Playnite's windows
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool EnumWindows(delegate* unmanaged<nint, nint, int> callback, nint param);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool IsWindowVisible(nint hwnd);
+
+        [LibraryImport("user32.dll")]
+        public static partial nint GetWindow(nint hwnd, uint command);
+
+        [LibraryImport("user32.dll", EntryPoint = "GetWindowTextW")]
+        public static partial int GetWindowText(nint hwnd, char* text, int maxCount);
+
+        [LibraryImport("user32.dll", EntryPoint = "PostMessageW", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool PostMessage(nint hwnd, uint message, nint wParam, nint lParam);
 
         // gdi32, dwmapi
 

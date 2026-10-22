@@ -21,6 +21,7 @@ namespace XboxSeries.BootShell
         private readonly TimeSpan createdBeforeLog;
         private readonly Stopwatch sinceLog = Stopwatch.StartNew();
         private readonly List<string> pending = new();
+        private readonly object gate = new();
         private StreamWriter? writer;
 
         /// <param name="created">When the Boot shell's process was created, on the local clock.</param>
@@ -39,13 +40,18 @@ namespace XboxSeries.BootShell
         {
             var sinceCreated = (long)(createdBeforeLog + sinceLog.Elapsed).TotalMilliseconds;
             var line = $"{DateTime.Now:HH:mm:ss.fff} boot+{Environment.TickCount64} h+{sinceCreated}  {message}";
-            if (writer == null)
-            {
-                pending.Add(line);
-                return;
-            }
 
-            writer.WriteLine(line);
+            // The pad's thread writes too.
+            lock (gate)
+            {
+                if (writer == null)
+                {
+                    pending.Add(line);
+                    return;
+                }
+
+                writer.WriteLine(line);
+            }
         }
 
         /// <summary>Opens this sign-in's file in <paramref name="folder"/>, writes the waiting lines and deletes old files.</summary>
@@ -54,13 +60,16 @@ namespace XboxSeries.BootShell
             Directory.CreateDirectory(folder);
             var path = Path.Combine(folder, created.ToString("yyyyMMdd-HHmmss") + ".log");
             var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
-            writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
-            foreach (var line in pending)
+            lock (gate)
             {
-                writer.WriteLine(line);
-            }
+                writer = new StreamWriter(stream, new UTF8Encoding(false)) { AutoFlush = true };
+                foreach (var line in pending)
+                {
+                    writer.WriteLine(line);
+                }
 
-            pending.Clear();
+                pending.Clear();
+            }
 
             // The names sort by when each sign-in started.
             foreach (var old in Directory.GetFiles(folder, "*.log").OrderByDescending(Path.GetFileName, StringComparer.Ordinal).Skip(Kept))
@@ -76,6 +85,15 @@ namespace XboxSeries.BootShell
             }
         }
 
-        public void Dispose() => writer?.Dispose();
+        public void Dispose()
+        {
+            lock (gate)
+            {
+                writer?.Dispose();
+
+                // A line the pad's thread writes after this waits in memory, never thrown on.
+                writer = null;
+            }
+        }
     }
 }

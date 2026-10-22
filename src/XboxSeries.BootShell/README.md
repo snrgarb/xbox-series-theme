@@ -7,7 +7,8 @@ This TV PC's own sign-in shell (see **Boot shell** in `CONTEXT.md`, and ADR 0002
 3. makes its two events, which Start-up sets (`BootShellEvents.cs`, linked from the extension), and takes the black down at FirstFrame, or after 60 s at most;
 4. starts explorer at BootVideoEnded, or 20 s after FirstFrame without it, or at the 60 s limit, once per sign-in, and only while no shell is up;
 5. starts Steam, Discord and Spotify straight after explorer;
-6. keeps Fullscreen up until Windows ends the session (the watchdog, below), and starts explorer again if Windows hasn't brought it back 10 s after it went.
+6. keeps Fullscreen up until Windows ends the session (the watchdog, below), and starts explorer again if Windows hasn't brought it back 10 s after it went;
+7. reads the pad itself (the pad, below), so the TV can always be driven back from the sofa.
 
 ## The watchdog
 
@@ -21,11 +22,20 @@ Every exit code but 0 counts as a crash, the crash window's Restart (-1) too. Th
 
 Each Fullscreen start, its own relaunch or one that follows Playnite quitting, gets the black and freshly reset events, until its first frame or for 60 s at most, a start that reaches the limit counting from then as past its first frame; not a `--safestartup` start. The black lifts at once when `playnite.log` says "Unhandled exception occured.", so the pad can reach Playnite's crash window.
 
+## The pad
+
+A thread of its own reads every pad every 30 ms through `XInputGetStateEx` (xinput1_4's ordinal 100), which has the Guide button as `0x0400`; a slot with no pad is tried once a second. Game Bar's controller button is off on this PC (`UseNexusForGameBarEnabled` 0).
+
+- **The Guide button**, while no Fullscreen runs (Playnite closed on purpose, fallen back, or in Desktop mode): starts `Playnite.FullscreenApp.exe --hidesplashscreen` behind the black, after deleting `safestart.flag`, and starts the crash count again. From Desktop mode, Playnite's own second-instance handling switches it back to Fullscreen. While Fullscreen runs the button is Playnite's, and while `update.exe` runs it starts nothing.
+- **View+Menu held for 5 s**, at any time, under the black at sign-in, over Fullscreen, over a game or with Playnite hung: `WM_CLOSE` to the window titled "Playnite" of each Fullscreen and Desktop-mode process, ending any still up 10 s later; the black and its line down; explorer, Steam, Discord and Spotify, each unless it's up. Playnite stays down, as the hold isn't a crash. It's also the button held at boot.
+
+There's no automatic hang detection: a stalled Playnite is left to the hold.
+
 It's not part of the Bundle: `dotnet build` builds it with the rest, but it is never packed into the .pext.
 
 ## Its log
 
-One plain-text file per sign-in, `%LOCALAPPDATA%\XboxSeries.BootShell\logs\<yyyyMMdd-HHmmss>.log`. Each line is stamped with the wall clock, ms since boot (`boot+`) and ms since the Boot shell's process was created (`h+`). Files past the newest 30 are deleted at sign-in. It has a line for every Playnite process that appears or exits, with its exit code and how it was judged, the crash count, each relaunch, the black and the fallback.
+One plain-text file per sign-in, `%LOCALAPPDATA%\XboxSeries.BootShell\logs\<yyyyMMdd-HHmmss>.log`. Each line is stamped with the wall clock, ms since boot (`boot+`) and ms since the Boot shell's process was created (`h+`). Files past the newest 30 are deleted at sign-in. It has a line for every Playnite process that appears or exits, with its exit code and how it was judged, the crash count, each relaunch, the black and the fallback, each Guide press, each View+Menu hold and what followed.
 
 ## Publishing
 

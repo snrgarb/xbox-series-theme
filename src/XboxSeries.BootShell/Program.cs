@@ -15,7 +15,9 @@ namespace XboxSeries.BootShell
     /// The Boot shell: at sign-in, Playnite's Fullscreen first, then black over the screen until Start-up's first frame,
     /// then explorer, Steam, Discord and Spotify as the Boot video ends (<see cref="SignInSchedule"/>); then, until
     /// Windows ends the session, it keeps Fullscreen up (<see cref="Watchdog"/>), polling Playnite's processes every
-    /// 100 ms, and starts explorer again should Windows not (<see cref="ShellWatch"/>).
+    /// 100 ms, and starts explorer again should Windows not (<see cref="ShellWatch"/>). It reads the pad itself
+    /// (<see cref="XInputPad"/>): the Guide button brings Fullscreen back while none runs, and View+Menu held for 5 s
+    /// closes Playnite to the desktop.
     /// </summary>
     internal static unsafe class Program
     {
@@ -25,6 +27,7 @@ namespace XboxSeries.BootShell
         private static readonly SignInLog log = new(Process.GetCurrentProcess().StartTime);
         private static readonly Watchdog watchdog = new(() => sinceStart.Elapsed, log.Write);
         private static readonly PlayniteProcesses playnite = new();
+        private static readonly XInputPad pad = new(() => sinceStart.Elapsed, log);
         private static nint black;
         private static bool blackUp;
         private static string? line;
@@ -62,6 +65,7 @@ namespace XboxSeries.BootShell
                 var shell = new ShellWatch(() => sinceStart.Elapsed);
                 var playniteLog = new PlayniteLog(PlayniteLog.DefaultPath);
                 Obey(orders);
+                pad.Start();
                 while (!BlackWindow.SessionEnding)
                 {
                     if (!firstFrameSeen && firstFrame.WaitOne(0))
@@ -101,6 +105,19 @@ namespace XboxSeries.BootShell
                     foreach (var (pid, exitCode) in exited)
                     {
                         Obey(watchdog.Exited(pid, exitCode));
+                    }
+
+                    while (pad.Presses.TryDequeue(out var presses))
+                    {
+                        if (presses.HasFlag(PadPresses.Hold))
+                        {
+                            Obey(watchdog.Held());
+                        }
+
+                        if (presses.HasFlag(PadPresses.Guide))
+                        {
+                            Obey(watchdog.GuidePressed());
+                        }
                     }
 
                     Obey(watchdog.Tick());
@@ -168,6 +185,23 @@ namespace XboxSeries.BootShell
                 Obey(LaunchFullscreen());
             }
 
+            if (orders.HasFlag(Orders.ClosePlaynite))
+            {
+                foreach (var pid in watchdog.Closing)
+                {
+                    PlayniteProcesses.Close(log, pid);
+                }
+            }
+
+            if (orders.HasFlag(Orders.EndPlaynite))
+            {
+                foreach (var pid in watchdog.Closing)
+                {
+                    PlayniteProcesses.End(log, pid);
+                }
+            }
+
+            // After the hold's WM_CLOSE, so Playnite is closing as the desktop starts.
             if (orders.HasFlag(Orders.StartDesktop))
             {
                 StartDesktop();

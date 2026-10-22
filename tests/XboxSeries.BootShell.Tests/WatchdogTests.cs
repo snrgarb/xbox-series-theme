@@ -267,5 +267,166 @@ namespace XboxSeries.BootShell.Tests
             Assert.Equal(Orders.None, watchdog.Exited(301, 0));
             Assert.True(watchdog.Black);
         }
+
+        [Fact]
+        public void After_the_fallback_a_Guide_press_starts_Fullscreen_and_resets_the_crash_count()
+        {
+            Launched(101, firstFrameAt: 4);
+            CrashAt(100, 101, relaunchedAs: 102);
+            CrashAt(110, 102, relaunchedAs: 103);
+            CrashAt(120, 103, relaunchedAs: 104);
+            At(125);
+            watchdog.Tick();
+
+            At(130);
+            Assert.Equal(Orders.Relaunch, watchdog.GuidePressed());
+            Assert.True(watchdog.Black);
+            Launched(105, firstFrameAt: 134);
+
+            // Two crashes more within the same 5 minutes are relaunched, as the count started again.
+            Assert.Equal(Orders.Relaunch, CrashAt(140, 105, relaunchedAs: 106));
+            Assert.Equal(Orders.Relaunch, CrashAt(150, 106, relaunchedAs: 107));
+            Assert.Null(watchdog.Line);
+        }
+
+        [Fact]
+        public void A_Guide_press_during_the_fallbacks_line_takes_it_down_and_starts_no_desktop()
+        {
+            Launched(101, firstFrameAt: 4);
+            CrashAt(100, 101, relaunchedAs: 102);
+            CrashAt(110, 102, relaunchedAs: 103);
+            CrashAt(120, 103, relaunchedAs: 104);
+
+            At(121);
+            Assert.Equal(Orders.Relaunch, watchdog.GuidePressed());
+            Assert.Null(watchdog.Line);
+            watchdog.Launched(105);
+            At(125);
+            Assert.Equal(Orders.None, watchdog.Tick());
+            Assert.True(watchdog.Black);
+        }
+
+        [Fact]
+        public void After_Exit_Playnite_a_Guide_press_starts_Fullscreen()
+        {
+            Launched(101, firstFrameAt: 4);
+            At(600);
+            watchdog.Exited(101, 0);
+
+            At(700);
+            Assert.Equal(Orders.Relaunch, watchdog.GuidePressed());
+        }
+
+        [Fact]
+        public void In_Desktop_mode_a_Guide_press_starts_Fullscreen_for_Playnite_to_switch_back()
+        {
+            Launched(101, firstFrameAt: 4);
+            At(600);
+            watchdog.Appeared(new PlayniteProcess(301, PlayniteKind.Desktop));
+            watchdog.Exited(101, 0);
+
+            At(700);
+            Assert.Equal(Orders.Relaunch, watchdog.GuidePressed());
+        }
+
+        [Fact]
+        public void While_Fullscreen_runs_the_Guide_button_is_Playnites()
+        {
+            Launched(101, firstFrameAt: 4);
+
+            At(600);
+            Assert.Equal(Orders.None, watchdog.GuidePressed());
+            Assert.False(watchdog.Black);
+        }
+
+        [Fact]
+        public void While_update_exe_runs_a_Guide_press_starts_nothing()
+        {
+            Launched(101, firstFrameAt: 4);
+            At(600);
+            watchdog.Appeared(Updater);
+            watchdog.Exited(101, 0);
+
+            Assert.Equal(Orders.None, watchdog.GuidePressed());
+        }
+
+        [Fact]
+        public void The_hold_closes_Playnite_to_the_desktop_and_it_stays_down()
+        {
+            Launched(101, firstFrameAt: 4);
+            At(600);
+            watchdog.Appeared(Updater);
+
+            Assert.Equal(Orders.ClosePlaynite | Orders.StartDesktop, watchdog.Held());
+            Assert.Equal(new[] { 101 }, watchdog.Closing);
+            Assert.False(watchdog.Black);
+
+            At(602);
+            Assert.Equal(Orders.None, watchdog.Exited(101, 0));
+            Assert.Empty(watchdog.Closing);
+            At(610);
+            Assert.Equal(Orders.None, watchdog.Tick());
+        }
+
+        [Fact]
+        public void Under_the_black_at_sign_in_the_hold_lifts_it_and_the_exit_before_the_first_frame_isnt_a_crash()
+        {
+            watchdog.Launched(101);
+
+            At(3);
+            Assert.Equal(Orders.ClosePlaynite | Orders.StartDesktop, watchdog.Held());
+            Assert.False(watchdog.Black);
+
+            At(4);
+            Assert.Equal(Orders.None, watchdog.Exited(101, 0));
+            Assert.False(watchdog.Black);
+        }
+
+        [Fact]
+        public void A_Playnite_still_up_10_s_after_the_hold_is_ended_and_that_isnt_a_crash()
+        {
+            Launched(101, firstFrameAt: 4);
+            CrashAt(100, 101, relaunchedAs: 102);
+            CrashAt(110, 102, relaunchedAs: 103);
+
+            At(120);
+            watchdog.Held();
+            At(129.9);
+            Assert.Equal(Orders.None, watchdog.Tick());
+            At(130);
+            Assert.Equal(Orders.EndPlaynite, watchdog.Tick());
+            At(130.1);
+            Assert.Equal(Orders.None, watchdog.Tick());
+
+            Assert.Equal(Orders.None, watchdog.Exited(103, 1));
+            Assert.Null(watchdog.Line);
+            Assert.False(watchdog.Black);
+        }
+
+        [Fact]
+        public void With_no_Playnite_up_the_hold_only_starts_the_desktop()
+        {
+            Launched(101, firstFrameAt: 4);
+            At(600);
+            watchdog.Exited(101, 0);
+
+            Assert.Equal(Orders.StartDesktop, watchdog.Held());
+        }
+
+        [Fact]
+        public void The_hold_during_the_fallbacks_line_takes_it_down_and_starts_the_desktop_at_once()
+        {
+            Launched(101, firstFrameAt: 4);
+            CrashAt(100, 101, relaunchedAs: 102);
+            CrashAt(110, 102, relaunchedAs: 103);
+            CrashAt(120, 103, relaunchedAs: 104);
+
+            At(121);
+            Assert.Equal(Orders.StartDesktop, watchdog.Held());
+            Assert.Null(watchdog.Line);
+            Assert.False(watchdog.Black);
+            At(125);
+            Assert.Equal(Orders.None, watchdog.Tick());
+        }
     }
 }
