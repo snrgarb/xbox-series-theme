@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The Boot shell: this TV PC's own sign-in shell, which Windows starts in explorer's place (see README.md). Not part
+    of the Bundle: it targets .NET 10, publishes as one NativeAOT exe, and is never packed into the .pext.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>XboxSeries.BootShell</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Its own version, not the Bundle's. -->
+    <Version>1.0.0</Version>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The names of the two events Start-up sets, shared with the Bundle's extension. -->
+    <Compile Include="..\XboxSeries.Extension\BootShellEvents.cs" Link="Linked\BootShellEvents.cs" />
+    <InternalsVisibleTo Include="XboxSeries.BootShell.Tests" />
+  </ItemGroup>
+</Project>
