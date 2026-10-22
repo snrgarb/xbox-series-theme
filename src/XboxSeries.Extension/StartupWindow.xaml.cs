@@ -64,9 +64,6 @@ namespace XboxSeries.Extension
         private DateTime fadeStarted;
         private bool closing;
 
-        /// <summary>Whether the boot video playing has opened, so its frames draw; false while none plays.</summary>
-        private bool videoOpened;
-
         /// <summary>Whether the window has been placed over the monitor, so a frame it draws is seen; false before it first shows.</summary>
         private bool overMonitor;
 
@@ -104,7 +101,6 @@ namespace XboxSeries.Extension
             Deactivated += (_, __) => KeepForeground();
             ContentRendered += (_, __) => StartupTiming.Log("Start-up window's first frame, on its own thread,");
             CompositionTarget.Rendering += WatchFirstFrame;
-            Video.MediaOpened += (_, __) => videoOpened = true;
             Video.MediaEnded += (_, __) => EndVideo(videos);
             Video.MediaFailed += (_, e) =>
             {
@@ -217,7 +213,6 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            videoOpened = false;
             Video.Visibility = Visibility.Visible;
             Video.Source = new Uri(path, UriKind.Absolute);
             Video.Play();
@@ -230,7 +225,6 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            videoOpened = false;
             Video.Stop();
             Video.Close();
             Video.Source = null;
@@ -258,11 +252,12 @@ namespace XboxSeries.Extension
         /// window's first draw, which is black. That is the first frame after the boot video
         /// has opened, or, with none playing, the first with the swirl's fade in begun, under Who's playing today?
         /// (Signing you in when it doesn't ask). Only once the window covers the monitor: WPF draws within Show too,
-        /// while it's still off screen. While watched, WPF draws every frame.
+        /// while it's still off screen. While watched, WPF draws every frame. The video's player is asked whether it
+        /// has opened, not told by MediaOpened, which another add-on's handler can cut short on this thread (#97).
         /// </summary>
         private void WatchFirstFrame(object sender, EventArgs e)
         {
-            var video = videoOpened && Video.Visibility == Visibility.Visible;
+            var video = Video.Visibility == Visibility.Visible && Video.HasVideo;
             var swirl = SwirlLayer.Visibility == Visibility.Visible && SwirlLayer.Opacity > 0;
             if (!overMonitor || !(video || swirl))
             {
