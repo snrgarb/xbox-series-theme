@@ -14,6 +14,8 @@ namespace XboxSeries.BootShell
     /// </summary>
     internal sealed unsafe class PlayniteProcesses : IDisposable
     {
+        private static readonly List<nint> found = new();
+
         private readonly Dictionary<int, nint> handles = new();
         private readonly HashSet<int> notPlaynite = new();
         private readonly int session = Process.GetCurrentProcess().SessionId;
@@ -65,6 +67,37 @@ namespace XboxSeries.BootShell
             return (appeared, exited);
         }
 
+        /// <summary>Asks pid <paramref name="pid"/> to close: WM_CLOSE to each of its visible, unowned windows titled "Playnite".</summary>
+        public static void Close(SignInLog log, int pid)
+        {
+            found.Clear();
+            EnumWindows(&FindPlaynite, pid);
+            foreach (var hwnd in found)
+            {
+                var posted = PostMessage(hwnd, WM_CLOSE, 0, 0);
+                log.Write(posted ? $"WM_CLOSE to pid {pid}'s window {hwnd:X}" : $"ERROR: couldn't post WM_CLOSE to pid {pid}'s window {hwnd:X}: error {Marshal.GetLastPInvokeError()}");
+            }
+
+            if (found.Count == 0)
+            {
+                log.Write($"pid {pid} has no Playnite window to close");
+            }
+        }
+
+        /// <summary>Ends pid <paramref name="pid"/>, as it hasn't closed.</summary>
+        public static void End(SignInLog log, int pid)
+        {
+            var handle = OpenProcess(PROCESS_TERMINATE, false, pid);
+            var ended = handle != 0 && TerminateProcess(handle, 1);
+            var error = Marshal.GetLastPInvokeError();
+            if (handle != 0)
+            {
+                CloseHandle(handle);
+            }
+
+            log.Write(ended ? $"ended pid {pid}" : $"ERROR: couldn't end pid {pid}: error {error}");
+        }
+
         public void Dispose()
         {
             foreach (var handle in handles.Values)
@@ -101,6 +134,25 @@ namespace XboxSeries.BootShell
             handles[process.Id] = handle;
             var safeStartup = kind == PlayniteKind.Fullscreen && CommandLine(handle).Contains("--safestartup", StringComparison.OrdinalIgnoreCase);
             return new PlayniteProcess(process.Id, kind!.Value, safeStartup);
+        }
+
+        [UnmanagedCallersOnly]
+        private static int FindPlaynite(nint hwnd, nint pid)
+        {
+            GetWindowThreadProcessId(hwnd, out var owner);
+            if ((nint)owner != pid || !IsWindowVisible(hwnd) || GetWindow(hwnd, GW_OWNER) != 0)
+            {
+                return 1;
+            }
+
+            var title = stackalloc char[16];
+            var length = GetWindowText(hwnd, title, 16);
+            if (new string(title, 0, length) == "Playnite")
+            {
+                found.Add(hwnd);
+            }
+
+            return 1;
         }
 
         private static string ImagePath(nint handle)

@@ -24,6 +24,12 @@ namespace XboxSeries.BootShell
 
         /// <summary>The fallback's line is done: explorer, then Steam, Discord and Spotify, if they aren't up yet.</summary>
         StartDesktop = 4,
+
+        /// <summary>The View+Menu hold: send WM_CLOSE to the window of each process in <see cref="Watchdog.Closing"/>.</summary>
+        ClosePlaynite = 8,
+
+        /// <summary>10 s after the hold: end each process in <see cref="Watchdog.Closing"/>, as it hasn't closed.</summary>
+        EndPlaynite = 16,
     }
 
     /// <summary>
@@ -33,7 +39,8 @@ namespace XboxSeries.BootShell
     /// before that start's first frame, a crash, which relaunches Fullscreen at once. The third crash within 5 minutes
     /// falls back: the line on the black for 5 s, then the desktop, and nothing relaunched on its own after that.
     /// It also decides the black for each Fullscreen start: up until Start-up's first frame, or 60 s at most, and lifted
-    /// at once for Playnite's crash window.
+    /// at once for Playnite's crash window. The pad overrides it: the Guide button starts Fullscreen while none runs, and
+    /// View+Menu held for 5 s closes Playnite to the desktop, which isn't a crash, and leaves it down.
     /// </summary>
     internal sealed class Watchdog
     {
@@ -41,6 +48,7 @@ namespace XboxSeries.BootShell
         public static readonly TimeSpan CrashSpan = TimeSpan.FromMinutes(5);
         public const int CrashLimit = 3;
         public static readonly TimeSpan LineFor = TimeSpan.FromSeconds(5);
+        public static readonly TimeSpan CloseFor = TimeSpan.FromSeconds(10);
         public static readonly string FallbackLine =
             $"Playnite closed {CrashLimit} times in {CrashSpan.TotalMinutes} minutes. Press the Guide button to try again.";
 
@@ -54,6 +62,7 @@ namespace XboxSeries.BootShell
         private bool startBlack;
         private bool fallenBack;
         private TimeSpan? lineUntil;
+        private TimeSpan? closeUntil;
 
         /// <param name="elapsed">The time since the Boot shell started.</param>
         /// <param name="log">Writes one line to the Boot shell's log.</param>
@@ -68,6 +77,9 @@ namespace XboxSeries.BootShell
 
         /// <summary>The line to show on the black, or null.</summary>
         public string? Line => lineUntil == null ? null : FallbackLine;
+
+        /// <summary>The Playnite processes the View+Menu hold is closing, by pid.</summary>
+        public IEnumerable<int> Closing => alive.Values.Where(p => p.ClosedByHold).Select(p => p.Process.Pid);
 
         /// <summary>The Boot shell launched Fullscreen, as pid <paramref name="pid"/>: a start, behind the black.</summary>
         public void Launched(int pid)
@@ -118,8 +130,9 @@ namespace XboxSeries.BootShell
 
             var left = alive.Values.Select(p => p.Process).ToList();
             var beforeFirstFrame = process.Process.Kind == PlayniteKind.Fullscreen && !process.PastFirstFrame;
-            var crash = exitCode != 0 || (beforeFirstFrame && left.Count == 0);
-            var judgement = exitCode != 0 ? "a crash"
+            var crash = !process.ClosedByHold && (exitCode != 0 || (beforeFirstFrame && left.Count == 0));
+            var judgement = process.ClosedByHold ? "closed by the View+Menu hold, so not a crash"
+                : exitCode != 0 ? "a crash"
                 : !beforeFirstFrame ? (left.Count == 0 ? "a quit the user meant" : "a hand-off")
                 : left.Count == 0 ? "before its first frame, so a crash" : "before its first frame, but a hand-off";
             log($"watchdog: {process.Process.Kind} pid {pid} exited with code {exitCode}: {judgement}; left: {Names(left)}");
@@ -145,7 +158,7 @@ namespace XboxSeries.BootShell
             }
 
             LiftBlack("Playnite is down");
-            log("watchdog: Playnite stays down" + (crash ? ", as the Boot shell has fallen back" : ""));
+            log("watchdog: Playnite stays down" + (crash ? ", as the Boot shell has fallen back" : process.ClosedByHold ? " after the View+Menu hold" : ""));
             return Orders.None;
         }
 
@@ -163,9 +176,70 @@ namespace XboxSeries.BootShell
             return Relaunch();
         }
 
-        /// <summary>Called every poll: the black's 60 s limit, and the end of the fallback's line.</summary>
+        /// <summary>
+        /// The Guide button went down. While a Fullscreen runs it's Playnite's; while none does, Playnite closed on
+        /// purpose, fallen back or in Desktop mode, it starts Fullscreen, Desktop mode switching to it, and the crash
+        /// count starts again. Never while update.exe runs.
+        /// </summary>
+        public Orders GuidePressed()
+        {
+            var left = alive.Values.Select(p => p.Process).ToList();
+            if (left.Any(p => p.Kind == PlayniteKind.Fullscreen))
+            {
+                log("watchdog: Guide button: Fullscreen runs, so it's Playnite's");
+                return Orders.None;
+            }
+
+            if (left.Any(p => p.Kind == PlayniteKind.Updater))
+            {
+                log("watchdog: Guide button: update.exe runs, so nothing is started");
+                return Orders.None;
+            }
+
+            var why = fallenBack ? "the Boot shell has fallen back"
+                : left.Count > 0 ? Names(left) + " runs"
+                : "Playnite is down";
+            log($"watchdog: Guide button with no Fullscreen ({why}): the crash count starts again");
+            crashes.Clear();
+            fallenBack = false;
+            TakeLineDown("the Guide button tries again");
+            return Relaunch();
+        }
+
+        /// <summary>
+        /// View+Menu held for 5 s: close Fullscreen and Desktop mode, ending them after 10 s, take down the black and its
+        /// line, and start the desktop. Playnite stays down, as the hold isn't a crash.
+        /// </summary>
+        public Orders Held()
+        {
+            var orders = Orders.StartDesktop;
+            var closing = alive.Values.Where(p => p.Process.Kind != PlayniteKind.Updater).ToList();
+            foreach (var process in closing)
+            {
+                process.ClosedByHold = true;
+
+                // None begins a start of its own, behind the black, as it closes.
+                process.Started = true;
+            }
+
+            log($"watchdog: View+Menu hold: closing {Names(closing.Select(p => p.Process).ToList())}, ending them after " +
+                $"{CloseFor.TotalSeconds} s; starting the desktop; Playnite stays down");
+            if (closing.Count > 0)
+            {
+                closeUntil = elapsed() + CloseFor;
+                orders |= Orders.ClosePlaynite;
+            }
+
+            LiftBlack("the View+Menu hold");
+            TakeLineDown("the View+Menu hold");
+
+            return orders;
+        }
+
+        /// <summary>Called every poll: the black's 60 s limit, the end of the fallback's line, and the hold's 10 s to close.</summary>
         public Orders Tick()
         {
+            var orders = Orders.None;
             if (startBlack && elapsed() - startedAt >= BlackLimit)
             {
                 // Its Start-up may never signal, so from here its exits are judged as after a first frame.
@@ -177,10 +251,20 @@ namespace XboxSeries.BootShell
             {
                 lineUntil = null;
                 log("watchdog: fallback line down; starting the desktop");
-                return Orders.StartDesktop;
+                orders |= Orders.StartDesktop;
             }
 
-            return Orders.None;
+            if (closeUntil is TimeSpan deadline && elapsed() >= deadline)
+            {
+                closeUntil = null;
+                if (Closing.Any())
+                {
+                    log($"watchdog: still up {CloseFor.TotalSeconds} s after the View+Menu hold: ending pid {string.Join(", pid ", Closing)}");
+                    orders |= Orders.EndPlaynite;
+                }
+            }
+
+            return orders;
         }
 
         private Orders Relaunch()
@@ -259,6 +343,18 @@ namespace XboxSeries.BootShell
             log("watchdog: black down: " + why);
         }
 
+        /// <summary>Takes the fallback's line down before its 5 s are up, so it starts no desktop.</summary>
+        private void TakeLineDown(string why)
+        {
+            if (lineUntil == null)
+            {
+                return;
+            }
+
+            lineUntil = null;
+            log("watchdog: fallback line down: " + why);
+        }
+
         private static string Seconds(TimeSpan time) => $"{time.TotalSeconds:0.0} s";
 
         private sealed class Tracked
@@ -278,6 +374,9 @@ namespace XboxSeries.BootShell
             public bool Started { get; set; }
 
             public bool PastFirstFrame { get; set; }
+
+            /// <summary>The View+Menu hold is closing it, so its exit is never a crash.</summary>
+            public bool ClosedByHold { get; set; }
         }
     }
 }
