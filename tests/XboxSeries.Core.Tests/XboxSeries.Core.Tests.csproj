@@ -21,6 +21,10 @@
     <Compile Include="..\..\src\XboxSeries.Extension\PadActivity.cs" Link="Linked\PadActivity.cs" />
     <!-- The popular gamerpics fetched and saved, plain C# too, checked against a fake xboxgamer.pics. -->
     <Compile Include="..\..\src\XboxSeries.Extension\PopularGamerpics.cs" Link="Linked\PopularGamerpics.cs" />
+    <!-- The Boot shell's two named events, set if it made them, plain C# too, checked against events made here. -->
+    <Compile Include="..\..\src\XboxSeries.Extension\BootShellEvents.cs" Link="Linked\BootShellEvents.cs" />
+    <!-- When a Start-up sets each of them, plain C# too, checked against the sequence itself. -->
+    <Compile Include="..\..\src\XboxSeries.Extension\BootShellSignals.cs" Link="Linked\BootShellSignals.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Net.Http" />

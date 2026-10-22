@@ -25,7 +25,8 @@ namespace XboxSeries.Extension
     /// shows it reads the pads itself, every frame, through Windows.Gaming.Input, since Playnite's controller callback waits
     /// on its UI thread; every key here is marked handled, and the keyboard's own arrows, Enter, Space and Escape stand
     /// in for the pad's. A click on a profile signs it in. A boot video that is missing or can't play ends as one that
-    /// finished would; the sequence ends one that runs long.
+    /// finished would; the sequence ends one that runs long. It tells the Boot shell, where one runs, of its first frame
+    /// that shows something and of the boot video's end (<see cref="BootShellSignals"/>).
     /// </summary>
     public partial class StartupWindow : Window
     {
@@ -59,8 +60,15 @@ namespace XboxSeries.Extension
         private readonly Action activatePlaynite;
         private readonly DispatcherTimer fade;
         private readonly DispatcherTimer pad;
+        private readonly BootShellSignals bootShellSignals;
         private DateTime fadeStarted;
         private bool closing;
+
+        /// <summary>Whether the boot video playing has opened, so its frames draw; false while none plays.</summary>
+        private bool videoOpened;
+
+        /// <summary>Whether the window has been placed over the monitor, so a frame it draws is seen; false before it first shows.</summary>
+        private bool overMonitor;
 
         /// <summary>The pad's buttons at its last reading, kept only to log each press's time early on.</summary>
         private IReadOnlyCollection<ControllerButton> padWasDown = new ControllerButton[0];
@@ -89,11 +97,14 @@ namespace XboxSeries.Extension
             this.playniteWindow = playniteWindow;
             this.activatePlaynite = activatePlaynite;
             startup = sequence.State;
+            bootShellSignals = new BootShellSignals(startup, SetBootShellEvent);
             Layers.DataContext = startup;
             startup.PropertyChanged += OnStartupChanged;
             SizeChanged += (_, __) => FitToScreen();
             Deactivated += (_, __) => KeepForeground();
             ContentRendered += (_, __) => StartupTiming.Log("Start-up window's first frame, on its own thread,");
+            CompositionTarget.Rendering += WatchFirstFrame;
+            Video.MediaOpened += (_, __) => videoOpened = true;
             Video.MediaEnded += (_, __) => EndVideo(videos);
             Video.MediaFailed += (_, e) =>
             {
@@ -116,6 +127,7 @@ namespace XboxSeries.Extension
         {
             closing = true;
             startup.PropertyChanged -= OnStartupChanged;
+            CompositionTarget.Rendering -= WatchFirstFrame;
             fade.Stop();
             pad.Stop();
             StopVideo();
@@ -205,6 +217,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
+            videoOpened = false;
             Video.Visibility = Visibility.Visible;
             Video.Source = new Uri(path, UriKind.Absolute);
             Video.Play();
@@ -217,6 +230,7 @@ namespace XboxSeries.Extension
                 return;
             }
 
+            videoOpened = false;
             Video.Stop();
             Video.Close();
             Video.Source = null;
@@ -237,6 +251,42 @@ namespace XboxSeries.Extension
             ++videos;
             StopVideo();
             sequence.OnBootVideoEnded();
+        }
+
+        /// <summary>
+        /// Just before WPF draws each frame on this thread, until one shows something: Start-up's first frame, not the
+        /// window's first draw, which is black. That is the first frame after the boot video
+        /// has opened, or, with none playing, the first with the swirl's fade in begun, under Who's playing today?
+        /// (Signing you in when it doesn't ask). Only once the window covers the monitor: WPF draws within Show too,
+        /// while it's still off screen. While watched, WPF draws every frame.
+        /// </summary>
+        private void WatchFirstFrame(object sender, EventArgs e)
+        {
+            var video = videoOpened && Video.Visibility == Visibility.Visible;
+            var swirl = SwirlLayer.Visibility == Visibility.Visible && SwirlLayer.Opacity > 0;
+            if (!overMonitor || !(video || swirl))
+            {
+                return;
+            }
+
+            CompositionTarget.Rendering -= WatchFirstFrame;
+            bootShellSignals.FirstFrameShown();
+        }
+
+        /// <summary>One of the Boot shell's events set and logged, if it made it; with no Boot shell, nothing is logged.</summary>
+        private void SetBootShellEvent(string name)
+        {
+            try
+            {
+                if (BootShellEvents.Set(name))
+                {
+                    logger.Info($"[Boot shell] Set {name} in {startup.Phase}, at {StartupTiming.Now} ms");
+                }
+            }
+            catch (Exception e) when (!(e is OutOfMemoryException))
+            {
+                logger.Warn(e, $"[Boot shell] Couldn't set {name}");
+            }
         }
 
         /// <summary>
@@ -303,6 +353,7 @@ namespace XboxSeries.Extension
                 bounds.Right - bounds.Left,
                 bounds.Bottom - bounds.Top,
                 NativeMethods.SWP_SHOWWINDOW);
+            overMonitor = true;
             TakeForeground(handle);
             pad.Start();
         }
