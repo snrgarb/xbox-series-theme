@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -11,80 +12,117 @@ using static XboxSeries.BootShell.NativeMethods;
 namespace XboxSeries.BootShell
 {
     /// <summary>
-    /// The Boot shell at sign-in: Playnite's Fullscreen first, then black over the screen until Start-up's first frame,
-    /// then explorer, Steam, Discord and Spotify as the Boot video ends (<see cref="SignInSchedule"/>).
+    /// The Boot shell: at sign-in, Playnite's Fullscreen first, then black over the screen until Start-up's first frame,
+    /// then explorer, Steam, Discord and Spotify as the Boot video ends (<see cref="SignInSchedule"/>); then, until
+    /// Windows ends the session, it keeps Fullscreen up (<see cref="Watchdog"/>), polling Playnite's processes every
+    /// 100 ms, and starts explorer again should Windows not (<see cref="ShellWatch"/>).
     /// </summary>
     internal static unsafe class Program
     {
+        private static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(100);
+
+        private static readonly Stopwatch sinceStart = Stopwatch.StartNew();
+        private static readonly SignInLog log = new(Process.GetCurrentProcess().StartTime);
+        private static readonly Watchdog watchdog = new(() => sinceStart.Elapsed, log.Write);
+        private static readonly PlayniteProcesses playnite = new();
+        private static nint black;
+        private static bool blackUp;
+        private static string? line;
+        private static EventWaitHandle? firstFrame;
+        private static EventWaitHandle? bootVideoEnded;
+        private static bool firstFrameSeen;
+        private static bool bootVideoEndedSeen;
+        private static bool explorerStarted;
+
         private static int Main()
         {
-            var sinceStart = Stopwatch.StartNew();
-            var log = new SignInLog(Process.GetCurrentProcess().StartTime);
             log.Write("Boot shell started");
 
             // Fullscreen before anything else: Windows' Welcome screen stays up until the black is there.
             AllowSetForegroundWindow(ASFW_ANY);
             log.Write("Playnite's Fullscreen:");
-            Launcher.Start(log, Launcher.FullscreenApp, "--hidesplashscreen");
+            var orders = LaunchFullscreen();
 
-            nint black = 0;
-            var explorerStarted = false;
             try
             {
                 SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
                 black = BlackWindow.Show();
+                blackUp = true;
                 log.Write("black up");
-                SwitchDesktop(log);
+                SwitchDesktop();
 
-                using var firstFrame = MakeEvent(BootShellEvents.FirstFrame);
-                using var bootVideoEnded = MakeEvent(BootShellEvents.BootVideoEnded);
+                firstFrame = MakeEvent(BootShellEvents.FirstFrame);
+                bootVideoEnded = MakeEvent(BootShellEvents.BootVideoEnded);
                 log.Write("events made");
 
-                OpenLog(log);
+                OpenLog();
                 log.Write($"Windows build {WindowsBuild()}");
 
                 var schedule = new SignInSchedule(() => sinceStart.Elapsed);
-                var firstFrameSeen = false;
-                var bootVideoEndedSeen = false;
-                while (true)
+                var shell = new ShellWatch(() => sinceStart.Elapsed);
+                var playniteLog = new PlayniteLog(PlayniteLog.DefaultPath);
+                Obey(orders);
+                while (!BlackWindow.SessionEnding)
                 {
-                    var limit = $"no first frame by the {SignInSchedule.Limit.TotalSeconds} s limit";
-                    if (schedule.TakeBlackDown())
-                    {
-                        BlackWindow.TakeDown(black);
-                        log.Write("black down: " + (firstFrameSeen ? "Start-up's first frame" : limit));
-                    }
-
-                    if (schedule.StartExplorer())
-                    {
-                        log.Write("explorer, Steam, Discord and Spotify: " + (bootVideoEndedSeen ? "the Boot video ended"
-                            : firstFrameSeen ? $"no Boot video end {SignInSchedule.AfterFirstFrame.TotalSeconds} s after the first frame" : limit));
-                        explorerStarted = true;
-                        StartExplorerAndApps(log);
-                    }
-
-                    if (schedule.UntilNext is not TimeSpan until)
-                    {
-                        break;
-                    }
-
-                    var signal = Wait(until, firstFrameSeen ? null : firstFrame, bootVideoEndedSeen ? null : bootVideoEnded);
-                    if (signal == firstFrame)
+                    if (!firstFrameSeen && firstFrame.WaitOne(0))
                     {
                         firstFrameSeen = true;
                         log.Write("signal: FirstFrame");
                         schedule.FirstFrame();
+                        watchdog.FirstFrame();
                     }
-                    else if (signal == bootVideoEnded)
+
+                    if (!bootVideoEndedSeen && bootVideoEnded.WaitOne(0))
                     {
                         bootVideoEndedSeen = true;
                         log.Write("signal: BootVideoEnded");
                         schedule.BootVideoEnded();
                     }
+
+                    if (playniteLog.CrashLogged())
+                    {
+                        watchdog.CrashWindowShown();
+                    }
+
+                    var (appeared, exited) = playnite.Poll();
+
+                    // Windows tells Playnite the session is ending too, and it may be gone first: hear the end before judging.
+                    PumpMessages();
+                    if (BlackWindow.SessionEnding)
+                    {
+                        break;
+                    }
+
+                    foreach (var process in appeared)
+                    {
+                        Obey(watchdog.Appeared(process));
+                    }
+
+                    foreach (var (pid, exitCode) in exited)
+                    {
+                        Obey(watchdog.Exited(pid, exitCode));
+                    }
+
+                    Obey(watchdog.Tick());
+                    ShowBlack();
+
+                    if (schedule.StartExplorer() && !explorerStarted)
+                    {
+                        log.Write("explorer, Steam, Discord and Spotify: " + schedule.Why);
+                        StartDesktop();
+                    }
+
+                    if (shell.StartExplorer(GetShellWindow() != 0))
+                    {
+                        log.Write($"explorer: no shell for {ShellWatch.Grace.TotalSeconds} s; starting it again");
+                        Launcher.StartExplorer(log);
+                    }
+
+                    Wait(Poll, firstFrameSeen ? null : firstFrame, bootVideoEndedSeen ? null : bootVideoEnded);
                 }
 
                 // The shell stays up until sign-out, as Winlogon expects of the shell it started.
-                log.Write("sign-in done; up until sign-out");
+                log.Write("Windows is ending the session: watching stops");
                 while (true)
                 {
                     Wait(Timeout.InfiniteTimeSpan, null, null);
@@ -102,28 +140,120 @@ namespace XboxSeries.BootShell
 
                 if (!explorerStarted)
                 {
-                    StartExplorerAndApps(log);
+                    StartDesktop();
                 }
 
                 return 1;
             }
             finally
             {
+                playnite.Dispose();
                 log.Dispose();
             }
         }
 
-        private static void StartExplorerAndApps(SignInLog log)
+        /// <summary>Carries out what the watchdog ordered.</summary>
+        private static void Obey(Orders orders)
         {
-            Launcher.StartExplorer(log);
+            if (orders.HasFlag(Orders.ResetEvents))
+            {
+                ResetEvents();
+            }
+
+            if (orders.HasFlag(Orders.Relaunch))
+            {
+                ShowBlack();
+                DeleteSafeStartFlag();
+                ResetEvents();
+                Obey(LaunchFullscreen());
+            }
+
+            if (orders.HasFlag(Orders.StartDesktop))
+            {
+                StartDesktop();
+            }
+        }
+
+        /// <summary>Launches Fullscreen, and tells the watchdog how it went.</summary>
+        private static Orders LaunchFullscreen()
+        {
+            if (Launcher.StartFullscreen(log) is not (var pid, var handle))
+            {
+                return watchdog.LaunchFailed();
+            }
+
+            playnite.Adopt(pid, handle);
+            watchdog.Launched(pid);
+            return Orders.None;
+        }
+
+        /// <summary>Puts the black and its line up or down as the watchdog has them.</summary>
+        private static void ShowBlack()
+        {
+            if (watchdog.Black && !blackUp)
+            {
+                BlackWindow.Raise(black);
+                log.Write("black up");
+            }
+            else if (!watchdog.Black && blackUp)
+            {
+                BlackWindow.TakeDown(black);
+                log.Write("black down");
+            }
+
+            blackUp = watchdog.Black;
+            if (watchdog.Line != line)
+            {
+                line = watchdog.Line;
+                BlackWindow.SetLine(black, line);
+                log.Write(line == null ? "line down" : "line up: " + line);
+            }
+        }
+
+        /// <summary>Explorer, once per sign-in, then Steam, Discord and Spotify, each unless it's up already.</summary>
+        private static void StartDesktop()
+        {
+            if (!explorerStarted)
+            {
+                explorerStarted = true;
+                Launcher.StartExplorer(log);
+            }
+
             foreach (var (exe, arguments) in Launcher.SteamDiscordSpotify)
             {
-                Launcher.Start(log, exe, arguments);
+                Launcher.StartUnlessRunning(log, exe, arguments);
+            }
+        }
+
+        /// <summary>Unsets both events before a Fullscreen start, so its signals are its own.</summary>
+        private static void ResetEvents()
+        {
+            firstFrame?.Reset();
+            bootVideoEnded?.Reset();
+            firstFrameSeen = bootVideoEndedSeen = false;
+            log.Write("events reset");
+        }
+
+        /// <summary>Deletes Playnite's safestart.flag, so a relaunch after a crash doesn't stop on its safe-mode prompt.</summary>
+        private static void DeleteSafeStartFlag()
+        {
+            var flag = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playnite", "safestart.flag");
+            try
+            {
+                if (File.Exists(flag))
+                {
+                    File.Delete(flag);
+                    log.Write("deleted " + flag);
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                log.Write($"ERROR: couldn't delete {flag}: {e.Message}");
             }
         }
 
         /// <summary>Tells Windows the shell's desktop is up, so the Welcome screen gives way to the black.</summary>
-        private static void SwitchDesktop(SignInLog log)
+        private static void SwitchDesktop()
         {
             var handle = OpenEvent(EVENT_MODIFY_STATE, false, "ShellDesktopSwitchEvent");
             if (handle == 0)
@@ -146,13 +276,13 @@ namespace XboxSeries.BootShell
             return handle;
         }
 
-        private static void OpenLog(SignInLog log)
+        private static void OpenLog()
         {
             try
             {
                 log.Open(SignInLog.DefaultFolder);
             }
-            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 log.Write($"ERROR: couldn't open the log: {e.Message}");
             }
@@ -166,9 +296,9 @@ namespace XboxSeries.BootShell
 
         /// <summary>
         /// Waits up to <paramref name="timeout"/>, or for ever with <see cref="Timeout.InfiniteTimeSpan"/>, for either
-        /// event still unseen, keeping the black window's messages going; returns the event set, or null.
+        /// event still unseen, keeping the black window's messages going.
         /// </summary>
-        private static EventWaitHandle? Wait(TimeSpan timeout, EventWaitHandle? first, EventWaitHandle? second)
+        private static void Wait(TimeSpan timeout, EventWaitHandle? first, EventWaitHandle? second)
         {
             var events = new[] { first, second }.Where(e => e != null).ToArray();
             var handles = stackalloc nint[2];
@@ -184,18 +314,16 @@ namespace XboxSeries.BootShell
                 throw new Win32Exception(Marshal.GetLastPInvokeError());
             }
 
-            if (result < events.Length)
-            {
-                return events[result];
-            }
+            PumpMessages();
+        }
 
+        private static void PumpMessages()
+        {
             while (PeekMessage(out var message, 0, 0, 0, PM_REMOVE))
             {
                 TranslateMessage(message);
                 DispatchMessage(message);
             }
-
-            return null;
         }
     }
 }
