@@ -54,11 +54,37 @@ dotnet publish src/XboxSeries.BootShell -c Release -r win-x64
 
 The exe is `src\XboxSeries.BootShell\bin\Release\net10.0-windows\win-x64\publish\XboxSeries.BootShell.exe`. It runs with no .NET runtime installed.
 
-## Trying it on the TV
+## Setting it up and taking it off
 
-Until `--install` comes:
+From a terminal on this PC, not elevated (from an elevated one, `--shutdown` never reaches your Playnite), in the publish folder. The exe is a Windows app, so pipe it through `Out-Host` for the terminal to show its lines and wait for it:
 
-- set `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell` to the published exe's full path, and delete the value to undo;
-- switch Steam's, Discord's and Spotify's entries off in Settings > Apps > Startup, and any other app you don't want trailing Start-up;
-- switch off Playnite's own *Start Playnite on computer startup* (Settings > General in Desktop mode): while it's on, Playnite rewrites `Startup\Playnite.lnk` at every start, and that shortcut's Desktop app tells the running Fullscreen to switch to Desktop mode as explorer's startup run reaches it;
-- keep a safety net like the prototype's `safety-net.vbs` registered (on the `prototype/boot-shell` branch), so a Boot shell that dies before explorer still lets Orca come up.
+```powershell
+cd src\XboxSeries.BootShell\bin\Release\net10.0-windows\win-x64\publish
+.\XboxSeries.BootShell.exe --install | Out-Host
+.\XboxSeries.BootShell.exe --uninstall | Out-Host
+```
+
+Each prints a line per setting and exits 1 if it stopped short. Each also writes its lines to `logs\setup-<yyyyMMdd-HHmmss>.log`. Both take effect from the next sign-in.
+
+### `--install`
+
+It copies the exe to `%LOCALAPPDATA%\XboxSeries.BootShell\XboxSeries.BootShell.exe`, beside `logs\`, `setup-record.json` and `backup\`. Then it changes, in this order:
+
+- the Startup-apps switch (`HKCU\…\Explorer\StartupApproved\Run`) off for Steam, Discord, Spotify, AMDNoiseSuppression and RobloxPlayerBeta, each that has an HKCU Run entry and isn't off already;
+- Teams' packaged startup task (`TeamsTfwStartupTask` `State`) off, if Teams is installed;
+- `Playnite.lnk` and `DiscordMini.lnk` moved from the Startup folder (asked of Windows, as it's redirected here) into `backup\`;
+- SCOOBE off (`UserProfileEngagement\ScoobeSystemSettingEnabled` 0);
+- Playnite's settings, with Playnite sent `--shutdown` first if it runs (a running Boot shell leaves it down): in `config.json`, `StartOnBoot` off; *Extra Metadata tools*, UniPlaySong and Battle.net in `DisabledPlugins`; auto-backup on, once a week; the Bundle's extension folder in `DevelExtenions`, selected, so it loads first; in `fullscreenConfig.json`, `MainMenuShowMinimize` off;
+- last, `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell`, naming the installed exe, so a setup that stops halfway never boots into the Boot shell.
+
+Before it changes a value, it records the value as it was in `setup-record.json`, saving the record each time, so a setup stopped halfway can still be undone. Running `--install` again updates in place: it renames the installed exe aside to `XboxSeries.BootShell.<stamp>.old` (Windows allows renaming a running exe), copies the new one in and changes whatever doesn't hold. A value already in the record keeps its first before-value, so undo still goes back to the PC before the first setup. The new build runs from the next sign-in, which deletes the old files.
+
+### `--uninstall`
+
+It puts back each recorded value, last change first: `Shell`, the shortcuts, SCOOBE, Teams' task, the startup switches' old bytes, and Playnite's settings with Playnite closed first. With `StartOnBoot` and `Playnite.lnk` back, Playnite starts at the first sign-in after undo. A value that changed after setup (it no longer holds what setup wrote) is left alone and said. The exe and logs stay; the record is renamed `setup-record.<stamp>.json`, so a later `--install` records afresh. A running Boot shell runs on until sign-out.
+
+### Before the first `--install` on a PC set up by hand
+
+Undo the hand setup first, so the record keeps the PC as it was without the Boot shell: delete the `Shell` value; move `Playnite.lnk` and `DiscordMini.lnk` from `%LOCALAPPDATA%\XboxSeries.BootShell\backup\` back into the Startup folder; switch Steam, Discord, Spotify and Roblox back on in Settings > Apps > Startup; and switch Playnite's *Start Playnite on computer startup* back on. Otherwise undo would put the hand setup back, and Playnite wouldn't start after it.
+
+The sentinel Run entry and the safety-net logon task come in their own issue. Until then, keep a safety net like the prototype's `safety-net.vbs` registered (on the `prototype/boot-shell` branch), so a Boot shell that dies before explorer still lets Orca come up.
