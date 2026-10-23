@@ -57,8 +57,26 @@ namespace XboxSeries.BootShell
         /// <summary>Opens this sign-in's file in <paramref name="folder"/>, writes the waiting lines and deletes old files.</summary>
         public void Open(string folder)
         {
-            Directory.CreateDirectory(folder);
-            var path = Path.Combine(folder, created.ToString("yyyyMMdd-HHmmss") + ".log");
+            OpenFile(Path.Combine(folder, created.ToString("yyyyMMdd-HHmmss") + ".log"));
+
+            // The names sort by when each sign-in started; setup's, the sentinel's and the safety net's aren't counted.
+            foreach (var old in Directory.GetFiles(folder, "????????-??????.log").OrderByDescending(Path.GetFileName, StringComparer.Ordinal).Skip(Kept))
+            {
+                try
+                {
+                    File.Delete(old);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    Write($"log: couldn't delete {old}: {e.Message}");
+                }
+            }
+        }
+
+        /// <summary>Opens <paramref name="path"/> to append to, and writes the waiting lines.</summary>
+        public void OpenFile(string path)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
             lock (gate)
             {
@@ -69,19 +87,6 @@ namespace XboxSeries.BootShell
                 }
 
                 pending.Clear();
-            }
-
-            // The names sort by when each sign-in started.
-            foreach (var old in Directory.GetFiles(folder, "*.log").OrderByDescending(Path.GetFileName, StringComparer.Ordinal).Skip(Kept))
-            {
-                try
-                {
-                    File.Delete(old);
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                    Write($"log: couldn't delete {old}: {e.Message}");
-                }
             }
         }
 

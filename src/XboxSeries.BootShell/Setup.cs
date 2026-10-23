@@ -7,21 +7,25 @@ using System.Security;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace XboxSeries.BootShell
 {
-    /// <summary>Where setup reads and writes: the exe it runs from, and the folders it sets up.</summary>
+    /// <summary>Where setup reads and writes: the exe it runs from, and the folders it sets up; and for whom.</summary>
     /// <param name="Exe">The exe setup runs from, in the publish folder.</param>
     /// <param name="InstallFolder">%LOCALAPPDATA%\XboxSeries.BootShell, which holds the installed exe, the record and backup\.</param>
     /// <param name="StartupFolder">The Startup folder, asked of Windows, as it's redirected on this PC.</param>
     /// <param name="PlayniteData">%APPDATA%\Playnite, which holds config.json and fullscreenConfig.json.</param>
-    internal sealed record SetupPaths(string Exe, string InstallFolder, string StartupFolder, string PlayniteData)
+    /// <param name="User">The user, as DOMAIN\name, whose sign-in the safety net follows.</param>
+    internal sealed record SetupPaths(string Exe, string InstallFolder, string StartupFolder, string PlayniteData, string User)
     {
         public static SetupPaths ThisPc() => new(
             Environment.ProcessPath!,
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XboxSeries.BootShell"),
             Environment.GetFolderPath(Environment.SpecialFolder.Startup),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playnite"));
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playnite"),
+            $@"{Environment.UserDomainName}\{Environment.UserName}");
     }
 
     /// <summary>
@@ -36,11 +40,18 @@ namespace XboxSeries.BootShell
     {
         public const string ExeName = "XboxSeries.BootShell.exe";
 
-        private const string Winlogon = @"Software\Microsoft\Windows NT\CurrentVersion\Winlogon";
+        public const string Winlogon = @"Software\Microsoft\Windows NT\CurrentVersion\Winlogon";
         private const string Run = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string StartupApproved = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
         private const string TeamsStartupTask = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\MSTeams_8wekyb3d8bbwe\TeamsTfwStartupTask";
         private const string Engagement = @"Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement";
+
+        /// <summary>The HKCU Run entry that starts the installed exe with --sentinel (<see cref="Sentinel"/>).</summary>
+        private const string SentinelEntry = "XboxSeriesBootShellSentinel";
+
+        private const string SafetyNetTask = "XboxSeries.BootShell.SafetyNet";
+
+        private static readonly XNamespace TaskXml = "http://schemas.microsoft.com/windows/2004/02/mit/task";
 
         /// <summary>The Bundle's extension's folder name under Playnite's Extensions.</summary>
         private const string BundleExtension = "XboxSeries_eb759ff1-325b-4c34-9a64-d9704f72612b";
@@ -57,7 +68,11 @@ namespace XboxSeries.BootShell
 
         private static readonly JsonWriterOptions Indented = new() { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
+        /// <summary>For setup's lines: quotes and apostrophes as they are, not escaped.</summary>
+        private static readonly JsonSerializerOptions Readable = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
         private readonly IRegistry registry;
+        private readonly ITaskScheduler tasks;
         private readonly SetupPaths paths;
         private readonly Func<bool> closePlaynite;
         private readonly Action<string> say;
@@ -65,9 +80,10 @@ namespace XboxSeries.BootShell
 
         /// <param name="closePlaynite">Closes Playnite if it runs; false if it's still up.</param>
         /// <param name="say">Tells whoever ran setup what it did, a line at a time.</param>
-        public Setup(IRegistry registry, SetupPaths paths, Func<bool> closePlaynite, Action<string> say, Func<DateTime> now)
+        public Setup(IRegistry registry, ITaskScheduler tasks, SetupPaths paths, Func<bool> closePlaynite, Action<string> say, Func<DateTime> now)
         {
             this.registry = registry;
+            this.tasks = tasks;
             this.paths = paths;
             this.closePlaynite = closePlaynite;
             this.say = say;
@@ -233,9 +249,14 @@ namespace XboxSeries.BootShell
             say($"copied {paths.Exe} to {InstalledExe}");
         }
 
-        /// <summary>Everything setup changes, in the order it changes them: Playnite's after the rest, Shell last.</summary>
+        /// <summary>
+        /// Everything setup changes, in the order it changes them: the safety net first, Playnite's after the rest, then
+        /// the sentinel and Shell last.
+        /// </summary>
         private IEnumerable<Setting> Settings()
         {
+            yield return SafetyNet();
+
             // An odd first byte switches an entry off; Windows' own toggle writes 01 00 00 00 and when.
             var off = new byte[] { 0x01, 0, 0, 0 }.Concat(BitConverter.GetBytes(now().ToFileTime())).ToArray();
             foreach (var name in SwitchedOff)
@@ -272,7 +293,9 @@ namespace XboxSeries.BootShell
             yield return DevelExtension(config, Path.Combine(paths.PlayniteData, "Extensions", BundleExtension));
             yield return PlayniteValue(Path.Combine(paths.PlayniteData, "fullscreenConfig.json"), "MainMenuShowMinimize", false);
 
-            // Last, so a setup that stops short never boots into the Boot shell.
+            // Last, so a setup that stops short never boots into the Boot shell. The sentinel writes Shell itself, so it
+            // comes just before, and undo takes it off straight after Shell.
+            yield return Value(Run, SentinelEntry, $"\"{InstalledExe}\" --sentinel");
             yield return Value(Winlogon, "Shell", InstalledExe);
         }
 
@@ -299,6 +322,82 @@ namespace XboxSeries.BootShell
                     _ => (string)value!,
                 });
             });
+
+        /// <summary>
+        /// The safety net: a logon task, 90 s after the user signs in, at normal rights, that starts explorer if none runs
+        /// in the session and logs it. It runs PowerShell, windowless under conhost --headless, never the Boot shell's exe,
+        /// so it covers a missing or broken one too. In the record it's its command and delay, as Windows rewrites the rest.
+        /// </summary>
+        private Setting SafetyNet()
+        {
+            const string system32 = @"C:\Windows\System32";
+            var log = Path.Combine(paths.InstallFolder, "logs", "safety-net.log").Replace("'", "''");
+            var script = "$s = (Get-Process -Id $PID).SessionId; "
+                + "if (-not (Get-Process explorer -ErrorAction SilentlyContinue | Where-Object SessionId -eq $s)) { "
+                + $"Start-Process '{Launcher.Explorer}'; "
+                + $"Add-Content -LiteralPath '{log}' -Value ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff') + '  no explorer 90 s after sign-in: started it') }}";
+            var wanted = new JsonObject
+            {
+                ["Command"] = Path.Combine(system32, "conhost.exe"),
+                ["Arguments"] = $@"--headless {system32}\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive -Command ""{script}""",
+                ["DelaySeconds"] = 90,
+            };
+
+            return new Setting(
+                $@"Task\{SafetyNetTask}",
+                wanted,
+                () => tasks.Get(SafetyNetTask) is { } xml ? FromTask(XDocument.Parse(xml)) : null,
+                value =>
+                {
+                    if (value == null)
+                    {
+                        tasks.Delete(SafetyNetTask);
+                        return;
+                    }
+
+                    tasks.Set(SafetyNetTask, TaskFor((string)value["Command"]!, (string)value["Arguments"]!, (int)value["DelaySeconds"]!));
+                });
+        }
+
+        private static JsonNode FromTask(XDocument task)
+        {
+            var exec = task.Descendants(TaskXml + "Exec").FirstOrDefault();
+            var delay = task.Descendants(TaskXml + "LogonTrigger").FirstOrDefault()?.Element(TaskXml + "Delay")?.Value;
+            return new JsonObject
+            {
+                ["Command"] = exec?.Element(TaskXml + "Command")?.Value,
+                ["Arguments"] = exec?.Element(TaskXml + "Arguments")?.Value,
+                ["DelaySeconds"] = delay == null ? null : (int)XmlConvert.ToTimeSpan(delay).TotalSeconds,
+            };
+        }
+
+        /// <summary>The task's XML: at the user's sign-in after <paramref name="delaySeconds"/>, as the user, not elevated.</summary>
+        private string TaskFor(string command, string arguments, int delaySeconds)
+        {
+            static XElement Element(string name, params object[] content) => new(TaskXml + name, content);
+            var task = new XDocument(
+                new XDeclaration("1.0", "UTF-16", null),
+                Element("Task", new XAttribute("version", "1.2"),
+                    Element("RegistrationInfo", Element("Description", "The Boot shell's safety net: starts explorer if none runs 90 s after sign-in.")),
+                    Element("Triggers", Element("LogonTrigger",
+                        Element("Enabled", "true"),
+                        Element("UserId", paths.User),
+                        Element("Delay", $"PT{delaySeconds}S"))),
+                    Element("Principals", Element("Principal", new XAttribute("id", "Author"),
+                        Element("UserId", paths.User),
+                        Element("LogonType", "InteractiveToken"),
+                        Element("RunLevel", "LeastPrivilege"))),
+                    Element("Settings",
+                        Element("MultipleInstancesPolicy", "IgnoreNew"),
+                        Element("DisallowStartIfOnBatteries", "false"),
+                        Element("StopIfGoingOnBatteries", "false"),
+                        Element("ExecutionTimeLimit", "PT5M"),
+                        Element("Enabled", "true")),
+                    Element("Actions", new XAttribute("Context", "Author"), Element("Exec",
+                        Element("Command", command),
+                        Element("Arguments", arguments)))));
+            return task.Declaration + Environment.NewLine + task;
+        }
 
         private static JsonNode? FromRegistry(object? value) => value switch
         {
@@ -451,7 +550,7 @@ namespace XboxSeries.BootShell
             File.Move(temporary, file, overwrite: true);
         }
 
-        private static string Show(JsonNode? value) => value?.ToJsonString() ?? "none";
+        private static string Show(JsonNode? value) => value?.ToJsonString(Readable) ?? "none";
 
         private static bool IsSetupError(Exception e) =>
             e is IOException or UnauthorizedAccessException or SecurityException or JsonException or FormatException or InvalidOperationException or Win32Exception or SetupException;

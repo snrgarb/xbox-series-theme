@@ -29,7 +29,7 @@ namespace XboxSeries.BootShell
                 file.WriteLine($"{DateTime.Now:HH:mm:ss.fff}  {line}");
             }
 
-            return command(new Setup(new UserRegistry(), paths, () => ClosePlaynite(Say), Say, () => DateTime.Now)) ? 0 : 1;
+            return command(new Setup(new UserRegistry(), new UserTasks(), paths, () => ClosePlaynite(Say), Say, () => DateTime.Now)) ? 0 : 1;
         }
 
         /// <summary>

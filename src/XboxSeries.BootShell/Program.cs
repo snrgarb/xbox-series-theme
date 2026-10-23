@@ -18,7 +18,7 @@ namespace XboxSeries.BootShell
     /// 100 ms, and starts explorer again should Windows not (<see cref="ShellWatch"/>). It reads the pad itself
     /// (<see cref="XInputPad"/>): the Guide button brings Fullscreen back while none runs, and View+Menu held for 5 s
     /// closes Playnite to the desktop. From a terminal, --install and --uninstall set it up and take it off
-    /// (<see cref="Setup"/>).
+    /// (<see cref="Setup"/>); explorer's startup run starts it with --sentinel (<see cref="Sentinel"/>).
     /// </summary>
     internal static unsafe class Program
     {
@@ -29,6 +29,7 @@ namespace XboxSeries.BootShell
         private static readonly Watchdog watchdog = new(() => sinceStart.Elapsed, log.Write);
         private static readonly PlayniteProcesses playnite = new();
         private static readonly XInputPad pad = new(() => sinceStart.Elapsed, log);
+        private static Mutex? running;
         private static nint black;
         private static bool blackUp;
         private static string? line;
@@ -46,12 +47,16 @@ namespace XboxSeries.BootShell
                     return SetupCommand.Run(setup => setup.Install());
                 case ["--uninstall"]:
                     return SetupCommand.Run(setup => setup.Uninstall());
+                case ["--sentinel"]:
+                    return Sentinel.Run();
 
                 // Winlogon starts it with none; anything else is a mistyped command, never a sign-in.
                 case [_, ..]:
                     return 2;
             }
 
+            // Held until sign-out, so the sentinel explorer's startup run starts finds it.
+            running = new Mutex(false, Sentinel.MutexName);
             log.Write("Boot shell started");
 
             // Fullscreen before anything else: Windows' Welcome screen stays up until the black is there.
