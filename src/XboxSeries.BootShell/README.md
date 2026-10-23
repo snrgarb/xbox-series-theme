@@ -85,6 +85,6 @@ It puts back each recorded value, last change first: `Shell`, the shortcuts, SCO
 
 ### Before the first `--install` on a PC set up by hand
 
-Undo the hand setup first, so the record keeps the PC as it was without the Boot shell: delete the `Shell` value; move `Playnite.lnk` and `DiscordMini.lnk` from `%LOCALAPPDATA%\XboxSeries.BootShell\backup\` back into the Startup folder; switch Steam, Discord, Spotify and Roblox back on in Settings > Apps > Startup; and switch Playnite's *Start Playnite on computer startup* back on. Otherwise undo would put the hand setup back, and Playnite wouldn't start after it.
+Undo the hand setup first, so the record keeps the PC as it was without the Boot shell: delete the `Shell` value; move `Playnite.lnk` and `DiscordMini.lnk` from `%LOCALAPPDATA%\XboxSeries.BootShell\backup\` back into the Startup folder; switch Steam, Discord and Spotify back on in Settings > Apps > Startup (Roblox stays off, before setup and after undo); and switch Playnite's *Start Playnite on computer startup* back on. Otherwise undo would put the hand setup back, and Playnite wouldn't start after it.
 
 The sentinel Run entry and the safety-net logon task come in their own issue. Until then, keep a safety net like the prototype's `safety-net.vbs` registered (on the `prototype/boot-shell` branch), so a Boot shell that dies before explorer still lets Orca come up.
