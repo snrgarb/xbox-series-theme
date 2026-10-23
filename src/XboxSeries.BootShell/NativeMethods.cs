@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 
 namespace XboxSeries.BootShell
@@ -43,6 +44,15 @@ namespace XboxSeries.BootShell
         public const uint DT_CENTER = 0x0001, DT_VCENTER = 0x0004, DT_SINGLELINE = 0x0020, DT_NOPREFIX = 0x0800;
         public const int FW_NORMAL = 400;
         public const uint CLEARTYPE_QUALITY = 5;
+
+        public const uint COINIT_MULTITHREADED = 0x0;
+        public const uint CLSCTX_ALL = 0x17;
+        public const int RPC_E_CHANGED_MODE = unchecked((int)0x80010106);
+        public const int E_NOTFOUND = unchecked((int)0x80070490);
+        public const int eRender = 0;
+        public const int eConsole = 0;
+        public static readonly Guid CLSID_MMDeviceEnumerator = new("BCDE0395-E52F-467C-8E3D-C4579291692E");
+        public static readonly Guid IID_IMMDeviceEnumerator = new("A95664D2-9614-4F35-A746-DE8DB63617E6");
 
         [StructLayout(LayoutKind.Sequential)]
         public struct WNDCLASSEXW
@@ -279,5 +289,16 @@ namespace XboxSeries.BootShell
 
         [LibraryImport("dwmapi.dll")]
         public static partial int DwmFlush();
+
+        // ole32: COM, for the default audio device
+
+        [LibraryImport("ole32.dll")]
+        public static partial int CoInitializeEx(nint reserved, uint coInit);
+
+        [LibraryImport("ole32.dll")]
+        public static partial int CoCreateInstance(in Guid clsid, nint outer, uint clsContext, in Guid iid, out nint instance);
+
+        [LibraryImport("ole32.dll")]
+        public static partial void CoTaskMemFree(void* memory);
     }
 }

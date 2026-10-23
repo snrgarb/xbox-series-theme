@@ -2,14 +2,15 @@
 
 This TV PC's own sign-in shell (see **Boot shell** in `CONTEXT.md`, and ADR 0002). Windows starts it in explorer's place. It:
 
-1. starts Playnite's Fullscreen (`%LOCALAPPDATA%\Playnite\Playnite.FullscreenApp.exe --hidesplashscreen`);
-2. puts a topmost, black, cursorless window over the screen, and sets `ShellDesktopSwitchEvent`, so Windows' Welcome screen gives way straight to black;
-3. makes its two events, which Start-up sets (`BootShellEvents.cs`, linked from the extension), and takes the black down at FirstFrame, or after 60 s at most;
-4. starts explorer at BootVideoEnded, or 20 s after FirstFrame without it, or at the 60 s limit, once per sign-in, and only while no shell is up;
-5. starts Steam, Discord and Spotify straight after explorer;
-6. keeps Fullscreen up until Windows ends the session (the watchdog, below), and starts explorer again if Windows hasn't brought it back 10 s after it went;
-7. reads the pad itself (the pad, below), so the TV can always be driven back from the sofa;
-8. holds the mutex `Local\XboxSeries.BootShell` until sign-out, which the sentinel looks for (the safety nets, below).
+1. puts a topmost, black, cursorless window over the screen, and sets `ShellDesktopSwitchEvent`, so Windows' Welcome screen gives way straight to black;
+2. makes its two events, which Start-up sets (`BootShellEvents.cs`, linked from the extension);
+3. starts Playnite's Fullscreen (`%LOCALAPPDATA%\Playnite\Playnite.FullscreenApp.exe --hidesplashscreen`) behind the black once Windows' default audio device (render, console role: the one Playnite's SDL2 opens) has stayed the same for 1.5 s, or 6 s after the Boot shell started at most, settled or not. Playnite opens its audio once, as it starts: started while Windows is still bringing up the TV's HDMI audio and picking the default again, it logs "WASAPI can't initialize audio client" and stays silent for the whole run. Only this first start waits; relaunches and the Guide button don't;
+4. takes the black down at FirstFrame, or 60 s after Fullscreen's launch at most;
+5. starts explorer at BootVideoEnded, or 20 s after FirstFrame without it, or at the 60 s limit, once per sign-in, and only while no shell is up;
+6. starts Steam, Discord and Spotify straight after explorer;
+7. keeps Fullscreen up until Windows ends the session (the watchdog, below), and starts explorer again if Windows hasn't brought it back 10 s after it went;
+8. reads the pad itself (the pad, below), so the TV can always be driven back from the sofa;
+9. holds the mutex `Local\XboxSeries.BootShell` until sign-out, which the sentinel looks for (the safety nets, below).
 
 ## The watchdog
 
@@ -36,7 +37,7 @@ It's not part of the Bundle: `dotnet build` builds it with the rest, but it is n
 
 ## Its log
 
-One plain-text file per sign-in, `%LOCALAPPDATA%\XboxSeries.BootShell\logs\<yyyyMMdd-HHmmss>.log`. Each line is stamped with the wall clock, ms since boot (`boot+`) and ms since the Boot shell's process was created (`h+`). Files past the newest 30 are deleted at sign-in. It has a line for every Playnite process that appears or exits, with its exit code and how it was judged, the crash count, each relaunch, the black and the fallback, each Guide press, each View+Menu hold and what followed.
+One plain-text file per sign-in, `%LOCALAPPDATA%\XboxSeries.BootShell\logs\<yyyyMMdd-HHmmss>.log`. Each line is stamped with the wall clock, ms since boot (`boot+`) and ms since the Boot shell's process was created (`h+`). Files past the newest 30 are deleted at sign-in. It has the default audio device seen at sign-in and each change, and why Fullscreen launched when it did ("audio settled after 1800 ms", "audio not settled after 6 s; launching anyway", or "no default audio device after 6 s; launching anyway"), a line for every Playnite process that appears or exits, with its exit code and how it was judged, the crash count, each relaunch, the black and the fallback, each Guide press, each View+Menu hold and what followed.
 
 ## The safety nets
 
