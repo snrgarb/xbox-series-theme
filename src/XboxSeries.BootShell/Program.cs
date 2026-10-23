@@ -17,7 +17,8 @@ namespace XboxSeries.BootShell
     /// Windows ends the session, it keeps Fullscreen up (<see cref="Watchdog"/>), polling Playnite's processes every
     /// 100 ms, and starts explorer again should Windows not (<see cref="ShellWatch"/>). It reads the pad itself
     /// (<see cref="XInputPad"/>): the Guide button brings Fullscreen back while none runs, and View+Menu held for 5 s
-    /// closes Playnite to the desktop.
+    /// closes Playnite to the desktop. From a terminal, --install and --uninstall set it up and take it off
+    /// (<see cref="Setup"/>).
     /// </summary>
     internal static unsafe class Program
     {
@@ -37,8 +38,20 @@ namespace XboxSeries.BootShell
         private static bool bootVideoEndedSeen;
         private static bool explorerStarted;
 
-        private static int Main()
+        private static int Main(string[] args)
         {
+            switch (args)
+            {
+                case ["--install"]:
+                    return SetupCommand.Run(setup => setup.Install());
+                case ["--uninstall"]:
+                    return SetupCommand.Run(setup => setup.Uninstall());
+
+                // Winlogon starts it with none; anything else is a mistyped command, never a sign-in.
+                case [_, ..]:
+                    return 2;
+            }
+
             log.Write("Boot shell started");
 
             // Fullscreen before anything else: Windows' Welcome screen stays up until the black is there.
@@ -60,6 +73,7 @@ namespace XboxSeries.BootShell
 
                 OpenLog();
                 log.Write($"Windows build {WindowsBuild()}");
+                DeleteOldExes();
 
                 var schedule = new SignInSchedule(() => sinceStart.Elapsed);
                 var shell = new ShellWatch(() => sinceStart.Elapsed);
@@ -283,6 +297,24 @@ namespace XboxSeries.BootShell
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 log.Write($"ERROR: couldn't delete {flag}: {e.Message}");
+            }
+        }
+
+        /// <summary>Deletes the builds a later --install renamed aside, none of which runs now.</summary>
+        private static void DeleteOldExes()
+        {
+            var folder = Path.GetDirectoryName(Environment.ProcessPath)!;
+            foreach (var old in Directory.GetFiles(folder, "XboxSeries.BootShell.*.old"))
+            {
+                try
+                {
+                    File.Delete(old);
+                    log.Write("deleted " + old);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    log.Write($"ERROR: couldn't delete {old}: {e.Message}");
+                }
             }
         }
 
