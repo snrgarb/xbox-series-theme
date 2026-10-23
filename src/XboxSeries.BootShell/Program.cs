@@ -12,13 +12,14 @@ using static XboxSeries.BootShell.NativeMethods;
 namespace XboxSeries.BootShell
 {
     /// <summary>
-    /// The Boot shell: at sign-in, Playnite's Fullscreen first, then black over the screen until Start-up's first frame,
-    /// then explorer, Steam, Discord and Spotify as the Boot video ends (<see cref="SignInSchedule"/>); then, until
-    /// Windows ends the session, it keeps Fullscreen up (<see cref="Watchdog"/>), polling Playnite's processes every
-    /// 100 ms, and starts explorer again should Windows not (<see cref="ShellWatch"/>). It reads the pad itself
-    /// (<see cref="XInputPad"/>): the Guide button brings Fullscreen back while none runs, and View+Menu held for 5 s
-    /// closes Playnite to the desktop. From a terminal, --install and --uninstall set it up and take it off
-    /// (<see cref="Setup"/>); explorer's startup run starts it with --sentinel (<see cref="Sentinel"/>).
+    /// The Boot shell: at sign-in, black over the screen first, then Playnite's Fullscreen behind it once Windows' default
+    /// audio device has settled (<see cref="AudioSettle"/>), the black staying until Start-up's first frame, then
+    /// explorer, Steam, Discord and Spotify as the Boot video ends (<see cref="SignInSchedule"/>); then, until Windows ends
+    /// the session, it keeps Fullscreen up (<see cref="Watchdog"/>), polling Playnite's processes every 100 ms, and starts
+    /// explorer again should Windows not (<see cref="ShellWatch"/>). It reads the pad itself (<see cref="XInputPad"/>):
+    /// the Guide button brings Fullscreen back while none runs, and View+Menu held for 5 s closes Playnite to the desktop.
+    /// From a terminal, --install and --uninstall set it up and take it off (<see cref="Setup"/>); explorer's startup run
+    /// starts it with --sentinel (<see cref="Sentinel"/>).
     /// </summary>
     internal static unsafe class Program
     {
@@ -59,13 +60,10 @@ namespace XboxSeries.BootShell
             running = new Mutex(false, Sentinel.MutexName);
             log.Write("Boot shell started");
 
-            // Fullscreen before anything else: Windows' Welcome screen stays up until the black is there.
             AllowSetForegroundWindow(ASFW_ANY);
-            log.Write("Playnite's Fullscreen:");
-            var orders = LaunchFullscreen();
-
             try
             {
+                // The black before anything else: Windows' Welcome screen stays up until it's there.
                 SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
                 black = BlackWindow.Show();
                 blackUp = true;
@@ -75,6 +73,14 @@ namespace XboxSeries.BootShell
                 firstFrame = MakeEvent(BootShellEvents.FirstFrame);
                 bootVideoEnded = MakeEvent(BootShellEvents.BootVideoEnded);
                 log.Write("events made");
+
+                // Then Fullscreen, behind the black, once Windows' default audio device has settled, or 6 s after the
+                // Boot shell started at most: Playnite opens its audio only as it starts. The watchdog counts this start's
+                // 60 s of black from its launch, so the wait takes none of it, and the events are made before Start-up
+                // can set them. The log's file opens after, so Playnite never waits on the disk.
+                WaitForAudio();
+                log.Write("Playnite's Fullscreen:");
+                var orders = LaunchFullscreen();
 
                 OpenLog();
                 log.Write($"Windows build {WindowsBuild()}");
@@ -224,6 +230,30 @@ namespace XboxSeries.BootShell
             if (orders.HasFlag(Orders.StartDesktop))
             {
                 StartDesktop();
+            }
+        }
+
+        /// <summary>
+        /// Waits at sign-in, keeping the black window's messages going, until <see cref="AudioSettle"/> says Fullscreen is
+        /// due. Relaunches don't wait: by then Windows' audio has long settled.
+        /// </summary>
+        private static void WaitForAudio()
+        {
+            var settle = new AudioSettle(() => sinceStart.Elapsed, log.Write);
+            try
+            {
+                using var audio = new DefaultAudio();
+                while (!settle.Launch(audio.Id()))
+                {
+                    Wait(Poll, null, null);
+                }
+
+                log.Write("Fullscreen: " + settle.Why);
+            }
+            catch (Exception e)
+            {
+                // Never keep Fullscreen back for a device that can't be read.
+                log.Write($"ERROR: audio: couldn't read the default audio device: {e.Message}; launching now");
             }
         }
 
