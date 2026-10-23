@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Xml.Linq;
 using Xunit;
 
 namespace XboxSeries.BootShell.Tests
@@ -23,6 +24,7 @@ namespace XboxSeries.BootShell.Tests
 
         private readonly string root = Path.Combine(Path.GetTempPath(), "XboxSeries.BootShell.Tests." + Guid.NewGuid().ToString("N"));
         private readonly FakeRegistry registry = new();
+        private readonly FakeTasks tasks = new();
         private readonly List<string> said = new();
         private readonly SetupPaths paths;
         private int closes;
@@ -34,7 +36,8 @@ namespace XboxSeries.BootShell.Tests
                 Path.Combine(root, "publish", "XboxSeries.BootShell.exe"),
                 Path.Combine(root, "LocalAppData", "XboxSeries.BootShell"),
                 Path.Combine(root, "Startup"),
-                Path.Combine(root, "AppData", "Playnite"));
+                Path.Combine(root, "AppData", "Playnite"),
+                @"PC\gabe");
             Directory.CreateDirectory(Path.GetDirectoryName(paths.Exe)!);
             File.WriteAllText(paths.Exe, "build 1");
             Directory.CreateDirectory(paths.StartupFolder);
@@ -81,6 +84,19 @@ namespace XboxSeries.BootShell.Tests
 
             Assert.Equal("build 1", File.ReadAllText(InstalledExe));
             Assert.Equal(InstalledExe, registry.Get(Winlogon, "Shell"));
+            Assert.Equal($"\"{InstalledExe}\" --sentinel", registry.Get(Run, "XboxSeriesBootShellSentinel"));
+
+            // The safety net runs no Boot shell exe: PowerShell, windowless, 90 s after this user signs in.
+            var task = XDocument.Parse(tasks.Get("XboxSeries.BootShell.SafetyNet")!);
+            XNamespace ns = "http://schemas.microsoft.com/windows/2004/02/mit/task";
+            Assert.Equal(@"PC\gabe", task.Descendants(ns + "LogonTrigger").Single().Element(ns + "UserId")!.Value);
+            Assert.Equal("PT90S", task.Descendants(ns + "LogonTrigger").Single().Element(ns + "Delay")!.Value);
+            Assert.Equal("LeastPrivilege", task.Descendants(ns + "RunLevel").Single().Value);
+            Assert.Equal(@"C:\Windows\System32\conhost.exe", task.Descendants(ns + "Command").Single().Value);
+            var arguments = task.Descendants(ns + "Arguments").Single().Value;
+            Assert.StartsWith(@"--headless C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe ", arguments);
+            Assert.Contains(Path.Combine(paths.InstallFolder, "logs", "safety-net.log"), arguments);
+            Assert.DoesNotContain("XboxSeries.BootShell.exe", arguments);
             foreach (var name in new[] { "Steam", "Discord", "AMDNoiseSuppression" })
             {
                 Assert.Equal(1, ((byte[])registry.Get(Approved, name)!)[0] & 1);
@@ -142,6 +158,7 @@ namespace XboxSeries.BootShell.Tests
 
             Assert.Equal(1, closes);
             Assert.Equal(registryBefore, registry.Snapshot());
+            Assert.Null(tasks.Get("XboxSeries.BootShell.SafetyNet"));
             Assert.True(JsonNode.DeepEquals(config, Json(Config)));
             Assert.True(JsonNode.DeepEquals(fullscreenConfig, Json(FullscreenConfig)));
             Assert.Equal(new[] { "DiscordMini.lnk", "Orca.lnk", "Playnite.lnk" }, Directory.GetFiles(paths.StartupFolder).Select(Path.GetFileName).Order());
@@ -202,7 +219,9 @@ namespace XboxSeries.BootShell.Tests
 
             Assert.False(NewSetup().Install());
 
+            // Nor the sentinel, which would write Shell itself at the next sign-in.
             Assert.Null(registry.Get(Winlogon, "Shell"));
+            Assert.Null(registry.Get(Run, "XboxSeriesBootShellSentinel"));
             Assert.Equal(config, File.ReadAllText(Config));
             Assert.NotEqual(registryBefore, registry.Snapshot());
 
@@ -213,16 +232,42 @@ namespace XboxSeries.BootShell.Tests
         }
 
         [Fact]
+        public void The_record_keeps_the_sentinel_and_the_safety_net_as_the_other_values()
+        {
+            Assert.True(NewSetup().Install());
+
+            var record = Json(Record);
+            Assert.True(record.AsObject().ContainsKey(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Run\XboxSeriesBootShellSentinel"));
+            Assert.True(record.AsObject().ContainsKey(@"Task\XboxSeries.BootShell.SafetyNet"));
+            Assert.Null(record[@"Task\XboxSeries.BootShell.SafetyNet"]);
+        }
+
+        [Fact]
+        public void A_second_install_leaves_the_safety_net_as_Windows_rewrote_it()
+        {
+            Assert.True(NewSetup().Install());
+
+            // Windows hands the task back reordered, with the delay as PT1M30S.
+            var rewritten = tasks.Get("XboxSeries.BootShell.SafetyNet")!.Replace("PT90S", "PT1M30S");
+            tasks.Set("XboxSeries.BootShell.SafetyNet", rewritten);
+            tasks.Writes = 0;
+            Assert.True(NewSetup().Install());
+
+            Assert.Equal(0, tasks.Writes);
+            Assert.Contains(said, line => line.StartsWith(@"Task\XboxSeries.BootShell.SafetyNet: holds"));
+        }
+
+        [Fact]
         public void Install_refuses_to_run_from_the_installed_exe()
         {
             Assert.True(NewSetup().Install());
 
-            Assert.False(new Setup(registry, paths with { Exe = InstalledExe }, ClosePlaynite, said.Add, () => new DateTime(2026, 10, 23, 13, 0, 0)).Install());
+            Assert.False(new Setup(registry, tasks, paths with { Exe = InstalledExe }, ClosePlaynite, said.Add, () => new DateTime(2026, 10, 23, 13, 0, 0)).Install());
         }
 
         private Func<bool> closePlaynite = () => true;
 
-        private Setup NewSetup() => new(registry, paths, ClosePlaynite, said.Add, () => new DateTime(2026, 10, 23, 12, 0, 0));
+        private Setup NewSetup() => new(registry, tasks, paths, ClosePlaynite, said.Add, () => new DateTime(2026, 10, 23, 12, 0, 0));
 
         private bool ClosePlaynite()
         {
@@ -231,6 +276,27 @@ namespace XboxSeries.BootShell.Tests
         }
 
         private static JsonNode Json(string path) => JsonNode.Parse(File.ReadAllText(path))!;
+
+        private sealed class FakeTasks : ITaskScheduler
+        {
+            private readonly Dictionary<string, string> xml = new();
+
+            public int Writes { get; set; }
+
+            public string Get(string name) => xml.GetValueOrDefault(name);
+
+            public void Set(string name, string task)
+            {
+                xml[name] = task;
+                Writes++;
+            }
+
+            public void Delete(string name)
+            {
+                xml.Remove(name);
+                Writes++;
+            }
+        }
 
         private sealed class FakeRegistry : IRegistry
         {
