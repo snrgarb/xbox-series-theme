@@ -8,7 +8,7 @@
     (with the debug Guide hotkey and keys) that get installed for testing.
   -->
   <Target Name="PackBundle" AfterTargets="Build">
-    <!-- The theme, packed in the same configuration. -->
+    <!-- The theme, packed in the same configuration: ThemePackagePath is the .pthm it returns. -->
     <MSBuild Projects="$(DashboardDir)XboxSeries.Dashboard.proj" Properties="Configuration=$(Configuration)">
       <Output TaskParameter="TargetOutputs" PropertyName="ThemePackagePath" />
     </MSBuild>
