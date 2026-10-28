@@ -12,15 +12,18 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 
 ## File structure
 
-Single-context repo (most repos):
+Single-context repo (most repos, and this one):
 
 ```
 /
 ├── CONTEXT.md
 ├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-└── src/
+│   ├── 0001-bundle-settings-page.md
+│   └── 0002-boot-shell-not-xbox-mode.md
+├── bootshell/     ← the Boot shell and its tests
+├── extension/     ← Core, the extension and their tests
+├── theme/         ← the Dashboard theme
+└── shared/        ← source both bootshell/ and extension/ link
 ```
 
 Multi-context repo (presence of `CONTEXT-MAP.md` at the root):

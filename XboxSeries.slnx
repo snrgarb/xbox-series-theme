@@ -1,11 +1,11 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/XboxSeries.BootShell/XboxSeries.BootShell.csproj" />
-    <Project Path="src/XboxSeries.Core/XboxSeries.Core.csproj" />
-    <Project Path="src/XboxSeries.Extension/XboxSeries.Extension.csproj" />
+  <Folder Name="/bootshell/">
+    <Project Path="bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj" />
+    <Project Path="bootshell/XboxSeries.BootShell.Tests/XboxSeries.BootShell.Tests.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/XboxSeries.BootShell.Tests/XboxSeries.BootShell.Tests.csproj" />
-    <Project Path="tests/XboxSeries.Core.Tests/XboxSeries.Core.Tests.csproj" />
+  <Folder Name="/extension/">
+    <Project Path="extension/XboxSeries.Core/XboxSeries.Core.csproj" />
+    <Project Path="extension/XboxSeries.Extension/XboxSeries.Extension.csproj" />
+    <Project Path="extension/XboxSeries.Core.Tests/XboxSeries.Core.Tests.csproj" />
   </Folder>
 </Solution>
