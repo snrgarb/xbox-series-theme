@@ -5,7 +5,6 @@
     <UseWPF>true</UseWPF>
     <PluginGuid>eb759ff1-325b-4c34-9a64-d9704f72612b</PluginGuid>
     <ExtensionId>XboxSeries_$(PluginGuid)</ExtensionId>
-    <ThemeId>XboxSeries_Dashboard</ThemeId>
     <DashboardDir>$(RepoRoot)src\XboxSeries.Dashboard\</DashboardDir>
   </PropertyGroup>
   <ItemGroup>
