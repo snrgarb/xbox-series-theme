@@ -85,9 +85,9 @@ jobs:
         shell: pwsh
         run: |
           $tag = '${{ steps.version.outputs.tag }}'
-          gh release view $tag 2>$null
+          gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) { throw "Release $tag already exists; bump <Version> in Directory.Build.props." }
-          git ls-remote --exit-code --tags origin "refs/tags/$tag"
+          git ls-remote --exit-code --tags origin "refs/tags/$tag" *> $null
           if ($LASTEXITCODE -eq 0) { throw "Tag $tag already exists." }
           $global:LASTEXITCODE = 0
 
@@ -115,12 +115,16 @@ jobs:
               if ($names -contains $banned) { throw "$banned must not ship in the .pext" }
             }
             if ($names -notcontains "XboxSeries_Dashboard_$version.pthm") { throw "The .pext has no XboxSeries_Dashboard_$version.pthm" }
-            $dll = $zip.Entries | Where-Object { $_.Name -eq 'XboxSeries.Extension.dll' }
-            if (-not $dll) { throw 'The .pext has no XboxSeries.Extension.dll' }
-            $stream = $dll.Open(); $buffer = New-Object IO.MemoryStream; $stream.CopyTo($buffer); $stream.Dispose()
-            $text = [Text.Encoding]::UTF8.GetString($buffer.ToArray())
-            foreach ($debugOnly in 'DebugPane', 'DebugGuideHotkey') {
-              if ($text.Contains($debugOnly)) { throw "XboxSeries.Extension.dll holds the Debug-only ${debugOnly}: not a Release build" }
+            # Debug-only code (the pane, the Guide hotkey, the pad's keyboard keys, the ring and notices) leaves these
+            # names in a Debug DLL's metadata and none in a Release one.
+            foreach ($assembly in 'XboxSeries.Extension.dll', 'XboxSeries.Core.dll') {
+              $dll = $zip.Entries | Where-Object { $_.Name -eq $assembly }
+              if (-not $dll) { throw "The .pext has no $assembly" }
+              $stream = $dll.Open(); $buffer = New-Object IO.MemoryStream; $stream.CopyTo($buffer); $stream.Dispose()
+              $text = [Text.Encoding]::UTF8.GetString($buffer.ToArray())
+              foreach ($debugOnly in 'DebugPane', 'DebugGuideHotkey', 'DebugButtonFor', 'DebugRing', 'DebugNotify') {
+                if ($text.Contains($debugOnly)) { throw "$assembly holds the Debug-only ${debugOnly}: not a Release build" }
+              }
             }
           } finally { $zip.Dispose() }
           "path=$pext" >> $env:GITHUB_OUTPUT
