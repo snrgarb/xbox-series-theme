@@ -1,0 +1,104 @@
+# The Boot shell's pipeline (#128). Check: builds and runs the Boot shell's tests on a PR or a push to main that touches
+# the Boot shell, the shared file it links or the props it imports. Deploy: a manual run only, which publishes the
+# Release NativeAOT exe and creates the GitHub Release bootshell-v<version>, the version read from the Boot shell's own
+# project; it refuses when that release already exists and never overwrites one.
+name: Boot shell
+
+on:
+  pull_request:
+    paths:
+      - "bootshell/**"
+      - "shared/BootShellEvents.cs"
+      - "Directory.Build.props"
+      - ".github/workflows/bootshell.yml"
+  push:
+    branches: [main]
+    paths:
+      - "bootshell/**"
+      - "shared/BootShellEvents.cs"
+      - "Directory.Build.props"
+      - ".github/workflows/bootshell.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  PROJECT: bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj
+  TESTS: bootshell/XboxSeries.BootShell.Tests/XboxSeries.BootShell.Tests.csproj
+
+jobs:
+  check:
+    name: Build and test
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        shell: pwsh
+        run: dotnet test $env:TESTS -c Release
+
+  deploy:
+    name: Publish and release
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (dotnet msbuild $env:PROJECT -getProperty:Version -p:Configuration=Release).Trim()
+          if ($LASTEXITCODE -ne 0 -or -not $version) { throw "Could not read the Boot shell's version" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=bootshell-v$version" >> $env:GITHUB_OUTPUT
+          "Boot shell $version, tag bootshell-v$version"
+
+      - name: Refuse an existing release
+        shell: pwsh
+        run: |
+          gh release view "${{ steps.version.outputs.tag }}" --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -eq 0) { throw "Release ${{ steps.version.outputs.tag }} already exists; bump the Boot shell's Version to release again" }
+          git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" *> $null
+          if ($LASTEXITCODE -eq 0) { throw "Tag ${{ steps.version.outputs.tag }} already exists" }
+          $global:LASTEXITCODE = 0
+
+      - name: Test
+        shell: pwsh
+        run: dotnet test $env:TESTS -c Release
+
+      - name: Publish
+        shell: pwsh
+        run: |
+          # NativeAOT links with the C++ build tools; their vcvarsall.bat finds vswhere.exe by name on PATH.
+          $env:PATH += ";${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+          dotnet publish $env:PROJECT -c Release -r win-x64
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
+          $exe = "bootshell/XboxSeries.BootShell/bin/Release/net10.0-windows/win-x64/publish/XboxSeries.BootShell.exe"
+          if (-not (Test-Path $exe)) { throw "No exe at $exe" }
+
+      - name: Create release
+        shell: pwsh
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" `
+            "bootshell/XboxSeries.BootShell/bin/Release/net10.0-windows/win-x64/publish/XboxSeries.BootShell.exe" `
+            --repo "${{ github.repository }}" `
+            --target "${{ github.sha }}" `
+            --title "Boot shell ${{ steps.version.outputs.version }}" `
+            --notes "The Boot shell ${{ steps.version.outputs.version }}, one NativeAOT exe built from ${{ github.sha }}. See bootshell/XboxSeries.BootShell/README.md to set it up."
