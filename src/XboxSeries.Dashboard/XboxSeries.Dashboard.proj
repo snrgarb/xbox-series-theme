@@ -8,7 +8,8 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <ThemeId>XboxSeries_Dashboard</ThemeId>
-    <ThemeStageDir>$(MSBuildThisFileDirectory)obj\$(Configuration)\pack\</ThemeStageDir>
+    <!-- Staged outside the theme's folder, which tests read every XAML file under. -->
+    <ThemeStageDir>$(ArtifactsDir)obj\XboxSeries.Dashboard\$(Configuration)\</ThemeStageDir>
     <PackageDir>$(ArtifactsDir)</PackageDir>
     <PackageDir Condition="'$(Configuration)' == 'Release'">$(ArtifactsDir)Release\</PackageDir>
     <ThemePackagePath>$(PackageDir)$(ThemeId)_$(Version).pthm</ThemePackagePath>
@@ -17,8 +18,7 @@
   <!-- Returns the .pthm, so the extension can embed it. -->
   <Target Name="Build" Returns="$(ThemePackagePath)">
     <ItemGroup>
-      <DashboardFile Include="$(MSBuildThisFileDirectory)**\*"
-                     Exclude="$(MSBuildThisFileDirectory)theme.yaml;$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)obj\**;$(MSBuildThisFileDirectory)bin\**" />
+      <DashboardFile Include="$(MSBuildThisFileDirectory)**\*" Exclude="$(MSBuildThisFileDirectory)theme.yaml;$(MSBuildThisFileFullPath)" />
     </ItemGroup>
     <PropertyGroup>
       <ThemeManifest>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)theme.yaml').Replace('{{ThemeId}}', '$(ThemeId)').Replace('{{Version}}', '$(Version)'))</ThemeManifest>
