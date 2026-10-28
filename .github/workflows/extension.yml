@@ -56,7 +56,7 @@ jobs:
         run: dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Release
 
   deploy:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
     permissions:
       contents: write
