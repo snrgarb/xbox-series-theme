@@ -65,7 +65,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (dotnet msbuild $env:PROJECT -getProperty:Version -p:Configuration=Release).Trim()
-          if ($LASTEXITCODE -ne 0 -or -not $version) { throw "Could not read the Boot shell's version" }
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+') { throw "Could not read the Boot shell's version: '$version'" }
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=bootshell-v$version" >> $env:GITHUB_OUTPUT
           "Boot shell $version, tag bootshell-v$version"
