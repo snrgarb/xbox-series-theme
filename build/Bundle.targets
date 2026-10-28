@@ -1,27 +1,27 @@
 <Project>
   <!--
     Packs the Bundle after every build of the extension:
-      artifacts/XboxSeries_Dashboard_<Version>.pthm   the Dashboard theme
+      artifacts/XboxSeries_Dashboard_<Version>.pthm   the Dashboard theme, packed by its own project
       artifacts/XboxSeries_<Version>.pext             the extension, with the matching .pthm inside
     Both manifests are stamped with $(Version) from Directory.Build.props.
     Release builds pack into artifacts/Release/ instead, so they never replace the Debug packages
     (with the debug Guide hotkey and keys) that get installed for testing.
   -->
   <Target Name="PackBundle" AfterTargets="Build">
+    <!-- The theme, packed in the same configuration. -->
+    <MSBuild Projects="$(DashboardDir)XboxSeries.Dashboard.proj" Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="ThemePackagePath" />
+    </MSBuild>
+
     <!-- Set inside the target: IntermediateOutputPath isn't defined yet where this file is imported. -->
     <PropertyGroup>
-      <PackDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)pack\</PackDir>
-      <ThemeStageDir>$(PackDir)theme\</ThemeStageDir>
-      <ExtensionStageDir>$(PackDir)extension\</ExtensionStageDir>
-      <ThemePackageName>$(ThemeId)_$(Version).pthm</ThemePackageName>
+      <ExtensionStageDir>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)pack\extension\</ExtensionStageDir>
       <PackageDir>$(ArtifactsDir)</PackageDir>
       <PackageDir Condition="'$(Configuration)' == 'Release'">$(ArtifactsDir)Release\</PackageDir>
-      <ThemePackagePath>$(PackageDir)$(ThemePackageName)</ThemePackagePath>
       <ExtensionPackagePath>$(PackageDir)XboxSeries_$(Version).pext</ExtensionPackagePath>
     </PropertyGroup>
 
     <ItemGroup>
-      <DashboardFile Include="$(DashboardDir)**\*" Exclude="$(DashboardDir)theme.yaml" />
       <ExtensionFile Include="$(TargetDir)*.dll;$(TargetDir)*.pdb" />
       <ExtensionSound Include="$(MSBuildProjectDirectory)\Sounds\*.wav" />
       <ExtensionVideo Include="$(MSBuildProjectDirectory)\Videos\*.mp4" />
@@ -30,22 +30,15 @@
     <Error Condition="Exists('$(TargetDir)Newtonsoft.Json.dll')" Text="Newtonsoft.Json.dll must not ship in the .pext; Playnite provides it." />
 
     <PropertyGroup>
-      <ThemeManifest>$([System.IO.File]::ReadAllText('$(DashboardDir)theme.yaml').Replace('{{ThemeId}}', '$(ThemeId)').Replace('{{Version}}', '$(Version)'))</ThemeManifest>
       <ExtensionManifest>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\extension.yaml').Replace('{{ExtensionId}}', '$(ExtensionId)').Replace('{{Version}}', '$(Version)'))</ExtensionManifest>
     </PropertyGroup>
 
-    <!-- Theme -->
-    <RemoveDir Directories="$(PackDir)" />
-    <Copy SourceFiles="@(DashboardFile)" DestinationFiles="@(DashboardFile->'$(ThemeStageDir)%(RecursiveDir)%(Filename)%(Extension)')" />
-    <WriteLinesToFile File="$(ThemeStageDir)theme.yaml" Lines="$([MSBuild]::Escape($(ThemeManifest)))" Overwrite="true" />
-    <MakeDir Directories="$(PackageDir)" />
-    <ZipDirectory SourceDirectory="$(ThemeStageDir)" DestinationFile="$(ThemePackagePath)" Overwrite="true" />
-
-    <!-- Extension, embedding the theme -->
+    <RemoveDir Directories="$(ExtensionStageDir)" />
     <Copy SourceFiles="@(ExtensionFile);$(ThemePackagePath)" DestinationFolder="$(ExtensionStageDir)" />
     <Copy SourceFiles="@(ExtensionSound)" DestinationFolder="$(ExtensionStageDir)Sounds\" />
     <Copy SourceFiles="@(ExtensionVideo)" DestinationFolder="$(ExtensionStageDir)Videos\" />
     <WriteLinesToFile File="$(ExtensionStageDir)extension.yaml" Lines="$([MSBuild]::Escape($(ExtensionManifest)))" Overwrite="true" />
+    <MakeDir Directories="$(PackageDir)" />
     <ZipDirectory SourceDirectory="$(ExtensionStageDir)" DestinationFile="$(ExtensionPackagePath)" Overwrite="true" />
 
     <Message Importance="high" Text="Bundle $(Version): $(ExtensionPackagePath) and $(ThemePackagePath)" />
