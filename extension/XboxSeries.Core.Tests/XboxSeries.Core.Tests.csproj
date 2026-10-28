@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XboxSeries.Core\XboxSeries.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The achievement Toast's paging, plain C# with no WPF, compiled in here too to be checked on its own. -->
+    <Compile Include="..\XboxSeries.Extension\AchievementPages.cs" Link="Linked\AchievementPages.cs" />
+    <!-- The Idle screen's wake press swallowed whole, plain C# too. -->
+    <Compile Include="..\XboxSeries.Extension\WakeSwallow.cs" Link="Linked\WakeSwallow.cs" />
+    <!-- An Idle screen tip's buttons named in its text, plain C# too. -->
+    <Compile Include="..\XboxSeries.Extension\ButtonTokens.cs" Link="Linked\ButtonTokens.cs" />
+    <!-- A pad read outside Playnite, used or held off its rest, for the Idle screen, plain C# too. -->
+    <Compile Include="..\XboxSeries.Extension\PadActivity.cs" Link="Linked\PadActivity.cs" />
+    <!-- The popular gamerpics fetched and saved, plain C# too, checked against a fake xboxgamer.pics. -->
+    <Compile Include="..\XboxSeries.Extension\PopularGamerpics.cs" Link="Linked\PopularGamerpics.cs" />
+    <!-- The Boot shell's two named events, set if it made them, plain C# too, checked against events made here. -->
+    <Compile Include="$(RepoRoot)shared\BootShellEvents.cs" Link="Linked\BootShellEvents.cs" />
+    <!-- When a Start-up sets each of them, plain C# too, checked against the sequence itself. -->
+    <Compile Include="..\XboxSeries.Extension\BootShellSignals.cs" Link="Linked\BootShellSignals.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+</Project>

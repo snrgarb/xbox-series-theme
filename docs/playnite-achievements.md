@@ -39,7 +39,7 @@ PlayniteAchievements ── cache ──► PlayniteAchievementsSource (adapter,
                         AchievementToast / ToastWindow / Guide
 ```
 
-### The adapter: `src/XboxSeries.Extension/PlayniteAchievementsSource*.cs`
+### The adapter: `extension/XboxSeries.Extension/PlayniteAchievementsSource*.cs`
 
 - **No API to build against.** PlayniteAchievements offers no SDK or contract, so the adapter finds the plugin instance by its Id `e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b` and reaches its members by reflection. Those members were checked against its source at v4.1:
   - `AchievementDataService.GetAllGameAchievementData` and `GetGameAchievementData(Guid)`;
@@ -52,7 +52,7 @@ PlayniteAchievements ── cache ──► PlayniteAchievementsSource (adapter,
 - **Coalescing.** Cache changes are gathered for 500 ms and then read off the UI thread. `Games()` only hands out the last read, so the UI thread never waits on PlayniteAchievements.
 - **Ignored unlock events:** previews, test fires, friend unlocks, progress updates and "game completed" banners. PlayniteAchievements' own Test buttons therefore never show the Bundle's Toast; use the Debug menu instead (see Testing below).
 
-### The rules: `src/XboxSeries.Core/ExtensionCore.Achievements.cs`
+### The rules: `extension/XboxSeries.Core/ExtensionCore.Achievements.cs`
 
 - **The first read is a baseline.** Everything PlayniteAchievements already had when Playnite started is never announced.
 - **Only the current session counts.** An unlock is announced only if it belongs to the running game, or the game that most recently stopped (until another starts), and was unlocked since that game started.
