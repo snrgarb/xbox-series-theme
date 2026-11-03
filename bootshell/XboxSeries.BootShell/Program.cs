@@ -91,83 +91,98 @@ namespace XboxSeries.BootShell
                 var playniteLog = new PlayniteLog(PlayniteLog.DefaultPath);
                 Obey(orders);
                 pad.Start();
-                while (!BlackWindow.SessionEnding)
-                {
-                    if (!firstFrameSeen && firstFrame.WaitOne(0))
-                    {
-                        firstFrameSeen = true;
-                        log.Write("signal: FirstFrame");
-                        schedule.FirstFrame();
-                        watchdog.FirstFrame();
-                    }
-
-                    if (!bootVideoEndedSeen && bootVideoEnded.WaitOne(0))
-                    {
-                        bootVideoEndedSeen = true;
-                        log.Write("signal: BootVideoEnded");
-                        schedule.BootVideoEnded();
-                    }
-
-                    if (playniteLog.CrashLogged())
-                    {
-                        watchdog.CrashWindowShown();
-                    }
-
-                    var (appeared, exited) = playnite.Poll();
-
-                    // Windows tells Playnite the session is ending too, and it may be gone first: hear the end before judging.
-                    PumpMessages();
-                    if (BlackWindow.SessionEnding)
-                    {
-                        break;
-                    }
-
-                    foreach (var process in appeared)
-                    {
-                        Obey(watchdog.Appeared(process));
-                    }
-
-                    foreach (var (pid, exitCode) in exited)
-                    {
-                        Obey(watchdog.Exited(pid, exitCode));
-                    }
-
-                    while (pad.Presses.TryDequeue(out var presses))
-                    {
-                        if (presses.HasFlag(PadPresses.Hold))
-                        {
-                            Obey(watchdog.Held());
-                        }
-
-                        if (presses.HasFlag(PadPresses.Guide))
-                        {
-                            Obey(watchdog.GuidePressed());
-                        }
-                    }
-
-                    Obey(watchdog.Tick());
-                    ShowBlack();
-
-                    if (schedule.StartExplorer() && !explorerStarted)
-                    {
-                        log.Write("explorer, Steam, Discord and Spotify: " + schedule.Why);
-                        StartDesktop();
-                    }
-
-                    if (shell.StartExplorer(GetShellWindow() != 0))
-                    {
-                        log.Write($"explorer: no shell for {ShellWatch.Grace.TotalSeconds} s; starting it again");
-                        Launcher.StartExplorer(log);
-                    }
-
-                    Wait(Poll, firstFrameSeen ? null : firstFrame, bootVideoEndedSeen ? null : bootVideoEnded);
-                }
-
-                // The shell stays up until sign-out, as Winlogon expects of the shell it started.
-                log.Write("Windows is ending the session: watching stops");
                 while (true)
                 {
-                    Wait(Timeout.InfiniteTimeSpan, null, null);
+                    while (!BlackWindow.SessionEnding)
+                    {
+                        try
+                        {
+                            if (!firstFrameSeen && firstFrame.WaitOne(0))
+                            {
+                                firstFrameSeen = true;
+                                log.Write("signal: FirstFrame");
+                                schedule.FirstFrame();
+                                watchdog.FirstFrame();
+                            }
+
+                            if (!bootVideoEndedSeen && bootVideoEnded.WaitOne(0))
+                            {
+                                bootVideoEndedSeen = true;
+                                log.Write("signal: BootVideoEnded");
+                                schedule.BootVideoEnded();
+                            }
+
+                            if (playniteLog.CrashLogged())
+                            {
+                                watchdog.CrashWindowShown();
+                            }
+
+                            var (appeared, exited) = playnite.Poll();
+
+                            // Windows tells Playnite the session is ending too, and it may be gone first: hear the end before judging.
+                            PumpMessages();
+                            if (BlackWindow.SessionEnding)
+                            {
+                                break;
+                            }
+
+                            foreach (var process in appeared)
+                            {
+                                Obey(watchdog.Appeared(process));
+                            }
+
+                            foreach (var (pid, exitCode) in exited)
+                            {
+                                Obey(watchdog.Exited(pid, exitCode));
+                            }
+
+                            while (pad.Presses.TryDequeue(out var presses))
+                            {
+                                if (presses.HasFlag(PadPresses.Hold))
+                                {
+                                    Obey(watchdog.Held());
+                                }
+
+                                if (presses.HasFlag(PadPresses.Guide))
+                                {
+                                    Obey(watchdog.GuidePressed());
+                                }
+                            }
+
+                            Obey(watchdog.Tick());
+                            ShowBlack();
+
+                            if (schedule.StartExplorer() && !explorerStarted)
+                            {
+                                log.Write("explorer, Steam, Discord and Spotify: " + schedule.Why);
+                                StartDesktop();
+                            }
+
+                            if (shell.StartExplorer(GetShellWindow() != 0))
+                            {
+                                log.Write($"explorer: no shell for {ShellWatch.Grace.TotalSeconds} s; starting it again");
+                                Launcher.StartExplorer(log);
+                            }
+                        }
+                        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                        {
+                            // A file in the way for a moment, as Playnite's log rolled over between looking and reading, or a
+                            // full disk: never a reason to stop watching for the rest of the sign-in.
+                            log.Write($"ERROR: {e.Message}; watching on");
+                        }
+
+                        Wait(Poll, firstFrameSeen ? null : firstFrame, bootVideoEndedSeen ? null : bootVideoEnded);
+                    }
+
+                    // The shell stays up until sign-out, as Winlogon expects of the shell it started. Windows may yet call
+                    // the end off (an app refuses it, or Cancel on its list of them): then watching goes on.
+                    log.Write("Windows is ending the session: watching stops");
+                    while (BlackWindow.SessionEnding)
+                    {
+                        Wait(Poll, null, null);
+                    }
+
+                    log.Write("Windows called the end of the session off: watching again");
                 }
             }
             catch (Exception e)
