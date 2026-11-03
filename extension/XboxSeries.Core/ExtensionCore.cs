@@ -467,6 +467,30 @@ namespace XboxSeries.Core
             FollowAchievementsOf(gameId);
             HideLaunchScreenFor(gameId);
             RefreshHome();
+
+            // Started with the Guide open, as over its Launch screen: frozen as one the Guide opened over would be, so it
+            // can't take the pad behind it, and the Guide shows it running.
+            if (Guide.IsOpen)
+            {
+                FreezeRunningGame();
+                ShowRunningGameInGuide();
+            }
+        }
+
+        /// <summary>
+        /// The running game changed with the Guide open: the landing tab lists it running, or no longer, and Profile &amp;
+        /// system greys Switch profile, or brings it back.
+        /// </summary>
+        private void ShowRunningGameInGuide()
+        {
+            if (Guide.Tab == GuideTabKind.Landing)
+            {
+                RefreshLandingTab();
+            }
+            else
+            {
+                ShowProfileInGuide();
+            }
         }
 
         /// <summary>Playnite's game startup cancelled event: a launch that never got going.</summary>
@@ -509,9 +533,9 @@ namespace XboxSeries.Core
                 return;
             }
 
-            if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
+            if (Guide.IsOpen)
             {
-                RefreshLandingTab();
+                ShowRunningGameInGuide();
             }
 
             ReturnHomeFrom(gameId, quit);
