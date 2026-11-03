@@ -5,6 +5,8 @@
     is; without it, the cover blurred and darkened; black for neither. Over it, Home's hero scrim and a shade behind the
     centred column, then the cover and the status in white in the header font. No Close: without PART_PanelActionButtons
     Playnite adds none, and B (or Escape) leaves the view to Home as Close did, through the view host, which takes focus.
+    Playnite puts focus back on that Close as its window is restored over the view; with none, the extension puts it back
+    on the view host (GameStatusFocus).
     Playnite injects no custom elements into this template, and the extension's hero, at Main's level, would follow the
     selected game rather than the launching one, so the art is plain XAML on the view's Game.
 -->
