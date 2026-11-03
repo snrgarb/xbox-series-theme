@@ -46,32 +46,36 @@ namespace XboxSeries.Extension
         /// </summary>
         private static async Task<string> EvaluateInSteam(string expression, string target = "SharedJSContext")
         {
-            string targets = null;
+            // The first port whose answer is a debugger's list of targets holding the one asked for. Anything else on
+            // 8080 (a torrent client's web page, a dev server) isn't Steam's, so 8081 is tried too.
+            CefTarget shared = null;
             using (var http = new HttpClient { Timeout = CefProbeTimeout })
             {
                 foreach (var port in new[] { 8080, 8081 })
                 {
+                    string targets;
                     try
                     {
                         targets = await http.GetStringAsync($"http://127.0.0.1:{port}/json");
-                        break;
                     }
                     catch (HttpRequestException)
                     {
+                        continue;
                     }
                     catch (TaskCanceledException)
                     {
+                        continue;
+                    }
+
+                    shared = TargetIn(targets, target);
+                    if (shared != null)
+                    {
+                        break;
                     }
                 }
             }
 
-            if (targets == null)
-            {
-                return null;
-            }
-
-            var shared = Serialization.FromJson<List<CefTarget>>(targets)?.FirstOrDefault(t => t.Title == target);
-            if (shared?.WebSocketDebuggerUrl == null)
+            if (shared == null)
             {
                 return null;
             }
@@ -125,6 +129,21 @@ namespace XboxSeries.Extension
                         ? $"script threw {thrown.Exception?.Description ?? thrown.Text}"
                         : reply.Result?.Result?.Value?.ToString() ?? "script returned nothing";
                 }
+            }
+        }
+
+        /// <summary>The target titled <paramref name="title"/> in a debugger's list of targets; null for one without it, or for an answer that isn't such a list.</summary>
+        private static CefTarget TargetIn(string targets, string title)
+        {
+            try
+            {
+                var found = Serialization.FromJson<List<CefTarget>>(targets)?.FirstOrDefault(t => t?.Title == title);
+                return found?.WebSocketDebuggerUrl == null ? null : found;
+            }
+            catch (Exception)
+            {
+                // Not JSON, or JSON of another shape: whatever answered isn't Steam's debugger.
+                return null;
             }
         }
 
