@@ -100,6 +100,9 @@ namespace XboxSeries.Core
         /// <summary>Input anywhere in Windows, which the Idle screen counts outside Playnite's windows too.</summary>
         private readonly IInputActivity inputActivity;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
+
+        /// <summary><see cref="library"/>'s games by id, so a lookup per game (as each Group's) doesn't scan the library.</summary>
+        private Dictionary<Guid, LibraryGame> gamesById = new Dictionary<Guid, LibraryGame>();
         private IReadOnlyList<Notification> notifications = new Notification[0];
 
         /// <summary>The ids of the notifications last seen, so only new ones get a Toast; null until the first are seen.</summary>
@@ -240,6 +243,15 @@ namespace XboxSeries.Core
         {
             var previous = library;
             library = snapshot;
+            gamesById = new Dictionary<Guid, LibraryGame>(snapshot.Games.Count);
+            foreach (var game in snapshot.Games)
+            {
+                if (!gamesById.ContainsKey(game.Id))
+                {
+                    gamesById.Add(game.Id, game);
+                }
+            }
+
             FollowInstalls(previous);
             ToastFinishedInstalls(previous);
             ToastFinishedUninstalls();
@@ -2313,7 +2325,8 @@ namespace XboxSeries.Core
 
         private string NameOf(Guid gameId) => GameById(gameId)?.Name ?? "the game";
 
-        private LibraryGame GameById(Guid? gameId) => library.Games.FirstOrDefault(g => g.Id == gameId);
+        private LibraryGame GameById(Guid? gameId) =>
+            gameId != null && gamesById.TryGetValue(gameId.Value, out var game) ? game : null;
 
         /// <summary>Games that have been played, newest first, never hidden ones.</summary>
         private IEnumerable<LibraryGame> PlayedGames() =>
