@@ -66,6 +66,12 @@ namespace XboxSeries.Core
         /// <summary>How long a game has to close by itself before the force-quit prompt.</summary>
         private static readonly TimeSpan QuitTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// How long a launch the Dashboard sent holds off others while Playnite hasn't yet begun it. Playnite may never
+        /// begin it, nor say so: an error before its starting event, say.
+        /// </summary>
+        private static readonly TimeSpan LaunchBeginTimeout = TimeSpan.FromSeconds(15);
+
         /// <summary>How far one press of left or right turns the volume, as Windows' own volume keys do.</summary>
         private const int VolumeStep = 2;
 
@@ -145,6 +151,7 @@ namespace XboxSeries.Core
         private IDisposable quitTimer;
         private Guid? startAfterQuit;
         private Guid? startingGame;
+        private IDisposable launchBeginTimer;
         private Guid? heroGame;
         private Guid? tappedGame;
         private IDisposable tapTimer;
@@ -416,6 +423,7 @@ namespace XboxSeries.Core
             {
                 // The Dashboard's own launch, now begun by Playnite: only now, so a launch Playnite never begins, as one
                 // routed to its install dialog, isn't hidden behind the Launch screen.
+                StopLaunchBeginTimer();
                 ShowLaunchScreen(gameId);
                 return true;
             }
@@ -2278,8 +2286,29 @@ namespace XboxSeries.Core
         /// </summary>
         private void Launch(Guid gameId)
         {
-            startingGame = gameId;
+            // A game not installed goes to Playnite's install dialog, which never begins, starts or cancels the launch,
+            // so it holds off nothing.
+            if (GameById(gameId)?.Installed != false)
+            {
+                startingGame = gameId;
+                StopLaunchBeginTimer();
+                launchBeginTimer = clock.After(LaunchBeginTimeout, () =>
+                {
+                    launchBeginTimer = null;
+                    if (startingGame == gameId)
+                    {
+                        startingGame = null;
+                    }
+                });
+            }
+
             playnite.StartGame(gameId);
+        }
+
+        private void StopLaunchBeginTimer()
+        {
+            launchBeginTimer?.Dispose();
+            launchBeginTimer = null;
         }
 
         private string NameOf(Guid gameId) => GameById(gameId)?.Name ?? "the game";

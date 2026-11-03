@@ -185,6 +185,42 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_launch_of_a_game_not_installed_holds_off_no_other_launch()
+        {
+            // Playnite sends it to its install dialog and never says it began, started or was cancelled.
+            library.WithGame("Celeste", lastActivity: new DateTime(2026, 10, 9), installed: false);
+            core.OnLibraryChanged(library.Snapshot());
+
+            core.PlayGame(library.Id("Celeste"));
+
+            Assert.Equal(new[] { library.Id("Celeste") }, playnite.StartedGames);
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+        }
+
+        [Fact]
+        public void A_launch_Playnite_never_begins_holds_off_other_launches_for_15_seconds_only()
+        {
+            core.PlayGame(library.Id("Hades"));
+
+            clock.Advance(TimeSpan.FromSeconds(14));
+            Assert.False(core.OnGameStarting(library.Id("Tunic")));
+
+            clock.Advance(TimeSpan.FromSeconds(2));
+            Assert.True(core.OnGameStarting(library.Id("Tunic")));
+        }
+
+        [Fact]
+        public void A_launch_Playnite_has_begun_holds_off_other_launches_until_it_starts()
+        {
+            core.PlayGame(library.Id("Hades"));
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+
+            clock.Advance(TimeSpan.FromMinutes(2));
+
+            Assert.False(core.OnGameStarting(library.Id("Tunic")));
+        }
+
+        [Fact]
         public void The_Guide_button_opens_the_Guide_over_the_Launch_screen()
         {
             core.OnGameStarting(library.Id("Halo Infinite"));
