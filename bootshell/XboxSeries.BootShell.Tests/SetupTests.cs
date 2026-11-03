@@ -83,7 +83,7 @@ namespace XboxSeries.BootShell.Tests
             Assert.True(NewSetup().Install());
 
             Assert.Equal("build 1", File.ReadAllText(InstalledExe));
-            Assert.Equal(InstalledExe, registry.Get(Winlogon, "Shell"));
+            Assert.Equal($"\"{InstalledExe}\"", registry.Get(Winlogon, "Shell"));
             Assert.Equal($"\"{InstalledExe}\" --sentinel", registry.Get(Run, "XboxSeriesBootShellSentinel"));
 
             // The safety net runs no Boot shell exe: PowerShell, windowless, 90 s after this user signs in.
@@ -167,6 +167,32 @@ namespace XboxSeries.BootShell.Tests
             Assert.True(File.Exists(InstalledExe));
             Assert.False(File.Exists(Record));
             Assert.Single(Directory.GetFiles(paths.InstallFolder, "setup-record.*.json"));
+        }
+
+        [Fact]
+        public void Uninstall_puts_back_a_Shell_an_earlier_build_set_unquoted()
+        {
+            var registryBefore = registry.Snapshot();
+            Assert.True(NewSetup().Install());
+            registry.Set(Winlogon, "Shell", InstalledExe);
+
+            Assert.True(NewSetup().Uninstall());
+
+            Assert.Equal(registryBefore, registry.Snapshot());
+        }
+
+        [Fact]
+        public void Uninstall_takes_the_sentinel_off_before_Shell()
+        {
+            // Else a sentinel left by an undo that stopped between them writes Shell back at the next sign-in.
+            Assert.True(NewSetup().Install());
+            registry.Writes.Clear();
+
+            Assert.True(NewSetup().Uninstall());
+
+            var sentinel = registry.Writes.IndexOf((Run, "XboxSeriesBootShellSentinel"));
+            var shell = registry.Writes.IndexOf((Winlogon, "Shell"));
+            Assert.InRange(sentinel, 0, shell - 1);
         }
 
         [Fact]
