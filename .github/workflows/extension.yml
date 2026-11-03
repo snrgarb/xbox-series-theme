@@ -75,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (dotnet msbuild extension/XboxSeries.Extension/XboxSeries.Extension.csproj -getProperty:Version -p:Configuration=Release).Trim()
-          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+') { throw "Could not read the Bundle version: '$version'" }
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw "Could not read the Bundle version: '$version'" }
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=extension-v$version" >> $env:GITHUB_OUTPUT
           "Bundle version $version, tag extension-v$version"
@@ -85,10 +85,13 @@ jobs:
         shell: pwsh
         run: |
           $tag = '${{ steps.version.outputs.tag }}'
-          gh release view $tag *> $null
+          # Only gh's "release not found" means there's none: any other failure (auth, rate limit, network) stops here.
+          $release = gh release view $tag 2>&1
           if ($LASTEXITCODE -eq 0) { throw "Release $tag already exists; bump <Version> in Directory.Build.props." }
-          git ls-remote --exit-code --tags origin "refs/tags/$tag" *> $null
-          if ($LASTEXITCODE -eq 0) { throw "Tag $tag already exists." }
+          if ("$release" -notmatch 'release not found') { throw "Couldn't check for release ${tag}: $release" }
+          $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed" }
+          if ($remoteTag) { throw "Tag $tag already exists." }
           $global:LASTEXITCODE = 0
 
       - name: Core tests
