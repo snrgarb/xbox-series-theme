@@ -123,24 +123,14 @@
                 itself: square here, and a Group's tall card sets its own size (HomeTileCoverWidth and Height) over these.
             -->
             <Viewbox Stretch="UniformToFill">
-                <Image Width="{DynamicResource HomeTileCoverWidth}" Height="{DynamicResource HomeTileCoverHeight}"
+                <Image x:Name="Cover" Width="{DynamicResource HomeTileCoverWidth}" Height="{DynamicResource HomeTileCoverHeight}"
                        Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
                        Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
             </Viewbox>
-            <TextBlock Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
-                       TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White">
-                <TextBlock.Style>
-                    <!-- Only for games with no cover. -->
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
-                                <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+            <!-- Only for want of a cover: none, or one that won't load (DataTemplate.Triggers, on the picture shown). -->
+            <TextBlock x:Name="Title" Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
+                       TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White"
+                       Visibility="Collapsed" />
             <!-- The game's library source, bottom left like the console's badges; the title replaces it on focus. -->
             <!--
                 Its shadow is a picture made once, under it, 8 out round it, not an effect: an effect on every tile is
@@ -175,6 +165,10 @@
             </Border>
         </Grid>
         <DataTemplate.Triggers>
+            <!-- The picture, not the path: a cover set but missing or corrupt decodes to none, and the title stands in. -->
+            <DataTrigger Binding="{Binding Source, ElementName=Cover}" Value="{x:Null}">
+                <Setter TargetName="Title" Property="Visibility" Value="Visible" />
+            </DataTrigger>
             <DataTrigger Binding="{Binding Source}" Value="Steam">
                 <Setter TargetName="SourceIcon" Property="Data" Value="{StaticResource SourceSteam}" />
                 <Setter TargetName="SourceShadow" Property="Source" Value="{StaticResource SourceSteamShadow}" />
