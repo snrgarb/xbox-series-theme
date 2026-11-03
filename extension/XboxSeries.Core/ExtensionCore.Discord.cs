@@ -309,6 +309,7 @@ namespace XboxSeries.Core
 
             if (step != DiscordStep.TokenExchange)
             {
+                KeepLateRefresh(status, body);
                 return;
             }
 

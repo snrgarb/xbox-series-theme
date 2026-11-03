@@ -192,7 +192,7 @@ namespace XboxSeries.Core.Tests
 
         [Theory]
         [InlineData(400, "{\"error\":\"invalid_grant\"}")]
-        [InlineData(0, "No such host is known.")]
+        [InlineData(401, "{\"error\":\"invalid_client\"}")]
         [InlineData(200, "{\"token_type\":\"Bearer\"}")]
         public void A_refresh_that_fails_at_start_up_asks_Discord_to_authorize_again_then_signs_in(int status, string body)
         {
@@ -220,6 +220,82 @@ namespace XboxSeries.Core.Tests
 
             Assert.True(Discord.IsConnected);
             Assert.False(Discord.NeedsReconnect);
+        }
+
+        [Theory]
+        [InlineData(0, "No such host is known.")]
+        [InlineData(429, "{\"message\":\"You are being rate limited.\"}")]
+        [InlineData(503, "upstream connect error")]
+        public void A_refresh_not_answered_at_start_up_is_tried_again_a_minute_later_rather_than_authorizing_again(int status, string body)
+        {
+            // As after waking from sleep, Discord's pipe back before the network.
+            SaveTokens(clock.Now.AddHours(1));
+            StartUp();
+
+            core.OnDiscordTokenResponse(status, body);
+
+            Assert.Null(transport.LastCommand("AUTHORIZE"));
+            Assert.Single(oauth.Requests);
+            Assert.True(Discord.IsConnecting);
+
+            clock.Advance(TimeSpan.FromMinutes(1));
+
+            Assert.Equal(2, oauth.Requests.Count);
+            Assert.Equal("saved-refresh", oauth.Requests.Last().Form["refresh_token"]);
+
+            core.OnDiscordTokenResponse(200, Tokens("access-2", "refresh-2"));
+
+            AssertSaved("access-2", "refresh-2", clock.Now.AddSeconds(604800));
+            Assert.Equal("access-2", (string)transport.LastCommand("AUTHENTICATE")["args"]["access_token"]);
+            Assert.Null(transport.LastCommand("AUTHORIZE"));
+        }
+
+        [Fact]
+        public void A_refresh_not_answered_while_connected_is_tried_again_a_minute_later_and_stays_connected()
+        {
+            ConnectFully();
+            var authorizes = Sent("AUTHORIZE").Count;
+            clock.Advance(TimeSpan.FromDays(6));
+            var requests = oauth.Requests.Count;
+
+            core.OnDiscordTokenResponse(0, "No such host is known.");
+
+            Assert.Equal(authorizes, Sent("AUTHORIZE").Count);
+            Assert.True(Discord.IsConnected);
+
+            clock.Advance(TimeSpan.FromMinutes(1));
+            Assert.Equal(requests + 1, oauth.Requests.Count);
+
+            core.OnDiscordTokenResponse(200, Tokens("access-3", "refresh-3"));
+            AssertSaved("access-3", "refresh-3", clock.Now.AddSeconds(604800));
+            Assert.Equal(authorizes, Sent("AUTHORIZE").Count);
+        }
+
+        [Fact]
+        public void A_refresh_answered_after_Discord_closed_keeps_the_new_tokens()
+        {
+            // Discord replaces the refresh token with each refresh: the one sent is dead once the answer grants new ones.
+            ConnectFully();
+            clock.Advance(TimeSpan.FromDays(6));
+
+            core.OnDiscordClosed();
+            core.OnDiscordTokenResponse(200, Tokens("access-2", "refresh-2"));
+
+            AssertSaved("access-2", "refresh-2", clock.Now.AddSeconds(604800));
+            Assert.False(Discord.IsConnected);
+        }
+
+        [Fact]
+        public void Discord_closing_cancels_a_refresh_waiting_to_be_tried_again()
+        {
+            SaveTokens(clock.Now.AddHours(1));
+            StartUp();
+            core.OnDiscordTokenResponse(0, "No such host is known.");
+
+            core.OnDiscordClosed();
+            clock.Advance(TimeSpan.FromMinutes(5));
+
+            Assert.Single(oauth.Requests);
         }
 
         [Fact]
