@@ -40,11 +40,15 @@ namespace XboxSeries.Extension
 
         public IntPtr FindWindowUnder(string directory)
         {
-            var prefix = directory.TrimEnd('\\') + "\\";
-            var window = NativeMethods.FindTopLevelWindow(path => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            // Made whole and followed past junctions and subst drives, as the programs' own paths may be either.
+            var prefixes = NativeMethods.PathPrefixesOf(directory);
+            var window = prefixes.Count == 0
+                ? IntPtr.Zero
+                : NativeMethods.FindTopLevelWindow(path => prefixes.Exists(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)));
+            var under = string.Join(" or ", prefixes);
             logger.Info(window == IntPtr.Zero
-                ? $"No window found for a program under {prefix}"
-                : $"Found window {window} for a program under {prefix}");
+                ? $"No window found for a program under {(under.Length == 0 ? directory : under)}"
+                : $"Found window {window} for a program under {under}");
             return window;
         }
 

@@ -87,6 +87,8 @@ namespace XboxSeries.Extension
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
         [DllImport("kernel32.dll")] private static extern IntPtr OpenProcess(uint access, bool inherit, uint processId);
         [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern IntPtr CreateFile(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern uint GetFinalPathNameByHandle(IntPtr file, StringBuilder path, uint size, uint flags);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool QueryFullProcessImageName(IntPtr process, uint flags, StringBuilder name, ref int size);
         [DllImport("kernel32.dll")] private static extern bool GetProcessTimes(IntPtr process, out long creation, out long exit, out long kernel, out long user);
         [DllImport("kernel32.dll")] private static extern bool GetProcessIoCounters(IntPtr process, out IO_COUNTERS counters);
@@ -187,6 +189,68 @@ namespace XboxSeries.Extension
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int max);
+
+        /// <summary>
+        /// The prefixes a program under <paramref name="directory"/> has its path start with, each ending in a backslash:
+        /// the directory made whole (forward slashes, <c>..</c> and a relative part resolved), and, when it differs, the
+        /// path it comes to past junctions, links and <c>subst</c> drives, as Windows may give a program's path either
+        /// way. Empty for something that isn't a path.
+        /// </summary>
+        public static List<string> PathPrefixesOf(string directory)
+        {
+            var prefixes = new List<string>();
+            string full;
+            try
+            {
+                full = System.IO.Path.GetFullPath(directory).TrimEnd('\\') + "\\";
+            }
+            catch (Exception e) when (e is ArgumentException || e is NotSupportedException || e is System.IO.PathTooLongException || e is System.Security.SecurityException)
+            {
+                return prefixes;
+            }
+
+            // Never a drive's or a share's root that a junction comes to: every program would be under it.
+            prefixes.Add(full);
+            if (FinalPathOf(full) is string final && !string.Equals(final, full, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(System.IO.Path.GetPathRoot(final)?.TrimEnd('\\') + "\\", final, StringComparison.OrdinalIgnoreCase))
+            {
+                prefixes.Add(final);
+            }
+
+            return prefixes;
+        }
+
+        /// <summary>The directory's path past junctions, links and <c>subst</c> drives, ending in a backslash; null if it can't be opened.</summary>
+        private static string FinalPathOf(string directory)
+        {
+            const uint FILE_SHARE_ALL = 0x7, OPEN_EXISTING = 3, FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+            var handle = CreateFile(directory, 0, FILE_SHARE_ALL, IntPtr.Zero, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
+            if (handle == IntPtr.Zero || handle == new IntPtr(-1))
+            {
+                return null;
+            }
+
+            try
+            {
+                var path = new StringBuilder(1024);
+                var length = GetFinalPathNameByHandle(handle, path, (uint)path.Capacity, 0);
+                if (length == 0 || length >= path.Capacity)
+                {
+                    return null;
+                }
+
+                // \\?\C:\Games\X, or \\?\UNC\server\share\X for a share.
+                var final = path.ToString();
+                final = final.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase) ? @"\\" + final.Substring(8)
+                    : final.StartsWith(@"\\?\", StringComparison.Ordinal) ? final.Substring(4)
+                    : final;
+                return final.TrimEnd('\\') + "\\";
+            }
+            finally
+            {
+                CloseHandle(handle);
+            }
+        }
 
         /// <summary>The title of <paramref name="window"/>; empty for none.</summary>
         public static string TitleOf(IntPtr window)

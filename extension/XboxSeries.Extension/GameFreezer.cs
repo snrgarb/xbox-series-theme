@@ -175,7 +175,8 @@ namespace XboxSeries.Extension
         /// </summary>
         private static Dictionary<int, string> GameProcessesOf(string directory, IntPtr window)
         {
-            var prefix = string.IsNullOrEmpty(directory) ? null : directory.TrimEnd('\\') + "\\";
+            // Made whole and followed past junctions and subst drives, as the processes' own paths may be either.
+            var prefixes = string.IsNullOrEmpty(directory) ? new List<string>() : NativeMethods.PathPrefixesOf(directory);
             var windowsPrefix = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\') + "\\";
             var windowOwner = window == IntPtr.Zero ? 0 : NativeMethods.ProcessIdOf(window);
             int self;
@@ -208,7 +209,7 @@ namespace XboxSeries.Extension
                     }
 
                     var path = NativeMethods.ProgramPathOf((uint)id);
-                    var underGame = prefix != null && path != null && path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+                    var underGame = path != null && prefixes.Exists(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
                     if (!underGame && id != windowOwner)
                     {
                         continue;
