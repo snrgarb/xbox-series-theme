@@ -52,15 +52,17 @@ namespace XboxSeries.BootShell
             }
 
             log("sentinel: no Boot shell in this session, so explorer was the shell from the start");
+            // Quoted, as setup writes it: an earlier build's unquoted value is written again, quoted.
             var shell = registry.Get(Setup.Winlogon, "Shell") as string;
-            if (string.Equals(shell, exe, StringComparison.OrdinalIgnoreCase))
+            var wanted = Setup.ShellCommand(exe);
+            if (string.Equals(shell, wanted, StringComparison.OrdinalIgnoreCase))
             {
-                log($"Shell holds, {exe}");
+                log($"Shell holds, {wanted}");
             }
             else
             {
-                registry.Set(Setup.Winlogon, "Shell", exe);
-                log($"Shell: {shell ?? "none"} -> {exe}");
+                registry.Set(Setup.Winlogon, "Shell", wanted);
+                log($"Shell: {shell ?? "none"} -> {wanted}");
             }
 
             startFullscreen();
