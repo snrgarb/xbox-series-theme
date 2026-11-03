@@ -21,6 +21,9 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan MinRefreshInterval = TimeSpan.FromMinutes(15);
 
+        /// <summary>How long a refresh the token endpoint didn't answer, or answered busy or failing, waits to be tried again.</summary>
+        private static readonly TimeSpan RefreshRetry = TimeSpan.FromMinutes(1);
+
         private const string ReconnectInSettings = "Reconnect Discord in settings";
 
         /// <summary>
@@ -36,8 +39,14 @@ namespace XboxSeries.Core
         /// <summary>Whether AUTHORIZE was sent to stand in for tokens that wouldn't do, rather than by Connect: failing, the user has to reconnect.</summary>
         private bool reauthorizing;
 
-        /// <summary>The refresh due a day before the tokens expire, while connected.</summary>
+        /// <summary>The refresh due a day before the tokens expire, while connected, or one tried again after it went unanswered.</summary>
         private IDisposable refreshTimer;
+
+        /// <summary>
+        /// The refresh token the last refresh sent, until its answer comes. Discord replaces the refresh token with each
+        /// refresh, so an answer granting new tokens is kept even when it comes after the connection closed.
+        /// </summary>
+        private string refreshSentFor;
 
         /// <summary>Where the tokens have got to: the step of signing in, or, once signed in, of renewing them in the background.</summary>
         private DiscordStep TokenStep => discordStep == DiscordStep.Connected ? renewal : discordStep;
@@ -99,6 +108,7 @@ namespace XboxSeries.Core
             }
 
             SetTokenStep(DiscordStep.Refresh);
+            refreshSentFor = refreshToken;
             discordOAuth.RequestToken(Settings.Discord.ClientId, secrets.Read(ClientSecretSecret), new Dictionary<string, string>
             {
                 ["grant_type"] = "refresh_token",
@@ -158,10 +168,18 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// The token endpoint's answer to a refresh. Granted, the tokens are saved and Discord signed in with them, or,
-        /// signed in already, the next refresh set; refused, or not answered, Discord is asked to authorize again.
+        /// signed in already, the next refresh set; not answered, or answered busy or failing, tried again a minute later,
+        /// as the refresh token may well still be good; refused, Discord is asked to authorize again.
         /// </summary>
         private void OnRefreshAnswer(int status, JObject answer)
         {
+            refreshSentFor = null;
+            if (IsTransientTokenFailure(status))
+            {
+                RetryRefresh();
+                return;
+            }
+
             var accessToken = status >= 200 && status <= 299 ? (string)answer?["access_token"] : null;
             if (accessToken == null)
             {
@@ -172,15 +190,58 @@ namespace XboxSeries.Core
             OnTokensGranted(answer);
         }
 
-        /// <summary>Tokens granted, by the code exchange or a refresh: saved, then signed in with, or, signed in already, refreshed in their turn.</summary>
-        private void OnTokensGranted(JObject answer)
+        /// <summary>No answer (status 0), a timeout, too many requests, or the server failing: none says the refresh token is bad.</summary>
+        private static bool IsTransientTokenFailure(int status) => status == 0 || status == 408 || status == 429 || status >= 500;
+
+        /// <summary>Tries the refresh again <see cref="RefreshRetry"/> from now, still at the Refresh step, unless the connection closes first.</summary>
+        private void RetryRefresh()
         {
-            var accessToken = (string)answer["access_token"];
-            secrets.Write(AccessTokenSecret, accessToken);
+            refreshTimer?.Dispose();
+            refreshTimer = clock.After(RefreshRetry, () =>
+            {
+                refreshTimer = null;
+                if (TokenStep == DiscordStep.Refresh)
+                {
+                    RefreshTokens();
+                }
+            });
+        }
+
+        /// <summary>
+        /// An answer that came with no refresh waiting for it. One granting new tokens for the refresh token still saved,
+        /// sent before the connection closed, is kept: Discord has replaced that refresh token, so dropping the answer
+        /// would leave a dead one saved. After Disconnect, or a Connect that saved others, the saved one differs.
+        /// </summary>
+        private void KeepLateRefresh(int status, string body)
+        {
+            var sent = refreshSentFor;
+            refreshSentFor = null;
+            if (sent == null || status < 200 || status > 299 || secrets.Read(RefreshTokenSecret) != sent)
+            {
+                return;
+            }
+
+            var answer = Parse(body);
+            if ((string)answer?["access_token"] != null)
+            {
+                SaveTokens(answer);
+            }
+        }
+
+        private void SaveTokens(JObject answer)
+        {
+            secrets.Write(AccessTokenSecret, (string)answer["access_token"]);
             secrets.Write(RefreshTokenSecret, (string)answer["refresh_token"] ?? secrets.Read(RefreshTokenSecret) ?? "");
             var expiresIn = (double?)answer["expires_in"] ?? 0;
             secrets.Write(ExpiresAtSecret, clock.Now.AddSeconds(expiresIn).ToString("o", CultureInfo.InvariantCulture));
             Settings.Discord.HasTokens = true;
+        }
+
+        /// <summary>Tokens granted, by the code exchange or a refresh: saved, then signed in with, or, signed in already, refreshed in their turn.</summary>
+        private void OnTokensGranted(JObject answer)
+        {
+            var accessToken = (string)answer["access_token"];
+            SaveTokens(answer);
             if (discordStep == DiscordStep.Connected)
             {
                 renewal = DiscordStep.Connected;
