@@ -50,7 +50,14 @@ namespace XboxSeries.BootShell
                     return;
                 }
 
-                writer.WriteLine(line);
+                try
+                {
+                    writer.WriteLine(line);
+                }
+                catch (Exception e) when (e is IOException or ObjectDisposedException)
+                {
+                    // A full disk, say: the line is lost, but a log that can't be written never stops the Boot shell.
+                }
             }
         }
 

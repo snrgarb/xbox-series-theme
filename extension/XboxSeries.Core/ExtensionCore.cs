@@ -66,6 +66,12 @@ namespace XboxSeries.Core
         /// <summary>How long a game has to close by itself before the force-quit prompt.</summary>
         private static readonly TimeSpan QuitTimeout = TimeSpan.FromSeconds(10);
 
+        /// <summary>
+        /// How long a launch the Dashboard sent holds off others while Playnite hasn't yet begun it. Playnite may never
+        /// begin it, nor say so: an error before its starting event, say.
+        /// </summary>
+        private static readonly TimeSpan LaunchBeginTimeout = TimeSpan.FromSeconds(15);
+
         /// <summary>How far one press of left or right turns the volume, as Windows' own volume keys do.</summary>
         private const int VolumeStep = 2;
 
@@ -94,6 +100,9 @@ namespace XboxSeries.Core
         /// <summary>Input anywhere in Windows, which the Idle screen counts outside Playnite's windows too.</summary>
         private readonly IInputActivity inputActivity;
         private LibrarySnapshot library = LibrarySnapshot.Empty;
+
+        /// <summary><see cref="library"/>'s games by id, so a lookup per game (as each Group's) doesn't scan the library.</summary>
+        private Dictionary<Guid, LibraryGame> gamesById = new Dictionary<Guid, LibraryGame>();
         private IReadOnlyList<Notification> notifications = new Notification[0];
 
         /// <summary>The ids of the notifications last seen, so only new ones get a Toast; null until the first are seen.</summary>
@@ -145,6 +154,7 @@ namespace XboxSeries.Core
         private IDisposable quitTimer;
         private Guid? startAfterQuit;
         private Guid? startingGame;
+        private IDisposable launchBeginTimer;
         private Guid? heroGame;
         private Guid? tappedGame;
         private IDisposable tapTimer;
@@ -233,6 +243,15 @@ namespace XboxSeries.Core
         {
             var previous = library;
             library = snapshot;
+            gamesById = new Dictionary<Guid, LibraryGame>(snapshot.Games.Count);
+            foreach (var game in snapshot.Games)
+            {
+                if (!gamesById.ContainsKey(game.Id))
+                {
+                    gamesById.Add(game.Id, game);
+                }
+            }
+
             FollowInstalls(previous);
             ToastFinishedInstalls(previous);
             ToastFinishedUninstalls();
@@ -416,6 +435,7 @@ namespace XboxSeries.Core
             {
                 // The Dashboard's own launch, now begun by Playnite: only now, so a launch Playnite never begins, as one
                 // routed to its install dialog, isn't hidden behind the Launch screen.
+                StopLaunchBeginTimer();
                 ShowLaunchScreen(gameId);
                 return true;
             }
@@ -447,6 +467,30 @@ namespace XboxSeries.Core
             FollowAchievementsOf(gameId);
             HideLaunchScreenFor(gameId);
             RefreshHome();
+
+            // Started with the Guide open, as over its Launch screen: frozen as one the Guide opened over would be, so it
+            // can't take the pad behind it, and the Guide shows it running.
+            if (Guide.IsOpen)
+            {
+                FreezeRunningGame();
+                ShowRunningGameInGuide();
+            }
+        }
+
+        /// <summary>
+        /// The running game changed with the Guide open: the landing tab lists it running, or no longer, and Profile &amp;
+        /// system greys Switch profile, or brings it back.
+        /// </summary>
+        private void ShowRunningGameInGuide()
+        {
+            if (Guide.Tab == GuideTabKind.Landing)
+            {
+                RefreshLandingTab();
+            }
+            else
+            {
+                ShowProfileInGuide();
+            }
         }
 
         /// <summary>Playnite's game startup cancelled event: a launch that never got going.</summary>
@@ -489,9 +533,9 @@ namespace XboxSeries.Core
                 return;
             }
 
-            if (Guide.IsOpen && Guide.Tab == GuideTabKind.Landing)
+            if (Guide.IsOpen)
             {
-                RefreshLandingTab();
+                ShowRunningGameInGuide();
             }
 
             ReturnHomeFrom(gameId, quit);
@@ -2278,13 +2322,35 @@ namespace XboxSeries.Core
         /// </summary>
         private void Launch(Guid gameId)
         {
-            startingGame = gameId;
+            // A game not installed goes to Playnite's install dialog, which never begins, starts or cancels the launch,
+            // so it holds off nothing.
+            if (GameById(gameId)?.Installed != false)
+            {
+                startingGame = gameId;
+                StopLaunchBeginTimer();
+                launchBeginTimer = clock.After(LaunchBeginTimeout, () =>
+                {
+                    launchBeginTimer = null;
+                    if (startingGame == gameId)
+                    {
+                        startingGame = null;
+                    }
+                });
+            }
+
             playnite.StartGame(gameId);
+        }
+
+        private void StopLaunchBeginTimer()
+        {
+            launchBeginTimer?.Dispose();
+            launchBeginTimer = null;
         }
 
         private string NameOf(Guid gameId) => GameById(gameId)?.Name ?? "the game";
 
-        private LibraryGame GameById(Guid? gameId) => library.Games.FirstOrDefault(g => g.Id == gameId);
+        private LibraryGame GameById(Guid? gameId) =>
+            gameId != null && gamesById.TryGetValue(gameId.Value, out var game) ? game : null;
 
         /// <summary>Games that have been played, newest first, never hidden ones.</summary>
         private IEnumerable<LibraryGame> PlayedGames() =>

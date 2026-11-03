@@ -199,6 +199,19 @@ namespace XboxSeries.Extension
             libraryTabSelector?.ApplyTemplate();
             libraryTabs = libraryTabSelector?.Template?.FindName("PART_ItemsFilterPresets", libraryTabSelector) as ItemsControl;
             libraryTabs?.AddHandler(ToggleButton.CheckedEvent, (RoutedEventHandler)OnLibraryTabChecked);
+
+            // Loaded again, as when the Guide brings Playnite back from a Game hub, the page missed what changed while it
+            // was unloaded, its item and the page being put up too: shown afresh, and focus put on its content, as
+            // Settings and Search do.
+            ShowHistory();
+            ShowQueue();
+            ShowItem();
+            ShowStorage();
+            ShowName();
+            if (core.MyGames.IsShown && !IsKeyboardFocusWithin)
+            {
+                FocusContentSoon();
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)

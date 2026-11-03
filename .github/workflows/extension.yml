@@ -75,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (dotnet msbuild extension/XboxSeries.Extension/XboxSeries.Extension.csproj -getProperty:Version -p:Configuration=Release).Trim()
-          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+') { throw "Could not read the Bundle version: '$version'" }
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw "Could not read the Bundle version: '$version'" }
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=extension-v$version" >> $env:GITHUB_OUTPUT
           "Bundle version $version, tag extension-v$version"
@@ -85,10 +85,13 @@ jobs:
         shell: pwsh
         run: |
           $tag = '${{ steps.version.outputs.tag }}'
-          gh release view $tag *> $null
+          # Only gh's "release not found" means there's none: any other failure (auth, rate limit, network) stops here.
+          $release = gh release view $tag 2>&1
           if ($LASTEXITCODE -eq 0) { throw "Release $tag already exists; bump <Version> in Directory.Build.props." }
-          git ls-remote --exit-code --tags origin "refs/tags/$tag" *> $null
-          if ($LASTEXITCODE -eq 0) { throw "Tag $tag already exists." }
+          if ("$release" -notmatch 'release not found') { throw "Couldn't check for release ${tag}: $release" }
+          $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed" }
+          if ($remoteTag) { throw "Tag $tag already exists." }
           $global:LASTEXITCODE = 0
 
       - name: Core tests
@@ -129,6 +132,47 @@ jobs:
           } finally { $zip.Dispose() }
           "path=$pext" >> $env:GITHUB_OUTPUT
           $names
+
+      # The theme and the extension are released together under one version (CONTEXT.md): the theme first, by theme.yml,
+      # and the extension only with that same theme inside. Compared entry by entry, name and bytes, as two packs of the
+      # same files differ in their zip timestamps.
+      - name: Refuse unless theme-v<Version> holds the same theme
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $pthm = "XboxSeries_Dashboard_$version.pthm"
+          $released = Join-Path $env:RUNNER_TEMP 'theme-release'
+          $output = gh release download "theme-v$version" --pattern $pthm --dir $released 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            if ("$output" -match 'release not found') { throw "No theme-v$version release: release the theme at this version first (theme.yml), then the extension." }
+            throw "Couldn't download $pthm from theme-v${version}: $output"
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          function Contents([IO.Compression.ZipArchive] $zip) {
+            $sha = [Security.Cryptography.SHA256]::Create()
+            $zip.Entries | Where-Object { $_.FullName -notmatch '/$' } | Sort-Object FullName | ForEach-Object {
+              $stream = $_.Open()
+              try { "$($_.FullName) $([Convert]::ToHexString($sha.ComputeHash($stream)))" } finally { $stream.Dispose() }
+            }
+          }
+
+          $releasedZip = [IO.Compression.ZipFile]::OpenRead((Join-Path $released $pthm))
+          $pext = [IO.Compression.ZipFile]::OpenRead((Resolve-Path '${{ steps.pext.outputs.path }}'))
+          try {
+            $releasedContents = Contents $releasedZip
+            $inner = $pext.Entries | Where-Object { $_.Name -eq $pthm }
+            $innerStream = $inner.Open(); $innerBuffer = New-Object IO.MemoryStream; $innerStream.CopyTo($innerBuffer); $innerStream.Dispose()
+            $innerZip = New-Object IO.Compression.ZipArchive($innerBuffer, [IO.Compression.ZipArchiveMode]::Read)
+            try { $packedContents = Contents $innerZip } finally { $innerZip.Dispose() }
+          } finally { $releasedZip.Dispose(); $pext.Dispose() }
+
+          $differ = Compare-Object @($releasedContents) @($packedContents)
+          if ($differ) {
+            $differ | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }
+            throw "The .pext's $pthm differs from theme-v${version}'s (<= released, => in the .pext): release them from the same commit, bumping <Version> if the theme changed."
+          }
+          "The .pext's $pthm matches theme-v$version's, $(@($packedContents).Count) entries"
 
       - name: Create the GitHub Release
         shell: pwsh

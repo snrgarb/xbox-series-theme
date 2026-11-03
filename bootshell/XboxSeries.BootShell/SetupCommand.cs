@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -45,7 +46,8 @@ namespace XboxSeries.BootShell
                 return true;
             }
 
-            var exe = Path.Combine(Path.GetDirectoryName(Launcher.FullscreenApp)!, running[0].ProcessName + ".exe");
+            // --shutdown goes through the running Playnite's own exe, wherever it was installed: the usual one may not be there.
+            var exe = ExeOf(running[0]) ?? Path.Combine(Path.GetDirectoryName(Launcher.FullscreenApp)!, running[0].ProcessName + ".exe");
             say($"Playnite runs, pid {string.Join(", ", running.Select(p => p.Id))}: {exe} --shutdown");
             // The second start hands --shutdown to the first and exits; it's waited for too, so none is left running.
             running.Add(Process.Start(new ProcessStartInfo(exe, "--shutdown") { UseShellExecute = false })!);
@@ -59,6 +61,19 @@ namespace XboxSeries.BootShell
             // From an elevated terminal, --shutdown never reaches the user's Playnite.
             say(closed ? "Playnite closed" : $"Playnite didn't close within {CloseLimit.TotalSeconds} s: is this terminal elevated? Close Playnite, then run it again.");
             return closed;
+        }
+
+        /// <summary>The path <paramref name="process"/> was started from; null if Windows won't say.</summary>
+        private static string? ExeOf(Process process)
+        {
+            try
+            {
+                return process.MainModule?.FileName;
+            }
+            catch (Exception e) when (e is Win32Exception or InvalidOperationException or NotSupportedException)
+            {
+                return null;
+            }
         }
     }
 }

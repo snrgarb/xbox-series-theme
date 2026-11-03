@@ -117,7 +117,9 @@ namespace XboxSeries.BootShell
                     sessionEnding = true;
                     return 1;
                 case WM_ENDSESSION:
-                    sessionEnding |= wParam != 0;
+                    // wParam is 0 when the end was called off (an app refused it, or Cancel on Windows' list of them):
+                    // watching goes on.
+                    sessionEnding = wParam != 0;
                     return 0;
                 default:
                     return DefWindowProc(hwnd, message, wParam, lParam);

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Windows.Controls;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
@@ -36,6 +37,12 @@ namespace XboxSeries.Extension
         /// <summary>Input anywhere in Windows, a game's too, for the Idle screen, which dims over a game as over Playnite.</summary>
         private readonly WindowsInputActivity inputActivity = new WindowsInputActivity();
         private bool libraryPushed;
+
+        /// <summary>1 while a push asked for by <see cref="PushLibrarySoon"/> is waiting to run.</summary>
+        private int libraryPushPending;
+
+        /// <summary>How long a database change waits for the rest of its burst before the library is pushed.</summary>
+        private static readonly TimeSpan LibraryPushDelay = TimeSpan.FromMilliseconds(300);
         private ToastWindow toastWindow;
         private LaunchScreenWindow launchScreenWindow;
         private DimWindow dimWindow;
@@ -208,6 +215,12 @@ namespace XboxSeries.Extension
                 // The game menu's Uninstall, Manage game's too, goes through the core for a game its client can
                 // uninstall without its own windows. Desktop mode's menus are its own, and keep Playnite's.
                 GameMenuUninstall.Register(core);
+
+                // Focus back on the game status view as Playnite's window is restored over it (GameStatusFocus).
+                if (Application.Current?.MainWindow is Window main)
+                {
+                    GameStatusFocus.Register(main);
+                }
             }
             else
             {
@@ -218,17 +231,18 @@ namespace XboxSeries.Extension
             StartupTiming.Time("Pushing the library", PushLibrary);
             GameHubFocusSounds.Register(sounds);
 
-            // Database events can arrive on background threads; the core only runs on the UI thread.
-            PlayniteApi.Database.Games.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
-            PlayniteApi.Database.Games.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
-            PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
-            PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
+            // Database events can arrive on background threads; the core only runs on the UI thread. A metadata download
+            // or an import raises one for each game, so a burst of them makes one snapshot, not one each (PushLibrarySoon).
+            PlayniteApi.Database.Games.ItemCollectionChanged += (_, __) => PushLibrarySoon();
+            PlayniteApi.Database.Games.ItemUpdated += (_, __) => PushLibrarySoon();
+            PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => PushLibrarySoon();
+            PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => PushLibrarySoon();
 
             // Apps follow Software tools added, renamed or removed in Playnite, on a build that tells when they change.
             if (PlayniteLibrary.SoftwareTools() is IItemCollection<Playnite.SDK.Models.AppSoftware> softwareTools)
             {
-                softwareTools.ItemCollectionChanged += (_, __) => OnUiThread(PushLibrary);
-                softwareTools.ItemUpdated += (_, __) => OnUiThread(PushLibrary);
+                softwareTools.ItemCollectionChanged += (_, __) => PushLibrarySoon();
+                softwareTools.ItemUpdated += (_, __) => PushLibrarySoon();
             }
 
             PushNotifications();
@@ -459,6 +473,30 @@ namespace XboxSeries.Extension
         private void PushNotifications()
         {
             core.OnNotificationsChanged(PlayniteApi.Notifications.Messages.Select(m => new Notification(m.Id, m.Text)).ToList());
+        }
+
+        /// <summary>
+        /// Pushes the library once <see cref="LibraryPushDelay"/> after the first of a burst of database changes, from
+        /// any thread: every change in between is in that one snapshot, and one after it has begun asks for another.
+        /// </summary>
+        private void PushLibrarySoon()
+        {
+            if (Interlocked.Exchange(ref libraryPushPending, 1) == 1)
+            {
+                return;
+            }
+
+            OnUiThread(() =>
+            {
+                var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = LibraryPushDelay };
+                timer.Tick += (_, __) =>
+                {
+                    timer.Stop();
+                    Interlocked.Exchange(ref libraryPushPending, 0);
+                    PushLibrary();
+                };
+                timer.Start();
+            });
         }
 
         private void PushLibrary()

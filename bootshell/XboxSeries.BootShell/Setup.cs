@@ -51,6 +51,10 @@ namespace XboxSeries.BootShell
 
         private const string SafetyNetTask = "XboxSeries.BootShell.SafetyNet";
 
+        private static readonly string ShellSetting = $@"HKCU\{Winlogon}\Shell";
+
+        private static string SentinelSetting => $@"HKCU\{Run}\{SentinelEntry}";
+
         private static readonly XNamespace TaskXml = "http://schemas.microsoft.com/windows/2004/02/mit/task";
 
         /// <summary>The Bundle's extension's folder name under Playnite's Extensions.</summary>
@@ -149,6 +153,23 @@ namespace XboxSeries.BootShell
             }
         }
 
+        /// <summary>
+        /// Closes Playnite before its settings are put back; false, said, if it didn't or couldn't be asked to. Never
+        /// throws: the rest of --uninstall, Shell above all, is the way back to explorer and mustn't wait on Playnite.
+        /// </summary>
+        private bool ClosePlayniteForUninstall()
+        {
+            try
+            {
+                return closePlaynite();
+            }
+            catch (Exception e) when (IsSetupError(e))
+            {
+                say($"ERROR: couldn't close Playnite: {e.Message}");
+                return false;
+            }
+        }
+
         /// <summary>Puts back every value the record holds; false, said, if one couldn't be.</summary>
         public bool Uninstall()
         {
@@ -169,8 +190,19 @@ namespace XboxSeries.BootShell
                 return true;
             }
 
+            // Undone in the reverse of setup's order, but the sentinel before Shell: a sentinel left by an undo that
+            // stopped between them would write Shell back at the next sign-in.
             var settings = Settings().Where(s => record.ContainsKey(s.Name)).Reverse().ToList();
-            var playniteUp = settings.Any(s => s.Playnite) && !closePlaynite();
+            var sentinel = settings.FindIndex(s => s.Name == SentinelSetting);
+            var shell = settings.FindIndex(s => s.Name == ShellSetting);
+            if (sentinel > shell && shell >= 0)
+            {
+                var entry = settings[sentinel];
+                settings.RemoveAt(sentinel);
+                settings.Insert(shell, entry);
+            }
+
+            var playniteUp = settings.Any(s => s.Playnite) && !ClosePlayniteForUninstall();
             var undone = true;
             foreach (var setting in settings)
             {
@@ -294,10 +326,24 @@ namespace XboxSeries.BootShell
             yield return PlayniteValue(Path.Combine(paths.PlayniteData, "fullscreenConfig.json"), "MainMenuShowMinimize", false);
 
             // Last, so a setup that stops short never boots into the Boot shell. The sentinel writes Shell itself, so it
-            // comes just before, and undo takes it off straight after Shell.
+            // comes just before, and undo takes it off just before Shell.
             yield return Value(Run, SentinelEntry, $"\"{InstalledExe}\" --sentinel");
-            yield return Value(Winlogon, "Shell", InstalledExe);
+            yield return Value(Winlogon, "Shell", ShellCommand(InstalledExe)) with
+            {
+                // As an earlier build wrote it too, unquoted, so --uninstall still puts it back.
+                HoldsWhen = current => current is JsonValue shell && NamesExe((string?)shell, InstalledExe),
+            };
         }
+
+        /// <summary>
+        /// Shell's value for <paramref name="exe"/>, quoted: Winlogon passes it as a command line, and a profile path with a
+        /// space in it would otherwise split it into arguments the Boot shell refuses.
+        /// </summary>
+        public static string ShellCommand(string exe) => $"\"{exe}\"";
+
+        /// <summary>Whether <paramref name="shell"/>, a Shell value, names <paramref name="exe"/>, quoted or not.</summary>
+        public static bool NamesExe(string? shell, string exe) =>
+            shell != null && string.Equals(shell.Trim().Trim('"'), exe, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// An HKCU value of <paramref name="wanted"/>'s type: a string, a DWORD as an int, or binary as a byte[], in the

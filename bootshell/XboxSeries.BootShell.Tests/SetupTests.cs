@@ -83,7 +83,7 @@ namespace XboxSeries.BootShell.Tests
             Assert.True(NewSetup().Install());
 
             Assert.Equal("build 1", File.ReadAllText(InstalledExe));
-            Assert.Equal(InstalledExe, registry.Get(Winlogon, "Shell"));
+            Assert.Equal($"\"{InstalledExe}\"", registry.Get(Winlogon, "Shell"));
             Assert.Equal($"\"{InstalledExe}\" --sentinel", registry.Get(Run, "XboxSeriesBootShellSentinel"));
 
             // The safety net runs no Boot shell exe: PowerShell, windowless, 90 s after this user signs in.
@@ -170,6 +170,32 @@ namespace XboxSeries.BootShell.Tests
         }
 
         [Fact]
+        public void Uninstall_puts_back_a_Shell_an_earlier_build_set_unquoted()
+        {
+            var registryBefore = registry.Snapshot();
+            Assert.True(NewSetup().Install());
+            registry.Set(Winlogon, "Shell", InstalledExe);
+
+            Assert.True(NewSetup().Uninstall());
+
+            Assert.Equal(registryBefore, registry.Snapshot());
+        }
+
+        [Fact]
+        public void Uninstall_takes_the_sentinel_off_before_Shell()
+        {
+            // Else a sentinel left by an undo that stopped between them writes Shell back at the next sign-in.
+            Assert.True(NewSetup().Install());
+            registry.Writes.Clear();
+
+            Assert.True(NewSetup().Uninstall());
+
+            var sentinel = registry.Writes.IndexOf((Run, "XboxSeriesBootShellSentinel"));
+            var shell = registry.Writes.IndexOf((Winlogon, "Shell"));
+            Assert.InRange(sentinel, 0, shell - 1);
+        }
+
+        [Fact]
         public void A_second_install_keeps_each_values_first_before_value()
         {
             var registryBefore = registry.Snapshot();
@@ -229,6 +255,23 @@ namespace XboxSeries.BootShell.Tests
             Assert.True(NewSetup().Uninstall());
             Assert.Equal(registryBefore, registry.Snapshot());
             Assert.Equal(new[] { "DiscordMini.lnk", "Orca.lnk", "Playnite.lnk" }, Directory.GetFiles(paths.StartupFolder).Select(Path.GetFileName).Order());
+        }
+
+        [Fact]
+        public void Uninstall_undoes_all_but_Playnites_settings_when_closing_Playnite_fails_outright()
+        {
+            // As when Playnite runs from an install other than the one --shutdown is sent through: the way back to explorer
+            // mustn't depend on it.
+            Assert.True(NewSetup().Install());
+            closePlaynite = () => throw new System.ComponentModel.Win32Exception(2, "The system cannot find the file specified");
+
+            Assert.False(NewSetup().Uninstall());
+
+            Assert.Null(registry.Get(Winlogon, "Shell"));
+            Assert.Null(registry.Get(Run, "XboxSeriesBootShellSentinel"));
+            Assert.False((bool)Json(Config)["StartOnBoot"]!);
+            Assert.Contains(said, line => line.Contains("Playnite didn't close"));
+            Assert.True(File.Exists(Record));
         }
 
         [Fact]

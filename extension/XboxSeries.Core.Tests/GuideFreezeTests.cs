@@ -42,6 +42,48 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_game_starting_with_the_Guide_open_over_its_Launch_screen_is_frozen_and_listed_as_running()
+        {
+            Assert.True(core.OnGameStarting(library.Id("Halo Infinite")));
+            Tap(ControllerButton.Guide);
+            Assert.Empty(windows.Freezes);
+
+            core.OnGameStarted(library.Id("Halo Infinite"));
+
+            Assert.True(windows.IsFrozen);
+            Assert.Equal(HaloDirectory, windows.Freezes.Single().Directory);
+            Assert.Contains(core.Guide.Items, i => i.Kind == GuideItemKind.RunningGame && i.GameId == library.Id("Halo Infinite"));
+            Assert.DoesNotContain(core.Guide.Items, i => i.Kind == GuideItemKind.RecentGame && i.GameId == library.Id("Halo Infinite"));
+        }
+
+        [Fact]
+        public void A_game_starting_or_stopping_with_Profile_and_system_up_greys_Switch_profile_or_brings_it_back()
+        {
+            Tap(ControllerButton.Guide);
+            ShowProfileTab();
+            Assert.True(SwitchProfile().IsEnabled);
+
+            core.OnGameStarted(library.Id("Halo Infinite"));
+            Assert.False(SwitchProfile().IsEnabled);
+
+            core.OnGameStopped(library.Id("Halo Infinite"));
+            Assert.True(SwitchProfile().IsEnabled);
+        }
+
+        private GuideItem SwitchProfile() => core.Guide.Items.Single(i => i.Kind == GuideItemKind.SwitchProfile);
+
+        /// <summary>Right bumper along the tabs to Profile &amp; system.</summary>
+        private void ShowProfileTab()
+        {
+            for (var i = 0; i < 10 && core.Guide.Tab != GuideTabKind.ProfileAndSystem; i++)
+            {
+                Tap(ControllerButton.RightShoulder);
+            }
+
+            Assert.Equal(GuideTabKind.ProfileAndSystem, core.Guide.Tab);
+        }
+
+        [Fact]
         public void Opening_the_Guide_with_no_game_running_freezes_nothing()
         {
             Tap(ControllerButton.Guide);

@@ -25,8 +25,23 @@ namespace XboxSeries.BootShell
         public static string DefaultPath =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Playnite", "playnite.log");
 
-        /// <summary>True when the lines Playnite has added since the last call tell of a crash.</summary>
+        /// <summary>
+        /// True when the lines Playnite has added since the last call tell of a crash. False when the log can't be read
+        /// just now, as when Playnite rolls it over between looking and reading: the next call reads on.
+        /// </summary>
         public bool CrashLogged()
+        {
+            try
+            {
+                return ReadNewLines();
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        private bool ReadNewLines()
         {
             if (!File.Exists(path))
             {

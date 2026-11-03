@@ -65,7 +65,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (dotnet msbuild $env:PROJECT -getProperty:Version -p:Configuration=Release).Trim()
-          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+') { throw "Could not read the Boot shell's version: '$version'" }
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw "Could not read the Boot shell's version: '$version'" }
           "version=$version" >> $env:GITHUB_OUTPUT
           "tag=bootshell-v$version" >> $env:GITHUB_OUTPUT
           "Boot shell $version, tag bootshell-v$version"
@@ -73,10 +73,13 @@ jobs:
       - name: Refuse an existing release
         shell: pwsh
         run: |
-          gh release view "${{ steps.version.outputs.tag }}" --repo "${{ github.repository }}" *> $null
+          # Only gh's "release not found" means there's none: any other failure (auth, rate limit, network) stops here.
+          $release = gh release view "${{ steps.version.outputs.tag }}" --repo "${{ github.repository }}" 2>&1
           if ($LASTEXITCODE -eq 0) { throw "Release ${{ steps.version.outputs.tag }} already exists; bump the Boot shell's Version to release again" }
-          git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" *> $null
-          if ($LASTEXITCODE -eq 0) { throw "Tag ${{ steps.version.outputs.tag }} already exists" }
+          if ("$release" -notmatch 'release not found') { throw "Couldn't check for release ${{ steps.version.outputs.tag }}: $release" }
+          $remoteTag = git ls-remote --tags origin "refs/tags/${{ steps.version.outputs.tag }}"
+          if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed" }
+          if ($remoteTag) { throw "Tag ${{ steps.version.outputs.tag }} already exists" }
           $global:LASTEXITCODE = 0
 
       - name: Test

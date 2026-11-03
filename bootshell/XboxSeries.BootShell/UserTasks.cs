@@ -29,8 +29,30 @@ namespace XboxSeries.BootShell
                 return output;
             }
 
-            // schtasks' words for a task that isn't there.
-            return error.Contains("cannot find the file", StringComparison.OrdinalIgnoreCase) ? null : throw Failed(error);
+            // schtasks fails the same way for a task that isn't there as for one it can't read, and says which only in
+            // Windows' own language: its list of every task tells, by name, in any.
+            var (listed, list, listError) = Schtasks("/Query /FO CSV /NH");
+            if (listed != 0)
+            {
+                throw Failed($"{error}; listing the tasks: {listError}");
+            }
+
+            return Lists(list, name) ? throw Failed(error) : null;
+        }
+
+        /// <summary>Whether <paramref name="csv"/>, schtasks' list of every task, holds <paramref name="name"/> in its root folder.</summary>
+        internal static bool Lists(string csv, string name)
+        {
+            var quoted = $"\"\\{name}\",";
+            foreach (var line in csv.Split('\n'))
+            {
+                if (line.TrimStart().StartsWith(quoted, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void Set(string name, string xml)
