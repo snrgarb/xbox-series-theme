@@ -215,6 +215,12 @@ namespace XboxSeries.Extension
                 // The game menu's Uninstall, Manage game's too, goes through the core for a game its client can
                 // uninstall without its own windows. Desktop mode's menus are its own, and keep Playnite's.
                 GameMenuUninstall.Register(core);
+
+                // Focus back on the game status view as Playnite's window is restored over it (GameStatusFocus).
+                if (Application.Current?.MainWindow is Window main)
+                {
+                    GameStatusFocus.Register(main);
+                }
             }
             else
             {
