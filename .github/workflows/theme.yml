@@ -48,7 +48,7 @@ jobs:
           Add-Type -AssemblyName System.IO.Compression.FileSystem
 
           $version = (dotnet msbuild $env:THEME_PROJECT -getProperty:Version).Trim()
-          if ($version -notmatch '^\d+\.\d+\.\d+') { throw "Unexpected Bundle version '$version'" }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected Bundle version '$version'" }
           Write-Host "Bundle version: $version"
 
           foreach ($config in 'Debug', 'Release') {
@@ -99,7 +99,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           $version = (dotnet msbuild $env:THEME_PROJECT -getProperty:Version).Trim()
-          if ($version -notmatch '^\d+\.\d+\.\d+') { throw "Unexpected Bundle version '$version'" }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected Bundle version '$version'" }
           dotnet build $env:THEME_PROJECT -c Release
           $pthm = (dotnet msbuild $env:THEME_PROJECT -p:Configuration=Release -getProperty:ThemePackagePath).Trim()
           if (-not (Test-Path $pthm)) { throw "Release pack did not write $pthm" }
@@ -114,8 +114,10 @@ jobs:
           TAG: ${{ steps.pack.outputs.tag }}
         run: |
           $ErrorActionPreference = 'Stop'
-          gh release view $env:TAG --repo $env:GITHUB_REPOSITORY *> $null
+          # Only gh's "release not found" means there's none: any other failure (auth, rate limit, network) stops here.
+          $release = gh release view $env:TAG --repo $env:GITHUB_REPOSITORY 2>&1
           if ($LASTEXITCODE -eq 0) { throw "Release $env:TAG already exists; bump Version in Directory.Build.props" }
+          if ("$release" -notmatch 'release not found') { throw "Couldn't check for release $($env:TAG): $release" }
           $remoteTag = git ls-remote --tags origin "refs/tags/$env:TAG"
           if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed" }
           if ($remoteTag) { throw "Tag $env:TAG already exists; bump Version in Directory.Build.props" }
