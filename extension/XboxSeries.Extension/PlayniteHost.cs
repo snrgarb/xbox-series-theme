@@ -519,11 +519,39 @@ namespace XboxSeries.Extension
             // Written the first time, and again only when Full library has changed it since: each move along the nav from
             // Full library to Games or Play history otherwise leaves the file as it is.
             var json = Serialization.ToJson(kept);
-            if (json != keptOnDisk)
+            if (json != keptOnDisk && WriteUserFilterFile(json))
+            {
+                keptOnDisk = json;
+            }
+        }
+
+        /// <summary>
+        /// Writes <see cref="userFilterFile"/> whole or not at all: to a file beside it first, then over it, so a crash or
+        /// a power cut mid-write never leaves the next start a cut-off copy. False, and logged, if it can't be written:
+        /// the filter is still kept in memory and given back this session, only not across a crash.
+        /// </summary>
+        private bool WriteUserFilterFile(string json)
+        {
+            var writing = userFilterFile + ".tmp";
+            try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(userFilterFile));
-                File.WriteAllText(userFilterFile, json);
-                keptOnDisk = json;
+                File.WriteAllText(writing, json);
+                if (File.Exists(userFilterFile))
+                {
+                    File.Replace(writing, userFilterFile, null);
+                }
+                else
+                {
+                    File.Move(writing, userFilterFile);
+                }
+
+                return true;
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                logger.Error(e, $"Couldn't keep the user's filter in {userFilterFile}");
+                return false;
             }
         }
 
@@ -570,8 +598,28 @@ namespace XboxSeries.Extension
             }
 
             logger.Info("Giving back the user's filter, left by the last session");
-            keptOnDisk = File.ReadAllText(userFilterFile);
-            Apply(Serialization.FromJson<UserFilter>(keptOnDisk));
+            try
+            {
+                var json = File.ReadAllText(userFilterFile);
+                var left = Serialization.FromJson<UserFilter>(json);
+                if (left == null)
+                {
+                    throw new InvalidDataException("the file is empty");
+                }
+
+                keptOnDisk = json;
+                Apply(left);
+            }
+            catch (Exception e)
+            {
+                // A copy that can't be read or put back, as one cut off by a crash before writes were whole, is dropped:
+                // left, it would stop every later start here.
+                logger.Error(e, $"Couldn't give back the user's filter from {userFilterFile}; dropping it");
+                keptOnDisk = null;
+                DeleteUserFilterFile();
+                return;
+            }
+
             ForgetFileOnceSaved();
         }
 
@@ -601,8 +649,20 @@ namespace XboxSeries.Extension
                 return;
             }
 
-            File.Delete(userFilterFile);
+            DeleteUserFilterFile();
             keptOnDisk = null;
+        }
+
+        private void DeleteUserFilterFile()
+        {
+            try
+            {
+                File.Delete(userFilterFile);
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                logger.Error(e, $"Couldn't delete {userFilterFile}");
+            }
         }
 
         /// <summary>Not in the SDK: Playnite's own settings save. False, and logged, on a build where it can't be found.</summary>
