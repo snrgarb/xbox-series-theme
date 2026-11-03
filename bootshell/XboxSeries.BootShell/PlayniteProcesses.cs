@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using static XboxSeries.BootShell.NativeMethods;
 
@@ -30,27 +31,9 @@ namespace XboxSeries.BootShell
         /// </summary>
         public (List<PlayniteProcess> Appeared, List<(int Pid, int ExitCode)> Exited) Poll()
         {
-            var appeared = new List<PlayniteProcess>();
-            var present = new HashSet<int>();
-            foreach (var process in Process.GetProcesses())
-            {
-                using (process)
-                {
-                    present.Add(process.Id);
-                    if (handles.ContainsKey(process.Id) || notPlaynite.Contains(process.Id) || process.SessionId != session)
-                    {
-                        continue;
-                    }
-
-                    if (Found(process) is PlayniteProcess found)
-                    {
-                        appeared.Add(found);
-                    }
-                }
-            }
-
-            notPlaynite.IntersectWith(present);
-
+            // Exits first, then the processes running: Playnite starts what follows it before it exits, so one heard to
+            // exit here has its successor already running for the look below. The other way round, a successor started
+            // between the look and its parent's exit was missed, and a restart judged a crash or a quit.
             var exited = new List<(int, int)>();
             foreach (var (pid, handle) in handles)
             {
@@ -63,6 +46,29 @@ namespace XboxSeries.BootShell
                 CloseHandle(handle);
                 handles.Remove(pid);
             }
+
+            var exitedNow = new HashSet<int>(exited.Select(e => e.Item1));
+            var appeared = new List<PlayniteProcess>();
+            var present = new HashSet<int>();
+            foreach (var process in Process.GetProcesses())
+            {
+                using (process)
+                {
+                    present.Add(process.Id);
+                    // One just heard to exit can still be listed while something else holds it open.
+                    if (handles.ContainsKey(process.Id) || notPlaynite.Contains(process.Id) || exitedNow.Contains(process.Id) || process.SessionId != session)
+                    {
+                        continue;
+                    }
+
+                    if (Found(process) is PlayniteProcess found)
+                    {
+                        appeared.Add(found);
+                    }
+                }
+            }
+
+            notPlaynite.IntersectWith(present);
 
             return (appeared, exited);
         }
