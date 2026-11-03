@@ -374,7 +374,7 @@ namespace XboxSeries.Extension
                 foreach (var folder in LibraryFolders(refresh: DateTime.UtcNow - foldersRead > FoldersLifetime))
                 {
                     var steamapps = Path.Combine(folder, "steamapps");
-                    if (!Directory.Exists(steamapps))
+                    if (!Look(folder, () => Directory.Exists(steamapps), passOverMissing: true))
                     {
                         continue;
                     }
