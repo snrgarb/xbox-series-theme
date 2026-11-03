@@ -35,6 +35,19 @@ namespace XboxSeries.Extension
         private readonly IPlayniteAPI api;
         private List<string> libraryFolders;
         private DateTime foldersRead;
+
+        /// <summary>
+        /// How long a library folder that was slow to look at, or wasn't there, is passed over: a library on a drive
+        /// unplugged, or on a share offline, can block each look for the drive's or the network's timeout, on the UI
+        /// thread, every second while a download is followed.
+        /// </summary>
+        private static readonly TimeSpan PassOverFor = TimeSpan.FromMinutes(1);
+
+        /// <summary>A look at a library folder that takes longer than this has its folder passed over for <see cref="PassOverFor"/>.</summary>
+        private static readonly TimeSpan SlowLook = TimeSpan.FromMilliseconds(250);
+
+        /// <summary>Library folders passed over, each until when.</summary>
+        private readonly Dictionary<string, DateTime> passedOver = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         private bool warned;
 
         // Steam's writes as each running download was first seen, by app id, and the Steam process they are read from.
@@ -209,18 +222,46 @@ namespace XboxSeries.Extension
             return found;
         }
 
-        private static string Find(string manifestName, List<string> folders)
+        private string Find(string manifestName, List<string> folders)
         {
             foreach (var folder in folders)
             {
                 var path = Path.Combine(folder, "steamapps", manifestName);
-                if (File.Exists(path))
+                if (Look(folder, () => File.Exists(path), passOverMissing: false))
                 {
                     return path;
                 }
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Runs <paramref name="look"/>, at <paramref name="folder"/>, unless the folder is being passed over; false then.
+        /// A look slower than <see cref="SlowLook"/>, or, with <paramref name="passOverMissing"/>, one that finds nothing,
+        /// has the folder passed over for <see cref="PassOverFor"/>.
+        /// </summary>
+        private bool Look(string folder, Func<bool> look, bool passOverMissing)
+        {
+            if (passedOver.TryGetValue(folder, out var until))
+            {
+                if (DateTime.UtcNow < until)
+                {
+                    return false;
+                }
+
+                passedOver.Remove(folder);
+            }
+
+            var watch = Stopwatch.StartNew();
+            var found = look();
+            if (watch.Elapsed > SlowLook || (passOverMissing && !found))
+            {
+                logger.Info($"Steam library {folder} {(found ? $"took {watch.ElapsedMilliseconds} ms to look at" : "isn't there")}; passing over it for {PassOverFor.TotalSeconds} s");
+                passedOver[folder] = DateTime.UtcNow + PassOverFor;
+            }
+
+            return found;
         }
 
         /// <summary>Steam's own folder and the libraries libraryfolders.vdf names; none when Steam isn't installed.</summary>
