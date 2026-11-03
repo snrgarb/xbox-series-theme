@@ -255,20 +255,45 @@ namespace XboxSeries.BootShell
         private static void WaitForAudio()
         {
             var settle = new AudioSettle(() => sinceStart.Elapsed, log.Write);
+            DefaultAudio? audio = null;
+            string? failed = null;
             try
             {
-                using var audio = new DefaultAudio();
-                while (!settle.Launch(audio.Id()))
+                while (true)
                 {
+                    // A device that can't be read, as when Windows' audio service isn't up yet at sign-in, counts as none:
+                    // audio least ready is what the wait is for, and the 6 s limit still launches Fullscreen.
+                    string? device = null;
+                    try
+                    {
+                        audio ??= new DefaultAudio();
+                        device = audio.Id();
+                    }
+                    catch (Exception e)
+                    {
+                        if (e.Message != failed)
+                        {
+                            log.Write($"ERROR: audio: couldn't read the default audio device: {e.Message}");
+                            failed = e.Message;
+                        }
+
+                        audio?.Dispose();
+                        audio = null;
+                    }
+
+                    if (settle.Launch(device))
+                    {
+                        break;
+                    }
+
                     Wait(Poll, null, null);
                 }
 
                 log.Write("Fullscreen: " + settle.Why);
             }
-            catch (Exception e)
+            finally
             {
-                // Never keep Fullscreen back for a device that can't be read.
-                log.Write($"ERROR: audio: couldn't read the default audio device: {e.Message}; launching now");
+                audio?.Dispose();
             }
         }
 
