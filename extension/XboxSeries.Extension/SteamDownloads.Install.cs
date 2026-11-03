@@ -311,6 +311,9 @@ namespace XboxSeries.Extension
         /// closed, which sends Steam's to the tray as its own close button does, and Playnite takes the foreground back.
         /// Only when Steam was running already, so its sign-in window, which a Steam just started may need, is left.
         /// </summary>
+        /// <summary>The title of the client's main window, the one it brings forward as it takes a command.</summary>
+        private const string SteamMainWindowTitle = "Steam";
+
         private static void KeepPlayniteInFront()
         {
             var playnite = Application.Current?.MainWindow;
@@ -330,8 +333,11 @@ namespace XboxSeries.Extension
                     return;
                 }
 
+                // Only Steam's main window, titled "Steam", which it brings forward as it takes the command: never a
+                // window asking the user something (Steam Guard, sign-in, a EULA, a launch question), which closed would
+                // lose its answer.
                 var front = NativeMethods.GetForegroundWindow();
-                if (front == IntPtr.Zero || front == playniteWindow || !IsSteamWindow(front))
+                if (front == IntPtr.Zero || front == playniteWindow || !IsSteamWindow(front) || NativeMethods.TitleOf(front) != SteamMainWindowTitle)
                 {
                     return;
                 }
