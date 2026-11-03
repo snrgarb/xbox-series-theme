@@ -149,6 +149,23 @@ namespace XboxSeries.BootShell
             }
         }
 
+        /// <summary>
+        /// Closes Playnite before its settings are put back; false, said, if it didn't or couldn't be asked to. Never
+        /// throws: the rest of --uninstall, Shell above all, is the way back to explorer and mustn't wait on Playnite.
+        /// </summary>
+        private bool ClosePlayniteForUninstall()
+        {
+            try
+            {
+                return closePlaynite();
+            }
+            catch (Exception e) when (IsSetupError(e))
+            {
+                say($"ERROR: couldn't close Playnite: {e.Message}");
+                return false;
+            }
+        }
+
         /// <summary>Puts back every value the record holds; false, said, if one couldn't be.</summary>
         public bool Uninstall()
         {
@@ -170,7 +187,7 @@ namespace XboxSeries.BootShell
             }
 
             var settings = Settings().Where(s => record.ContainsKey(s.Name)).Reverse().ToList();
-            var playniteUp = settings.Any(s => s.Playnite) && !closePlaynite();
+            var playniteUp = settings.Any(s => s.Playnite) && !ClosePlayniteForUninstall();
             var undone = true;
             foreach (var setting in settings)
             {

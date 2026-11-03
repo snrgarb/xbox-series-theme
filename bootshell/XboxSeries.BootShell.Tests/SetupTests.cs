@@ -232,6 +232,23 @@ namespace XboxSeries.BootShell.Tests
         }
 
         [Fact]
+        public void Uninstall_undoes_all_but_Playnites_settings_when_closing_Playnite_fails_outright()
+        {
+            // As when Playnite runs from an install other than the one --shutdown is sent through: the way back to explorer
+            // mustn't depend on it.
+            Assert.True(NewSetup().Install());
+            closePlaynite = () => throw new System.ComponentModel.Win32Exception(2, "The system cannot find the file specified");
+
+            Assert.False(NewSetup().Uninstall());
+
+            Assert.Null(registry.Get(Winlogon, "Shell"));
+            Assert.Null(registry.Get(Run, "XboxSeriesBootShellSentinel"));
+            Assert.False((bool)Json(Config)["StartOnBoot"]!);
+            Assert.Contains(said, line => line.Contains("Playnite didn't close"));
+            Assert.True(File.Exists(Record));
+        }
+
+        [Fact]
         public void The_record_keeps_the_sentinel_and_the_safety_net_as_the_other_values()
         {
             Assert.True(NewSetup().Install());
