@@ -98,10 +98,12 @@ jobs:
 
       - name: Create release
         shell: pwsh
+        # Early access: released as a pre-release, under "(early access)", until the Bundle's first stable release.
         run: |
           gh release create "${{ steps.version.outputs.tag }}" `
             "bootshell/XboxSeries.BootShell/bin/Release/net10.0-windows/win-x64/publish/XboxSeries.BootShell.exe" `
             --repo "${{ github.repository }}" `
             --target "${{ github.sha }}" `
-            --title "Boot shell ${{ steps.version.outputs.version }}" `
+            --title "Boot shell ${{ steps.version.outputs.version }} (early access)" `
+            --prerelease `
             --notes "The Boot shell ${{ steps.version.outputs.version }}, one NativeAOT exe built from ${{ github.sha }}. See bootshell/XboxSeries.BootShell/README.md to set it up."

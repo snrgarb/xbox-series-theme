@@ -176,9 +176,11 @@ jobs:
 
       - name: Create the GitHub Release
         shell: pwsh
+        # Early access: released as a pre-release, under "(early access)", until the Bundle's first stable release.
         run: |
           gh release create '${{ steps.version.outputs.tag }}' '${{ steps.pext.outputs.path }}' `
             --target '${{ github.sha }}' `
-            --title 'Extension ${{ steps.version.outputs.version }}' `
+            --title 'Extension ${{ steps.version.outputs.version }} (early access)' `
+            --prerelease `
             --notes 'XboxSeries extension ${{ steps.version.outputs.version }}, built in Release with the matching Dashboard theme inside.'
           if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
