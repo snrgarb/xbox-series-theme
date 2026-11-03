@@ -186,8 +186,17 @@ namespace XboxSeries.Extension
             SetWindowLong(window, GWL_EXSTYLE, GetWindowLong(window, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
         }
 
-#if DEBUG
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int max);
+
+        /// <summary>The title of <paramref name="window"/>; empty for none.</summary>
+        public static string TitleOf(IntPtr window)
+        {
+            var title = new StringBuilder(256);
+            GetWindowText(window, title, title.Capacity);
+            return title.ToString();
+        }
+
+#if DEBUG
         [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
 
         /// <summary>
