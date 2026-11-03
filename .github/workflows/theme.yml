@@ -130,11 +130,13 @@ jobs:
           TAG: ${{ steps.pack.outputs.tag }}
           VERSION: ${{ steps.pack.outputs.version }}
           PTHM: ${{ steps.pack.outputs.pthm }}
+        # Early access: released as a pre-release, under "(early access)", until the Bundle's first stable release.
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
           gh release create $env:TAG $env:PTHM `
             --repo $env:GITHUB_REPOSITORY `
             --target $env:GITHUB_SHA `
-            --title "Xbox Series Dashboard theme $env:VERSION" `
+            --title "Xbox Series Dashboard theme $env:VERSION (early access)" `
+            --prerelease `
             --notes "The Dashboard theme of Bundle $env:VERSION, built from $env:GITHUB_SHA. Install the .pthm in Playnite."
