@@ -1,4 +1,6 @@
-<!-- The title becomes the commit subject on main (squash merge); this description becomes its body. -->
+<!-- The title becomes the commit header on main (squash merge), so it follows docs/commits.md:
+     <type>(<scope>)!: <description>, e.g. feat(extension): open the Guide over games that start with it open.
+     This description becomes the commit's body. -->
 
 Closes #
 
