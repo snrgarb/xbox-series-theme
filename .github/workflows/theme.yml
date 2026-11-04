@@ -2,7 +2,8 @@
 #   check   every PR or push to main that touches what the theme packs: packs the .pthm in Debug and Release
 #           and fails if the package is missing or its manifest isn't stamped with the Bundle version.
 #   deploy  manual runs only: packs the Release .pthm and creates the GitHub Release theme-v<Version>
-#           with it attached. Refuses if that tag or release already exists; never overwrites.
+#           with it attached. Refuses if that tag or release already exists; never overwrites. Refuses too if
+#           VirusTotal flags the .pthm (build/VirusTotal.ps1).
 # The theme project imports only Directory.Build.props (for Version) and packs shared/Images; it doesn't use build/.
 name: Theme
 
@@ -123,6 +124,14 @@ jobs:
           if ($remoteTag) { throw "Tag $env:TAG already exists; bump Version in Directory.Build.props" }
           $global:LASTEXITCODE = 0
 
+      # Refuses the file if any VirusTotal engine finds it malicious or suspicious; its report goes in the notes.
+      - name: Scan on VirusTotal
+        id: vt
+        shell: pwsh
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: ./build/VirusTotal.ps1 "${{ steps.pack.outputs.pthm }}"
+
       - name: Create the release
         shell: pwsh
         env:
@@ -139,4 +148,4 @@ jobs:
             --target $env:GITHUB_SHA `
             --title "Xbox Series Dashboard theme $env:VERSION (early access)" `
             --prerelease `
-            --notes "The Dashboard theme of Bundle $env:VERSION, built from $env:GITHUB_SHA. Install the .pthm in Playnite."
+            --notes "The Dashboard theme of Bundle $env:VERSION, built from $env:GITHUB_SHA. Install the .pthm in Playnite. VirusTotal: ${{ steps.vt.outputs.report }}"
