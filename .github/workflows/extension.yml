@@ -1,7 +1,8 @@
 # The extension's pipeline: Core, the extension and their tests, plus the Dashboard theme the .pext embeds.
 #   check   on a PR or a push to main that touches the extension's paths: runs the Core tests, builds the extension,
 #           and uploads the Debug and Release .pext as the bundle artifact the end-to-end tests (e2e/run.sh) install.
-#   deploy  on a manual run alone: builds the Release .pext and creates the GitHub Release extension-v<Bundle version>.
+#   deploy  on a manual run alone: builds the Release .pext and creates the GitHub Release extension-v<Bundle version>,
+#           unless VirusTotal flags the .pext (build/VirusTotal.ps1).
 name: Extension
 
 on:
@@ -187,6 +188,14 @@ jobs:
           }
           "The .pext's $pthm matches theme-v$version's, $(@($packedContents).Count) entries"
 
+      # Refuses the file if any VirusTotal engine finds it malicious or suspicious; its report goes in the notes.
+      - name: Scan on VirusTotal
+        id: vt
+        shell: pwsh
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: ./build/VirusTotal.ps1 "${{ steps.pext.outputs.path }}"
+
       - name: Create the GitHub Release
         shell: pwsh
         # Early access: released as a pre-release, under "(early access)", until the Bundle's first stable release.
@@ -195,5 +204,5 @@ jobs:
             --target '${{ github.sha }}' `
             --title 'Extension ${{ steps.version.outputs.version }} (early access)' `
             --prerelease `
-            --notes 'XboxSeries extension ${{ steps.version.outputs.version }}, built in Release with the matching Dashboard theme inside.'
+            --notes 'XboxSeries extension ${{ steps.version.outputs.version }}, built in Release with the matching Dashboard theme inside. VirusTotal: ${{ steps.vt.outputs.report }}'
           if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }

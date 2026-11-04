@@ -1,0 +1,53 @@
+# Downloads: on a manual run, builds the Release Boot shell exe, Dashboard theme .pthm and extension .pext from the
+# branch it's run on and uploads them as one Actions artifact, xbox-series-<commit>, to download from the run page or
+# with `gh run download <run> --name xbox-series-<commit>`. A build to try between releases: it creates no release
+# and no tag, and leaves the versions alone, so the files carry the version of the last release.
+name: Downloads
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build the downloads
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # Packs artifacts/Release/XboxSeries_<Version>.pext with the Release .pthm beside it and inside it.
+      - name: Build the Release .pext and .pthm
+        run: dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Release
+
+      - name: Publish the Boot shell
+        shell: pwsh
+        run: |
+          # NativeAOT links with the C++ build tools; their vcvarsall.bat finds vswhere.exe by name on PATH.
+          $env:PATH += ";${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+          dotnet publish bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj -c Release -r win-x64
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
+
+      - name: Gather the files
+        id: gather
+        shell: pwsh
+        run: |
+          $out = New-Item -ItemType Directory downloads
+          $exe = 'bootshell/XboxSeries.BootShell/bin/Release/net10.0-windows/win-x64/publish/XboxSeries.BootShell.exe'
+          $files = @(Get-Item $exe, artifacts/Release/*.pthm, artifacts/Release/*.pext)
+          if ($files.Count -ne 3) { throw "Expected the exe, one .pthm and one .pext; found: $($files.Name -join ', ')" }
+          $files | Copy-Item -Destination $out
+          Get-ChildItem $out | ForEach-Object { "$($_.Name)  $((Get-FileHash $_.FullName).Hash.ToLower())" }
+          "name=xbox-series-$("${{ github.sha }}".Substring(0, 7))" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.gather.outputs.name }}
+          path: downloads/
+          if-no-files-found: error
+          retention-days: 14
