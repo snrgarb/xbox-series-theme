@@ -1,0 +1,323 @@
+# Release: a manual run on main cuts one GitHub Release, tagged by date (v<year>.<month>.<n>, e.g. v2026.11.0), that
+# carries the Boot shell exe, the Dashboard theme .pthm and the extension .pext, each at its own version
+# (docs/development.md#releases).
+#   Plan      build/components.sh plan: a component changed since its last <component>-v<x.y.z> tag must have a higher
+#             version, and is built; an unchanged one must have the same version, and its file is re-attached byte for
+#             byte from the release that carried it. Anything else refuses, as does a README whose download table
+#             doesn't link this release's files.
+#   Release   builds and checks what changed, scans each built file on VirusTotal (build/VirusTotal.ps1), creates the
+#             release as a draft, pushes the dated tag and the built components' tags at once, then publishes it.
+# A failure before the tags are pushed leaves nothing behind but, at most, a draft, deleted on the way out. Should
+# publishing fail after the push, publish the draft by hand: the tags can't be moved (the `release tags` ruleset).
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.plan.outputs.tag }}
+      title: ${{ steps.plan.outputs.title }}
+      theme_version: ${{ steps.plan.outputs.theme_version }}
+      theme_action: ${{ steps.plan.outputs.theme_action }}
+      theme_asset: ${{ steps.plan.outputs.theme_asset }}
+      theme_tag: ${{ steps.plan.outputs.theme_tag }}
+      theme_from: ${{ steps.plan.outputs.theme_from }}
+      extension_version: ${{ steps.plan.outputs.extension_version }}
+      extension_action: ${{ steps.plan.outputs.extension_action }}
+      extension_asset: ${{ steps.plan.outputs.extension_asset }}
+      extension_tag: ${{ steps.plan.outputs.extension_tag }}
+      extension_from: ${{ steps.plan.outputs.extension_from }}
+      bootshell_version: ${{ steps.plan.outputs.bootshell_version }}
+      bootshell_action: ${{ steps.plan.outputs.bootshell_action }}
+      bootshell_asset: ${{ steps.plan.outputs.bootshell_asset }}
+      bootshell_tag: ${{ steps.plan.outputs.bootshell_tag }}
+      bootshell_from: ${{ steps.plan.outputs.bootshell_from }}
+    steps:
+      - name: Refuse a branch other than main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error title=Release::Releases are cut from main only, not $GITHUB_REF_NAME: gh workflow run release.yml --ref main"
+          exit 1
+
+      # Every tag, for the component tags the plan compares with.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Plan the release
+        id: plan
+        shell: bash
+        run: |
+          plan="$(build/components.sh plan)"
+          echo "$plan" | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "### $(sed -n 's/^tag=//p' <<< "$plan"): $(sed -n 's/^title=//p' <<< "$plan")"
+            echo
+            echo '| Component | Version | File | |'
+            echo '|---|---|---|---|'
+            for c in theme extension bootshell; do
+              get() { sed -n "s/^${c}_$1=//p" <<< "$plan"; }
+              if [ "$(get action)" = build ]; then how="built, tagged $(get tag)"; else how="re-attached from $(get from)"; fi
+              echo "| $c | $(get version) | $(get asset) | $how |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The release/ PR points the README's download table at the release it expects; a stale link refuses here.
+      - name: Refuse a README that doesn't link this release
+        shell: bash
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+          ASSETS: ${{ steps.plan.outputs.theme_asset }} ${{ steps.plan.outputs.extension_asset }} ${{ steps.plan.outputs.bootshell_asset }}
+        run: |
+          missing=0
+          for asset in $ASSETS; do
+            url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/$asset"
+            if ! grep -qF "($url)" README.md; then echo "::error title=README::README.md's download table doesn't link $url"; missing=1; fi
+          done
+          exit $missing
+
+  release:
+    name: Build, scan and release
+    needs: plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      THEME_VERSION: ${{ needs.plan.outputs.theme_version }}
+      THEME_ACTION: ${{ needs.plan.outputs.theme_action }}
+      THEME_ASSET: ${{ needs.plan.outputs.theme_asset }}
+      THEME_FROM: ${{ needs.plan.outputs.theme_from }}
+      EXTENSION_VERSION: ${{ needs.plan.outputs.extension_version }}
+      EXTENSION_ACTION: ${{ needs.plan.outputs.extension_action }}
+      EXTENSION_ASSET: ${{ needs.plan.outputs.extension_asset }}
+      EXTENSION_FROM: ${{ needs.plan.outputs.extension_from }}
+      BOOTSHELL_ACTION: ${{ needs.plan.outputs.bootshell_action }}
+      BOOTSHELL_ASSET: ${{ needs.plan.outputs.bootshell_asset }}
+      BOOTSHELL_FROM: ${{ needs.plan.outputs.bootshell_from }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Each file the release carries goes into release/, under the name it's released as.
+      - name: Re-attach the unchanged components' files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory release | Out-Null
+          foreach ($c in 'THEME', 'EXTENSION', 'BOOTSHELL') {
+            if ((Get-Item "env:${c}_ACTION").Value -ne 'reattach') { continue }
+            $asset = (Get-Item "env:${c}_ASSET").Value
+            $from = (Get-Item "env:${c}_FROM").Value
+            $output = gh release download $from --pattern $asset --dir release 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "Couldn't download $asset from release ${from}: $output" }
+            if (-not (Test-Path "release/$asset")) { throw "Release $from has no $asset" }
+            "$asset from $from, sha256 $((Get-FileHash "release/$asset").Hash.ToLower())"
+          }
+
+      - name: Pack the theme
+        if: env.THEME_ACTION == 'build'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $project = 'theme/XboxSeries.Dashboard/XboxSeries.Dashboard.proj'
+          dotnet build $project -c Release
+          $pthm = (dotnet msbuild $project -p:Configuration=Release -getProperty:ThemePackagePath).Trim()
+          if ((Split-Path $pthm -Leaf) -ne $env:THEME_ASSET) { throw "The theme packed $pthm, not $env:THEME_ASSET" }
+          Copy-Item $pthm release/
+
+      - name: Build the extension
+        if: env.EXTENSION_ACTION == 'build'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet test extension/XboxSeries.Core.Tests/XboxSeries.Core.Tests.csproj --configuration Release
+          # Packs artifacts/Release/XboxSeries_<version>.pext with the Release .pthm inside.
+          dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Release
+          $pext = "artifacts/Release/$env:EXTENSION_ASSET"
+          if (-not (Test-Path $pext)) { throw "$pext was not built" }
+          Copy-Item $pext release/
+
+      # The build already refuses to pack Playnite.SDK.dll or Newtonsoft.Json.dll; this checks the zip itself as well,
+      # that the extension has no Debug-only pane or Guide hotkey, and that the theme inside is the one this release
+      # carries, built or re-attached. Compared entry by entry, name and bytes, as two packs of the same files differ in
+      # their zip timestamps.
+      - name: Check the .pext
+        if: env.EXTENSION_ACTION == 'build'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          function Contents([IO.Compression.ZipArchive] $zip) {
+            $sha = [Security.Cryptography.SHA256]::Create()
+            $zip.Entries | Where-Object { $_.FullName -notmatch '/$' } | Sort-Object FullName | ForEach-Object {
+              $stream = $_.Open()
+              try { "$($_.FullName) $([Convert]::ToHexString($sha.ComputeHash($stream)))" } finally { $stream.Dispose() }
+            }
+          }
+
+          $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path "release/$env:EXTENSION_ASSET"))
+          try {
+            $names = $zip.Entries | ForEach-Object { ($_.FullName -split '[\/]')[-1] }
+            foreach ($banned in 'Playnite.SDK.dll', 'Newtonsoft.Json.dll') {
+              if ($names -contains $banned) { throw "$banned must not ship in the .pext" }
+            }
+            # Debug-only code (the pane, the Guide hotkey, the pad's keyboard keys, the ring and notices) leaves these
+            # names in a Debug DLL's metadata and none in a Release one.
+            foreach ($assembly in 'XboxSeries.Extension.dll', 'XboxSeries.Core.dll') {
+              $dll = $zip.Entries | Where-Object { $_.Name -eq $assembly }
+              if (-not $dll) { throw "The .pext has no $assembly" }
+              $stream = $dll.Open(); $buffer = New-Object IO.MemoryStream; $stream.CopyTo($buffer); $stream.Dispose()
+              $text = [Text.Encoding]::UTF8.GetString($buffer.ToArray())
+              foreach ($debugOnly in 'DebugPane', 'DebugGuideHotkey', 'DebugButtonFor', 'DebugRing', 'DebugNotify') {
+                if ($text.Contains($debugOnly)) { throw "$assembly holds the Debug-only ${debugOnly}: not a Release build" }
+              }
+            }
+
+            $inner = $zip.Entries | Where-Object { $_.Name -eq $env:THEME_ASSET }
+            if (-not $inner) { throw "The .pext has no $env:THEME_ASSET, the theme this release carries" }
+            $innerStream = $inner.Open(); $innerBuffer = New-Object IO.MemoryStream; $innerStream.CopyTo($innerBuffer); $innerStream.Dispose()
+            $innerZip = New-Object IO.Compression.ZipArchive($innerBuffer, [IO.Compression.ZipArchiveMode]::Read)
+            try { $packed = Contents $innerZip } finally { $innerZip.Dispose() }
+          } finally { $zip.Dispose() }
+
+          $themeZip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path "release/$env:THEME_ASSET"))
+          try { $released = Contents $themeZip } finally { $themeZip.Dispose() }
+          $differ = Compare-Object @($released) @($packed)
+          if ($differ) {
+            $differ | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }
+            throw "The .pext's $env:THEME_ASSET differs from the one this release carries (<= released, => in the .pext)"
+          }
+          "The .pext holds the release's $env:THEME_ASSET, $(@($packed).Count) entries"
+
+      - name: Publish the Boot shell
+        if: env.BOOTSHELL_ACTION == 'build'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $project = 'bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj'
+          dotnet test bootshell/XboxSeries.BootShell.Tests/XboxSeries.BootShell.Tests.csproj -c Release
+          # NativeAOT links with the C++ build tools; their vcvarsall.bat finds vswhere.exe by name on PATH.
+          $env:PATH += ";${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+          dotnet publish $project -c Release -r win-x64
+          $exe = "bootshell/XboxSeries.BootShell/bin/Release/net10.0-windows/win-x64/publish/$env:BOOTSHELL_ASSET"
+          if (-not (Test-Path $exe)) { throw "No exe at $exe" }
+          Copy-Item $exe release/
+
+      # Each refuses its file if any VirusTotal engine finds it malicious or suspicious; the reports go in the notes.
+      # Re-attached files were scanned when they were built.
+      - name: Scan the theme on VirusTotal
+        id: vt_theme
+        if: env.THEME_ACTION == 'build'
+        shell: pwsh
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: ./build/VirusTotal.ps1 "release/$env:THEME_ASSET"
+
+      - name: Scan the extension on VirusTotal
+        id: vt_extension
+        if: env.EXTENSION_ACTION == 'build'
+        shell: pwsh
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: ./build/VirusTotal.ps1 "release/$env:EXTENSION_ASSET"
+
+      - name: Scan the Boot shell on VirusTotal
+        id: vt_bootshell
+        if: env.BOOTSHELL_ACTION == 'build'
+        shell: pwsh
+        env:
+          VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
+        run: ./build/VirusTotal.ps1 "release/$env:BOOTSHELL_ASSET"
+
+      - name: Write the notes
+        shell: pwsh
+        env:
+          THEME_TAG: ${{ needs.plan.outputs.theme_tag }}
+          EXTENSION_TAG: ${{ needs.plan.outputs.extension_tag }}
+          BOOTSHELL_TAG: ${{ needs.plan.outputs.bootshell_tag }}
+          BOOTSHELL_VERSION: ${{ needs.plan.outputs.bootshell_version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $rows = foreach ($c in @(
+              @{ Key = 'THEME'; Name = 'Dashboard theme' },
+              @{ Key = 'EXTENSION'; Name = 'Extension' },
+              @{ Key = 'BOOTSHELL'; Name = 'Boot shell' })) {
+            $get = { param($what) (Get-Item "env:$($c.Key)_$what").Value }
+            $asset = & $get 'ASSET'
+            $sha = (Get-FileHash "release/$asset").Hash.ToLower()
+            $how = if ((& $get 'ACTION') -eq 'build') { "new, tagged $(& $get 'TAG')" } else { "unchanged, from $(& $get 'FROM')" }
+            "| $($c.Name) | $(& $get 'VERSION') | ``$asset`` | $how | [VirusTotal](https://www.virustotal.com/gui/file/$sha) |"
+          }
+          @(
+            "Built from $env:GITHUB_SHA. Install the .pthm and the .pext in Playnite (the theme and the extension share Major.Minor); the Boot shell is optional, see bootshell/XboxSeries.BootShell/README.md."
+            ''
+            '| Component | Version | File | | |'
+            '|---|---|---|---|---|'
+            $rows
+          ) | Set-Content notes.md
+          Get-Content notes.md
+
+      # Early access: a pre-release, under "(early access)", until the Bundle's first stable release.
+      - name: Create the release as a draft
+        shell: pwsh
+        env:
+          TITLE: ${{ needs.plan.outputs.title }}
+        run: |
+          $files = @(Get-ChildItem release | ForEach-Object FullName)
+          if ($files.Count -ne 3) { throw "Expected three files to release; found: $((Get-ChildItem release).Name -join ', ')" }
+          gh release create $env:TAG @files --draft --prerelease --target $env:GITHUB_SHA `
+            --title "$env:TITLE (early access)" --notes-file notes.md
+          if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
+
+      # All the tags or none: the dated one, and each built component's.
+      - name: Tag
+        shell: pwsh
+        env:
+          TAGS: ${{ needs.plan.outputs.tag }} ${{ needs.plan.outputs.theme_tag }} ${{ needs.plan.outputs.extension_tag }} ${{ needs.plan.outputs.bootshell_tag }}
+        run: |
+          $tags = @(-split $env:TAGS)
+          foreach ($tag in $tags) { git tag $tag $env:GITHUB_SHA; if ($LASTEXITCODE -ne 0) { throw "git tag $tag failed" } }
+          git push --atomic origin @($tags | ForEach-Object { "refs/tags/$_" })
+          if ($LASTEXITCODE -ne 0) { throw "Couldn't push $($tags -join ', ')" }
+          "Tagged $env:GITHUB_SHA $($tags -join ', ')"
+
+      - name: Publish the release
+        shell: pwsh
+        run: |
+          gh release edit $env:TAG --draft=false
+          if ($LASTEXITCODE -ne 0) { throw "Couldn't publish the draft $env:TAG: publish it by hand, its tags are pushed" }
+
+      - name: Delete the draft
+        if: failure()
+        shell: pwsh
+        run: |
+          # Only an unpublished draft whose tag wasn't pushed: once the tags are out, the draft is the release.
+          $remote = git ls-remote --tags origin "refs/tags/$env:TAG"
+          if ($remote) { "The tags are pushed; leaving the draft $env:TAG to publish by hand"; exit 0 }
+          gh release delete $env:TAG --yes 2>&1 | Out-Host
+          $global:LASTEXITCODE = 0

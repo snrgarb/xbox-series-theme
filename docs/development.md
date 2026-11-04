@@ -42,29 +42,38 @@ cd ../../.. && git worktree remove .claude/worktrees/34-achievements-page && git
 
 - **Squash only.** The PR's title becomes the commit's header on `main` and its description the body, so write them as the commit message, following [the commit conventions](commits.md): `feat(extension): …`, `fix(bootshell): …`. Commits on the branch can be as rough as you like.
 - `Closes #n` in the description closes the issue at merge.
-- **Required to merge**: every review thread resolved, a `PR title` in [the commit format](commits.md), and the checks of each workflow, `<Component>: changes` and `<Component>: build and test` / `pack and verify`. Each workflow runs on every PR; a check whose component the PR doesn't touch is skipped, which counts as passed.
+- **Required to merge**: every review thread resolved, a `PR title` in [the commit format](commits.md), and `CI`. The CI workflow (`.github/workflows/ci.yml`) runs on every PR and push to `main`: it builds and tests only the components the PR touches, checks that the theme and the extension share Major.Minor, and its `CI` job passes when every other job passed or was skipped. Its extension job uploads the `bundle` artifact that `e2e/run.sh` installs.
 - No approval is required (there's one maintainer); review your own diff in the PR before merging.
 
 ## Releases
 
-Today the theme and the extension share one version, the Bundle version in `Directory.Build.props`, and each component is released on its own:
+Each component has a version of its own, and one GitHub Release, tagged by date, carries all three:
 
-| Component | Version in | Tag |
-|---|---|---|
-| Dashboard theme | `Directory.Build.props` | `theme-v<x.y.z>` |
-| Extension | `Directory.Build.props` | `extension-v<x.y.z>` |
-| Boot shell | `bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj` | `bootshell-v<x.y.z>` |
+| Component | Version in | File | Tag when built |
+|---|---|---|---|
+| Dashboard theme | `theme/XboxSeries.Dashboard/XboxSeries.Dashboard.proj` | `XboxSeries_Dashboard_<x.y.z>.pthm` | `theme-v<x.y.z>` |
+| Extension | `extension/XboxSeries.Extension/XboxSeries.Extension.csproj` | `XboxSeries_<x.y.z>.pext`, with the theme inside | `extension-v<x.y.z>` |
+| Boot shell | `bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj` | `XboxSeries.BootShell.exe` | `bootshell-v<x.y.z>` |
 
-Bump a component's version only when its folder has changed since its last release, except that the theme and the extension always share Major.Minor ([commits.md](commits.md#version-effect)). To release, once the milestone's issues are closed:
+The release is `v<year>.<month>.<n>`, `n` counting that month's releases from 0 (`v2026.11.0`, then `v2026.11.1`), titled with what it holds: "Theme 0.2.0 · Extension 0.2.3 · Boot shell 1.0.0 (early access)". It's a pre-release, under "(early access)", until the Bundle's first stable release.
 
-1. A `release/…` PR, `chore(release): …`, bumps the versions of what changed, each by the biggest [version effect](commits.md#version-effect) among its commits since its last release, and updates the README's download table; merge it.
-2. Run the deploy workflows on `main`, the theme before the extension (the extension refuses a theme it doesn't match): `gh workflow run theme.yml --ref main`, then `extension.yml`, then `bootshell.yml` if it changed.
+**Bump a component only when it changed** since its last `<component>-v<x.y.z>` tag, by the biggest [version effect](commits.md#version-effect) among its commits. What counts as a change is what the component ships from, not its tests (`build/components.sh` lists the paths): the extension packs the theme, so a theme change is an extension change too, and `shared/` and `Directory.Build.props` count for each component that builds from them. A `<Version>` line or a one-line comment in an MSBuild file doesn't count. **The theme and the extension share Major.Minor**: CI fails when they don't, and a new Major.Minor in one takes the other to it at `.0`, changed or not.
+
+To release, once the milestone's issues are closed:
+
+1. A `release/…` PR, `chore(release): …`, bumps the versions of what changed and points every row of the README's download table at the release to come, `https://github.com/snrgarb/xbox-series-theme/releases/download/v<year>.<month>.<n>/<file>`, unchanged components included; merge it.
+2. `gh workflow run release.yml --ref main`. Its Plan job ([`build/components.sh plan`](../build/components.sh)) refuses, listing every problem, when:
+   - a component changed without a higher version ("Bump the theme: …"), or was bumped with nothing changed ("The Boot shell was bumped to 1.0.1 with nothing changed …");
+   - nothing changed at all, or the theme and the extension don't share Major.Minor;
+   - the README doesn't link this release's files.
+
+   Otherwise its Release job builds what changed (tests first), checks the `.pext` holds the release's own `.pthm`, scans each built file on VirusTotal (`build/VirusTotal.ps1`), and re-attaches each unchanged component's file byte for byte from the release that built it. It creates the release as a draft, pushes the dated tag and each built component's tag at once, then publishes it, with a table of each file's version, origin, and VirusTotal report.
 3. Close the milestone.
 
-Coming next: one `release.yml` builds everything into a single GitHub Release tagged by date (`v2026.11.0`), re-attaching the unchanged components' files, and refuses a component that changed without a version bump, or was bumped without a change. The theme and the extension get versions of their own that share Major.Minor.
+`.github/workflows/downloads.yml` builds all three files from any branch, as an Actions artifact, for a try between releases; it releases and tags nothing.
 
 **A botched release**: a released tag can't be moved or deleted, by anyone. To take one back, set the `release tags` ruleset to Disabled (Settings > Rules > Rulesets), `gh release delete <tag> --cleanup-tag`, and set it back to Active straight after. Prefer releasing the next patch.
 
 ## The rules, as code
 
-`.github/rulesets/*.json` hold the rulesets on GitHub: `main` (PR required, squash only, linear history, no force push or deletion, the checks above) and `release tags` (a released tag, component or dated, can't be moved or deleted; it can still be created, as the deploy jobs do). `build/github-settings.sh` applies them and the merge settings, and points this clone at `.githooks/`, whose pre-commit refuses a commit on `main`. Change a ruleset by PR, then run the script again. Run it once in each new clone for the hook; the ruleset refuses the push anyway, the hook only stops the commit sooner.
+`.github/rulesets/*.json` hold the rulesets on GitHub: `main` (PR required, squash only, linear history, no force push or deletion, the checks above) and `release tags` (a released tag, component or dated, can't be moved or deleted; it can still be created, as `release.yml` does). `build/github-settings.sh` applies them and the merge settings, and points this clone at `.githooks/`, whose pre-commit refuses a commit on `main`. Change a ruleset by PR, then run the script again. Run it once in each new clone for the hook; the ruleset refuses the push anyway, the hook only stops the commit sooner.

@@ -12,7 +12,7 @@ The Xbox Series Theme makes Playnite 10 look and work like the Xbox Series X|S d
 
 All three are early-access releases. For older versions, see [Releases](https://github.com/snrgarb/xbox-series-theme/releases).
 
-The theme and the extension are the Bundle. Install the two together, with the same version. The Boot shell is optional.
+The theme and the extension are the Bundle. Install the two together, from the same release. The Boot shell is optional.
 
 ## What it does
 

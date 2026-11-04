@@ -52,7 +52,7 @@ When a change is two types, it's the one with the bigger version effect: a `feat
 
 ## Version effect
 
-Each component's version is bumped in the `release/` PR from the commits under its folder since its last release: the biggest effect wins. Until #140 gives the theme and the extension versions of their own, they share one, the Bundle version, and are bumped together. Before 1.0.0 (the Bundle today) a breaking change bumps the minor rather than the major, as [SemVer](https://semver.org/#spec-item-4) allows.
+Each component's version, in its own project, is bumped in the `release/` PR from the commits under its folder since its last release: the biggest effect wins. `release.yml` refuses a component that changed without a bump, or was bumped without a change ([development.md](development.md#releases)). Before 1.0.0 (the Bundle today) a breaking change bumps the minor rather than the major, as [SemVer](https://semver.org/#spec-item-4) allows.
 
 - **The theme and the extension share Major.Minor**, and that wins over "only what changed": a minor or major bump in either bumps both, so a `feat(extension)` also takes the theme to the new Major.Minor at patch 0. Patches stay independent: a `fix` in one bumps only that one.
 - **The extension packs the theme**: any theme change that ships is a change to the extension too, so both get at least a patch.

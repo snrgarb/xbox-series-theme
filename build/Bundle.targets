@@ -1,9 +1,9 @@
 <Project>
   <!--
     Packs the Bundle after every build of the extension:
-      artifacts/XboxSeries_Dashboard_<Version>.pthm   the Dashboard theme, packed by its own project
-      artifacts/XboxSeries_<Version>.pext             the extension, with the matching .pthm inside
-    Both manifests are stamped with $(Version) from Directory.Build.props.
+      artifacts/XboxSeries_Dashboard_<theme version>.pthm   the Dashboard theme, packed by its own project
+      artifacts/XboxSeries_<Version>.pext                   the extension, with that .pthm inside
+    Each is stamped with its own version: the theme's from its project, the extension's $(Version) from its own.
     Release builds pack into artifacts/Release/ instead, so they never replace the Debug packages
     (with the debug Guide hotkey and keys) that get installed for testing.
   -->
@@ -41,6 +41,6 @@
     <MakeDir Directories="$(PackageDir)" />
     <ZipDirectory SourceDirectory="$(ExtensionStageDir)" DestinationFile="$(ExtensionPackagePath)" Overwrite="true" />
 
-    <Message Importance="high" Text="Bundle $(Version): $(ExtensionPackagePath) and $(ThemePackagePath)" />
+    <Message Importance="high" Text="Extension $(Version): $(ExtensionPackagePath), with $(ThemePackagePath)" />
   </Target>
 </Project>
