@@ -55,6 +55,18 @@ jobs:
       - name: Build the extension, Release
         run: dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Release
 
+      # The Bundle the end-to-end tests install on the test VM (e2e/), fetched by `gh run download`: the Debug .pext
+      # under artifacts/, the Release one under artifacts/Release/, each with its .pthm inside.
+      - name: Upload the Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle
+          path: |
+            artifacts/*.pext
+            artifacts/Release/*.pext
+          if-no-files-found: error
+          retention-days: 14
+
   deploy:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
