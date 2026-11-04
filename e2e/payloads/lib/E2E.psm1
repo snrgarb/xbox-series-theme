@@ -21,6 +21,16 @@ public static class E2EDesk {
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string cls, string title);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+    public static uint WindowPid(IntPtr h) { uint pid; GetWindowThreadProcessId(h, out pid); return pid; }
+    // Windows gives the foreground only to a process that sent the last input: a tap of Alt from this process is that
+    // input, as Playnite has it when the user has just pressed A to play.
+    public static void TakeForeground(IntPtr h) {
+        keybd_event(0x12, 0, 0, UIntPtr.Zero);
+        keybd_event(0x12, 0, 2, UIntPtr.Zero);
+        SetForegroundWindow(h);
+    }
     public static uint ForegroundPid() { uint pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid); return pid; }
     public static string ForegroundTitle() { var s = new StringBuilder(256); GetWindowText(GetForegroundWindow(), s, 256); return s.ToString(); }
 }
@@ -154,16 +164,30 @@ function Start-Dashboard([string] $PayloadDir) {
 }
 
 # A stand-in for a game: a full-screen, borderless window of its own process, put in front as a game launched from
-# Playnite would be.
+# Playnite would be. Started with no console window, as the payload itself is. Returns the window's process.
 function Start-StandInGame {
     $script = Join-Path $PSScriptRoot 'StandInGame.ps1'
-    $p = Start-Process powershell.exe -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-STA', '-File', "`"$script`"" -PassThru
-    $deadline = (Get-Date).AddSeconds(20)
+    $started = Get-Date
+    Start-Process conhost.exe -ArgumentList '--headless', 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-STA', '-File', "`"$script`""
+    $deadline = $started.AddSeconds(60)
     while ((Get-Date) -lt $deadline) {
-        if ((Get-Foreground).Title -eq 'Stand-in game') { Say "stand-in game in front, pid $($p.Id)"; return $p }
+        $window = [E2EDesk]::FindWindow([NullString]::Value, 'Stand-in game')  # $null would pass "", a class no window has
+        if ($window -ne [IntPtr]::Zero -and [E2EDesk]::IsWindowVisible($window)) {
+            [E2EDesk]::TakeForeground($window)
+            Start-Sleep -Milliseconds 300
+            if ((Get-Foreground).Title -eq 'Stand-in game') {
+                $p = Get-Process -Id ([E2EDesk]::WindowPid($window))
+                Say "stand-in game in front after $([int]((Get-Date) - $started).TotalSeconds) s, pid $($p.Id)"
+                return $p
+            }
+        }
         Start-Sleep -Milliseconds 250
     }
-    throw "The stand-in game never came to the front (foreground: $((Get-Foreground).Process) '$((Get-Foreground).Title)')"
+    $front = Get-Foreground
+    $running = @(Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" | Where-Object CommandLine -like '*StandInGame.ps1*').Count
+    Say "stand-in: $running process(es) running, window $(if ($window -ne [IntPtr]::Zero) { 'found' } else { 'not found' })"
+    throw "The stand-in game never came to the front (foreground: $($front.Process) '$($front.Title)')"
 }
 
 Export-ModuleMember -Function * -Variable Out, Data

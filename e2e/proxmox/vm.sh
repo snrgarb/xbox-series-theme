@@ -13,13 +13,17 @@
 #
 # Settings come from ~/.config/xbox-e2e/proxmox.env (kept out of the repo; it holds the token):
 #   PVE_HOST=https://<host>:8006  PVE_NODE=<node>  PVE_TOKEN=ci@pve!e2e=<secret>  PVE_TEMPLATE=<template vmid>
+#   PVE_PINNEDPUBKEY=sha256//<base64>, the API certificate's public key, so the token goes only to that host. Proxmox's
+#   own CA signs the certificate and isn't trusted here, so the key is pinned instead; compute it on the host with
+#     openssl x509 -in /etc/pve/local/pve-ssl.pem -pubkey -noout | openssl pkey -pubin -outform der |
+#       openssl dgst -sha256 -binary | base64
 # and optionally PVE_BRIDGE (default vmbr2, the DMZ) and PVE_VMID_FROM (default 9000, where test VM ids start).
 set -euo pipefail
 
 ENV_FILE="${XBOX_E2E_ENV:-$HOME/.config/xbox-e2e/proxmox.env}"
 [[ -r "$ENV_FILE" ]] || { echo "No settings at $ENV_FILE" >&2; exit 2; }
 set -a; . "$ENV_FILE"; set +a
-: "${PVE_HOST:?}" "${PVE_NODE:?}" "${PVE_TOKEN:?}" "${PVE_TEMPLATE:?}"
+: "${PVE_HOST:?}" "${PVE_NODE:?}" "${PVE_TOKEN:?}" "${PVE_TEMPLATE:?}" "${PVE_PINNEDPUBKEY:?}"
 PVE_BRIDGE="${PVE_BRIDGE:-vmbr2}"
 PVE_VMID_FROM="${PVE_VMID_FROM:-9000}"
 TAG="xbox-e2e"
@@ -30,7 +34,8 @@ die() { log "error: $*"; exit 1; }
 # api METHOD PATH [key=value...] -> the response's "data" as JSON on stdout; fails on any HTTP error.
 api() {
     local method="$1" path="$2"; shift 2
-    local args=(-sS -k -m 60 -X "$method" -H "Authorization: PVEAPIToken=$PVE_TOKEN" -w '\n%{http_code}')
+    # -k skips the CA check only; curl still refuses a certificate whose key isn't the pinned one.
+    local args=(-sS -k --pinnedpubkey "$PVE_PINNEDPUBKEY" -m 60 -X "$method" -H "Authorization: PVEAPIToken=$PVE_TOKEN" -w '\n%{http_code}')
     # GET's parameters go in the query string, the rest in a form body.
     [[ "$method" == GET ]] && args+=(-G)
     local kv; for kv in "$@"; do args+=(--data-urlencode "$kv"); done

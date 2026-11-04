@@ -36,7 +36,7 @@ try {
     if ($front.Title -ne 'Stand-in game') { $failures += "the game did not get the foreground back: $($front.Process) '$($front.Title)'" }
 
     if ($game.HasExited) { $failures += 'the stand-in game exited' }
-    if ((Get-Process -Id (Get-Process Playnite.FullscreenApp).Id -ErrorAction SilentlyContinue) -eq $null) { $failures += 'Playnite exited' }
+    if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { $failures += 'Playnite exited' }
 
     if ($failures.Count -eq 0) { $result = 'PASS' }
 } catch {
