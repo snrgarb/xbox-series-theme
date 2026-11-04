@@ -1,0 +1,8 @@
+#!/bin/sh
+# Refuses a commit on main: work happens on a branch in its own worktree and reaches main by PR (docs/development.md).
+# The ruleset on GitHub refuses the push anyway; this stops it before the commit. Enabled by build/github-settings.sh.
+branch="$(git symbolic-ref --short -q HEAD)"
+if [ "$branch" = main ]; then
+    echo "pre-commit: no commits on main. Start a worktree: git worktree add -b feat/<issue>-<slug> .claude/worktrees/<issue>-<slug> origin/main" >&2
+    exit 1
+fi

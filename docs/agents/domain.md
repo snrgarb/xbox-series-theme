@@ -19,7 +19,8 @@ Single-context repo (most repos, and this one):
 ├── CONTEXT.md
 ├── docs/adr/
 │   ├── 0001-bundle-settings-page.md
-│   └── 0002-boot-shell-not-xbox-mode.md
+│   ├── 0002-boot-shell-not-xbox-mode.md
+│   └── 0003-trunk-based-squash-prs.md
 ├── bootshell/     ← the Boot shell and its tests
 ├── extension/     ← Core, the extension and their tests
 ├── theme/         ← the Dashboard theme
