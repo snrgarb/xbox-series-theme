@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# One end-to-end test on a throwaway Windows VM: fetches the Bundle CI built, clones a VM from the template, runs the
+# test's payload on its desktop, brings back what it wrote, and destroys the VM whatever happened.
+#
+#   e2e/run.sh <test> [--run <Actions run id>] [--pext <file>] [--release] [--keep]
+#
+#   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, guide-over-game, probe)
+#   --run        the Extension workflow run to take the Bundle from; default: the latest successful one on this branch;
+#                only runs of this repository's own code, never a fork's PR
+#   --pext       a .pext to test instead of downloading one
+#   --release    the Release .pext rather than the Debug one
+#   --keep       leave the VM running after the test, to look at it in the Proxmox console; `e2e/proxmox/vm.sh down`
+#                destroys it after
+#
+# Results land in artifacts/e2e/<test>-<time>/; exits 0 when the test passed.
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo="$(cd "$here/.." && pwd)"
+vm="$here/proxmox/vm.sh"
+
+test="${1:?usage: e2e/run.sh <test> [--run id] [--pext file] [--release] [--keep]}"; shift
+run_id="" pext="" config="Debug" keep=0
+while (($#)); do
+    case "$1" in
+        --run) run_id="$2"; shift 2 ;;
+        --pext) pext="$2"; shift 2 ;;
+        --release) config="Release"; shift ;;
+        --keep) keep=1; shift ;;
+        *) echo "unknown option $1" >&2; exit 2 ;;
+    esac
+done
+payload_src="$here/payloads/$test"
+[[ -f "$payload_src/run.ps1" ]] || { echo "no test $test (no $payload_src/run.ps1)" >&2; exit 2; }
+
+log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
+
+stage="$(mktemp -d)"
+trap 'rm -rf "$stage"' EXIT
+cp -r "$payload_src/." "$stage/"
+cp -r "$here/payloads/lib" "$stage/lib"
+
+# The ViGEm client the tests drive their virtual pad with: managed, netstandard2.0, loaded by PowerShell 5.1 on the VM.
+# Fetched once from NuGet, pinned by version and checksum, and kept under artifacts/e2e/.cache.
+vigem_version="1.21.256"
+vigem_sha256="4458301000b732d115521e99f9936f4edb70d6ceb3036ef158715e0e6b8902e0"
+vigem="$repo/artifacts/e2e/.cache/Nefarius.ViGEm.Client-$vigem_version.dll"
+if [[ ! -f "$vigem" ]] || ! echo "$vigem_sha256  $vigem" | sha256sum -c --quiet 2>/dev/null; then
+    mkdir -p "$(dirname "$vigem")"
+    nupkg="$(mktemp -d)"
+    curl -fsSL -o "$nupkg/p.nupkg" \
+        "https://api.nuget.org/v3-flatcontainer/nefarius.vigem.client/$vigem_version/nefarius.vigem.client.$vigem_version.nupkg"
+    python3 -I -c 'import zipfile,sys; open(sys.argv[2],"wb").write(zipfile.ZipFile(sys.argv[1]).read("lib/netstandard2.0/Nefarius.ViGEm.Client.dll"))' \
+        "$nupkg/p.nupkg" "$vigem"
+    rm -rf "$nupkg"
+    echo "$vigem_sha256  $vigem" | sha256sum -c --quiet || { rm -f "$vigem"; echo "ViGEm client checksum mismatch" >&2; exit 1; }
+fi
+cp "$vigem" "$stage/lib/Nefarius.ViGEm.Client.dll"
+
+if [[ "$test" != probe ]]; then
+    if [[ -z "$pext" ]]; then
+        # Only a run of this repository's own code: the workflow also runs on PRs from forks, whose branch can share a
+        # name with ours, and a fork's .pext must never run on our VM.
+        own="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
+        branch="$(git -C "$repo" rev-parse --abbrev-ref HEAD)"
+        if [[ -z "$run_id" ]]; then
+            run_id="$(gh api "repos/$own/actions/workflows/extension.yml/runs?branch=$branch&status=success&per_page=50" \
+                --jq "[.workflow_runs[] | select(.head_repository.full_name == \"$own\")][0].id // empty")"
+            [[ -n "$run_id" ]] || { echo "no successful Extension run of $own on $branch to take the Bundle from" >&2; exit 1; }
+        fi
+        from="$(gh api "repos/$own/actions/runs/$run_id" --jq '.head_repository.full_name + " " + .head_branch + " " + .head_sha[0:7]')"
+        [[ "${from%% *}" == "$own" ]] || { echo "run $run_id built ${from%% *}'s code, not $own's" >&2; exit 1; }
+        log "taking the $config Bundle from Extension run $run_id ($from)"
+        gh run download "$run_id" --name bundle --dir "$stage/bundle"
+        if [[ "$config" == Release ]]; then pext="$(ls "$stage"/bundle/Release/*.pext)"; else pext="$(ls "$stage"/bundle/*.pext)"; fi
+        mv "$pext" "$stage/"
+        rm -rf "$stage/bundle"
+    else
+        cp "$pext" "$stage/"
+    fi
+fi
+
+out="$repo/artifacts/e2e/$test-$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$out"
+
+id="$("$vm" up | tail -1)"
+cleanup() {
+    if ((keep)); then
+        log "kept VM $id; destroy it with: e2e/proxmox/vm.sh down $id"
+    else
+        "$vm" down "$id" || log "could not destroy VM $id: run e2e/proxmox/vm.sh down $id"
+    fi
+    rm -rf "$stage"
+}
+trap cleanup EXIT
+
+set +e
+"$vm" desktop "$id" "$stage" "$out" 900
+code=$?
+set -e
+
+[[ -f "$out/steps.txt" ]] && cat "$out/steps.txt" >&2
+if ((code == 0)); then log "PASS: $test ($out)"; else log "FAIL: $test, exit $code ($out)"; fi
+exit "$code"

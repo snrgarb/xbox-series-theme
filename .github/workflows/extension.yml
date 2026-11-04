@@ -1,5 +1,6 @@
 # The extension's pipeline: Core, the extension and their tests, plus the Dashboard theme the .pext embeds.
-#   check   on a PR or a push to main that touches the extension's paths: runs the Core tests, builds the extension.
+#   check   on a PR or a push to main that touches the extension's paths: runs the Core tests, builds the extension,
+#           and uploads the Debug and Release .pext as the bundle artifact the end-to-end tests (e2e/run.sh) install.
 #   deploy  on a manual run alone: builds the Release .pext and creates the GitHub Release extension-v<Bundle version>,
 #           unless VirusTotal flags the .pext (build/VirusTotal.ps1).
 name: Extension
@@ -55,6 +56,18 @@ jobs:
 
       - name: Build the extension, Release
         run: dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Release
+
+      # The Bundle the end-to-end tests install on the test VM (e2e/), fetched by `gh run download`: the Debug .pext
+      # under artifacts/, the Release one under artifacts/Release/, each with its .pthm inside.
+      - name: Upload the Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle
+          path: |
+            artifacts/*.pext
+            artifacts/Release/*.pext
+          if-no-files-found: error
+          retention-days: 14
 
   deploy:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
