@@ -119,14 +119,18 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_game_menu_Uninstall_is_taken_over_in_Fullscreen_alone()
+        public void The_game_menu_Uninstall_is_taken_over_on_the_Dashboard_alone()
         {
+            // Registered in OnApplicationStarted only past its return for a dormant extension: Desktop mode's menus,
+            // and another Fullscreen theme's, keep Playnite's own Uninstall.
             var plugin = File.ReadAllText(Path.Combine(ExtensionDir, "XboxSeriesPlugin.cs"));
-            var fullscreen = plugin.IndexOf("if (PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen)", StringComparison.Ordinal);
-            var desktop = plugin.IndexOf("else", fullscreen, StringComparison.Ordinal);
+            var started = plugin.IndexOf("public override void OnApplicationStarted(", StringComparison.Ordinal);
+            var dormant = plugin.IndexOf("if (!IsOnDashboard())", started, StringComparison.Ordinal);
             var register = plugin.IndexOf("GameMenuUninstall.Register(core)", StringComparison.Ordinal);
+            var next = plugin.IndexOf("private async Task FetchPopularGamerpicsAsync", started, StringComparison.Ordinal);
 
-            Assert.True(fullscreen > 0 && fullscreen < register && register < desktop);
+            Assert.True(started > 0 && started < dormant && dormant < register && register < next);
+            Assert.Equal(register, plugin.LastIndexOf("GameMenuUninstall.Register(core)", StringComparison.Ordinal));
         }
     }
 }
