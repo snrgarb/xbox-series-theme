@@ -40,9 +40,9 @@ cd ../../.. && git worktree remove .claude/worktrees/34-achievements-page && git
 
 ## Pull requests
 
-- **Squash only.** The PR's title becomes the commit's subject on `main` and its description the body, so write them as the commit message. Commits on the branch can be as rough as you like.
+- **Squash only.** The PR's title becomes the commit's header on `main` and its description the body, so write them as the commit message, following [the commit conventions](commits.md): `feat(extension): …`, `fix(bootshell): …`. Commits on the branch can be as rough as you like.
 - `Closes #n` in the description closes the issue at merge.
-- **Required to merge**: every review thread resolved, and the checks of each workflow, `<Component>: changes` and `<Component>: build and test` / `pack and verify`. Each workflow runs on every PR; a check whose component the PR doesn't touch is skipped, which counts as passed.
+- **Required to merge**: every review thread resolved, a `PR title` in [the commit format](commits.md), and the checks of each workflow, `<Component>: changes` and `<Component>: build and test` / `pack and verify`. Each workflow runs on every PR; a check whose component the PR doesn't touch is skipped, which counts as passed.
 - No approval is required (there's one maintainer); review your own diff in the PR before merging.
 
 ## Releases
@@ -55,9 +55,9 @@ Today the theme and the extension share one version, the Bundle version in `Dire
 | Extension | `Directory.Build.props` | `extension-v<x.y.z>` |
 | Boot shell | `bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj` | `bootshell-v<x.y.z>` |
 
-Bump a component's version only when its folder has changed since its last release. To release, once the milestone's issues are closed:
+Bump a component's version only when its folder has changed since its last release, except that the theme and the extension always share Major.Minor ([commits.md](commits.md#version-effect)). To release, once the milestone's issues are closed:
 
-1. A `release/…` PR bumps the versions of what changed and updates the README's download table; merge it.
+1. A `release/…` PR, `chore(release): …`, bumps the versions of what changed, each by the biggest [version effect](commits.md#version-effect) among its commits since its last release, and updates the README's download table; merge it.
 2. Run the deploy workflows on `main`, the theme before the extension (the extension refuses a theme it doesn't match): `gh workflow run theme.yml --ref main`, then `extension.yml`, then `bootshell.yml` if it changed.
 3. Close the milestone.
 

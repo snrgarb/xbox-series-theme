@@ -1,0 +1,33 @@
+# The PR title is the commit header main gets (squash merge), so it's checked against docs/commits.md: a type, at most
+# two of the components as scope, an optional !, then ": " and a description with no full stop, 72 characters in all.
+# Required on main by .github/rulesets/main.json. Editing the title runs it again.
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  title:
+    name: PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the title against docs/commits.md
+        shell: bash
+        env:
+          # Through the environment, never spliced into the script: a title is anyone's text.
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          types='feat|fix|perf|refactor|test|build|ci|docs|chore|revert'
+          scopes='theme|extension|bootshell|shared|e2e|release'
+          pattern="^($types)(\(($scopes)(,($scopes))?\))?!?: [^ ].*[^ .]$"
+          problems=()
+          [[ $TITLE =~ $pattern ]] || problems+=("isn't <type>(<scope>)!: <description>, with type one of ${types//|/, } and scope one or two of ${scopes//|/, }")
+          (( ${#TITLE} <= 72 )) || problems+=("is ${#TITLE} characters; 72 at most")
+          if (( ${#problems[@]} )); then
+            echo "::error title=PR title::'$TITLE' ${problems[*]}. See docs/commits.md, then edit the title."
+            exit 1
+          fi
+          echo "OK: $TITLE"
