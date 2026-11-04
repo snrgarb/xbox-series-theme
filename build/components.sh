@@ -5,8 +5,8 @@
 #   build/components.sh versions   prints theme=, extension= and bootshell= <x.y.z>; fails unless the theme and the
 #                                  extension share Major.Minor (CI's Versions job)
 #   build/components.sh plan       what release.yml releases from HEAD, as lines for $GITHUB_OUTPUT: the dated tag
-#                                  (tag=v<year>.<month>.<n>, the month UTC, or $RELEASE_MONTH as 2026.11), the title,
-#                                  and for each component <c>_version, <c>_asset and <c>_action: build, with <c>_tag
+#                                  (tag=v<year>.<month>.<n>, the month UTC, or $RELEASE_MONTH as 2026.11), and
+#                                  for each component <c>_version, <c>_asset and <c>_action: build, with <c>_tag
 #                                  the tag to create, or reattach, with <c>_from the release to take its file from
 #
 # Each component's version is in its own project; its last release is its highest <component>-v<x.y.z> tag. Changed
@@ -87,8 +87,6 @@ msbuild_content() { # revision file; nothing for a file the revision hasn't
 
 newer() { [[ $1 != "$2" && "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" == "$1" ]]; }
 
-declare -A label=([theme]="Theme" [extension]="Extension" [bootshell]="Boot shell")
-
 asset() { # component version
     case "$1" in
         theme) echo "XboxSeries_Dashboard_$2.pthm" ;;
@@ -158,10 +156,7 @@ cmd_plan() {
     fi
     finish
 
-    local title=()
-    for c in "${components[@]}"; do title+=("${label[$c]} ${version[$c]}"); done
     echo "tag=$(next_dated_tag)"
-    echo "title=$(printf '%s · ' "${title[@]}" | sed 's/ · $//')"
     for c in "${components[@]}"; do
         echo "${c}_version=${version[$c]}"
         echo "${c}_action=${action[$c]}"

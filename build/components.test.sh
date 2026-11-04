@@ -100,7 +100,6 @@ bump bootshell 1.0.1
 run plan
 expect_status 0
 expect_line "tag=v2026.11.0"
-expect_line "title=Theme 0.1.0 · Extension 0.1.0 · Boot shell 1.0.1"
 expect_line "theme_version=0.1.0"
 expect_line "theme_action=reattach"
 expect_line "theme_from=theme-v0.1.0"
