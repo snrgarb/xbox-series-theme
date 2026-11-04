@@ -8,7 +8,11 @@ $here = $PSScriptRoot
 $data = Join-Path $env:APPDATA 'Playnite'
 $fullscreenExe = Join-Path $env:LOCALAPPDATA 'Playnite\Playnite.FullscreenApp.exe'
 
-function Say($text) { "[$(Get-Date -Format HH:mm:ss)] $text" | Tee-Object -FilePath "$out\steps.txt" -Append }
+function Say($text) {
+    $line = "[$(Get-Date -Format HH:mm:ss)] $text"
+    Add-Content "$out\steps.txt" $line -Encoding UTF8
+    Write-Output $line
+}
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 Add-Type @'
@@ -66,7 +70,8 @@ try {
     Say "queued $($entry.Name) and $($pext.Name)"
 
     # 3. Fullscreen started, as the user would.
-    $playnite = Start-Process $fullscreenExe -PassThru
+    # From Playnite's folder, as its shortcut starts it: SDL reads gamecontrollerdb.txt from the working directory.
+    $playnite = Start-Process $fullscreenExe -WorkingDirectory (Split-Path $fullscreenExe) -PassThru
     Say "started Fullscreen, pid $($playnite.Id)"
 
     # 4. The extension reports which way it went.
