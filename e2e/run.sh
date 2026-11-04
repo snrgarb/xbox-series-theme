@@ -4,7 +4,7 @@
 #
 #   e2e/run.sh <test> [--run <Actions run id>] [--pext <file>] [--release] [--keep]
 #
-#   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, probe)
+#   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, guide-over-game, probe)
 #   --run        the Extension workflow run to take the Bundle from; default: the latest successful one on this branch
 #   --pext       a .pext to test instead of downloading one
 #   --release    the Release .pext rather than the Debug one
@@ -37,6 +37,24 @@ log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
 cp -r "$payload_src/." "$stage/"
+cp -r "$here/payloads/lib" "$stage/lib"
+
+# The ViGEm client the tests drive their virtual pad with: managed, netstandard2.0, loaded by PowerShell 5.1 on the VM.
+# Fetched once from NuGet, pinned by version and checksum, and kept under artifacts/e2e/.cache.
+vigem_version="1.21.256"
+vigem_sha256="4458301000b732d115521e99f9936f4edb70d6ceb3036ef158715e0e6b8902e0"
+vigem="$repo/artifacts/e2e/.cache/Nefarius.ViGEm.Client-$vigem_version.dll"
+if [[ ! -f "$vigem" ]] || ! echo "$vigem_sha256  $vigem" | sha256sum -c --quiet 2>/dev/null; then
+    mkdir -p "$(dirname "$vigem")"
+    nupkg="$(mktemp -d)"
+    curl -fsSL -o "$nupkg/p.nupkg" \
+        "https://api.nuget.org/v3-flatcontainer/nefarius.vigem.client/$vigem_version/nefarius.vigem.client.$vigem_version.nupkg"
+    python3 -I -c 'import zipfile,sys; open(sys.argv[2],"wb").write(zipfile.ZipFile(sys.argv[1]).read("lib/netstandard2.0/Nefarius.ViGEm.Client.dll"))' \
+        "$nupkg/p.nupkg" "$vigem"
+    rm -rf "$nupkg"
+    echo "$vigem_sha256  $vigem" | sha256sum -c --quiet || { rm -f "$vigem"; echo "ViGEm client checksum mismatch" >&2; exit 1; }
+fi
+cp "$vigem" "$stage/lib/Nefarius.ViGEm.Client.dll"
 
 if [[ "$test" != probe ]]; then
     if [[ -z "$pext" ]]; then

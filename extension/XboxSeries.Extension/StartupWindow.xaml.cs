@@ -174,6 +174,12 @@ namespace XboxSeries.Extension
             }
 
             var phase = startup.Phase;
+            if (e.PropertyName == nameof(StartupState.Phase))
+            {
+                // Read by the end-to-end tests (e2e/) to know when Who's playing today? waits for a press.
+                StartupTiming.Log($"Start-up phase {phase}");
+            }
+
             if (phase == StartupPhase.BootVideo)
             {
                 PlayVideo();
