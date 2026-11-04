@@ -72,8 +72,9 @@ jobs:
             echo '|---|---|---|---|'
             for c in theme extension bootshell; do
               get() { sed -n "s/^${c}_$1=//p" <<< "$plan"; }
+              name="$(sed 's/^theme$/Dashboard theme/; s/^extension$/Extension/; s/^bootshell$/Boot shell/' <<< "$c")"
               if [ "$(get action)" = build ]; then how="built, tagged $(get tag)"; else how="re-attached from $(get from)"; fi
-              echo "| $c | $(get version) | $(get asset) | $how |"
+              echo "| $name | $(get version) | $(get asset) | $how |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -288,6 +289,7 @@ jobs:
         env:
           TITLE: ${{ needs.plan.outputs.title }}
         run: |
+          $ErrorActionPreference = 'Stop'
           $files = @(Get-ChildItem release | ForEach-Object FullName)
           if ($files.Count -ne 3) { throw "Expected three files to release; found: $((Get-ChildItem release).Name -join ', ')" }
           gh release create $env:TAG @files --draft --prerelease --target $env:GITHUB_SHA `
@@ -300,6 +302,7 @@ jobs:
         env:
           TAGS: ${{ needs.plan.outputs.tag }} ${{ needs.plan.outputs.theme_tag }} ${{ needs.plan.outputs.extension_tag }} ${{ needs.plan.outputs.bootshell_tag }}
         run: |
+          $ErrorActionPreference = 'Stop'
           $tags = @(-split $env:TAGS)
           foreach ($tag in $tags) { git tag $tag $env:GITHUB_SHA; if ($LASTEXITCODE -ne 0) { throw "git tag $tag failed" } }
           git push --atomic origin @($tags | ForEach-Object { "refs/tags/$_" })
@@ -309,8 +312,9 @@ jobs:
       - name: Publish the release
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           gh release edit $env:TAG --draft=false
-          if ($LASTEXITCODE -ne 0) { throw "Couldn't publish the draft $env:TAG: publish it by hand, its tags are pushed" }
+          if ($LASTEXITCODE -ne 0) { throw "Couldn't publish the draft ${env:TAG}: publish it by hand, its tags are pushed" }
 
       - name: Delete the draft
         if: failure()

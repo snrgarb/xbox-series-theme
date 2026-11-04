@@ -57,7 +57,7 @@ check_shared_major_minor() {
 # What a component ships from: a change here since its last tag is a change to the component. The extension packs the
 # theme, so a theme change is an extension change too (docs/commits.md). Tests aren't shipped, so they don't count.
 declare -A paths=(
-    [theme]="theme/XboxSeries.Dashboard shared/Images"
+    [theme]="theme/XboxSeries.Dashboard shared/Images Directory.Build.props"
     [extension]="extension/XboxSeries.Extension extension/XboxSeries.Core theme/XboxSeries.Dashboard shared build/Bundle.targets Directory.Build.props"
     [bootshell]="bootshell/XboxSeries.BootShell shared/BootShellEvents.cs Directory.Build.props"
 )
@@ -116,11 +116,16 @@ cmd_plan() {
     read_versions
     check_shared_major_minor
     local c tag last
-    declare -A action=() from=()
+    declare -A action=() from=() changed=() tags=()
     for c in "${components[@]}"; do
-        tag="$(last_tag "$c")"
+        tags[$c]="$(last_tag "$c")"
+        changed[$c]=0
+        if [[ -z ${tags[$c]} ]] || changed_since "$c" "${tags[$c]}"; then changed[$c]=1; fi
+    done
+    for c in "${components[@]}"; do
+        tag="${tags[$c]}"
         last="${tag#"$c"-v}"
-        if [[ -z $tag ]] || changed_since "$c" "$tag"; then
+        if ((changed[$c])); then
             action[$c]=build
             if [[ -n $tag && ${version[$c]} == "$last" ]]; then
                 problem "Bump ${name[$c]}: it changed since $tag, and its version is still $last"
@@ -129,17 +134,18 @@ cmd_plan() {
             fi
         elif [[ ${version[$c]} != "$last" ]]; then
             action[$c]=build
-            # The theme and the extension share Major.Minor, so a new one in either takes the other to it at .0,
-            # changed or not (docs/commits.md): that bump, and only that one, needs no change.
-            local partner="" follow=""
+            # The theme and the extension share Major.Minor, so a changed one's new Major.Minor takes the other to it at
+            # .0, changed or not (docs/commits.md): that bump, and only that one, needs no change.
+            local partner="" forced=""
             [[ $c == theme ]] && partner=extension
             [[ $c == extension ]] && partner=theme
-            if [[ -n $partner && "$(major_minor "${version[$partner]}")" != "$(major_minor "$last")" ]]; then
-                follow="$(major_minor "${version[$partner]}").0"
+            if [[ -n $partner ]] && ((changed[$partner])) \
+                && [[ "$(major_minor "${version[$partner]}")" != "$(major_minor "$last")" ]]; then
+                forced="$(major_minor "${version[$partner]}").0"
             fi
-            if [[ -z $follow || ${version[$c]} != "$follow" ]]; then
+            if [[ -z $forced || ${version[$c]} != "$forced" ]]; then
                 local hint=""
-                [[ -n $follow ]] && hint=", or to $follow to follow ${name[$partner]}'s Major.Minor"
+                [[ -n $forced ]] && hint=", or to $forced to follow ${name[$partner]}'s Major.Minor"
                 problem "${name[$c]^} was bumped to ${version[$c]} with nothing changed since $tag: set it back to $last$hint"
             fi
         else

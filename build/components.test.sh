@@ -149,6 +149,16 @@ run plan
 expect_status 1
 expect_text "The theme was bumped to 0.2.1 with nothing changed since theme-v0.1.0: set it back to 0.1.0, or to 0.2.0 to follow the extension's Major.Minor"
 
+test "plan: an unchanged theme and extension can't follow each other to a new Major.Minor"
+repo 0.1.0 0.1.0 1.0.0
+released theme-v0.1.0 extension-v0.1.0 bootshell-v1.0.0
+bump theme 0.2.0
+bump extension 0.2.0
+run plan
+expect_status 1
+expect_text "The theme was bumped to 0.2.0 with nothing changed since theme-v0.1.0: set it back to 0.1.0"
+expect_text "The extension was bumped to 0.2.0 with nothing changed since extension-v0.1.0: set it back to 0.1.0"
+
 test "plan: an unchanged theme given a patch bump is refused"
 repo 0.1.0 0.1.0 1.0.0
 released theme-v0.1.0 extension-v0.1.0 bootshell-v1.0.0
@@ -224,7 +234,7 @@ commit "a real change"
 run plan
 expect_text "Bump the extension: it changed since extension-v0.1.0"
 
-test "plan: a property changed in Directory.Build.props changes the extension and the Boot shell"
+test "plan: a property changed in Directory.Build.props changes every component"
 repo 0.1.0 0.1.0 1.0.0
 released theme-v0.1.0 extension-v0.1.0 bootshell-v1.0.0
 printf '<Project>\n  <PropertyGroup>\n    <LangVersion>latest</LangVersion>\n  </PropertyGroup>\n</Project>\n' > Directory.Build.props
@@ -233,7 +243,7 @@ run plan
 expect_status 1
 expect_text "Bump the extension: it changed since extension-v0.1.0"
 expect_text "Bump the Boot shell: it changed since bootshell-v1.0.0"
-expect_no_text "Bump the theme"
+expect_text "Bump the theme: it changed since theme-v0.1.0"
 
 test "plan: a theme change is an extension change too"
 repo 0.1.0 0.1.0 1.0.0
