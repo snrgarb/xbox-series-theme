@@ -66,21 +66,23 @@ declare -A name=([theme]="the theme" [extension]="the extension" [bootshell]="th
 # The component's highest <component>-v<x.y.z> tag, or nothing before its first release.
 last_tag() { git tag -l "$1-v*" --sort=-v:refname | grep -E "^$1-v[0-9]+\.[0-9]+\.[0-9]+$" | head -n1 || true; }
 
-# Whether the component's paths changed since the tag. In MSBuild files, the <Version> line and one-line comments don't
-# count: a bump alone isn't a change, nor is a reworded comment.
+# Whether the component's paths changed since the tag. An MSBuild file counts only if it differs once its comments,
+# its <Version> line and blank lines are left out: a bump alone isn't a change, nor is a reworded comment.
 changed_since() { # component tag
-    local f lines
+    local f
     while read -r f; do
         [[ -n $f ]] || continue
         if [[ $f =~ \.(proj|csproj|props|targets)$ ]]; then
-            lines="$(git diff -U0 "$2" HEAD -- "$f" | grep -E '^[+-]' | grep -vE '^(\+\+\+|---) ' \
-                | grep -vE '^[+-][[:space:]]*(<Version>[^<]*</Version>|<!--.*-->)[[:space:]]*$' || true)"
-            [[ -n $lines ]] && return 0
+            [[ "$(msbuild_content "$2" "$f")" != "$(msbuild_content HEAD "$f")" ]] && return 0
         else
             return 0
         fi
     done < <(git diff --name-only "$2" HEAD -- ${paths[$1]})
     return 1
+}
+
+msbuild_content() { # revision file; nothing for a file the revision hasn't
+    git show "$1:$2" 2>/dev/null | perl -0pe 's/<!--.*?-->//gs; s/^[ \t]*<Version>[^<]*<\/Version>[ \t]*$//mg; s/^[ \t]*\n//mg' || true
 }
 
 newer() { [[ $1 != "$2" && "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" == "$1" ]]; }

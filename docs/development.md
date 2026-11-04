@@ -57,7 +57,7 @@ Each component has a version of its own, and one GitHub Release, tagged by date,
 
 The release is `v<year>.<month>.<n>`, `n` counting that month's releases from 0 (`v2026.11.0`, then `v2026.11.1`), titled with what it holds: "Theme 0.2.0 · Extension 0.2.3 · Boot shell 1.0.0 (early access)". It's a pre-release, under "(early access)", until the Bundle's first stable release.
 
-**Bump a component only when it changed** since its last `<component>-v<x.y.z>` tag, by the biggest [version effect](commits.md#version-effect) among its commits. What counts as a change is what the component ships from, not its tests (`build/components.sh` lists the paths): the extension packs the theme, so a theme change is an extension change too, and `shared/` and `Directory.Build.props` count for each component that builds from them. A `<Version>` line or a one-line comment in an MSBuild file doesn't count. **The theme and the extension share Major.Minor**: CI fails when they don't, and a new Major.Minor in one takes the other to it at `.0`, changed or not.
+**Bump a component only when it changed** since its last `<component>-v<x.y.z>` tag, by the biggest [version effect](commits.md#version-effect) among its commits. What counts as a change is what the component ships from, not its tests (`build/components.sh` lists the paths): the extension packs the theme, so a theme change is an extension change too, and `shared/` and `Directory.Build.props` count for each component that builds from them. In an MSBuild file, the `<Version>` line and comments don't count. **The theme and the extension share Major.Minor**: CI fails when they don't, and a new Major.Minor in one takes the other to it at `.0`, changed or not.
 
 To release, once the milestone's issues are closed:
 

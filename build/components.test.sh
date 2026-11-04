@@ -209,6 +209,21 @@ run plan
 expect_status 1
 expect_text "Nothing changed since the last release"
 
+test "plan: a reworded multi-line comment in an MSBuild file isn't a change"
+repo 0.1.0 0.1.0 1.0.0
+printf '<Project>\n  <!--\n    Packs it.\n  -->\n  <Target Name="Pack" />\n</Project>\n' > build/Bundle.targets
+commit "targets"
+released theme-v0.1.0 extension-v0.1.0 bootshell-v1.0.0
+printf '<Project>\n  <!--\n    Packs it,\n    reworded.\n  -->\n  <Target Name="Pack" />\n</Project>\n' > build/Bundle.targets
+commit "reword"
+run plan
+expect_status 1
+expect_text "Nothing changed since the last release"
+printf '<Project>\n  <!-- Packs it. -->\n  <Target Name="Pack" DependsOnTargets="Build" />\n</Project>\n' > build/Bundle.targets
+commit "a real change"
+run plan
+expect_text "Bump the extension: it changed since extension-v0.1.0"
+
 test "plan: a property changed in Directory.Build.props changes the extension and the Boot shell"
 repo 0.1.0 0.1.0 1.0.0
 released theme-v0.1.0 extension-v0.1.0 bootshell-v1.0.0
