@@ -25,6 +25,8 @@
     <Compile Include="$(RepoRoot)shared\BootShellEvents.cs" Link="Linked\BootShellEvents.cs" />
     <!-- When a Start-up sets each of them, plain C# too, checked against the sequence itself. -->
     <Compile Include="..\XboxSeries.Extension\BootShellSignals.cs" Link="Linked\BootShellSignals.cs" />
+    <!-- Whether Playnite shows the Dashboard, the only place the extension wakes, plain C# too, checked against the theme. -->
+    <Compile Include="..\XboxSeries.Extension\DashboardPresence.cs" Link="Linked\DashboardPresence.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Net.Http" />

@@ -3,10 +3,11 @@
     drawn as the Launch screen it follows: the game's art over the whole view, chosen as Home's hero and the Launch screen
     choose it (the extension's HeroLayer), so the Launch screen's fade-out reveals the same picture. Background art as it
     is; without it, the cover blurred and darkened; black for neither. Over it, Home's hero scrim and a shade behind the
-    centred column, then the cover and the status in white in the header font. No Close: without PART_PanelActionButtons
-    Playnite adds none, and B (or Escape) leaves the view to Home as Close did, through the view host, which takes focus.
-    Playnite puts focus back on that Close as its window is restored over the view; with none, the extension puts it back
-    on the view host (GameStatusFocus).
+    centred column, then the cover and the status in white in the header font. No Close shows: B (or Escape) leaves the
+    view to Home, through the view host, which takes focus as the view shows. Playnite still adds its Close to
+    PART_PanelActionButtons, unseen, as that is where it puts focus back as its window is restored over the view,
+    as when it minimised itself for the game: without it nothing in the view had focus, B and Escape never fired, and the
+    pad drove Home, hidden under it. Inside the view host, the presses reach its bindings from there too.
     Playnite injects no custom elements into this template, and the extension's hero, at Main's level, would follow the
     selected game rather than the launching one, so the art is plain XAML on the view's Game.
 -->
@@ -14,9 +15,16 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:input="clr-namespace:Playnite.Input;assembly=Playnite">
 
-    <!-- Unused, as there is no Close; kept so every key Default's file defines is the Dashboard's. -->
+    <!--
+        Playnite's Close, unseen (a dot, ring and all, at no opacity) and out of the mouse's reach: only somewhere for
+        focus to go back to as the window is restored (see above). A on it closes the view too, as B does.
+    -->
     <Style x:Key="ButtonGameStatusAction" BasedOn="{StaticResource {x:Type ButtonEx}}" TargetType="ButtonEx">
-        <Setter Property="Background" Value="{DynamicResource XboxTileBrush}" />
+        <Setter Property="Width" Value="1" />
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Opacity" Value="0" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     </Style>
 
     <Style TargetType="{x:Type GameStatus}">
@@ -104,6 +112,10 @@
                                    Style="{DynamicResource XboxPanelTitle}"
                                    HorizontalAlignment="Center" Margin="0,28,0,28"
                                    Grid.Row="2" Grid.Column="1" />
+
+                        <!-- Playnite's Close goes here, unseen: where focus goes back to as the window is restored. -->
+                        <StackPanel Name="PART_PanelActionButtons" Grid.Row="0" Grid.Column="0"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False" />
                     </Grid>
                     <ControlTemplate.Triggers>
                         <!-- No background art (as the hero chooses): the cover, blurred and darkened; with no cover either, black. -->

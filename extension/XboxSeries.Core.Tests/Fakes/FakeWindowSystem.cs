@@ -78,6 +78,11 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public bool IsPlaynites(IntPtr window) => playnites.Contains(window);
 
+        /// <summary>One of Playnite's dialogs open, waiting on the user.</summary>
+        public bool PlayniteAsking { get; set; }
+
+        bool IWindowSystem.IsPlayniteAsking => PlayniteAsking;
+
         public IntPtr FindWindowUnder(string directory) =>
             windows.FirstOrDefault(w => programs.TryGetValue(w, out var path)
                 && path != null

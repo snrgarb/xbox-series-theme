@@ -221,6 +221,53 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_launch_Playnite_gives_up_on_without_a_word_hides_the_Launch_screen_and_holds_off_nothing()
+        {
+            // Playnite couldn't start the game's program: it showed its error and cleared the game's launching state,
+            // raising neither cancelled nor stopped.
+            core.PlayGame(library.Id("Hades"));
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+
+            core.OnGameStateChanged(library.Id("Hades"), wasLaunching: true, isLaunching: false, isRunning: false);
+
+            Assert.False(core.LaunchScreen.IsShown);
+            Assert.True(core.OnGameStarting(library.Id("Tunic")));
+        }
+
+        [Fact]
+        public void A_launch_Playnite_began_itself_and_gave_up_on_holds_off_nothing_either()
+        {
+            Assert.True(core.OnGameStarting(library.Id("Hades")));
+
+            core.OnGameStateChanged(library.Id("Hades"), wasLaunching: true, isLaunching: false, isRunning: false);
+
+            Assert.True(core.OnGameStarting(library.Id("Tunic")));
+        }
+
+        [Fact]
+        public void A_launch_ending_with_the_game_running_is_no_failure()
+        {
+            core.OnGameStarting(library.Id("Hades"));
+
+            core.OnGameStateChanged(library.Id("Hades"), wasLaunching: true, isLaunching: false, isRunning: true);
+
+            Assert.True(core.LaunchScreen.IsShown);
+            Assert.False(core.OnGameStarting(library.Id("Tunic")));
+        }
+
+        [Fact]
+        public void Playnites_dialog_waiting_on_the_user_steps_the_Launch_screen_aside_at_once()
+        {
+            // As Playnite's error on a launch that failed, which the Launch screen would otherwise cover until it timed out.
+            core.OnGameStarting(library.Id("Halo Infinite"));
+
+            windows.PlayniteAsking = true;
+            clock.Advance(TimeSpan.FromSeconds(0.5));
+
+            Assert.False(core.LaunchScreen.IsShown);
+        }
+
+        [Fact]
         public void The_Guide_button_opens_the_Guide_over_the_Launch_screen()
         {
             core.OnGameStarting(library.Id("Halo Infinite"));

@@ -8,7 +8,7 @@ using static XboxSeries.Core.Tests.XamlFonts;
 namespace XboxSeries.Core.Tests
 {
     // Playnite's game status view, "<Game> is running…", drawn as the Launch screen (#80): the game's art full screen,
-    // chosen as the hero chooses it, with the cover and the status centred over it, and no Close: B leaves the view. The XAML isn't run here (it was
+    // chosen as the hero chooses it, with the cover and the status centred over it, and no Close shown: B leaves the view. The XAML isn't run here (it was
     // tried on a harness hosting Playnite's own GameStatus control); these checks guard the art, the scrim and the parts.
     public class GameStatusXamlTests
     {
@@ -163,15 +163,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void There_is_no_Close_and_B_or_Escape_leaves_the_view_as_Close_did()
+        public void No_Close_shows_and_B_or_Escape_leaves_the_view()
         {
             var doc = View();
 
-            // Without the panel Playnite adds no Close.
-            Assert.DoesNotContain(doc.Descendants(), e => (string)e.Attribute("Name") == "PART_PanelActionButtons");
-
-            // Nothing in the view takes focus, so the view host does: Playnite focuses it as the view shows, and the
-            // presses reach its bindings. It draws no focus rectangle.
+            // The view host takes focus: Playnite focuses it as the view shows, and the presses reach its bindings. It
+            // draws no focus rectangle.
             var host = Named(doc, "PART_ViewHost");
             Assert.Equal("True", (string)host.Attribute("Focusable"));
             Assert.Equal("{x:Null}", (string)host.Attribute("FocusVisualStyle"));
@@ -182,6 +179,26 @@ namespace XboxSeries.Core.Tests
                 && (string)b.Attribute("Button") == "B" && (string)b.Attribute("Command") == close);
             Assert.Contains(bindings, b => b.Name.LocalName == "KeyBinding"
                 && (string)b.Attribute("Key") == "Escape" && (string)b.Attribute("Command") == close);
+        }
+
+        [Fact]
+        public void Playnites_Close_is_there_unseen_inside_the_view_host_for_focus_to_go_back_to_on_restore()
+        {
+            // Playnite puts focus back on its Close as its window is restored over the view, as when it minimised
+            // itself for the game: with no Close, nothing had focus and B never fired, theme alone, with no extension.
+            var doc = View();
+            var panel = Named(doc, "PART_PanelActionButtons");
+            Assert.Contains(panel, Named(doc, "PART_ViewHost").Descendants());
+            Assert.Equal("False", (string)panel.Attribute("IsHitTestVisible"));
+
+            // Drawn as nothing, out of the mouse's reach, but focusable: never Collapsed, which can't take focus.
+            var style = doc.Root.Elements().Single(e => (string)e.Attribute(X + "Key") == "ButtonGameStatusAction");
+            var setters = style.Elements().Where(e => e.Name.LocalName == "Setter")
+                .ToDictionary(e => (string)e.Attribute("Property"), e => (string)e.Attribute("Value"));
+            Assert.Equal("0", setters["Opacity"]);
+            Assert.Equal("False", setters["IsHitTestVisible"]);
+            Assert.False(setters.ContainsKey("Visibility"));
+            Assert.False(setters.ContainsKey("Focusable"));
         }
     }
 }

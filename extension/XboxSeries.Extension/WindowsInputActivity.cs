@@ -30,7 +30,16 @@ namespace XboxSeries.Extension
 
         public WindowsInputActivity()
         {
-            timer = new Timer(_ => ReadPads(), null, ReadEveryMs, Timeout.Infinite);
+            timer = new Timer(_ => ReadPads(), null, Timeout.Infinite, Timeout.Infinite);
+        }
+
+        /// <summary>Starts reading the pads, once the extension runs on the Dashboard: dormant, it never reads them.</summary>
+        public void Start()
+        {
+            if (!disposed)
+            {
+                timer.Change(ReadEveryMs, Timeout.Infinite);
+            }
         }
 
         public bool InputSinceLastLook()

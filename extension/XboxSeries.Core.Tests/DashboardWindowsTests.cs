@@ -54,8 +54,7 @@ namespace XboxSeries.Core.Tests
             { "CustomControls/FilterEnumListSelection.xaml", new[] { "PART_MenuHost", "PART_ButtonBack", "PART_ButtonClear", "PART_ItemsHost" } },
             { "CustomControls/FilterStringListSelection.xaml", new[] { "PART_MenuHost", "PART_ButtonBack", "PART_ButtonClear", "PART_ItemsHost" } },
             { "CustomControls/FilterPresetSelector.xaml", new[] { "PART_ItemsFilterPresets" } },
-            // GameStatus.xaml leaves out PART_PanelActionButtons on purpose: without it Playnite adds no Close; B leaves the view.
-            { "Views/GameStatus.xaml", new[] { "PART_ViewHost", "PART_ImageCover", "PART_TextStatus" } },
+            { "Views/GameStatus.xaml", new[] { "PART_ViewHost", "PART_PanelActionButtons", "PART_ImageCover", "PART_TextStatus" } },
             { "DefaultControls/TextBox.xaml", new[] { "PART_ContentHost" } },
             { "DefaultControls/ScrollViewer.xaml", new[] { "PART_Track", "PART_ScrollContentPresenter", "PART_VerticalScrollBar", "PART_HorizontalScrollBar" } },
         };

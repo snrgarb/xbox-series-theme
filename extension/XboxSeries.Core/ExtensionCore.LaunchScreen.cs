@@ -6,9 +6,9 @@ namespace XboxSeries.Core
     /// The Launch screen: as a game launches, its art covers every window, launchers and splash windows included, until
     /// Playnite says the game started, its launch was cancelled, or it stopped. It steps aside sooner for a window that
     /// needs the user, such as a EULA, a sign-in or an error: one not Playnite's that holds the foreground for
-    /// <see cref="LaunchScreenStepsAsideAfter"/>, or the client's own question its launch waits on, which the client
-    /// may ask in a window it keeps hidden, so it is put in front. B dismisses it too, and failing all of those, it
-    /// gives up.
+    /// <see cref="LaunchScreenStepsAsideAfter"/>, one of Playnite's own dialogs, as its error on a launch that failed,
+    /// at once, or the client's own question its launch waits on, which the client may ask in a window it keeps
+    /// hidden, so it is put in front. B dismisses it too, and failing all of those, it gives up.
     /// </summary>
     public sealed partial class ExtensionCore
     {
@@ -65,6 +65,14 @@ namespace XboxSeries.Core
             launchScreenWatch = null;
             if (StepAsideForLaunchQuestion())
             {
+                return;
+            }
+
+            // Playnite's dialog waits on the user, as its error on a launch that failed: its launching state, and the
+            // Launch screen with it, would otherwise only end once the error was answered, unseen beneath it.
+            if (windowSystem.IsPlayniteAsking)
+            {
+                HideLaunchScreen();
                 return;
             }
 
