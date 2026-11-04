@@ -503,6 +503,20 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// A game's launching or running state changed in Playnite's database. A launch that ends neither launching nor
+        /// running, with none of Playnite's events said, failed: Playnite couldn't start the game's program, showed its
+        /// error, and cleared the state, raising neither cancelled nor stopped. It is taken as cancelled, so its Launch
+        /// screen goes and it holds off no later launch.
+        /// </summary>
+        public void OnGameStateChanged(Guid gameId, bool wasLaunching, bool isLaunching, bool isRunning)
+        {
+            if (wasLaunching && !isLaunching && !isRunning)
+            {
+                OnGameStartupCancelled(gameId);
+            }
+        }
+
         /// <summary>Playnite's game stopped event.</summary>
         public void OnGameStopped(Guid gameId)
         {

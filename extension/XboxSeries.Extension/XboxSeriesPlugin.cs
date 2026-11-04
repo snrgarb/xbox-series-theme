@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Windows.Controls;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -37,6 +38,13 @@ namespace XboxSeries.Extension
         /// <summary>Input anywhere in Windows, a game's too, for the Idle screen, which dims over a game as over Playnite.</summary>
         private readonly WindowsInputActivity inputActivity = new WindowsInputActivity();
         private bool libraryPushed;
+
+        /// <summary>
+        /// Whether Playnite shows the Dashboard (<see cref="DashboardPresence"/>), settled on the UI thread by
+        /// <see cref="IsOnDashboard"/>; false until then. Read from any thread: dormant, every callback leaves Playnite to itself.
+        /// </summary>
+        private volatile bool onDashboard;
+        private bool dashboardSettled;
 
         /// <summary>1 while a push asked for by <see cref="PushLibrarySoon"/> is waiting to run.</summary>
         private int libraryPushPending;
@@ -114,6 +122,12 @@ namespace XboxSeries.Extension
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
+            // Only the Dashboard places our elements, but another theme naming one gets nothing from a dormant extension.
+            if (!IsOnDashboard())
+            {
+                return null;
+            }
+
             // The first of Home's elements is the earliest the extension hears from Playnite on its UI thread with its
             // window made, seconds before OnApplicationStarted: the Start-up sequence covers the screen from here, so
             // Home is never seen before it.
@@ -175,7 +189,13 @@ namespace XboxSeries.Extension
         {
             var started = System.Diagnostics.Stopwatch.StartNew();
             StartupTiming.Log("Our OnApplicationStarted began");
+            if (!IsOnDashboard())
+            {
+                return;
+            }
+
             LogHomeBuild("as OnApplicationStarted began");
+            inputActivity.Start();
 
             // Created here, on the UI thread, which owns the Overlay and runs the core. The Toast's may be already, for
             // the Start-up sequence's greeting.
@@ -185,7 +205,7 @@ namespace XboxSeries.Extension
 
             // Made and laid out once the UI thread is idle, so the Guide's first open is as quick as the rest.
             PlayniteApi.MainView.UIDispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
-                StartupTiming.Time("Prewarming the Overlay", overlay.Prewarm)));
+                Guarded.Run("Prewarming the Overlay", () => StartupTiming.Time("Prewarming the Overlay", overlay.Prewarm))));
             toastWindow = toastWindow ?? new ToastWindow(core.Toast);
 
             // Beneath the Toast's and the Overlay, which it keeps above it as it shows, so Toasts and the Guide show over it.
@@ -202,31 +222,17 @@ namespace XboxSeries.Extension
 #if DEBUG
             debugGuideHotkey = new DebugGuideHotkey(core);
 #endif
-            if (PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen)
-            {
-                host.RestoreLeftUserFilter();
+            host.RestoreLeftUserFilter();
 
-                // Begun with Home's first element, unless the theme has none of them; Playnite's window may have had
-                // no handle yet when it began.
-                BeginStartup();
-                startup?.SetPlayniteWindow(PlayniteWindow());
-                SystemEvents.PowerModeChanged += OnPowerModeChanged;
+            // Begun with Home's first element, unless the theme has none of them; Playnite's window may have had no
+            // handle yet when it began.
+            BeginStartup();
+            startup?.SetPlayniteWindow(PlayniteWindow());
+            SystemEvents.PowerModeChanged += OnPowerModeChanged;
 
-                // The game menu's Uninstall, Manage game's too, goes through the core for a game its client can
-                // uninstall without its own windows. Desktop mode's menus are its own, and keep Playnite's.
-                GameMenuUninstall.Register(core);
-
-                // Focus back on the game status view as Playnite's window is restored over it (GameStatusFocus).
-                if (Application.Current?.MainWindow is Window main)
-                {
-                    GameStatusFocus.Register(main);
-                }
-            }
-            else
-            {
-                // In Fullscreen the Start-up sequence plays it as a profile signs in.
-                sounds.Play(UiSound.Login);
-            }
+            // The game menu's Uninstall, Manage game's too, goes through the core for a game its client can uninstall
+            // without its own windows.
+            GameMenuUninstall.Register(core);
 
             StartupTiming.Time("Pushing the library", PushLibrary);
             GameHubFocusSounds.Register(sounds);
@@ -234,7 +240,11 @@ namespace XboxSeries.Extension
             // Database events can arrive on background threads; the core only runs on the UI thread. A metadata download
             // or an import raises one for each game, so a burst of them makes one snapshot, not one each (PushLibrarySoon).
             PlayniteApi.Database.Games.ItemCollectionChanged += (_, __) => PushLibrarySoon();
-            PlayniteApi.Database.Games.ItemUpdated += (_, __) => PushLibrarySoon();
+            PlayniteApi.Database.Games.ItemUpdated += (_, args) =>
+            {
+                PushLibrarySoon();
+                Guarded.Run("Following launches", () => PushLaunchStates(args));
+            };
             PlayniteApi.Database.FilterPresets.ItemCollectionChanged += (_, __) => PushLibrarySoon();
             PlayniteApi.Database.FilterPresets.ItemUpdated += (_, __) => PushLibrarySoon();
 
@@ -253,7 +263,8 @@ namespace XboxSeries.Extension
             // before the Guide first opens. Their changes arrive on threads of their own.
             mediaSessions.Changed += () => OnUiThread(core.OnMediaSessionChanged);
             mediaSessions.ArtFetched += (request, art) => OnUiThread(() => core.OnMediaArt(request, art));
-            StartupTiming.Time("Starting the media sessions", mediaSessions.Start);
+            // Each optional part started guarded, so one failing leaves the rest, and what follows, started.
+            Guarded.Run("Starting the media sessions", () => StartupTiming.Time("Starting the media sessions", mediaSessions.Start));
 
             // The popular gamerpics, fetched afresh on every start, in the background: those saved before are offered
             // meanwhile, and Settings reads them again each time it opens.
@@ -261,9 +272,10 @@ namespace XboxSeries.Extension
 
             // PlayniteAchievements, every plugin loaded by now: its changes and live unlocks arrive on the UI thread, and
             // one change once its games are first read, which the core takes as where it starts announcing unlocks.
-            achievements.Changed += core.OnAchievementsChanged;
-            achievements.Unlocked += core.OnAchievementUnlocked;
-            StartupTiming.Time("Starting the achievements", () => achievements.Start(PlayniteApi.MainView.UIDispatcher));
+            achievements.Changed += () => Guarded.Run("Taking the achievements' changes", core.OnAchievementsChanged);
+            achievements.Unlocked += (game, unlock) => Guarded.Run("Announcing an unlock", () => core.OnAchievementUnlocked(game, unlock));
+            Guarded.Run("Starting the achievements",
+                () => StartupTiming.Time("Starting the achievements", () => achievements.Start(PlayniteApi.MainView.UIDispatcher)));
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
             // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with
@@ -271,8 +283,9 @@ namespace XboxSeries.Extension
             discordPipe.FrameReceived += (opcode, json) => OnUiThread(() => core.OnDiscordFrame(opcode, json));
             discordPipe.Closed += () => OnUiThread(core.OnDiscordClosed);
             discordOAuth.TokenResponded += (status, body) => OnUiThread(() => core.OnDiscordTokenResponse(status, body));
-            StartupTiming.Time("Signing in to Discord with the saved tokens", core.OnApplicationStarted);
-            logger.Info($"Xbox Series extension started in {PlayniteApi.ApplicationInfo.Mode} mode");
+            Guarded.Run("Signing in to Discord",
+                () => StartupTiming.Time("Signing in to Discord with the saved tokens", core.OnApplicationStarted));
+            logger.Info("Xbox Series extension started on the Dashboard");
             StartupTiming.Log($"Our OnApplicationStarted took {started.ElapsedMilliseconds} ms, ending");
         }
 
@@ -313,23 +326,41 @@ namespace XboxSeries.Extension
             achievements.Dispose();
 
             // The user's own filter and sort go back. Playnite has already saved its settings, so they are saved again.
-            PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
+            if (onDashboard)
+            {
+                PlayniteApi.MainView.UIDispatcher.Invoke(core.OnApplicationStopped);
+            }
 
-            // The core thaws a frozen game as it stops; this is in case it couldn't. Does nothing when none is frozen.
+            // The core thaws a frozen game as it stops; this is in case it couldn't, or never ran, as for a game a
+            // Dashboard session left frozen. Does nothing when none is frozen.
             windows.ThawGame();
 
             // Playnite releases its audio engine only after this returns, so the sound gets to finish.
-            sounds.PlayToEnd(UiSound.PowerOff);
+            if (onDashboard)
+            {
+                sounds.PlayToEnd(UiSound.PowerOff);
+            }
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)
         {
+            if (!onDashboard)
+            {
+                return;
+            }
+
             var id = args.Game.Id;
             OnUiThread(() => core.OnGameStarted(id));
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
         {
+            // Dormant, every launch is Playnite's to make.
+            if (!onDashboard)
+            {
+                return;
+            }
+
             // The answer is needed before this returns, so ask the core synchronously on the UI thread (inline if already there).
             var id = args.Game.Id;
             var allowed = PlayniteApi.MainView.UIDispatcher.Invoke(() => core.OnGameStarting(id));
@@ -342,18 +373,33 @@ namespace XboxSeries.Extension
 
         public override void OnGameStartupCancelled(OnGameStartupCancelledEventArgs args)
         {
+            if (!onDashboard)
+            {
+                return;
+            }
+
             var id = args.Game.Id;
             OnUiThread(() => core.OnGameStartupCancelled(id));
         }
 
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
+            if (!onDashboard)
+            {
+                return;
+            }
+
             var id = args.Game.Id;
             OnUiThread(() => core.OnGameStopped(id));
         }
 
         public override void OnControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
         {
+            if (!onDashboard)
+            {
+                return;
+            }
+
             var button = PlayniteInput.ToButton(args.Button);
             if (button == null)
             {
@@ -376,12 +422,12 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The Start-up sequence, once, in Fullscreen only, on a thread of its own; the Toast's window, for its greeting,
+        /// The Start-up sequence, once, on the Dashboard only, on a thread of its own; the Toast's window, for its greeting,
         /// made here on the UI thread.
         /// </summary>
         private void BeginStartup()
         {
-            if (startupBegun || PlayniteApi.ApplicationInfo.Mode != ApplicationMode.Fullscreen)
+            if (startupBegun || !onDashboard)
             {
                 return;
             }
@@ -465,9 +511,33 @@ namespace XboxSeries.Extension
         /// <summary>One of the extension's own windows, as the Toast's, which WPF makes its main window when it is the first made.</summary>
         private static bool IsOurs(Window window) => window.GetType().Assembly == typeof(XboxSeriesPlugin).Assembly;
 
-        private void OnUiThread(Action action)
+        /// <summary>
+        /// Whether Playnite shows the Dashboard, settled the first time it is asked, on the UI thread: by Home's first
+        /// element on the Dashboard, which comes before OnApplicationStarted, or else by OnApplicationStarted. Playnite
+        /// has applied its theme by either, and changes it only on a restart.
+        /// </summary>
+        private bool IsOnDashboard()
         {
-            PlayniteApi.MainView.UIDispatcher.BeginInvoke(action);
+            if (!dashboardSettled)
+            {
+                dashboardSettled = true;
+                var fullscreen = PlayniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen;
+                onDashboard = DashboardPresence.IsShowing(fullscreen, key => Application.Current?.TryFindResource(key));
+                if (!onDashboard)
+                {
+                    logger.Info(fullscreen
+                        ? "Xbox Series extension stays dormant: Fullscreen isn't showing the Dashboard theme"
+                        : $"Xbox Series extension stays dormant in {PlayniteApi.ApplicationInfo.Mode} mode");
+                }
+            }
+
+            return onDashboard;
+        }
+
+        /// <summary>Runs <paramref name="action"/> on the UI thread, which runs the core, guarded (<see cref="Guarded"/>).</summary>
+        private void OnUiThread(Action action, [CallerMemberName] string caller = null)
+        {
+            PlayniteApi.MainView.UIDispatcher.BeginInvoke(new Action(() => Guarded.Run($"{caller}'s work on the UI thread", action)));
         }
 
         private void PushNotifications()
@@ -499,10 +569,33 @@ namespace XboxSeries.Extension
             });
         }
 
+        /// <summary>
+        /// Each game whose launching or running state changed, to the core, which sees in it a launch Playnite gave up
+        /// on without raising cancelled or stopped. From any thread.
+        /// </summary>
+        private void PushLaunchStates(ItemUpdatedEventArgs<Playnite.SDK.Models.Game> args)
+        {
+            foreach (var update in args.UpdatedItems)
+            {
+                var before = update.OldData;
+                var after = update.NewData;
+                if (before == null || after == null
+                    || (before.IsLaunching == after.IsLaunching && before.IsRunning == after.IsRunning))
+                {
+                    continue;
+                }
+
+                var id = after.Id;
+                bool wasLaunching = before.IsLaunching, isLaunching = after.IsLaunching, isRunning = after.IsRunning;
+                OnUiThread(() => core.OnGameStateChanged(id, wasLaunching, isLaunching, isRunning));
+            }
+        }
+
+        /// <summary>The library to the core; should Playnite's database fail to be read, the core keeps the one it had.</summary>
         private void PushLibrary()
         {
             libraryPushed = true;
-            core.OnLibraryChanged(PlayniteLibrary.Snapshot(PlayniteApi));
+            Guarded.Run("Pushing the library", () => core.OnLibraryChanged(PlayniteLibrary.Snapshot(PlayniteApi)));
         }
     }
 }

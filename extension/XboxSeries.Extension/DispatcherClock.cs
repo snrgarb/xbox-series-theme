@@ -33,7 +33,7 @@ namespace XboxSeries.Extension
             timer.Tick += (_, __) =>
             {
                 timer.Stop();
-                callback();
+                Guarded.Run($"a timer set for {delay.TotalMilliseconds} ms", callback);
             };
             timer.Start();
             return new Cancel(timer);

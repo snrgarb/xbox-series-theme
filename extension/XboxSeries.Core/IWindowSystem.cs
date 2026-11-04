@@ -23,6 +23,12 @@ namespace XboxSeries.Core
         /// </summary>
         bool IsPlaynites(IntPtr window);
 
+        /// <summary>
+        /// Whether one of Playnite's dialogs is open, waiting on the user, as its error on a launch that failed. Not the
+        /// Bundle's windows, which never wait so.
+        /// </summary>
+        bool IsPlayniteAsking { get; }
+
         /// <summary>Tries to make the Overlay the foreground window with keyboard focus. Windows may refuse.</summary>
         void TakeForeground();
 

@@ -38,6 +38,12 @@ namespace XboxSeries.Extension
         public bool IsPlaynites(IntPtr window) =>
             window != IntPtr.Zero && NativeMethods.ProcessIdOf(window) == ThisProcessId;
 
+        /// <summary>
+        /// Playnite opens every dialog of its own with ShowDialog, on the UI thread, which the core runs on too, and sets
+        /// it an owner only sometimes; the Bundle's windows are never modal. Asked on the UI thread.
+        /// </summary>
+        public bool IsPlayniteAsking => ComponentDispatcher.IsThreadModal;
+
         public IntPtr FindWindowUnder(string directory)
         {
             // Made whole and followed past junctions and subst drives, as the programs' own paths may be either.
