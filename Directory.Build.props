@@ -1,7 +1,5 @@
 <Project>
   <PropertyGroup>
-    <!-- The Bundle's single version: stamped into the extension, the Dashboard theme and both package names. -->
-    <Version>0.1.0</Version>
     <TargetFramework>net462</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>

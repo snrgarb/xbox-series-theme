@@ -5,7 +5,7 @@ A Playnite 10 Fullscreen-mode add-on that closely reproduces the look and feel o
 ## Language
 
 **Bundle**:
-The single product: the Dashboard theme plus the companion extension that provides the Guide. Shipped as two packages, released together under one version: the theme first, then the extension, whose release refuses unless the theme's release at that version holds the same theme it packs.
+The single product: the Dashboard theme plus the companion extension that provides the Guide. Shipped as two packages, each with a version of its own, the two sharing Major.Minor: the theme's .pthm, and the extension's .pext, which packs that same .pthm. Both are in every release, beside the **Boot shell**.
 _Avoid_: package, mod
 
 **Dashboard**:

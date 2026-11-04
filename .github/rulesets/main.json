@@ -45,27 +45,7 @@
             "integration_id": 15368
           },
           {
-            "context": "Boot shell: changes",
-            "integration_id": 15368
-          },
-          {
-            "context": "Boot shell: build and test",
-            "integration_id": 15368
-          },
-          {
-            "context": "Extension: changes",
-            "integration_id": 15368
-          },
-          {
-            "context": "Extension: build and test",
-            "integration_id": 15368
-          },
-          {
-            "context": "Theme: changes",
-            "integration_id": 15368
-          },
-          {
-            "context": "Theme: pack and verify",
+            "context": "CI",
             "integration_id": 15368
           }
         ]

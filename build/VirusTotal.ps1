@@ -1,6 +1,6 @@
-# Scans one file on VirusTotal before a deploy job releases it, and refuses it if any engine finds it malicious or
-# suspicious. Called by the deploy jobs of bootshell.yml, theme.yml and extension.yml, just before they create the
-# release, with the repository secret VIRUSTOTAL_API_KEY in $env:VIRUSTOTAL_API_KEY.
+# Scans one file on VirusTotal before it's released, and refuses it if any engine finds it malicious or suspicious.
+# Called by release.yml for each file it built, just before it creates the release, with the repository secret
+# VIRUSTOTAL_API_KEY in $env:VIRUSTOTAL_API_KEY.
 #
 #   pwsh build/VirusTotal.ps1 <file>
 #

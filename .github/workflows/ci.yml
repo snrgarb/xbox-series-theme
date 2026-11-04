@@ -1,0 +1,191 @@
+# CI: every PR and every push to main. One check, `CI`, is required on main (.github/rulesets/main.json); it passes
+# when every job below passed or was skipped.
+#   Changes                     which components a PR touches; a push to main, or a PR whose files can't be listed,
+#                               builds all three
+#   Versions                    the theme and the extension share Major.Minor (build/components.sh), and that script's
+#                               tests pass
+#   Theme: pack and verify      packs the .pthm in Debug and Release, stamped with the theme's version
+#   Extension: build and test   the Core tests, the extension in Debug and Release, and the bundle artifact: both
+#                               .pext, which the end-to-end tests install (e2e/run.sh)
+#   Boot shell: build and test  the Boot shell's tests
+# Releases are release.yml's.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      theme: ${{ steps.paths.outputs.theme }}
+      extension: ${{ steps.paths.outputs.extension }}
+      bootshell: ${{ steps.paths.outputs.bootshell }}
+    steps:
+      - name: Which components did the PR touch?
+        id: paths
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          # What each component builds from, its tests and this workflow included. The extension packs the theme.
+          THEME: '^(theme/|shared/Images/|Directory\.Build\.props$|\.github/workflows/ci\.yml$)'
+          EXTENSION: '^(extension/|theme/|shared/|build/|Directory\.Build\.props$|XboxSeries\.slnx$|\.github/workflows/ci\.yml$)'
+          BOOTSHELL: '^(bootshell/|shared/BootShellEvents\.cs$|Directory\.Build\.props$|\.github/workflows/ci\.yml$)'
+        run: |
+          all() { printf '%s=true\n' theme extension bootshell >> "$GITHUB_OUTPUT"; }
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then all; exit 0; fi
+          if ! files="$(gh pr diff "$PR" --name-only --repo "$GITHUB_REPOSITORY")"; then
+            echo "Couldn't list the PR's files: building everything"; all; exit 0
+          fi
+          for c in theme extension bootshell; do
+            pattern="${c^^}"
+            if grep -qE "${!pattern}" <<< "$files"; then echo "$c=true"; else echo "$c=false"; fi
+          done | tee -a "$GITHUB_OUTPUT"
+
+  versions:
+    name: Versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The theme and the extension share Major.Minor
+        run: build/components.sh versions
+
+      - name: Test build/components.sh
+        run: build/components.test.sh
+
+  theme:
+    name: 'Theme: pack and verify'
+    needs: changes
+    if: needs.changes.outputs.theme == 'true'
+    runs-on: windows-latest
+    env:
+      THEME_PROJECT: theme/XboxSeries.Dashboard/XboxSeries.Dashboard.proj
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pack and verify the theme (Debug and Release)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $version = (dotnet msbuild $env:THEME_PROJECT -getProperty:Version).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Unexpected theme version '$version'" }
+          Write-Host "Theme version: $version"
+
+          foreach ($config in 'Debug', 'Release') {
+            dotnet build $env:THEME_PROJECT -c $config
+            $pthm = (dotnet msbuild $env:THEME_PROJECT -p:Configuration=$config -getProperty:ThemePackagePath).Trim()
+            $expectedName = "XboxSeries_Dashboard_$version.pthm"
+            if ((Split-Path $pthm -Leaf) -ne $expectedName) { throw "$config package is '$pthm', expected $expectedName" }
+            if (-not (Test-Path $pthm)) { throw "$config pack did not write $pthm" }
+
+            $zip = [System.IO.Compression.ZipFile]::OpenRead($pthm)
+            try {
+              $names = $zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' }
+              $entry = $zip.Entries | Where-Object { $_.FullName -eq 'theme.yaml' }
+              if (-not $entry) { throw "$config package has no theme.yaml at its root" }
+              $reader = New-Object System.IO.StreamReader($entry.Open())
+              try { $manifest = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            } finally { $zip.Dispose() }
+
+            if ($manifest -match '\{\{') { throw "$config manifest still has placeholders:`n$manifest" }
+            if ($manifest -notmatch "(?m)^Version:\s*$([regex]::Escape($version))\s*$") { throw "$config manifest isn't stamped with $version`n$manifest" }
+            if ($manifest -notmatch '(?m)^Id:\s*XboxSeries_Dashboard\s*$') { throw "$config manifest has the wrong Id`n$manifest" }
+            foreach ($image in 'Images/source-steam-shadow.png', 'Images/source-xbox-shadow.png') {
+              if ($names -notcontains $image) { throw "$config package is missing $image" }
+            }
+            Write-Host "$config OK: $pthm"
+          }
+
+  extension:
+    name: 'Extension: build and test'
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # A failing Core test fails the job.
+      - name: Core tests
+        run: dotnet test extension/XboxSeries.Core.Tests/XboxSeries.Core.Tests.csproj --configuration Debug
+
+      # Both configurations compile: Debug is the one installed for testing, Release the one released.
+      # Each also packs the .pext, which fails if Playnite.SDK.dll or Newtonsoft.Json.dll would ship.
+      - name: Build the extension, Debug
+        run: dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Debug
+
+      - name: Build the extension, Release
+        run: dotnet build extension/XboxSeries.Extension/XboxSeries.Extension.csproj --configuration Release
+
+      # The Bundle the end-to-end tests install on the test VM (e2e/), fetched by `gh run download`: the Debug .pext
+      # under artifacts/, the Release one under artifacts/Release/, each with its .pthm inside.
+      - name: Upload the Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle
+          path: |
+            artifacts/*.pext
+            artifacts/Release/*.pext
+          if-no-files-found: error
+          retention-days: 14
+
+  bootshell:
+    name: 'Boot shell: build and test'
+    needs: changes
+    if: needs.changes.outputs.bootshell == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test bootshell/XboxSeries.BootShell.Tests/XboxSeries.BootShell.Tests.csproj -c Release
+
+  # The one required check. Runs whatever happened above, so a failed job fails it rather than leaving it unreported.
+  ci:
+    name: CI
+    needs: [changes, versions, theme, extension, bootshell]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job passed or was skipped
+        shell: bash
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          if jq -e 'any(.[]; .result != "success" and .result != "skipped")' <<< "$NEEDS" > /dev/null; then
+            echo "::error title=CI::A job above failed or was cancelled"; exit 1
+          fi

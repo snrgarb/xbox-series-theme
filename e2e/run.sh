@@ -5,8 +5,8 @@
 #   e2e/run.sh <test> [--run <Actions run id>] [--pext <file>] [--release] [--keep]
 #
 #   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, guide-over-game, probe)
-#   --run        the Extension workflow run to take the Bundle from; default: the latest successful one on this branch;
-#                only runs of this repository's own code, never a fork's PR
+#   --run        the CI run to take the Bundle from (its bundle artifact); default: the latest run on this branch that
+#                built one; only runs of this repository's own code, never a fork's PR
 #   --pext       a .pext to test instead of downloading one
 #   --release    the Release .pext rather than the Debug one
 #   --keep       leave the VM running after the test, to look at it in the Proxmox console; `e2e/proxmox/vm.sh down`
@@ -64,13 +64,15 @@ if [[ "$test" != probe ]]; then
         own="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
         branch="$(git -C "$repo" rev-parse --abbrev-ref HEAD)"
         if [[ -z "$run_id" ]]; then
-            run_id="$(gh api "repos/$own/actions/workflows/extension.yml/runs?branch=$branch&status=success&per_page=50" \
-                --jq "[.workflow_runs[] | select(.head_repository.full_name == \"$own\")][0].id // empty")"
-            [[ -n "$run_id" ]] || { echo "no successful Extension run of $own on $branch to take the Bundle from" >&2; exit 1; }
+            # CI uploads the bundle only when its extension job built and passed, which a PR that doesn't touch the
+            # extension skips: the newest unexpired bundle of this branch, from a run of this repository's code.
+            run_id="$(gh api "repos/$own/actions/artifacts?name=bundle&per_page=100" --jq "[.artifacts[] | select(.expired | not)
+                | .workflow_run | select(.head_branch == \"$branch\" and .head_repository_id == .repository_id)][0].id // empty")"
+            [[ -n "$run_id" ]] || { echo "no CI run of $own on $branch with a bundle to take" >&2; exit 1; }
         fi
         from="$(gh api "repos/$own/actions/runs/$run_id" --jq '.head_repository.full_name + " " + .head_branch + " " + .head_sha[0:7]')"
         [[ "${from%% *}" == "$own" ]] || { echo "run $run_id built ${from%% *}'s code, not $own's" >&2; exit 1; }
-        log "taking the $config Bundle from Extension run $run_id ($from)"
+        log "taking the $config Bundle from CI run $run_id ($from)"
         gh run download "$run_id" --name bundle --dir "$stage/bundle"
         if [[ "$config" == Release ]]; then pext="$(ls "$stage"/bundle/Release/*.pext)"; else pext="$(ls "$stage"/bundle/*.pext)"; fi
         mv "$pext" "$stage/"

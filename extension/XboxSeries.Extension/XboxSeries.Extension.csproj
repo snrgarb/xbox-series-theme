@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The Generic extension: the only project that references the Playnite SDK. It wires real adapters to the core. -->
   <PropertyGroup>
+    <!-- The extension's own version; it shares Major.Minor with the theme's (build/components.sh). -->
+    <Version>0.1.0</Version>
     <RootNamespace>XboxSeries.Extension</RootNamespace>
     <UseWPF>true</UseWPF>
     <PluginGuid>eb759ff1-325b-4c34-9a64-d9704f72612b</PluginGuid>
