@@ -31,7 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.plan.outputs.tag }}
-      title: ${{ steps.plan.outputs.title }}
       theme_version: ${{ steps.plan.outputs.theme_version }}
       theme_action: ${{ steps.plan.outputs.theme_action }}
       theme_asset: ${{ steps.plan.outputs.theme_asset }}
@@ -66,7 +65,7 @@ jobs:
           plan="$(build/components.sh plan)"
           echo "$plan" | tee -a "$GITHUB_OUTPUT"
           {
-            echo "### $(sed -n 's/^tag=//p' <<< "$plan"): $(sed -n 's/^title=//p' <<< "$plan")"
+            echo "### $(sed -n 's/^tag=//p' <<< "$plan")"
             echo
             echo '| Component | Version | File | |'
             echo '|---|---|---|---|'
@@ -283,17 +282,16 @@ jobs:
           ) | Set-Content notes.md
           Get-Content notes.md
 
-      # Early access: a pre-release, under "(early access)", until the Bundle's first stable release.
+      # Titled with its tag, and "(early access)" after it until the Bundle's first stable release. A full release, not a
+      # pre-release, so that GitHub can mark it Latest, which the README's releases/latest link and the sidebar follow.
       - name: Create the release as a draft
         shell: pwsh
-        env:
-          TITLE: ${{ needs.plan.outputs.title }}
         run: |
           $ErrorActionPreference = 'Stop'
           $files = @(Get-ChildItem release | ForEach-Object FullName)
           if ($files.Count -ne 3) { throw "Expected three files to release; found: $((Get-ChildItem release).Name -join ', ')" }
-          gh release create $env:TAG @files --draft --prerelease --target $env:GITHUB_SHA `
-            --title "$env:TITLE (early access)" --notes-file notes.md
+          gh release create $env:TAG @files --draft --target $env:GITHUB_SHA `
+            --title "$env:TAG (early access)" --notes-file notes.md
           if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 
       # All the tags or none: the dated one, and each built component's.
@@ -313,7 +311,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          gh release edit $env:TAG --draft=false
+          gh release edit $env:TAG --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw "Couldn't publish the draft ${env:TAG}: publish it by hand, its tags are pushed" }
 
       - name: Delete the draft

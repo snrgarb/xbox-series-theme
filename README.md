@@ -4,6 +4,8 @@ The Xbox Series Theme makes Playnite 10 look and work like the Xbox Series X|S d
 
 ## Downloads
 
+**[Get the latest release](https://github.com/snrgarb/xbox-series-theme/releases/latest)**: the theme, the extension and the Boot shell, in one release.
+
 | Component | Version | Released | Download |
 |---|---|---|---|
 | Dashboard theme | 0.1.0 | 2026-11-05 | [XboxSeries_Dashboard_0.1.0.pthm](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.0/XboxSeries_Dashboard_0.1.0.pthm) |
