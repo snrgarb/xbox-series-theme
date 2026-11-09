@@ -20,7 +20,7 @@ The row of most recently played games on **Home**, ending in the Play history ti
 _Avoid_: Jump back in, MRU
 
 **My games & apps**:
-The Dashboard's library page: a left nav (Games, Apps, Groups, Play history, Full library) beside the games it selects. It exists only when the extension is installed.
+The Dashboard's library page: a left nav (Games, Apps, Play history, Full library, Manage) beside what it selects. **Groups** aren't in the nav: Full library's tabs are the user's filter presets, and See all at the end of a Group on **Home** opens Full library on that Group's preset. It exists only when the extension is installed.
 _Avoid_: library page, collection
 
 **Apps**:
