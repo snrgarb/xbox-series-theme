@@ -1,4 +1,6 @@
-# Opening My games & apps from a tile on Home, with the pad only (#146): A on the tile opens the page on the tile's
+# Pages that open over what had focus, with the pad only (#146). First Settings: Menu on the Recent row's first game,
+# the Tile menu's Customise Home, A: Settings opens on Theme settings' Personalisation, focus goes into it, and it
+# stays there (it doesn't go back to Theme settings' boxes); B, B closes it. Then My games & apps from a tile on Home: A on the tile opens the page on the tile's
 # item, it stays there (it doesn't move to Games, then or as focus moves in the content), and B goes back to Home, for
 # See all with focus on that tile (from Play history the Recent row takes focus on its last focused game). Done for the Recent row's Play history tile (Play history), for See all on the first Group, the
 # seed's "My Picks" (Full library, that preset selected), and for See all on the Group under it. The seed's library
@@ -16,10 +18,13 @@
 #   Filter preset <name> selected
 #   My games & apps nav focus on <item>, showing <item>
 #   My games & apps nav focus on <item> from nothing, not a move along the nav: still showing <item>
+#   [Settings] opened on <category>, page <page> / [Settings] page <page> / [Settings] closed
+#   [Settings] focus in page <page>: True
+#   [Settings] rail focus on <category> from nothing, not a move along the rail
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
-$told = 'Home focus on|My games & apps (shows|closed|nav focus)|Filter preset .* selected'
+$told = 'Home focus on|My games & apps (shows|closed|nav focus)|Filter preset .* selected|\[Settings\]'
 
 # The extension's own log only, so a mark in it stays where it was as Playnite's log grows.
 function Get-ExtensionLog { @(Get-Content (Join-Path $Data 'extensions.log') -ErrorAction SilentlyContinue) }
@@ -113,10 +118,41 @@ try {
     Start-Sleep -Seconds 6  # the "Hi <user>!" toast over Home's foot has gone
     Save-Screen '0-home'
 
-    # Down from the top bar to the Recent row, then right along its seven games to its last tile: Play history.
-    $mark = Get-Mark
+    # Down from the top bar to the Recent row's first game; Menu opens its Tile menu, whose fourth row is Customise Home.
     Push-Button Down
     Start-Sleep -Milliseconds 1500
+    $mark = Get-Mark
+    Push-Button Start
+    Start-Sleep -Milliseconds 1500
+    foreach ($n in 1..3) { Push-Button Down; Start-Sleep -Milliseconds 500 }
+    Save-Screen 'settings-0-tile-menu'
+    Push-Button A
+    $open = Wait-Line '\[Settings\] opened on ' 5 $mark
+    Start-Sleep -Seconds 3
+    Save-Screen 'settings-1-personalisation'
+    Write-Told $mark
+    if (-not $open) { $failures += 'Customise Home did not open Settings (see settings-0-tile-menu.jpg)' }
+    else {
+        if ($open -notmatch 'opened on ThemeSettings, page Personalisation$') { $failures += "Customise Home: Settings $($open -replace '^.*\[Settings\] ', '')" }
+        $pages = @(Get-LogLines $mark '\[Settings\] page \w+$' | ForEach-Object { $_ -replace '^.*\[Settings\] page ', '' })
+        if ($pages.Count) { $failures += "Customise Home: Settings left Personalisation by itself, for the page $($pages -join ', then ')" }
+        if (-not (Get-LogLines $mark '\[Settings\] focus in page Personalisation: True$')) { $failures += 'Customise Home: focus did not go into Personalisation' }
+        Say "Customise Home: Settings $($open -replace '^.*\[Settings\] ', ''); page changes after: $(if ($pages.Count) { $pages -join ', ' } else { 'none' })"
+    }
+
+    # B from Personalisation goes back to Theme settings' boxes, B again closes Settings.
+    $back = Get-Mark
+    foreach ($n in 1..3) {
+        if (Get-LogLines $back '\[Settings\] closed$') { break }
+        Push-Button B
+        Start-Sleep -Milliseconds 1500
+    }
+    Save-Screen 'settings-2-after-b'
+    Write-Told $back
+    if ($open -and -not (Get-LogLines $back '\[Settings\] closed$')) { $failures += 'B did not close Settings (see settings-2-after-b.jpg)' }
+
+    # Back on the Recent row: right along its seven games to its last tile, Play history.
+    $mark = Get-Mark
     foreach ($n in 1..8) { Push-Button Right; Start-Sleep -Milliseconds 500 }
     Save-Screen '1-play-history-tile'
     Write-Told $mark

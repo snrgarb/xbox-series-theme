@@ -120,11 +120,35 @@ namespace XboxSeries.Core.Tests
             // where focus on a nav item opens it.
             var code = File.ReadAllText(Path.Combine(ExtensionDir, "MyGamesControl.xaml.cs"));
             var handler = Regex.Match(code, @"void OnNavFocused\(object sender, KeyboardFocusChangedEventArgs e\)\s*\{(.*?)\n        \}", RegexOptions.Singleline).Groups[1].Value;
-            Assert.Matches(new Regex(@"^\s*var item = ItemOfNav\(sender\)\.Value;\s*if \(e\.OldFocus is Window\)\s*\{[^;]*;\s*FocusContentSoon\(\);\s*return;\s*\}", RegexOptions.Singleline), handler);
-            Assert.DoesNotContain("FocusMyGamesNav", Regex.Match(handler, @"if \(e\.OldFocus is Window\)\s*\{(.*?)return;", RegexOptions.Singleline).Groups[1].Value);
+            Assert.Matches(new Regex(@"^\s*var item = ItemOfNav\(sender\)\.Value;\s*if \(PlayniteInput\.FocusCameFromNothing\(e\)\)\s*\{[^;]*;\s*FocusContentSoon\(\);\s*return;\s*\}", RegexOptions.Singleline), handler);
+            Assert.DoesNotContain("FocusMyGamesNav", Regex.Match(handler, @"if \(PlayniteInput\.FocusCameFromNothing\(e\)\)\s*\{(.*?)return;", RegexOptions.Singleline).Groups[1].Value);
 
             // The one place the view tells the core of nav focus.
             Assert.Single(Regex.Matches(code, @"core\.FocusMyGamesNav\(").Cast<Match>());
+        }
+
+        [Fact]
+        public void Focus_Playnite_puts_on_Settings_rail_from_nothing_as_the_page_opens_never_changes_its_category_or_page()
+        {
+            // The Tile menu closes under Customise Home, focus is on nothing, and Playnite puts it on the rail's first
+            // category: that took Settings from Personalisation back to Theme settings' boxes.
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "SettingsControl.xaml.cs"));
+            var handler = Regex.Match(code, @"void OnCategoryFocused\(object sender, KeyboardFocusChangedEventArgs e\)\s*\{(.*?)\n        \}", RegexOptions.Singleline).Groups[1].Value;
+            Assert.Matches(new Regex(@"^\s*var category = [^;]*;\s*if \(PlayniteInput\.FocusCameFromNothing\(e\)\)\s*\{[^;]*;\s*FocusRailSoon\(\);\s*return;\s*\}\s*core\.FocusSettingsCategory\(category\);\s*$", RegexOptions.Singleline), handler);
+            Assert.Single(Regex.Matches(code, @"core\.FocusSettingsCategory\(").Cast<Match>());
+        }
+
+        [Fact]
+        public void Focus_from_nothing_is_focus_that_comes_from_the_window_itself()
+        {
+            var input = File.ReadAllText(Path.Combine(ExtensionDir, "PlayniteInput.cs"));
+            Assert.Matches(@"bool FocusCameFromNothing\(KeyboardFocusChangedEventArgs e\) => e\.OldFocus is System\.Windows\.Window;", input);
+
+            // Every handler of ours that acts on a nav's item taking focus asks it; no other control opens on mere focus.
+            var handlers = Directory.GetFiles(ExtensionDir, "*.xaml")
+                .SelectMany(file => Regex.Matches(File.ReadAllText(file), @"GotKeyboardFocus=""(On(Nav|Category)\w*)""").Cast<Match>())
+                .Select(m => m.Groups[1].Value).Distinct().OrderBy(name => name);
+            Assert.Equal(new[] { "OnCategoryFocused", "OnNavFocused" }, handlers);
         }
 
         private static string FindRepoRoot()

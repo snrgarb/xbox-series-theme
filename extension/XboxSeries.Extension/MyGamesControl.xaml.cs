@@ -1251,15 +1251,15 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The highlight and its sound follow focus at once; the item's content waits for focus to settle on it. Only
-        /// for a move along the nav: focus that comes from the window itself was on nothing, and Playnite put it on the
-        /// window's first focusable element, which with the page up is the nav's first item, Games. That happens as the
-        /// page opens from Home, whose tile hides under it, and whenever what has focus goes, as a tile the main list
-        /// drops. It opens nothing (#146: See all's Full library became Games); focus goes on to the content showing.
+        /// for a move along the nav: focus from nothing (<see cref="PlayniteInput.FocusCameFromNothing"/>), which Playnite
+        /// puts on the nav's first item, Games, as the page opens from Home, whose tile hides under it, and whenever what
+        /// has focus goes, as a tile the main list drops, opens nothing (#146: See all's Full library became Games);
+        /// focus goes on to the content showing.
         /// </summary>
         private void OnNavFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
             var item = ItemOfNav(sender).Value;
-            if (e.OldFocus is Window)
+            if (PlayniteInput.FocusCameFromNothing(e))
             {
                 logger.Info($"My games & apps nav focus on {item} from nothing, not a move along the nav: still showing {core.MyGames.Item}");
                 FocusContentSoon();
