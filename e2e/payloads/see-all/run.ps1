@@ -1,17 +1,22 @@
 # Pages that open over what had focus, with the pad only (#146). First Settings: Menu on the Recent row's first game,
 # the Tile menu's Customise Home, A: Settings opens on Theme settings' Personalisation, focus goes into it, and it
-# stays there (it doesn't go back to Theme settings' boxes); B, B closes it. Then My games & apps from a tile on Home: A on the tile opens the page on the tile's
-# item, it stays there (it doesn't move to Games, then or as focus moves in the content), and B goes back to Home, for
-# See all with focus on that tile (from Play history the Recent row takes focus on its last focused game). Done for the Recent row's Play history tile (Play history), for See all on the first Group, the
-# seed's "My Picks" (Full library, that preset selected), and for See all on the Group under it. The seed's library
-# always has presets shown in Fullscreen, so the default Favourites Group, which has no preset and shows only without
-# any, isn't covered.
+# stays there (it doesn't go back to Theme settings' boxes); B, B closes it. Then My games & apps from a tile on Home:
+# A on the tile opens the page on the tile's item, it stays there (it doesn't move to Games, then or as focus moves in
+# the content), and B goes back to Home, for See all with focus on that tile (from Play history the Recent row takes
+# focus on its last focused game). Done for the Recent row's Play history tile (Play history), for See all on the
+# first Group, the seed's "My Picks" (Full library, that preset selected), and for See all on the Group under it. The
+# seed's library always has presets shown in Fullscreen, so the default Favourites Group, which has no preset and
+# shows only without any, isn't covered.
+#
+# Focus on Home moves a press at a time, until the log tells it is on the tile wanted (the Recent row wraps), and A
+# is pressed only with the log's last focus line on that tile.
 #
 # Before the fix, the tile hiding under the page left focus on nothing, Playnite put it on the window's first focusable
 # element, the nav's Games item, and focus on a nav item opened it: the log read "shows FullLibrary" then "shows Games".
 #
 # Judged by the extension's log lines, in the order logged (never by their times: the VM's clock may jump), each
 # quoted in steps.txt:
+#   Home focus on the Recent tile <game> / Home focus on the Group tile <game>
 #   Home focus on the Play history tile
 #   Home focus on See all of the Group <name>
 #   My games & apps shows <item> / My games & apps closed
@@ -58,10 +63,46 @@ function Get-Shown([int] $After) {
     if ($last -match 'My games & apps shows (\w+)') { $Matches[1] } elseif ($last) { 'closed' } else { $null }
 }
 
-# From the tile $What with focus: A, and what must follow. $Item is the item the page must open on and keep; $HomeLine,
-# a pattern for the log line that says focus is back on the tile after B, if it must be; $Preset, the filter preset
-# that must be selected with the item, if any.
-function Test-Opens([string] $What, [string] $Item, [string] $HomeLine, [string] $Shot, [string] $Preset) {
+# Home's focus by the log's last word on it: "Home focus on ..." as logged, without its time; $null with none yet.
+function Get-Focus {
+    $last = Get-LogLines 0 'Home focus on ' | Select-Object -Last 1
+    if ($last) { $last -replace '^.*(Home focus on )', '$1' }
+}
+function Test-FocusOn([string] $Pattern) { [bool]((Get-Focus) -match $Pattern) }
+
+# Presses $Button a step at a time until Home's focus is on what $Pattern tells, at most $Max times, never once more
+# than needed (a row may wrap). Whether it got there; if not, a screenshot "$Shot" shows where it stopped.
+function Step-To([string] $Button, [string] $Pattern, [int] $Max, [string] $Shot) {
+    foreach ($n in 0..$Max) {
+        if (Test-FocusOn $Pattern) { return $true }
+        if ($n -eq $Max) { break }
+        $mark = Get-Mark
+        Push-Button $Button
+        Wait-Line 'Home focus on ' 2 $mark | Out-Null
+        Start-Sleep -Milliseconds 300
+    }
+    Say "focus never reached /$Pattern/ with $Max $Button; it is on: $(Get-Focus)"
+    Save-Screen $Shot
+    $false
+}
+
+# Something is still in front of Home after a case (no focus line since $After): B, up to three times, until Home's
+# focus is told again. Throws if it never is: nothing after could be trusted.
+function Restore-Home([int] $After, [string] $What) {
+    foreach ($n in 1..3) {
+        Say "${What}: Home has not taken focus back; pressing B"
+        Push-Button B
+        if (Wait-Line 'Home focus on ' 3 $After) { Start-Sleep -Milliseconds 800; return }
+    }
+    Save-Screen 'not-home'
+    throw "${What}: could not get back to Home (see not-home.jpg)"
+}
+
+# From the tile $What, which must have focus by the log's last focus line (the pattern $FocusLine): A, and what must
+# follow. $Item is the item the page must open on and keep; $Preset, the filter preset that must be selected with it,
+# if any; with -BackOnTile, B must put focus back on the tile.
+function Test-Opens([string] $What, [string] $Item, [string] $FocusLine, [string] $Shot, [string] $Preset, [switch] $BackOnTile) {
+    if (-not (Test-FocusOn $FocusLine)) { $script:failures += "${What}: not pressed, focus is elsewhere ($(Get-Focus))"; return }
     $mark = Get-Mark
     Push-Button A
     Wait-Line 'My games & apps shows \w+' 5 $mark | Out-Null
@@ -93,23 +134,23 @@ function Test-Opens([string] $What, [string] $Item, [string] $HomeLine, [string]
         $script:failures += "${What}: Right and Down in the content moved the page to $moved"
     }
 
-    # B: back to Home, focus on the tile it left where that is told.
+    # B: back to Home; for See all, focus on the tile it left.
     $back = Get-Mark
     Push-Button B
     Wait-Line 'My games & apps closed' 5 $back | Out-Null
-    $home_ = if ($HomeLine) { Wait-Line $HomeLine 5 $back } else { $true }
+    $home_ = Wait-Line 'Home focus on ' 5 $back
     Start-Sleep -Milliseconds 1200
     Save-Screen "$Shot-4-after-b"
     Write-Told $back
     $after = Get-Shown $back
     if ($after -ne 'closed') { $script:failures += "${What}: B did not close the page (it shows $after)" }
-    elseif (-not $home_) { $script:failures += "${What}: B went back to Home, but not to focus on the tile" }
+    elseif ($BackOnTile -and -not (Test-FocusOn $FocusLine)) { $script:failures += "${What}: B went back to Home, but not to focus on the tile ($(Get-Focus))" }
+    if (-not $home_) { Restore-Home $back $What }
 }
 
-# The Group whose See all tile has focus by the log's last word since $After.
-function Get-SeeAllGroup([int] $After) {
-    $last = Get-LogLines $After 'Home focus on See all of the Group' | Select-Object -Last 1
-    if ($last -match 'Home focus on See all of the Group (.*)$') { $Matches[1].Trim() }
+# The Group whose See all tile has focus by the log's last focus line; $null when focus is elsewhere.
+function Get-SeeAllGroup {
+    if ((Get-Focus) -match 'Home focus on See all of the Group (.*)$') { $Matches[1].Trim() }
 }
 
 try {
@@ -118,9 +159,11 @@ try {
     Start-Sleep -Seconds 6  # the "Hi <user>!" toast over Home's foot has gone
     Save-Screen '0-home'
 
-    # Down from the top bar to the Recent row's first game; Menu opens its Tile menu, whose fourth row is Customise Home.
-    Push-Button Down
-    Start-Sleep -Milliseconds 1500
+    # Home starts with focus on the top bar: Down to the Recent row's first game.
+    if (-not (Step-To Down 'Home focus on the Recent tile ' 2 'no-recent-row')) { throw 'Never reached the Recent row (see no-recent-row.jpg)' }
+
+    # Settings. Menu opens the game's Tile menu, whose fourth row is Customise Home (the menu's rows tell the log
+    # nothing, so three Downs, and settings-0-tile-menu.jpg to show where they ended).
     $mark = Get-Mark
     Push-Button Start
     Start-Sleep -Milliseconds 1500
@@ -133,68 +176,64 @@ try {
     Write-Told $mark
     if (-not $open) { $failures += 'Customise Home did not open Settings (see settings-0-tile-menu.jpg)' }
     else {
-        if ($open -notmatch 'opened on ThemeSettings, page Personalisation$') { $failures += "Customise Home: Settings $($open -replace '^.*\[Settings\] ', '')" }
+        $opened = $open -replace '^.*\[Settings\] ', ''
+        if ($open -notmatch 'opened on ThemeSettings, page Personalisation$') { $failures += "Customise Home: Settings $opened" }
         $pages = @(Get-LogLines $mark '\[Settings\] page \w+$' | ForEach-Object { $_ -replace '^.*\[Settings\] page ', '' })
         if ($pages.Count) { $failures += "Customise Home: Settings left Personalisation by itself, for the page $($pages -join ', then ')" }
         if (-not (Get-LogLines $mark '\[Settings\] focus in page Personalisation: True$')) { $failures += 'Customise Home: focus did not go into Personalisation' }
-        Say "Customise Home: Settings $($open -replace '^.*\[Settings\] ', ''); page changes after: $(if ($pages.Count) { $pages -join ', ' } else { 'none' })"
+        Say "Customise Home: Settings $opened; page changes after: $(if ($pages.Count) { $pages -join ', ' } else { 'none' })"
     }
 
-    # B from Personalisation goes back to Theme settings' boxes, B again closes Settings.
+    # B from Personalisation goes back to Theme settings' boxes, B again closes Settings; if it never opened, B closes
+    # the Tile menu. Either way Home's Recent row has focus again after.
     $back = Get-Mark
     foreach ($n in 1..3) {
-        if (Get-LogLines $back '\[Settings\] closed$') { break }
         Push-Button B
-        Start-Sleep -Milliseconds 1500
+        if (Wait-Line 'Home focus on ' 2 $back) { break }
     }
+    Start-Sleep -Milliseconds 800
     Save-Screen 'settings-2-after-b'
     Write-Told $back
     if ($open -and -not (Get-LogLines $back '\[Settings\] closed$')) { $failures += 'B did not close Settings (see settings-2-after-b.jpg)' }
+    if (-not (Get-LogLines $back 'Home focus on ')) { Restore-Home $back 'Customise Home' }
 
-    # Back on the Recent row: right along its seven games to its last tile, Play history.
-    $mark = Get-Mark
-    foreach ($n in 1..8) { Push-Button Right; Start-Sleep -Milliseconds 500 }
-    Save-Screen '1-play-history-tile'
-    Write-Told $mark
-    if (Get-LogLines $mark 'Home focus on the Play history tile$') {
-        Test-Opens 'The Play history tile' 'PlayHistory' '' 'history'
-    } else { $failures += 'Never reached the Play history tile (see 1-play-history-tile.jpg)' }
+    # Play history: right along the Recent row to its last tile.
+    if (-not (Test-FocusOn 'Home focus on the Recent tile ')) { $failures += "After Settings, focus is not on the Recent row ($(Get-Focus))" }
+    $history = 'Home focus on the Play history tile$'
+    if (Step-To Right $history 10 '1-no-play-history-tile') {
+        Save-Screen '1-play-history-tile'
+        Test-Opens 'The Play history tile' 'PlayHistory' $history 'history'
+    } else { $failures += 'Never reached the Play history tile (see 1-no-play-history-tile.jpg)' }
 
-    # Down past the four wide tiles to the Groups, then right along the first one, to its last tile: See all. A Group
-    # holds 6 games at most.
-    $mark = Get-Mark
-    $first = $null
-    foreach ($try in 1..3) {
-        Push-Button Down
-        Start-Sleep -Milliseconds 1500
-        foreach ($n in 1..7) { Push-Button Right; Start-Sleep -Milliseconds 500 }
-        $first = Get-SeeAllGroup $mark
-        if ($first) { break }
-        Say "no See all tile has focus after $try Down and 7 Right"
-    }
+    # See all: down past the four wide tiles to the Groups, then right along the first Group to its last tile.
+    if (-not (Step-To Down 'Home focus on (the Group tile |See all of the Group )' 4 '2-no-groups')) { throw 'Never reached the Groups (see 2-no-groups.jpg)' }
+    if (-not (Step-To Right 'Home focus on See all of the Group ' 8 '2-no-see-all')) { throw 'Never reached a See all tile (see 2-no-see-all.jpg)' }
+    $first = Get-SeeAllGroup
     Save-Screen '2-see-all'
-    Write-Told $mark
-    if (-not $first) { throw 'Never reached a See all tile on Home (see 2-see-all.jpg)' }
     Say "focus on See all of the Group $first"
-    Test-Opens "See all on $first" 'FullLibrary' "Home focus on See all of the Group $([regex]::Escape($first))`$" 'first' $first
+    $firstLine = "Home focus on See all of the Group $([regex]::Escape($first))`$"
+    Test-Opens "See all on $first" 'FullLibrary' $firstLine 'first' $first -BackOnTile
 
-    # The Group under it: Down keeps the place in the row, so its See all tile, or its last game if it is shorter.
-    $mark = Get-Mark
-    Push-Button Down
-    Start-Sleep -Milliseconds 1500
-    foreach ($n in 1..7) { Push-Button Right; Start-Sleep -Milliseconds 500 }
-    $second = Get-SeeAllGroup $mark
-    Save-Screen '3-see-all'
-    Write-Told $mark
-    if (-not $second -or $second -eq $first) { $failures += "Never reached the second Group's See all tile (see 3-see-all.jpg)" }
+    # The Group under it: one Down, which may keep the place in the row, then right to its See all.
+    if (-not (Test-FocusOn $firstLine)) { $failures += "After See all on $first, focus is not back on it ($(Get-Focus)); the second Group is not tried" }
     else {
-        Say "focus on See all of the Group $second"
-        Test-Opens "See all on $second" 'FullLibrary' "Home focus on See all of the Group $([regex]::Escape($second))`$" 'second' $second
+        $mark = Get-Mark
+        Push-Button Down
+        Wait-Line 'Home focus on ' 3 $mark | Out-Null
+        Start-Sleep -Milliseconds 800
+        $other = "Home focus on See all of the Group (?!$([regex]::Escape($first))`$)"
+        if ((Test-FocusOn $firstLine) -or -not (Step-To Right $other 8 '3-no-see-all')) { $failures += "Never reached the second Group's See all tile (focus: $(Get-Focus))" }
+        else {
+            $second = Get-SeeAllGroup
+            Save-Screen '3-see-all'
+            Say "focus on See all of the Group $second"
+            Test-Opens "See all on $second" 'FullLibrary' "Home focus on See all of the Group $([regex]::Escape($second))`$" 'second' $second -BackOnTile
+        }
     }
 
     if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { $failures += 'Playnite exited' }
     $errors = @(([regex]'(?m)^.*\|ERROR\|.*$').Matches((Get-PlayniteLog)) | ForEach-Object Value)
-    $errors | ForEach-Object { Say "logged: $_" }  # told, not judged: this test is about what the tiles open
+    $errors | ForEach-Object { Say "logged: $_" }  # told, not judged: this test is about what opens where
 
     if ($failures.Count -eq 0) { $result = 'PASS' }
 } catch {

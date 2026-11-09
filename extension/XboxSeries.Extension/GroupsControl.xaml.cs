@@ -131,6 +131,10 @@ namespace XboxSeries.Extension
                 {
                     logger.Info($"Home focus on See all of the Group {group.Name}");
                 }
+                else if (tile.DataContext is HomeTile game)
+                {
+                    logger.Info($"Home focus on the Group tile {game.Title}");
+                }
 
                 ScrollTo(row);
             }

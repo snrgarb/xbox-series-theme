@@ -253,6 +253,7 @@ namespace XboxSeries.Extension
             if (((FrameworkElement)sender).DataContext is HomeTile tile)
             {
                 lastFocusedGame = tile.GameId;
+                logger.Info($"Home focus on the Recent tile {tile.Title}");
                 core.FocusHomeTile(tile);
             }
         }
