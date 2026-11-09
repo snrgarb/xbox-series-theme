@@ -69,7 +69,12 @@ namespace XboxSeries.Extension
             front = back;
             back = old;
 
+            var name = art == null ? "the swirl" : System.IO.Path.GetFileName(art.Image);
+            HeroTiming.Log($"{name} asked for");
+            var decoding = System.Diagnostics.Stopwatch.StartNew();
             front.Show(art);
+            HeroTiming.Log($"{name} decoded in {decoding.ElapsedMilliseconds} ms,");
+            HeroTiming.LogNextFrame($"{name} fading in");
             Panel.SetZIndex(front.Root, 1);
             Panel.SetZIndex(back.Root, 0);
             // To-only, so a crossfade interrupted by quick focus changes carries on from where each layer is. The swirl
@@ -78,6 +83,7 @@ namespace XboxSeries.Extension
             var fadeIn = new DoubleAnimation(art == null ? 0 : 1, Crossfade);
             fadeIn.Completed += (_, __) =>
             {
+                HeroTiming.Log($"{name} shown");
                 if (home.Hero != null && Equals(home.Hero, art))
                 {
                     swirl.Visibility = Visibility.Collapsed;

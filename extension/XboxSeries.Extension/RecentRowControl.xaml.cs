@@ -246,6 +246,7 @@ namespace XboxSeries.Extension
             if (((FrameworkElement)sender).DataContext is HomeTile tile)
             {
                 lastFocusedGame = tile.GameId;
+                HeroTiming.Focused(tile.Title);
                 core.FocusHomeTile(tile);
             }
         }
