@@ -160,8 +160,15 @@ namespace XboxSeries.Extension
         /// <summary>The top bar's My games &amp; apps: the page, on Games.</summary>
         public ICommand OpenGamesCommand { get; }
 
+        private static string Describe(object o) =>
+            o == null ? "null" : o.GetType().Name + "/" + (o as FrameworkElement)?.Name + "/" + (o as FrameworkElement)?.Tag + "/vis=" + (o as UIElement)?.IsVisible;
+
+        private void DiagFocus(object sender, KeyboardFocusChangedEventArgs e) =>
+            logger.Info("DIAG focus " + Describe(e.OldFocus) + " -> " + Describe(e.NewFocus));
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            Window.GetWindow(this)?.AddHandler(Keyboard.GotKeyboardFocusEvent, new KeyboardFocusChangedEventHandler(DiagFocus), true);
             core.MyGames.PropertyChanged += OnStateChanged;
             core.TextEntry.PropertyChanged += OnTextEntryChanged;
 
@@ -262,6 +269,8 @@ namespace XboxSeries.Extension
             {
                 case nameof(MyGamesState.IsShown):
                 case nameof(MyGamesState.Item):
+                    logger.Info(core.MyGames.IsShown ? $"My games & apps shows {core.MyGames.Item}" : "My games & apps closed");
+                    logger.Info("DIAG state " + e.PropertyName + " focus=" + Describe(Keyboard.FocusedElement) + "\n" + Environment.StackTrace);
                     // Another item's games, or the page opened afresh: right from the nav starts again at the first.
                     lastFocusedGridGame = null;
                     lastRowFocus = null;
@@ -1250,6 +1259,7 @@ namespace XboxSeries.Extension
         // The highlight and its sound follow focus at once; the item's content waits for focus to settle on it.
         private void OnNavFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
+            logger.Info("DIAG nav focused " + Describe(sender) + " from " + Describe(e.OldFocus) + "\n" + Environment.StackTrace);
             core.FocusMyGamesNav(ItemOfNav(sender).Value);
         }
 
@@ -1429,6 +1439,7 @@ namespace XboxSeries.Extension
 
                 if (core.MyGames.ShowsGameGrid)
                 {
+                    logger.Info("DIAG focus content: " + core.MyGames.Item + " list " + (mainList == null ? "null" : mainList.Items.Count + " vis=" + mainList.IsVisible));
                     // Gone from the list, as a game uninstalled off Games, it is -1, so the first. Opened again by B from
                     // Search, which Y on Games opened, the game Y was pressed on.
                     var last = lastFocusedGridGame == null || mainList == null ? -1 : mainList.Items.IndexOf(lastFocusedGridGame);
