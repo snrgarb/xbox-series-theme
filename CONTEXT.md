@@ -13,7 +13,7 @@ The Playnite Fullscreen-mode theme that restyles Playnite's own screens to look 
 _Avoid_: skin, home screen (Home is one page of the Dashboard)
 
 **Home**:
-The Dashboard's landing page, modelled on the Xbox Home screen. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
+The Dashboard's landing page, modelled on the Xbox Home screen. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it, or with no totals why: "Needs PlayniteAchievements" without it, "Nothing recorded yet" while it has no game's achievements) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
 
 **Recent row**:
 The row of most recently played games on **Home**, ending in the Play history tile.

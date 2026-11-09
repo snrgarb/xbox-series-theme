@@ -557,6 +557,82 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Homes_Achievements_tile_says_it_needs_PlayniteAchievements_once_it_was_looked_for_and_not_found()
+        {
+            achievements.IsAvailable = false;
+            Assert.Null(core.Status.AchievementsNote);
+
+            core.OnAchievementsLookedFor();
+
+            Assert.Equal("Needs PlayniteAchievements", core.Status.AchievementsNote);
+            Assert.Null(core.Status.Achievements);
+        }
+
+        [Fact]
+        public void Homes_Achievements_tile_says_nothing_between_PlayniteAchievements_being_found_and_first_read()
+        {
+            core.OnAchievementsLookedFor();
+
+            Assert.Null(core.Status.AchievementsNote);
+            Assert.Null(core.Status.Achievements);
+        }
+
+        [Fact]
+        public void Homes_Achievements_tile_says_nothing_is_recorded_while_PlayniteAchievements_is_read_and_has_none()
+        {
+            core.OnAchievementsLookedFor();
+            core.OnAchievementsChanged();
+
+            Assert.Equal("Nothing recorded yet", core.Status.AchievementsNote);
+
+            // A game PlayniteAchievements looked at and found none for is still nothing.
+            achievements.Recorded.Add(new GameAchievements(hades, new Achievement[0]));
+            core.OnAchievementsChanged();
+
+            Assert.Equal("Nothing recorded yet", core.Status.AchievementsNote);
+            Assert.Null(core.Status.Achievements);
+        }
+
+        [Fact]
+        public void Homes_Achievements_tile_drops_its_note_for_the_Score_once_there_are_totals_and_takes_it_back_without()
+        {
+            core.OnAchievementsLookedFor();
+            core.OnAchievementsChanged();
+            var told = new List<string>();
+            core.Status.PropertyChanged += (_, e) => told.Add(e.PropertyName);
+
+            // Locked ones alone are totals too, of zero: the tile says "0 Score", not that nothing is recorded.
+            Record(hades, Locked("boon", "Blessed"));
+            core.OnAchievementsChanged();
+
+            Assert.Null(core.Status.AchievementsNote);
+            Assert.Equal(0, core.Status.Achievements.Score);
+            Assert.Contains(nameof(StatusState.AchievementsNote), told);
+
+            achievements.Recorded.Clear();
+            core.OnAchievementsChanged();
+
+            Assert.Equal("Nothing recorded yet", core.Status.AchievementsNote);
+
+            achievements.IsAvailable = false;
+            core.OnAchievementsChanged();
+
+            Assert.Equal("Needs PlayniteAchievements", core.Status.AchievementsNote);
+        }
+
+        [Fact]
+        public void A_core_given_no_achievements_port_says_it_needs_PlayniteAchievements_too()
+        {
+            var bare = new ExtensionCore(
+                clock, windows, new FakePlayniteHost(windows), sounds, new FakeDrives(), new FakeUserAccount(), new FakeAudio(),
+                new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+
+            bare.OnAchievementsLookedFor();
+
+            Assert.Equal("Needs PlayniteAchievements", bare.Status.AchievementsNote);
+        }
+
+        [Fact]
         public void With_no_game_having_any_achievements_there_are_no_totals()
         {
             achievements.Recorded.Add(new GameAchievements(hades, new Achievement[0]));

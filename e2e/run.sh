@@ -4,7 +4,7 @@
 #
 #   e2e/run.sh <test> [--run <Actions run id>] [--pext <file>] [--release] [--keep]
 #
-#   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, guide-over-game, seeded-home, probe)
+#   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, guide-over-game, seeded-home, achievements, probe)
 #   --run        the CI run to take the Bundle from (its bundle artifact); default: the latest run on this branch that
 #                built one; only runs of this repository's own code, never a fork's PR
 #   --pext       a .pext to test instead of downloading one
@@ -56,6 +56,21 @@ if [[ ! -f "$vigem" ]] || ! echo "$vigem_sha256  $vigem" | sha256sum -c --quiet 
     echo "$vigem_sha256  $vigem" | sha256sum -c --quiet || { rm -f "$vigem"; echo "ViGEm client checksum mismatch" >&2; exit 1; }
 fi
 cp "$vigem" "$stage/lib/Nefarius.ViGEm.Client.dll"
+
+# The other add-ons a test installs beside the Bundle, one a line in its addons.txt as "<url> <sha256>": fetched once,
+# pinned by checksum, kept under artifacts/e2e/.cache, and staged as addons/, where Initialize-Playnite finds them.
+if [[ -f "$payload_src/addons.txt" ]]; then
+    mkdir -p "$stage/addons" "$repo/artifacts/e2e/.cache"
+    while read -r url sha256; do
+        [[ -z "$url" || "$url" == \#* ]] && continue
+        addon="$repo/artifacts/e2e/.cache/${url##*/}"
+        if [[ ! -f "$addon" ]] || ! echo "$sha256  $addon" | sha256sum -c --quiet 2>/dev/null; then
+            curl -fsSL -o "$addon" "$url"
+            echo "$sha256  $addon" | sha256sum -c --quiet || { rm -f "$addon"; echo "checksum mismatch for $url" >&2; exit 1; }
+        fi
+        cp "$addon" "$stage/addons/"
+    done < "$payload_src/addons.txt"
+fi
 
 if [[ "$test" != probe ]]; then
     if [[ -z "$pext" ]]; then

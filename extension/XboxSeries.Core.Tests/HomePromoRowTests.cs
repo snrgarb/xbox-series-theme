@@ -29,6 +29,13 @@ namespace XboxSeries.Core.Tests
                 Assert.Equal("{DynamicResource XboxTextDimBrush}", (string)subtitle.Attribute("Foreground"));
             }
 
+            // Achievements has two, one shown at a time: the Score with totals, else why there are none.
+            var lines = tiles[2].Descendants().Where(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Foreground") == "{DynamicResource XboxTextDimBrush}").ToArray();
+            Assert.Equal(new[] { "{Binding Achievements.Score, StringFormat={}{0:N0} Score}", "{Binding AchievementsNote}" }, lines.Select(l => (string)l.Attribute("Text")).ToArray());
+            Assert.Equal("{Binding Achievements}", HiddenWhenNull(lines[0]));
+            Assert.Equal("{Binding AchievementsNote}", HiddenWhenNull(lines[1]));
+            Assert.All(lines, l => Assert.Equal("{StaticResource Subtitle}", (string)l.Descendants().Single(e => e.Name.LocalName == "Style").Attribute("BasedOn")));
+
             // Each tile wears its mark, centred: Discord's, a gear, the trophy and the download glyph.
             Assert.Contains(tiles[0].Descendants(), e => e.Name.LocalName == "Path" && (string)e.Attribute("Data") == "{StaticResource DiscordLogo}");
             Assert.Equal(new[] { "" }, Glyphs(tiles[1]));
@@ -103,6 +110,17 @@ namespace XboxSeries.Core.Tests
             var recentRow = XDocument.Load(Path.Combine(ExtensionDir, "RecentRowControl.xaml"));
             var host = recentRow.Descendants().Single(e => e.Name.LocalName == "PromoRow");
             Assert.Equal("Promos", (string)host.Attribute(X + "Name"));
+        }
+
+        /// <summary>The binding whose null collapses a line, by its style's one trigger.</summary>
+        private static string HiddenWhenNull(XElement line)
+        {
+            var trigger = line.Descendants().Single(e => e.Name.LocalName == "DataTrigger");
+            Assert.Equal("{x:Null}", (string)trigger.Attribute("Value"));
+            var setter = trigger.Elements().Single();
+            Assert.Equal("Visibility", (string)setter.Attribute("Property"));
+            Assert.Equal("Collapsed", (string)setter.Attribute("Value"));
+            return (string)trigger.Attribute("Binding");
         }
 
         private static XElement PromoRow() => XDocument.Load(Path.Combine(ExtensionDir, "PromoRow.xaml")).Root;
