@@ -239,13 +239,11 @@ namespace XboxSeries.Extension
         // The keyboard's Enter and the mouse; the pad's A arrives as OnSeeAllKeyDown. The tile's DataContext is its Group.
         private void OnSeeAllClick(object sender, RoutedEventArgs e)
         {
-            Playnite.SDK.LogManager.GetLogger().Info("DIAG see all click");
             core.ChooseSeeAll((HomeGroup)((FrameworkElement)sender).DataContext);
         }
 
         private void OnSeeAllKeyDown(object sender, KeyEventArgs e)
         {
-            Playnite.SDK.LogManager.GetLogger().Info("DIAG see all keydown key=" + e.Key + " pad=" + PlayniteInput.PadButtonOf(e));
             if (PlayniteInput.PadButtonOf(e) == ControllerInput.A)
             {
                 e.Handled = true;
