@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Events;
 using XboxSeries.Core;
@@ -36,6 +37,8 @@ namespace XboxSeries.Extension
         /// Whether focus on the first screen is, or goes back to, the placeholder tiles under the row rather than the row
         /// itself, and which of them; and the Recent-row tile Down left for them, which Up goes back to.
         /// </summary>
+        private static readonly ILogger logger = LogManager.GetLogger();
+
         private bool promosFocused;
         private int lastPromo;
         private Button leftForPromos;
@@ -66,6 +69,15 @@ namespace XboxSeries.Extension
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
             IsVisibleChanged += OnVisibleChanged;
+
+            // The log says which game's tile has focus.
+            GotKeyboardFocus += (_, e) =>
+            {
+                if ((e.NewFocus as FrameworkElement)?.DataContext is HomeTile tile && !Promos.IsAncestorOf((DependencyObject)e.NewFocus))
+                {
+                    logger.Info($"Home focus on the Recent tile {tile.Title}");
+                }
+            };
 
             // New or regenerated tiles: find them again, and size and space them, on the next frame.
             Tiles.ItemContainerGenerator.StatusChanged += (_, __) =>

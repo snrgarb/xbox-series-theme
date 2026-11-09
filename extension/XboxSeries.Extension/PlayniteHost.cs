@@ -191,6 +191,7 @@ namespace XboxSeries.Extension
             if (SelectInMainList(gameId) && api.MainView.ActiveFullscreenView == FullscreenView.List)
             {
                 api.MainView.ToggleFullscreenView();
+                logger.Info($"Game hub opened for {api.Database.Games.Get(gameId)?.Name}");
             }
         }
 
@@ -287,6 +288,7 @@ namespace XboxSeries.Extension
             {
                 try
                 {
+                    logger.Info($"Playnite's Extensions picker opens for {game.Name}");
                     open.Invoke(Activator.CreateInstance(menu, Activator.CreateInstance(factory), model, game), null);
                 }
                 catch (Exception e)

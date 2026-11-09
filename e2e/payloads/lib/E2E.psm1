@@ -59,14 +59,14 @@ function Get-PlayniteLog {
 # Waits for a line matching $Pattern in Playnite's logs, written after $After lines were there; returns the line, or
 # $null after $Seconds. Throws if Playnite exits meanwhile.
 function Wait-PlayniteLog([string] $Pattern, [int] $Seconds = 30, [int] $After = 0) {
-    $deadline = (Get-Date).AddSeconds($Seconds)
+    $watch = [Diagnostics.Stopwatch]::StartNew()  # not the clock, which the VM's time sync can move mid-test
     do {
         $lines = @((Get-PlayniteLog) -split "`n")
         $hit = $lines | Select-Object -Skip $After | Where-Object { $_ -match $Pattern } | Select-Object -First 1
         if ($hit) { return $hit }
         if ($script:Playnite -and $script:Playnite.HasExited) { throw "Playnite exited with $($script:Playnite.ExitCode)" }
         Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
+    } while ($watch.Elapsed.TotalSeconds -lt $Seconds)
     return $null
 }
 
