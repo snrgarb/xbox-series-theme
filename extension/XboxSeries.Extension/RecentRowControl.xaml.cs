@@ -21,6 +21,7 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class RecentRowControl : PluginUserControl
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private readonly HomeScreen homeScreen;
         private readonly TileGrowth growth;
@@ -62,6 +63,11 @@ namespace XboxSeries.Extension
                     lastPromo = Math.Max(0, Promos.AllTiles.ToList().IndexOf((Button)e.NewFocus));
                 }
 
+                if (e.NewFocus == PlayHistoryTile)
+                {
+                    logger.Info("Home focus on the Play history tile");
+                }
+
                 homeScreen.LastFocusedRow = this;
                 homeScreen.Show(groups: false);
                 growth.Start();
@@ -69,15 +75,6 @@ namespace XboxSeries.Extension
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
             IsVisibleChanged += OnVisibleChanged;
-
-            // The log says which game's tile has focus.
-            GotKeyboardFocus += (_, e) =>
-            {
-                if ((e.NewFocus as FrameworkElement)?.DataContext is HomeTile tile && !Promos.IsAncestorOf((DependencyObject)e.NewFocus))
-                {
-                    logger.Info($"Home focus on the Recent tile {tile.Title}");
-                }
-            };
 
             // New or regenerated tiles: find them again, and size and space them, on the next frame.
             Tiles.ItemContainerGenerator.StatusChanged += (_, __) =>
@@ -258,6 +255,7 @@ namespace XboxSeries.Extension
             if (((FrameworkElement)sender).DataContext is HomeTile tile)
             {
                 lastFocusedGame = tile.GameId;
+                logger.Info($"Home focus on the Recent tile {tile.Title}");
                 core.FocusHomeTile(tile);
             }
         }

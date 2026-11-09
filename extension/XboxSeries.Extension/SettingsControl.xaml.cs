@@ -22,6 +22,7 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class SettingsControl : PluginUserControl
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private FrameworkElement viewHost;
 
@@ -336,9 +337,23 @@ namespace XboxSeries.Extension
             }
         }
 
+        /// <summary>
+        /// The rail's focus moved to a category: the page shows it. Only for a move along the rail: focus from nothing
+        /// (<see cref="PlayniteInput.FocusCameFromNothing"/>), which Playnite puts on the rail's first category as the
+        /// page opens over what had focus, as the Tile menu closing under Customise Home, changes nothing (it took
+        /// Personalisation back to Theme settings' boxes); focus goes on to where the page opened for.
+        /// </summary>
         private void OnCategoryFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.FocusSettingsCategory(categoryItems.First(item => item.Value == sender).Key);
+            var category = categoryItems.First(item => item.Value == sender).Key;
+            if (PlayniteInput.FocusCameFromNothing(e))
+            {
+                logger.Info($"[Settings] rail focus on {category} from nothing, not a move along the rail");
+                FocusRailSoon();
+                return;
+            }
+
+            core.FocusSettingsCategory(category);
         }
 
         // The keyboard's Enter and the mouse; the pad's A arrives as OnRailKeyDown.
@@ -836,6 +851,7 @@ namespace XboxSeries.Extension
                     && core.Settings.ThemePage != ThemeSettingsPage.None)
                 {
                     FocusThemePage(core.Settings.ThemePage);
+                    logger.Info($"[Settings] focus in page {core.Settings.ThemePage}: {PaneOf(core.Settings.ThemePage)?.IsKeyboardFocusWithin}");
                 }
                 else if (core.Settings.OpensInPane && core.Settings.Category == SettingsCategory.PlayniteSettings)
                 {

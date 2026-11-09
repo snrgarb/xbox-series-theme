@@ -708,6 +708,7 @@ namespace XboxSeries.Extension
         {
             // The saved preset itself, as its tab applies it, so Playnite keeps it selected and lit.
             api.MainView.ApplyFilterPreset(presetId);
+            logger.Info($"Filter preset {api.Database.FilterPresets.Get(presetId)?.Name} selected");
         }
 
         public GameSort? MainListSort => PlayniteLibrary.ToGameSort(api.MainView.SortOrder);

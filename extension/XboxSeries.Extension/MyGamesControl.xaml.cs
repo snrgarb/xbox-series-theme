@@ -262,6 +262,8 @@ namespace XboxSeries.Extension
             {
                 case nameof(MyGamesState.IsShown):
                 case nameof(MyGamesState.Item):
+                    // What the page shows now, for a log to tell which item opened and what changed it after.
+                    logger.Info(core.MyGames.IsShown ? $"My games & apps shows {core.MyGames.Item}" : "My games & apps closed");
                     // Another item's games, or the page opened afresh: right from the nav starts again at the first.
                     lastFocusedGridGame = null;
                     lastRowFocus = null;
@@ -1247,10 +1249,25 @@ namespace XboxSeries.Extension
             }
         }
 
-        // The highlight and its sound follow focus at once; the item's content waits for focus to settle on it.
+        /// <summary>
+        /// The highlight and its sound follow focus at once; the item's content waits for focus to settle on it. Only
+        /// for a move along the nav: focus from nothing (<see cref="PlayniteInput.FocusCameFromNothing"/>), which Playnite
+        /// puts on the nav's first item, Games, as the page opens from Home, whose tile hides under it, and whenever what
+        /// has focus goes, as a tile the main list drops, opens nothing (#146: See all's Full library became Games);
+        /// focus goes on to the content showing.
+        /// </summary>
         private void OnNavFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            core.FocusMyGamesNav(ItemOfNav(sender).Value);
+            var item = ItemOfNav(sender).Value;
+            if (PlayniteInput.FocusCameFromNothing(e))
+            {
+                logger.Info($"My games & apps nav focus on {item} from nothing, not a move along the nav: still showing {core.MyGames.Item}");
+                FocusContentSoon();
+                return;
+            }
+
+            logger.Info($"My games & apps nav focus on {item}, showing {core.MyGames.Item}");
+            core.FocusMyGamesNav(item);
         }
 
         // Out of the nav other than into the content, as with Playnite leaving the foreground: an item waiting to open doesn't.

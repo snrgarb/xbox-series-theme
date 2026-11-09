@@ -318,6 +318,7 @@ namespace XboxSeries.Extension
             discordOAuth.TokenResponded += (status, body) => OnUiThread(() => core.OnDiscordTokenResponse(status, body));
             Guarded.Run("Signing in to Discord",
                 () => StartupTiming.Time("Signing in to Discord with the saved tokens", core.OnApplicationStarted));
+            SettingsLog.Follow(core);
             logger.Info("Xbox Series extension started on the Dashboard");
             StartupTiming.Log($"Our OnApplicationStarted took {started.ElapsedMilliseconds} ms, ending");
         }

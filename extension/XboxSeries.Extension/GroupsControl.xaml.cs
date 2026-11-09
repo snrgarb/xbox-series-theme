@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Events;
 using XboxSeries.Core;
@@ -21,6 +22,7 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class GroupsControl : PluginUserControl
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
         private static readonly Duration ScrollDuration = TimeSpan.FromMilliseconds(300);
 
         private readonly ExtensionCore core;
@@ -125,6 +127,15 @@ namespace XboxSeries.Extension
                 lastGroup = Rows.ItemContainerGenerator.IndexFromContainer(row);
                 lastGame = (tile.DataContext as HomeTile)?.GameId;
                 lastSeeAll = tile.DataContext is HomeGroup;
+                if (tile.DataContext is HomeGroup group)
+                {
+                    logger.Info($"Home focus on See all of the Group {group.Name}");
+                }
+                else if (tile.DataContext is HomeTile game)
+                {
+                    logger.Info($"Home focus on the Group tile {game.Title}");
+                }
+
                 ScrollTo(row);
             }
         }

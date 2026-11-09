@@ -38,7 +38,7 @@ The extension adds the console's functions. It works only in Fullscreen mode wit
 - **Toasts**: green banners for notifications, calls, downloads, achievements and library updates. A Toast does not stop your game.
 - **Launch screen**: the game's art covers launchers and update windows while the game starts.
 - **Idle screen**: when nobody uses the PC, the screen dims. Then it shows your games, achievements and tips.
-- **My games & apps**: your games, apps, Groups, play history and full library.
+- **My games & apps**: your games, apps, play history and full library, with your filter presets as its tabs.
 - **Downloads**: the Queue shows the games that Playnite and Steam install.
 - **Achievements**: Toasts and totals for your achievements. This needs the PlayniteAchievements add-on.
 - **Search**: find games and apps with an on-screen keyboard for the controller.

@@ -7,6 +7,15 @@ namespace XboxSeries.Extension
     /// <summary>Maps Playnite's controller input to the core's buttons.</summary>
     internal static class PlayniteInput
     {
+        /// <summary>
+        /// Whether keyboard focus came to an element from nothing rather than from a move: from the window itself, where
+        /// WPF leaves focus when what had it hides or goes, as a tile under a page opening over it or a menu closing.
+        /// Playnite then puts focus on the window's first focusable element ("Lost keyboard focus from known controls"),
+        /// which with a page of ours up is its nav's first item. A nav that opens what takes focus must not take that for
+        /// a move along it (#146): it asks here, opens nothing, and puts focus where its page wants it.
+        /// </summary>
+        public static bool FocusCameFromNothing(KeyboardFocusChangedEventArgs e) => e.OldFocus is System.Windows.Window;
+
         public static ControllerButton? ToButton(ControllerInput input)
         {
             switch (input)
