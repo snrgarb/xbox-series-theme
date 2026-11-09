@@ -418,7 +418,7 @@ namespace XboxSeries.Extension
                 startup?.Press(button.Value, state);
             }
 
-            logger.Info($"DIAG pad {button} {state}");
+            logger.Info($"DIAG #146 pad {button} {state}");
             OnUiThread(() => core.OnControllerButton(button.Value, state, at));
         }
 
