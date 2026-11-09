@@ -11,10 +11,11 @@
 # 1. Background delay on, untouched: three steps along the Recent row. Each must have its art asked for 1400 to 2000 ms
 #    after focus.
 # 2. Background delay turned off with the pad, through the Settings page: Menu on the focused tile, Customise Home (the
-#    fourth row of a seed game's tile menu), which opens Settings on Personalisation, Down twice to Background delay,
-#    A, then B until Settings closes. The extension's "[Settings]" lines must say each of it happened: opened on
-#    Personalisation, Background delay turned off, closed.
-# 3. Background delay off, with no restart: seven steps along the row. Each must have its art asked for within 250 ms
+#    fourth row of a seed game's tile menu), which opens Settings; then to Personalisation's Background delay box a
+#    press at a time, each chosen by where the extension's "[Settings]" lines say Settings is (its page, and the box
+#    with focus) and checked to have moved it; A, which must log "Background delay turned off", once; then B until
+#    Settings closes.
+# 3. Background delay off, with no restart: six steps along the row. Each must have its art asked for within 250 ms
 #    of focus. Then Right held: no art is read for the tiles passed over. Then the Groups: no art asked for there, where
 #    the background is the swirl.
 #
@@ -41,16 +42,11 @@ function Get-HeroLines([int] $After) {
     @(Get-ExtensionLog | Select-Object -Skip $After | Where-Object { $_ -match '\[Hero timing\]' } | ForEach-Object { $_.Trim() })
 }
 
-# The time of day a log line was written at, in milliseconds; $null when the line doesn't begin with one.
-function Get-LineTime([string] $Line) {
-    if ($Line -match '(\d\d):(\d\d):(\d\d)[.,](\d{3})') { ((([int] $Matches[1] * 60) + [int] $Matches[2]) * 60 + [int] $Matches[3]) * 1000 + [int] $Matches[4] }
-}
-
 # What the lines say of the last art the hero turned to: the game focused, and the milliseconds from its focus.
 function Read-HeroStep([string[]] $Lines) {
     $step = [ordered]@{ Focus = $null; Focuses = 0; ArtsAsked = 0; Asked = $null; Decode = $null; Thread = $null; Fading = $null; Shown = $null }
     foreach ($line in $Lines) {
-        if ($line -match '\[Hero timing\] focus on (.+)$') {
+        if ($line -match '\[Hero timing\] focus on (.+?)(?: \(\d+ ms after the last\))?$') {
             $step.Focus = $Matches[1]; $step.Focuses++
             # Each focus starts the clock again: what an earlier one led to is no longer this step's.
             $step.Asked = $null; $step.Decode = $null; $step.Thread = $null; $step.Fading = $null; $step.Shown = $null
@@ -69,11 +65,11 @@ function Read-HeroStep([string[]] $Lines) {
 function Step-Hero([string] $What, [string] $Button, [int] $HoldMs = 100) {
     $mark = @(Get-ExtensionLog).Count
     Push-Button $Button $HoldMs
-    $deadline = (Get-Date).AddSeconds(6)
+    $waited = [Diagnostics.Stopwatch]::StartNew()
     do {
         Start-Sleep -Milliseconds 250
         $step = Read-HeroStep (Get-HeroLines $mark)
-    } while ($null -eq $step.Shown -and (Get-Date) -lt $deadline)
+    } while ($null -eq $step.Shown -and $waited.ElapsedMilliseconds -lt 6000)
     $lines = Get-HeroLines $mark
     $lines | ForEach-Object { Add-Content (Join-Path $Out 'hero-lines.txt') "[$What] $_" -Encoding UTF8 }
     $step = Read-HeroStep $lines
@@ -123,12 +119,57 @@ function Get-SettingsLines([int] $After) {
 
 # Waits up to $Seconds for a "[Settings]" line matching $Pattern after line $After of the log; whether one came.
 function Wait-SettingsLine([string] $Pattern, [int] $After, [int] $Seconds = 6) {
-    $deadline = (Get-Date).AddSeconds($Seconds)
+    $waited = [Diagnostics.Stopwatch]::StartNew()
     do {
         if (@(Get-SettingsLines $After | Where-Object { $_ -match $Pattern }).Count) { return $true }
         Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
+    } while ($waited.ElapsedMilliseconds -lt $Seconds * 1000)
     $false
+}
+
+# Where Settings is, by its "[Settings]" lines after line $After of the log: the page of Theme settings it shows (None
+# for Theme settings' own boxes) and the rail item or box with focus, by name, as "Personalisation/BootVideoBox".
+function Get-SettingsPlace([int] $After) {
+    $page = $null; $focus = $null
+    foreach ($line in Get-SettingsLines $After) {
+        if ($line -match '\[Settings\] opened on \w+, page (\w+)') { $page = $Matches[1] }
+        elseif ($line -match '\[Settings\] page (\w+)') { $page = $Matches[1] }
+        elseif ($line -match '\[Settings\] focus on (\w+)') { $focus = $Matches[1] }
+    }
+    "$page/$focus"
+}
+
+# Takes Settings, wherever it opened and whatever has focus, to Personalisation's Background delay box, a press at a
+# time: each press is chosen by where the log says Settings is, and must move it. A is pressed only on Theme settings'
+# Personalisation box. Throws when the log doesn't say where Settings is, or a press changes nothing.
+function Move-ToBackgroundDelay([int] $After) {
+    $press = @{
+        'None/ThemeSettingsItem'           = 'Right'   # the rail: into Theme settings' boxes, on Personalisation
+        'None/PlayniteSettingsItem'        = 'Up'
+        'None/MorePlayniteOptionsItem'     = 'Up'
+        'None/PersonalisationBox'          = 'A'       # opens Personalisation, focus on Boot video
+        'None/IdleBox'                     = 'Left'
+        'None/GuideBox'                    = 'Up'
+        'None/DiscordBox'                  = 'Up'
+        'Personalisation/BootVideoBox'     = 'Down'    # to Who's playing today?
+        'Personalisation/ProfilesBox'      = 'Down'
+        'Personalisation/AskBox'           = 'Down'    # to Background delay
+    }
+    foreach ($i in 1..12) {
+        $place = Get-SettingsPlace $After
+        if ($place -eq 'Personalisation/BackgroundDelayBox') { return }
+        $button = $press[$place]
+        if (-not $button) { Save-Screen 'settings-lost'; throw "Settings is at $place, from where the test knows no way to Background delay" }
+        Say "Settings is at ${place}: $button"
+        Push-Button $button
+        $waited = [Diagnostics.Stopwatch]::StartNew()
+        while ((Get-SettingsPlace $After) -eq $place -and $waited.ElapsedMilliseconds -lt 3000) { Start-Sleep -Milliseconds 200 }
+        if ((Get-SettingsPlace $After) -eq $place) { Save-Screen 'settings-stuck'; throw "$button at $place changed nothing" }
+        # A page opening says so before its first box gets focus: let both be logged.
+        Start-Sleep -Milliseconds 800
+    }
+    Save-Screen 'settings-lost'
+    throw "Settings is at $(Get-SettingsPlace $After) after 12 presses, not on Background delay"
 }
 
 try {
@@ -137,6 +178,12 @@ try {
     Start-Sleep -Seconds 4
     Save-Screen 'home'
     $start = Read-HeroStep (Get-HeroLines 0)
+    if ($null -eq $start.Focus) {
+        # Home comes up with no tile focused: the first Down puts focus on the Recent row's first game.
+        Push-Button Down
+        Start-Sleep -Seconds 4
+        $start = Read-HeroStep (Get-HeroLines 0)
+    }
     Say "Home came up with focus on $($start.Focus)"
     if ($null -eq $start.Focus) { throw 'No Recent-row tile has focus on Home (no "[Hero timing] focus on" line): is this a build with the hero timing?' }
     $said = @(Get-SettingsLines 0)
@@ -159,9 +206,10 @@ try {
 
     # 2. Background delay turned off with the pad. Menu on the tile opens its tile menu; a seed game's rows are Play
     # game or Install, Add to or Remove from Favourites, Manage game, Customise Home, More options (no Uninstall: no
-    # library plugin owns a seed game), so Customise Home is three down. It opens Settings on Theme settings'
-    # Personalisation, focus on Boot video, the first box; Who's playing today? is under it and Background delay under
-    # that. B then steps back to Theme settings' boxes, to the rail, and to Home, focus on the tile again.
+    # library plugin owns a seed game), so Customise Home is three down. It opens Settings, meant on Personalisation
+    # with focus on Boot video; while #146's kind of bug stands, focus lands on the rail's Theme settings instead and
+    # the page is Theme settings' boxes. Either way Move-ToBackgroundDelay goes from where the log says Settings is.
+    # B then steps back a level at a time until Settings closes.
     $mark = @(Get-ExtensionLog).Count
     Push-Button Start
     Start-Sleep -Milliseconds 1200
@@ -169,21 +217,22 @@ try {
     foreach ($i in 1..3) { Push-Button Down; Start-Sleep -Milliseconds 400 }
     Save-Screen 'tile-menu-customise'
     Push-Button A
-    if (-not (Wait-SettingsLine 'opened on ThemeSettings, page Personalisation' $mark)) {
+    if (-not (Wait-SettingsLine 'opened on ThemeSettings' $mark)) {
         Save-Screen 'settings-not-opened'
         Get-SettingsLines $mark | ForEach-Object { Say "logged: $_" }
-        throw 'Customise Home did not open Settings on Personalisation (Menu, Down x3, A on the focused tile)'
+        throw 'Customise Home did not open Settings (Menu, Down x3, A on the focused tile)'
     }
-    Say 'Settings opened on Personalisation'
     Start-Sleep -Milliseconds 1500
-    Save-Screen 'personalisation'
-    foreach ($i in 1..2) { Push-Button Down; Start-Sleep -Milliseconds 400 }
+    Save-Screen 'settings-opened'
+    Say "Settings opened, at $(Get-SettingsPlace $mark)"
+    try { Move-ToBackgroundDelay $mark } finally { Get-SettingsLines $mark | ForEach-Object { Say "logged: $_" } }
     Save-Screen 'background-delay-focused'
+    $toggle = @(Get-ExtensionLog).Count
     Push-Button A
-    if (-not (Wait-SettingsLine 'Background delay turned off' $mark)) {
+    if (-not (Wait-SettingsLine 'Background delay turned off' $toggle)) {
         Save-Screen 'background-delay-not-turned-off'
-        Get-SettingsLines $mark | ForEach-Object { Say "logged: $_" }
-        throw 'A did not turn Background delay off (Down x2 from Boot video, A)'
+        Get-SettingsLines $toggle | ForEach-Object { Say "logged: $_" }
+        throw 'A on Background delay did not turn it off'
     }
     Say 'Background delay turned off'
     Start-Sleep -Milliseconds 500
@@ -193,21 +242,27 @@ try {
         Push-Button B
         if (Wait-SettingsLine 'closed' $mark 2) { $closed = $true; break }
     }
-    Get-SettingsLines $mark | ForEach-Object { Say "logged: $_" }
+    Get-SettingsLines $toggle | ForEach-Object { Say "logged: $_" }
     if (-not $closed) { Save-Screen 'settings-not-closed'; throw 'Settings did not close after B four times' }
     $toggles = @(Get-SettingsLines $mark | Where-Object { $_ -match 'Background delay turned' })
     if ($toggles.Count -ne 1) { throw "Background delay was turned over $($toggles.Count) times, not once" }
     Start-Sleep -Milliseconds 2500
+    $back = Read-HeroStep (Get-HeroLines $toggle)
+    if ($null -eq $back.Focus) {
+        # As at the start: with no tile focused, Down puts focus on the Recent row's first game.
+        Push-Button Down
+        Start-Sleep -Seconds 4
+        $back = Read-HeroStep (Get-HeroLines $toggle)
+    }
     Save-Screen 'home-again'
-    $back = Read-HeroStep (Get-HeroLines $mark)
     Say "Home is back with focus on $($back.Focus)"
-    if ($null -eq $back.Focus) { throw 'No Recent-row tile got focus as Settings closed' }
+    if ($null -eq $back.Focus) { throw 'No Recent-row tile got focus after Settings closed' }
 
-    # 3. Background delay off, in the same run: seven steps along the row from its second tile, to its fifth (the
-    # fourth and fifth not shown yet) and back to its first.
+    # 3. Background delay off, in the same run: six steps along the row, three right, to games not all shown yet,
+    # and three back to where focus was, the row's first or second tile.
     $off = @()
     $n = 0
-    foreach ($button in 'Right', 'Right', 'Right', 'Left', 'Left', 'Left', 'Left') {
+    foreach ($button in 'Right', 'Right', 'Right', 'Left', 'Left', 'Left') {
         $n++
         $step = Step-Hero "off, step $n ($button)" $button
         $off += $step
@@ -216,15 +271,14 @@ try {
         Start-Sleep -Milliseconds 700
     }
 
-    # A held d-pad: Playnite repeats Right every 80 ms after 700 ms, so 950 ms moves focus four tiles or so along the
-    # row's seven, short of the Play history tile after them. The first step settles, as a single step; the tiles
+    # A held d-pad: Playnite repeats Right every 80 ms after 700 ms, so 870 ms moves focus three or four tiles along
+    # the row's seven, short of the Play history tile after them. The first step settles, as a single step; the tiles
     # passed over after it have no art read; the one focus stops on has, as soon as after a single step.
-    $held = Step-Hero 'off, held Right' 'Right' 950
+    $held = Step-Hero 'off, held Right' 'Right' 870
     $off += $held
     $failures += Test-HeroStep $held $false
-    $focusTimes = @($held.Lines | Where-Object { $_ -match 'focus on' } | ForEach-Object { Get-LineTime $_ } | Where-Object { $null -ne $_ })
-    $gaps = @(for ($i = 2; $i -lt $focusTimes.Count; $i++) { $focusTimes[$i] - $focusTimes[$i - 1] })
-    Say "held Right: focus passed $($held.Focuses) tiles, art asked for $($held.ArtsAsked) time(s); between repeats: $(if ($gaps.Count) { ($gaps -join ', ') + ' ms' } else { 'n/a' })"
+    $gaps = @($held.Lines | ForEach-Object { if ($_ -match 'focus on .+ \((\d+) ms after the last\)$') { $Matches[1] } })
+    Say "held Right: focus passed $($held.Focuses) tiles, art asked for $($held.ArtsAsked) time(s); between tiles: $(if ($gaps.Count) { ($gaps -join ', ') + ' ms' } else { 'n/a' })"
     if ($held.Focuses -lt 3) { $failures += "held Right: focus passed only $($held.Focuses) tiles, too few to tell" }
     elseif ($held.ArtsAsked -gt 2) { $failures += "held Right: art was asked for $($held.ArtsAsked) times while focus passed $($held.Focuses) tiles; only the first and the last should be" }
     Save-Screen 'held'

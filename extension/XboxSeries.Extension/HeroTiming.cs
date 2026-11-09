@@ -15,11 +15,15 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private static readonly Stopwatch sinceFocus = new Stopwatch();
 
-        /// <summary>A Recent-row tile got focus: the clock starts again from zero.</summary>
+        /// <summary>
+        /// A Recent-row tile got focus: the clock starts again from zero. The line says how long after the last tile's
+        /// focus, by the same stopwatch, so a held d-pad's pace can be read without the log's own times.
+        /// </summary>
         public static void Focused(string title)
         {
+            var sinceLast = sinceFocus.IsRunning ? $" ({sinceFocus.ElapsedMilliseconds} ms after the last)" : "";
             sinceFocus.Restart();
-            logger.Info($"[Hero timing] focus on {title}");
+            logger.Info($"[Hero timing] focus on {title}{sinceLast}");
         }
 
         public static void Log(string what) => logger.Info($"[Hero timing] {what} at {sinceFocus.ElapsedMilliseconds} ms");

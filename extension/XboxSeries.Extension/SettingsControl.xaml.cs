@@ -54,6 +54,7 @@ namespace XboxSeries.Extension
             InitializeComponent();
             this.core = core;
             DataContext = core.Settings;
+            SettingsLog.FollowFocus(this);
             var guide = core.Settings.Guide;
             nowPlayingSource = new Dropdown(NowPlayingSourceBox, NowPlayingSourceList, NowPlayingSourceOptions,
                 () => guide.NowPlayingSources.Select(source =>

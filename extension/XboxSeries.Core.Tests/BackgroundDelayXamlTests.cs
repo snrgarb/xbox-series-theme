@@ -95,7 +95,9 @@ namespace XboxSeries.Core.Tests
             Assert.Contains("[Settings] opened on {settings.Category}, page {settings.ThemePage}", log);
             Assert.Contains("[Settings] closed", log);
             Assert.Contains("[Settings] Background delay {verb} {(state.BackgroundDelay ? \"on\" : \"off\")}", log);
+            Assert.Contains("[Settings] focus on {focused.Name}", log);
             Assert.Contains("SettingsLog.Follow(core);", Code("XboxSeriesPlugin.cs"));
+            Assert.Contains("SettingsLog.FollowFocus(this);", Code("SettingsControl.xaml.cs"));
         }
     }
 }
