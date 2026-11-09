@@ -160,15 +160,8 @@ namespace XboxSeries.Extension
         /// <summary>The top bar's My games &amp; apps: the page, on Games.</summary>
         public ICommand OpenGamesCommand { get; }
 
-        private static string Describe(object o) =>
-            o == null ? "null" : o.GetType().Name + "/" + (o as FrameworkElement)?.Name + "/" + (o as FrameworkElement)?.Tag + "/vis=" + (o as UIElement)?.IsVisible;
-
-        private void DiagFocus(object sender, KeyboardFocusChangedEventArgs e) =>
-            logger.Info("DIAG #146 focus " + Describe(e.OldFocus) + " -> " + Describe(e.NewFocus));
-
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            Window.GetWindow(this)?.AddHandler(Keyboard.GotKeyboardFocusEvent, new KeyboardFocusChangedEventHandler(DiagFocus), true);
             core.MyGames.PropertyChanged += OnStateChanged;
             core.TextEntry.PropertyChanged += OnTextEntryChanged;
 
@@ -271,7 +264,6 @@ namespace XboxSeries.Extension
                 case nameof(MyGamesState.Item):
                     // What the page shows now, for a log to tell which item opened and what changed it after.
                     logger.Info(core.MyGames.IsShown ? $"My games & apps shows {core.MyGames.Item}" : "My games & apps closed");
-                    logger.Info("DIAG #146 state " + e.PropertyName + " focus=" + Describe(Keyboard.FocusedElement) + "\n" + Environment.StackTrace);
                     // Another item's games, or the page opened afresh: right from the nav starts again at the first.
                     lastFocusedGridGame = null;
                     lastRowFocus = null;
@@ -1257,12 +1249,25 @@ namespace XboxSeries.Extension
             }
         }
 
-        // The highlight and its sound follow focus at once; the item's content waits for focus to settle on it.
+        /// <summary>
+        /// The highlight and its sound follow focus at once; the item's content waits for focus to settle on it. Only
+        /// for a move along the nav: focus that comes from the window itself was on nothing, and Playnite put it on the
+        /// window's first focusable element, which with the page up is the nav's first item, Games. That happens as the
+        /// page opens from Home, whose tile hides under it, and whenever what has focus goes, as a tile the main list
+        /// drops. It opens nothing (#146: See all's Full library became Games); focus goes on to the content showing.
+        /// </summary>
         private void OnNavFocused(object sender, KeyboardFocusChangedEventArgs e)
         {
-            logger.Info($"My games & apps nav focus on {ItemOfNav(sender)}, showing {core.MyGames.Item}");
-            logger.Info("DIAG #146 nav focus from " + Describe(e.OldFocus) + "\n" + Environment.StackTrace);
-            core.FocusMyGamesNav(ItemOfNav(sender).Value);
+            var item = ItemOfNav(sender).Value;
+            if (e.OldFocus is Window)
+            {
+                logger.Info($"My games & apps nav focus on {item} from nothing, not a move along the nav: still showing {core.MyGames.Item}");
+                FocusContentSoon();
+                return;
+            }
+
+            logger.Info($"My games & apps nav focus on {item}, showing {core.MyGames.Item}");
+            core.FocusMyGamesNav(item);
         }
 
         // Out of the nav other than into the content, as with Playnite leaving the foreground: an item waiting to open doesn't.
@@ -1441,7 +1446,6 @@ namespace XboxSeries.Extension
 
                 if (core.MyGames.ShowsGameGrid)
                 {
-                    logger.Info("DIAG #146 focus content: " + core.MyGames.Item + " list " + (mainList == null ? "null" : mainList.Items.Count + " vis=" + mainList.IsVisible));
                     // Gone from the list, as a game uninstalled off Games, it is -1, so the first. Opened again by B from
                     // Search, which Y on Games opened, the game Y was pressed on.
                     var last = lastFocusedGridGame == null || mainList == null ? -1 : mainList.Items.IndexOf(lastFocusedGridGame);
@@ -1503,7 +1507,6 @@ namespace XboxSeries.Extension
         {
             if (mainList == null || mainList.Items.Count == 0)
             {
-                logger.Info("DIAG #146 focus game: no list or no games, to the nav");
                 NavItemOf(core.MyGames.Item).Focus();
                 return;
             }
@@ -1519,12 +1522,7 @@ namespace XboxSeries.Extension
 
             if (mainList.ItemContainerGenerator.ContainerFromIndex(index) is UIElement game)
             {
-                var focused = game.Focus();
-                logger.Info($"DIAG #146 focus game {index} of {mainList.Items.Count}: {focused}, now {Describe(Keyboard.FocusedElement)}");
-            }
-            else
-            {
-                logger.Info($"DIAG #146 focus game {index} of {mainList.Items.Count}: no tile built, focus stays on {Describe(Keyboard.FocusedElement)}");
+                game.Focus();
             }
         }
 

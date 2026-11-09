@@ -112,6 +112,21 @@ namespace XboxSeries.Core.Tests
             Assert.Matches(new Regex(@"void OnSeeAllKeyDown\([^)]*\)\s*\{\s*if \(PlayniteInput\.PadButtonOf\(e\) == ControllerInput\.A\)\s*\{\s*e\.Handled = true;\s*core\.ChooseSeeAll\(\(HomeGroup\)", RegexOptions.Singleline), code);
         }
 
+        [Fact]
+        public void Focus_Playnite_puts_on_the_nav_from_nothing_as_the_page_opens_never_opens_that_nav_item()
+        {
+            // #146: See all's tile hides under the page, focus is on nothing, and Playnite puts it on the window's first
+            // focusable element, the nav's Games item. That focus comes from the window, and must not reach the core,
+            // where focus on a nav item opens it.
+            var code = File.ReadAllText(Path.Combine(ExtensionDir, "MyGamesControl.xaml.cs"));
+            var handler = Regex.Match(code, @"void OnNavFocused\(object sender, KeyboardFocusChangedEventArgs e\)\s*\{(.*?)\n        \}", RegexOptions.Singleline).Groups[1].Value;
+            Assert.Matches(new Regex(@"^\s*var item = ItemOfNav\(sender\)\.Value;\s*if \(e\.OldFocus is Window\)\s*\{[^;]*;\s*FocusContentSoon\(\);\s*return;\s*\}", RegexOptions.Singleline), handler);
+            Assert.DoesNotContain("FocusMyGamesNav", Regex.Match(handler, @"if \(e\.OldFocus is Window\)\s*\{(.*?)return;", RegexOptions.Singleline).Groups[1].Value);
+
+            // The one place the view tells the core of nav focus.
+            Assert.Single(Regex.Matches(code, @"core\.FocusMyGamesNav\(").Cast<Match>());
+        }
+
         private static string FindRepoRoot()
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);

@@ -1,20 +1,25 @@
-# See all at the end of a Group on Home, with the pad only (#146): A on it opens My games & apps on Full library with
-# the Group's filter preset selected, it stays there (it doesn't move to Games, then or as focus moves in the grid),
-# and B goes back to Home with focus on that See all tile. Done for the first Group (the seed's "My Picks") and for
-# the Group under it. The seed's library always has presets shown in Fullscreen, so the default Favourites Group,
-# which has no preset and shows only without any, isn't covered.
+# Opening My games & apps from a tile on Home, with the pad only (#146): A on the tile opens the page on the tile's
+# item, it stays there (it doesn't move to Games, then or as focus moves in the content), and B goes back to Home, for
+# See all with focus on that tile (from Play history the Recent row takes focus on its last focused game). Done for the Recent row's Play history tile (Play history), for See all on the first Group, the
+# seed's "My Picks" (Full library, that preset selected), and for See all on the Group under it. The seed's library
+# always has presets shown in Fullscreen, so the default Favourites Group, which has no preset and shows only without
+# any, isn't covered.
 #
-# Judged by the extension's log lines, each quoted in steps.txt with its own time:
+# Before the fix, the tile hiding under the page left focus on nothing, Playnite put it on the window's first focusable
+# element, the nav's Games item, and focus on a nav item opened it: the log read "shows FullLibrary" then "shows Games".
+#
+# Judged by the extension's log lines, in the order logged (never by their times: the VM's clock may jump), each
+# quoted in steps.txt:
+#   Home focus on the Play history tile
 #   Home focus on See all of the Group <name>
 #   My games & apps shows <item> / My games & apps closed
 #   Filter preset <name> selected
 #   My games & apps nav focus on <item>, showing <item>
-# and, while the build logs them, the "DIAG #146" lines (every keyboard focus move in the window, with what took
-# focus), first lines only; the whole of them, stack traces too, are in extensions.log.
+#   My games & apps nav focus on <item> from nothing, not a move along the nav: still showing <item>
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
-$told = 'Home focus on See all|My games & apps (shows|closed|nav focus)|Filter preset .* selected|DIAG #146'
+$told = 'Home focus on|My games & apps (shows|closed|nav focus)|Filter preset .* selected'
 
 # The extension's own log only, so a mark in it stays where it was as Playnite's log grows.
 function Get-ExtensionLog { @(Get-Content (Join-Path $Data 'extensions.log') -ErrorAction SilentlyContinue) }
@@ -23,28 +28,35 @@ function Get-LogLines([int] $After, [string] $Pattern) {
     @(Get-ExtensionLog | Select-Object -Skip $After | Where-Object { $_ -match $Pattern } | ForEach-Object { $_.Trim() })
 }
 
-# Waits up to $Seconds for a line matching $Pattern after $After; the line, or $null.
+# Waits up to $Seconds (by a stopwatch, not the clock) for a line matching $Pattern after $After; the line, or $null.
 function Wait-Line([string] $Pattern, [int] $Seconds, [int] $After) {
-    $deadline = (Get-Date).AddSeconds($Seconds)
+    $watch = [Diagnostics.Stopwatch]::StartNew()
     do {
         $hit = Get-LogLines $After $Pattern | Select-Object -First 1
         if ($hit) { return $hit }
         Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
+    } while ($watch.Elapsed.TotalSeconds -lt $Seconds)
     $null
 }
 
 # What the log told since $After, into steps.txt.
 function Write-Told([int] $After) { Get-LogLines $After $told | ForEach-Object { Say "  log: $_" } }
 
-# The item the page shows by the log's last word on it since $After: 'FullLibrary', 'Games'..., 'closed', or $null.
+# Every item the page showed since $After, in order: 'FullLibrary', 'Games'...; always an array.
+function Get-Opened([int] $After) {
+    , @(Get-LogLines $After 'My games & apps shows \w+' | ForEach-Object { if ($_ -match 'My games & apps shows (\w+)') { $Matches[1] } })
+}
+
+# What the page shows by the log's last word on it since $After: an item, 'closed', or $null with no word.
 function Get-Shown([int] $After) {
     $last = Get-LogLines $After 'My games & apps (shows \w+|closed)' | Select-Object -Last 1
     if ($last -match 'My games & apps shows (\w+)') { $Matches[1] } elseif ($last) { 'closed' } else { $null }
 }
 
-# From a See all tile with focus, the Group named: A, and what must follow.
-function Test-SeeAll([string] $Group, [string] $Shot) {
+# From the tile $What with focus: A, and what must follow. $Item is the item the page must open on and keep; $HomeLine,
+# a pattern for the log line that says focus is back on the tile after B, if it must be; $Preset, the filter preset
+# that must be selected with the item, if any.
+function Test-Opens([string] $What, [string] $Item, [string] $HomeLine, [string] $Shot, [string] $Preset) {
     $mark = Get-Mark
     Push-Button A
     Wait-Line 'My games & apps shows \w+' 5 $mark | Out-Null
@@ -53,16 +65,18 @@ function Test-SeeAll([string] $Group, [string] $Shot) {
     Start-Sleep -Seconds 3
     Save-Screen "$Shot-2-settled"
     Write-Told $mark
-    $opened = Get-LogLines $mark 'My games & apps shows \w+' | ForEach-Object { $_ -replace '^.*shows ', '' }
+    $opened = Get-Opened $mark
     $shown = Get-Shown $mark
-    Say "See all on $Group opened: $(if ($opened) { $opened -join ', then ' } else { 'nothing' }); 4.5 s later the page shows $shown"
-    if (-not $opened) { $script:failures += "See all on $Group opened nothing" }
-    elseif ($opened[0] -ne 'FullLibrary') { $script:failures += "See all on $Group opened $($opened[0]), not Full library" }
-    if ($opened -and $shown -ne 'FullLibrary') { $script:failures += "See all on ${Group}: the page moved from Full library to $shown by itself" }
-    $preset = Get-LogLines $mark 'Filter preset (.*) selected' | Select-Object -Last 1
-    if ($preset -notmatch "Filter preset $([regex]::Escape($Group)) selected`$") { $script:failures += "See all on ${Group}: its preset was not selected ($preset)" }
+    Say "$What opened: $(if ($opened.Count) { $opened -join ', then ' } else { 'nothing' }); 4.5 s later the page shows $shown"
+    if (-not $opened.Count) { $script:failures += "$What opened nothing"; return }
+    if ($opened[0] -ne $Item) { $script:failures += "$What opened $($opened[0]), not $Item" }
+    if ($shown -ne $Item) { $script:failures += "${What}: the page moved to $shown by itself, from $Item" }
+    if ($Preset) {
+        $selected = Get-LogLines $mark 'Filter preset .* selected$' | Select-Object -Last 1
+        if ($selected -notmatch "Filter preset $([regex]::Escape($Preset)) selected`$") { $script:failures += "${What}: the preset $Preset was not selected ($selected)" }
+    }
 
-    # Moving in the grid keeps the page on Full library.
+    # Moving in the content keeps the page on its item.
     $move = Get-Mark
     Push-Button Right; Start-Sleep -Milliseconds 800
     Push-Button Down; Start-Sleep -Milliseconds 1500
@@ -70,19 +84,21 @@ function Test-SeeAll([string] $Group, [string] $Shot) {
     Write-Told $move
     $moved = Get-Shown $move
     if ($moved) {
-        Say "after Right and Down in the grid the page shows $moved"
-        $script:failures += "See all on ${Group}: Right and Down in the grid moved the page to $moved"
+        Say "after Right and Down in the content the page shows $moved"
+        $script:failures += "${What}: Right and Down in the content moved the page to $moved"
     }
 
-    # B: back to Home, focus on the See all tile it left.
+    # B: back to Home, focus on the tile it left where that is told.
     $back = Get-Mark
     Push-Button B
-    $home_ = Wait-Line "Home focus on See all of the Group $([regex]::Escape($Group))`$" 5 $back
+    Wait-Line 'My games & apps closed' 5 $back | Out-Null
+    $home_ = if ($HomeLine) { Wait-Line $HomeLine 5 $back } else { $true }
     Start-Sleep -Milliseconds 1200
     Save-Screen "$Shot-4-after-b"
     Write-Told $back
-    if ((Get-Shown $back) -ne 'closed') { $script:failures += "See all on ${Group}: B did not close the page (it shows $(Get-Shown $back))" }
-    elseif (-not $home_) { $script:failures += "See all on ${Group}: B went back to Home, but not to focus on its See all tile" }
+    $after = Get-Shown $back
+    if ($after -ne 'closed') { $script:failures += "${What}: B did not close the page (it shows $after)" }
+    elseif (-not $home_) { $script:failures += "${What}: B went back to Home, but not to focus on the tile" }
 }
 
 # The Group whose See all tile has focus by the log's last word since $After.
@@ -97,40 +113,52 @@ try {
     Start-Sleep -Seconds 6  # the "Hi <user>!" toast over Home's foot has gone
     Save-Screen '0-home'
 
-    # Down to the Groups, then right along the first one, to its last tile: See all. A Group holds 6 games at most.
+    # Down from the top bar to the Recent row, then right along its seven games to its last tile: Play history.
+    $mark = Get-Mark
+    Push-Button Down
+    Start-Sleep -Milliseconds 1500
+    foreach ($n in 1..8) { Push-Button Right; Start-Sleep -Milliseconds 500 }
+    Save-Screen '1-play-history-tile'
+    Write-Told $mark
+    if (Get-LogLines $mark 'Home focus on the Play history tile$') {
+        Test-Opens 'The Play history tile' 'PlayHistory' '' 'history'
+    } else { $failures += 'Never reached the Play history tile (see 1-play-history-tile.jpg)' }
+
+    # Down past the four wide tiles to the Groups, then right along the first one, to its last tile: See all. A Group
+    # holds 6 games at most.
     $mark = Get-Mark
     $first = $null
     foreach ($try in 1..3) {
         Push-Button Down
         Start-Sleep -Milliseconds 1500
-        foreach ($n in 1..7) { Push-Button Right; Start-Sleep -Milliseconds 400 }
+        foreach ($n in 1..7) { Push-Button Right; Start-Sleep -Milliseconds 500 }
         $first = Get-SeeAllGroup $mark
         if ($first) { break }
         Say "no See all tile has focus after $try Down and 7 Right"
     }
-    Save-Screen '1-see-all'
+    Save-Screen '2-see-all'
     Write-Told $mark
-    if (-not $first) { throw 'Never reached a See all tile on Home (see 1-see-all.jpg)' }
+    if (-not $first) { throw 'Never reached a See all tile on Home (see 2-see-all.jpg)' }
     Say "focus on See all of the Group $first"
-    Test-SeeAll $first 'first'
+    Test-Opens "See all on $first" 'FullLibrary' "Home focus on See all of the Group $([regex]::Escape($first))`$" 'first' $first
 
     # The Group under it: Down keeps the place in the row, so its See all tile, or its last game if it is shorter.
     $mark = Get-Mark
     Push-Button Down
     Start-Sleep -Milliseconds 1500
-    foreach ($n in 1..7) { Push-Button Right; Start-Sleep -Milliseconds 400 }
+    foreach ($n in 1..7) { Push-Button Right; Start-Sleep -Milliseconds 500 }
     $second = Get-SeeAllGroup $mark
-    Save-Screen '2-see-all'
+    Save-Screen '3-see-all'
     Write-Told $mark
-    if (-not $second -or $second -eq $first) { $failures += "Never reached the second Group's See all tile (see 2-see-all.jpg)" }
+    if (-not $second -or $second -eq $first) { $failures += "Never reached the second Group's See all tile (see 3-see-all.jpg)" }
     else {
         Say "focus on See all of the Group $second"
-        Test-SeeAll $second 'second'
+        Test-Opens "See all on $second" 'FullLibrary' "Home focus on See all of the Group $([regex]::Escape($second))`$" 'second' $second
     }
 
     if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { $failures += 'Playnite exited' }
     $errors = @(([regex]'(?m)^.*\|ERROR\|.*$').Matches((Get-PlayniteLog)) | ForEach-Object Value)
-    $errors | ForEach-Object { Say "logged: $_" }  # told, not judged: this test is about See all
+    $errors | ForEach-Object { Say "logged: $_" }  # told, not judged: this test is about what the tiles open
 
     if ($failures.Count -eq 0) { $result = 'PASS' }
 } catch {

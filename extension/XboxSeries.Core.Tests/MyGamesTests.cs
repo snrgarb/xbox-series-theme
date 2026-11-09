@@ -296,6 +296,18 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void A_step_along_the_nav_after_the_clock_was_set_back_still_opens_the_item_at_once()
+        {
+            core.OpenMyGames(MyGamesItem.Games);
+            core.FocusMyGamesNav(MyGamesItem.Games);
+            clock.Advance(TimeSpan.FromHours(-19));
+
+            core.FocusMyGamesNav(MyGamesItem.FullLibrary);
+
+            Assert.Equal(MyGamesItem.FullLibrary, core.MyGames.Item);
+        }
+
+        [Fact]
         public void Focus_moving_on_along_the_nav_opens_an_item_once_it_has_stayed_there()
         {
             core.OpenMyGames(MyGamesItem.Games);
