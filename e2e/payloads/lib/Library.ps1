@@ -3,18 +3,36 @@
 # 32-bit, and only while Playnite isn't running: the library's files are open to one process at a time.
 #   -Write <file>   adds the games in that JSON file (Initialize-Library's, each with its Id) and the "My Picks" preset
 #   -Read <file>    writes what the library holds to that JSON file
+#   -BackgroundWidth <pixels>   with -Write: the backgrounds that wide (16:9) and grained, rather than 1920x1080 and flat
 # Prints nothing and exits 0 when done; else prints what went wrong and exits 1.
-param([string] $Program, [string] $Library, [string] $Write, [string] $Read)
+param([string] $Program, [string] $Library, [string] $Write, [string] $Read, [int] $BackgroundWidth = 0)
 $ErrorActionPreference = 'Stop'
 
 # A picture of one colour (a hue in degrees, at a brightness of 0 to 1) with $Text in its middle; .png or .jpg by $Path.
-function New-SeedImage([string] $Path, [string] $Text, [int] $Width, [int] $Height, [double] $Hue, [double] $Brightness) {
+# With -Grain, coarse noise shows faintly through the colour: a flat picture is a few kilobytes that decode in no time,
+# and a test of how long large art takes to show needs one as heavy as a photograph.
+function New-SeedImage([string] $Path, [string] $Text, [int] $Width, [int] $Height, [double] $Hue, [double] $Brightness, [switch] $Grain) {
     # Doubles throughout: with an integer first, PowerShell picks Math.Max(int, int) and rounds the hue to a sixth.
     $part = { param([double] $n) $k = ($n + $Hue / 60.0) % 6.0
         [int](255.0 * $Brightness * (1.0 - 0.7 * [Math]::Max(0.0, [Math]::Min([Math]::Min($k, 4.0 - $k), 1.0)))) }
     $bmp = New-Object System.Drawing.Bitmap $Width, $Height
     $g = [System.Drawing.Graphics]::FromImage($bmp)
     $g.Clear([System.Drawing.Color]::FromArgb((& $part 5), (& $part 3), (& $part 1)))
+    if ($Grain) {
+        $noise = New-Object System.Drawing.Bitmap 480, 270, ([System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
+        $all = New-Object System.Drawing.Rectangle 0, 0, 480, 270
+        $data = $noise.LockBits($all, [System.Drawing.Imaging.ImageLockMode]::WriteOnly, $noise.PixelFormat)
+        $bytes = New-Object byte[] ($data.Stride * 270)
+        (New-Object System.Random ([int] $Hue)).NextBytes($bytes)
+        [System.Runtime.InteropServices.Marshal]::Copy($bytes, 0, $data.Scan0, $bytes.Length)
+        $noise.UnlockBits($data)
+        $faint = New-Object System.Drawing.Imaging.ColorMatrix
+        $faint.Matrix33 = 0.25
+        $how = New-Object System.Drawing.Imaging.ImageAttributes
+        $how.SetColorMatrix($faint)
+        $g.DrawImage($noise, (New-Object System.Drawing.Rectangle 0, 0, $Width, $Height), 0, 0, 480, 270, [System.Drawing.GraphicsUnit]::Pixel, $how)
+        $how.Dispose(); $noise.Dispose()
+    }
     $font = New-Object System.Drawing.Font('Segoe UI', [single]($Width / 12), [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
     $centre = New-Object System.Drawing.StringFormat
     $centre.Alignment = 'Center'; $centre.LineAlignment = 'Center'
@@ -53,7 +71,11 @@ try {
                 }
                 $files = $db.GetFileStoragePath($game.Id)
                 New-SeedImage (Join-Path $files 'cover.png') $game.Name 600 900 $hue 0.85
-                New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" 1920 1080 $hue 0.45
+                if ($BackgroundWidth) {
+                    New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" $BackgroundWidth ([int]($BackgroundWidth * 9 / 16)) $hue 0.45 -Grain
+                } else {
+                    New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" 1920 1080 $hue 0.45
+                }
                 $game.CoverImage = "$($game.Id)\cover.png"
                 $game.BackgroundImage = "$($game.Id)\background.jpg"
                 $db.Games.Add($game)

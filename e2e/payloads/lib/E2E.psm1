@@ -199,7 +199,10 @@ function Invoke-Library([string[]] $Arguments) {
 # (600x900) and background.jpg (1920x1080, a darker shade of the same colour, reading "<name> background"). Games are
 # added in order, a minute apart, the first the most recently added. What was written is in $env:E2E_OUT\library.json,
 # as Get-Library reads it.
-function Initialize-Library([hashtable[]] $Games = @(), [switch] $NoSeed) {
+#
+# With -BackgroundWidth, the backgrounds are that wide (3840 for 3840x2160) and grained, so as large and as slow to
+# read and decode as a player's own art, for a test that times it.
+function Initialize-Library([hashtable[]] $Games = @(), [switch] $NoSeed, [int] $BackgroundWidth = 0) {
     $specs = @(@(if (-not $NoSeed) { $script:SeedGames }) + $Games | ForEach-Object {
         $spec = $_.Clone()
         if (-not $spec.Id) { $spec.Id = Get-SeedId $spec.Name }
@@ -208,7 +211,7 @@ function Initialize-Library([hashtable[]] $Games = @(), [switch] $NoSeed) {
     $file = Join-Path $env:TEMP 'e2e-library-games.json'
     ConvertTo-Json $specs -Depth 4 | Set-Content $file -Encoding UTF8
     $written = Join-Path $script:Out 'library.json'
-    Invoke-Library '-Write', $file, '-Read', $written
+    Invoke-Library (@('-Write', $file, '-Read', $written) + @(if ($BackgroundWidth) { '-BackgroundWidth', $BackgroundWidth }))
     $library = Get-Content $written -Raw -Encoding UTF8 | ConvertFrom-Json
     Say "library seeded: $($library.Games.Count) games, presets $(($library.Presets | ForEach-Object Name) -join ', ')"
     Write-LibrarySteps $library
@@ -235,10 +238,10 @@ function Get-Library {
 
 # Starts Fullscreen on the new install and takes Start-up through to Home: skips the Boot video, picks the one profile
 # at Who's playing today?, and waits for Start-up to finish. With -Library, Playnite's library is the seed's rather
-# than empty, and with -Games those games too: see Initialize-Library.
-function Start-Dashboard([string] $PayloadDir, [switch] $Library, [hashtable[]] $Games = @()) {
+# than empty, and with -Games those games too, and with -BackgroundWidth their backgrounds that large: see Initialize-Library.
+function Start-Dashboard([string] $PayloadDir, [switch] $Library, [hashtable[]] $Games = @(), [int] $BackgroundWidth = 0) {
     Initialize-Playnite $PayloadDir
-    if ($Library -or $Games.Count) { Initialize-Library -Games $Games }
+    if ($Library -or $Games.Count) { Initialize-Library -Games $Games -BackgroundWidth $BackgroundWidth }
     Start-Fullscreen | Out-Null
     if (-not (Wait-PlayniteLog 'Xbox Series extension started on the Dashboard' 120)) {
         $dormant = Wait-PlayniteLog 'Xbox Series extension stays dormant[^\r\n]*' 1
