@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using XboxSeries.Core.Tests.Fakes;
 using Xunit;
@@ -159,17 +160,17 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Hero_waits_for_focus_to_settle_on_a_tile_before_following_it_along_the_row()
+        public void Hero_follows_focus_along_the_row_once_it_has_stayed_on_a_tile_for_150_ms()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
                 .Snapshot());
             core.FocusHomeTile(Tile("Halo Infinite"));
-            clock.Advance(TimeSpan.FromSeconds(1.5));
+            Settle();
 
             MoveFocus("Halo Infinite", "Hades");
-            clock.Advance(TimeSpan.FromMilliseconds(1499));
+            clock.Advance(TimeSpan.FromMilliseconds(149));
 
             Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
 
@@ -179,26 +180,38 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Scrolling_past_tiles_leaves_the_hero_until_focus_settles()
+        public void A_held_d_pad_passes_over_tiles_without_the_hero_following_until_focus_stops()
         {
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
                 .WithGame("Tunic", lastActivity: new DateTime(2026, 10, 10), backgroundImage: @"C:\art\tunic-bg.jpg")
+                .WithGame("Celeste", lastActivity: new DateTime(2026, 10, 9), backgroundImage: @"C:\art\celeste-bg.jpg")
                 .Snapshot());
+            var shown = new List<string>();
+            core.Home.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(HomeState.Hero))
+                {
+                    shown.Add(core.Home.Hero?.Image);
+                }
+            };
             core.FocusHomeTile(Tile("Halo Infinite"));
-            clock.Advance(TimeSpan.FromSeconds(1.5));
+            Settle();
 
+            // Playnite repeats a held direction every 80 ms; a slow frame can stretch a step.
             MoveFocus("Halo Infinite", "Hades");
-            clock.Advance(TimeSpan.FromSeconds(1));
+            clock.Advance(TimeSpan.FromMilliseconds(80));
             MoveFocus("Hades", "Tunic");
-            clock.Advance(TimeSpan.FromSeconds(1));
+            clock.Advance(TimeSpan.FromMilliseconds(120));
+            MoveFocus("Tunic", "Celeste");
+            clock.Advance(TimeSpan.FromMilliseconds(149));
 
-            Assert.Equal(@"C:\art\halo-bg.jpg", core.Home.Hero.Image);
+            Assert.Equal(new[] { @"C:\art\halo-bg.jpg" }, shown);
 
-            clock.Advance(TimeSpan.FromSeconds(0.5));
+            clock.Advance(TimeSpan.FromMilliseconds(1));
 
-            Assert.Equal(@"C:\art\tunic-bg.jpg", core.Home.Hero.Image);
+            Assert.Equal(new[] { @"C:\art\halo-bg.jpg", @"C:\art\celeste-bg.jpg" }, shown);
         }
 
         [Fact]
@@ -447,7 +460,7 @@ namespace XboxSeries.Core.Tests
         private string[] RecentRow() => core.Home.RecentRow.Select(t => t.Title).ToArray();
 
         /// <summary>Focus stays put long enough for the hero to follow it.</summary>
-        private void Settle() => clock.Advance(TimeSpan.FromSeconds(1.5));
+        private void Settle() => clock.Advance(TimeSpan.FromMilliseconds(150));
 
         private HomeTile Tile(string title) => core.Home.RecentRow.Single(t => t.Title == title);
 

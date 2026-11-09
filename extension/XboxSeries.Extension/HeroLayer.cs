@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -47,25 +48,47 @@ namespace XboxSeries.Extension
 
         public Grid Root { get; } = new Grid { ClipToBounds = true };
 
-        /// <summary>Shows <paramref name="art"/>; for none, keeps the last, to fade out as it is.</summary>
+        /// <summary>Shows <paramref name="art"/>, read and decoded here and now; for none, keeps the last, to fade out as it is.</summary>
         public void Show(HeroArt art)
         {
-            if (art == null)
+            if (art != null)
             {
-                return;
+                Show(art, Decode(art));
             }
+        }
 
+        /// <summary>
+        /// Whether <paramref name="art"/> can be decoded away from the UI thread (<see cref="Decode"/>): a file can, read
+        /// whole and frozen. A URL can't: it downloads on the dispatcher of the thread that asked for it, which a
+        /// pool thread hasn't, and isn't frozen until it has arrived.
+        /// </summary>
+        public static bool DecodesOffThread(HeroArt art) =>
+            Uri.TryCreate(art.Image, UriKind.Absolute, out var uri) && uri.IsFile;
+
+        /// <summary>
+        /// The picture of <paramref name="art"/> at the size this layer shows it, for <see cref="Show(HeroArt, BitmapImage)"/>.
+        /// Reading and decoding large background art takes tenths of a second, so whoever follows focus with it does this
+        /// on another thread when <see cref="DecodesOffThread"/>. Null when it can't be read.
+        /// </summary>
+        public BitmapImage Decode(HeroArt art) =>
+            art.IsCover
+                ? DecodedImageConverter.Load(art.Image, CoverDecodeWidth)
+                : DecodedImageConverter.Load(art.Image, artDecodeWidth);
+
+        /// <summary>Shows <paramref name="art"/>, whose picture <paramref name="decoded"/> is, from <see cref="Decode"/>.</summary>
+        public void Show(HeroArt art, BitmapImage decoded)
+        {
             // A cover is small and portrait: blurred, it reads as colour behind what is over it rather than as a stretched
             // picture. It overhangs the layer so the blur's soft edges fall outside it.
             var isCover = art.IsCover;
             pendingCover = null;
             if (isCover)
             {
-                ShowCover(DecodedImageConverter.Load(art.Image, CoverDecodeWidth));
+                ShowCover(decoded);
             }
             else
             {
-                image.Source = DecodedImageConverter.Load(art.Image, artDecodeWidth);
+                image.Source = decoded;
             }
 
             image.Margin = isCover ? new Thickness(-120) : new Thickness(0);

@@ -32,8 +32,13 @@ namespace XboxSeries.Core
         /// <summary>How soon a second A on the same Home tile counts as a double-tap, which launches the game.</summary>
         private static readonly TimeSpan DoubleTapWindow = TimeSpan.FromMilliseconds(300);
 
-        /// <summary>How long focus has to stay on a Recent-row tile before the hero follows it, so scrolling past doesn't flicker it.</summary>
-        private static readonly TimeSpan HeroSettle = TimeSpan.FromSeconds(1.5);
+        /// <summary>
+        /// How long focus has to stay on a Recent-row tile before the hero follows it. Only long enough that a held
+        /// d-pad, which Playnite repeats every 80 ms, passes over tiles without their art being read and flickered
+        /// through: a single step has the hero on its way before the eye has left the tile (#147; at 1.5 s, with the
+        /// art's decoding and the crossfade after it, the hero trailed focus by seconds).
+        /// </summary>
+        private static readonly TimeSpan HeroSettle = TimeSpan.FromMilliseconds(150);
 
         /// <summary>
         /// How long the hero waits, once focus has left a Recent-row tile, for it to land on another before the swirl
