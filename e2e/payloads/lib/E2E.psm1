@@ -72,6 +72,13 @@ function Wait-PlayniteLog([string] $Pattern, [int] $Seconds = 30, [int] $After =
 
 function Get-PlayniteLogLength { @((Get-PlayniteLog) -split "`n").Count }
 
+# The lines of extensions.log alone, where the extension's own lines go. A test that reads what was logged since a
+# moment counts these (@(Get-ExtensionLog).Count) and skips that many later: Get-PlayniteLog's lines are two files'
+# end to end, so a line Playnite adds to the first shifts the second's past any count taken before.
+function Get-ExtensionLog {
+    @(Get-Content (Join-Path $script:Data 'extensions.log') -ErrorAction SilentlyContinue)
+}
+
 function Get-Foreground {
     $pid_ = [E2EDesk]::ForegroundPid()
     $name = (Get-Process -Id $pid_ -ErrorAction SilentlyContinue).ProcessName

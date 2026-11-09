@@ -177,11 +177,18 @@ namespace XboxSeries.Core
         private void Changed(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
     }
 
-    /// <summary>Personalisation, in Settings: the boot video, the profiles, and whether Who's playing today? asks.</summary>
+    /// <summary>
+    /// Personalisation, in Settings: the boot video, the profiles, whether Who's playing today? asks, and whether Home's
+    /// background waits on a game before showing its art.
+    /// </summary>
     public sealed class StartUpSettingsState : INotifyPropertyChanged
     {
+        /// <summary>Whether Background delay is on until the player sets it: on, as Home has waited since 0.1.0.</summary>
+        public const bool BackgroundDelayByDefault = true;
+
         private BootVideo bootVideo = BootVideo.XboxSeriesX;
         private bool askWhosPlaying = true;
+        private bool backgroundDelay = BackgroundDelayByDefault;
         private IReadOnlyList<Profile> profiles = new Profile[0];
         private IReadOnlyList<string> gamerpics = new string[0];
 
@@ -198,6 +205,16 @@ namespace XboxSeries.Core
         {
             get => askWhosPlaying;
             internal set => Set(ref askWhosPlaying, value, nameof(AskWhosPlaying));
+        }
+
+        /// <summary>
+        /// Whether Home's hero waits for focus to rest 1.5 s on a Recent-row game before showing its art; off, it follows
+        /// focus after 150 ms. <see cref="BackgroundDelayByDefault"/> until set.
+        /// </summary>
+        public bool BackgroundDelay
+        {
+            get => backgroundDelay;
+            internal set => Set(ref backgroundDelay, value, nameof(BackgroundDelay));
         }
 
         /// <summary>Every profile, in the order Who's playing today? shows them. There is always at least one.</summary>

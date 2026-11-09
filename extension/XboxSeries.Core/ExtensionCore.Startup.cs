@@ -14,7 +14,7 @@ namespace XboxSeries.Core
     {
         /// <summary>
         /// The secret store's name for the Personalisation options, as JSON: the boot video, whether Who's playing today? asks,
-        /// the profiles and the one last signed in. They aren't secret, but the store keeps the extension's own options.
+        /// Background delay, the profiles and the one last signed in. They aren't secret, but the store keeps the extension's own options.
         /// </summary>
         private const string StartUpSecret = "StartUp";
 
@@ -25,6 +25,9 @@ namespace XboxSeries.Core
 
         /// <summary>The profile signed in last, whom Who's playing today? focuses and, when it doesn't ask, signs in; null for the first.</summary>
         private string lastProfileId;
+
+        /// <summary>Background delay as the player set it; null while they never have, and the default stands.</summary>
+        private bool? backgroundDelayChosen;
 
         /// <summary>Signing you in's <see cref="SigningInDuration"/>, while it shows; null otherwise.</summary>
         private IDisposable signingInTimer;
@@ -141,6 +144,17 @@ namespace XboxSeries.Core
         public void SetAskWhosPlaying(bool ask)
         {
             Settings.StartUp.AskWhosPlaying = ask;
+            SaveStartUp();
+        }
+
+        /// <summary>
+        /// Settings' Background delay box: whether Home's hero waits for focus to rest on a Recent-row game before showing
+        /// its art. Saved at once, and in force from the next tile focused.
+        /// </summary>
+        public void SetBackgroundDelay(bool on)
+        {
+            backgroundDelayChosen = on;
+            Settings.StartUp.BackgroundDelay = on;
             SaveStartUp();
         }
 
@@ -283,6 +297,8 @@ namespace XboxSeries.Core
             lastProfileId = saved?.LastProfileId;
             Settings.StartUp.BootVideo = saved != null && Enum.IsDefined(typeof(BootVideo), saved.BootVideo) ? saved.BootVideo : BootVideo.XboxSeriesX;
             Settings.StartUp.AskWhosPlaying = saved?.AskWhosPlaying ?? true;
+            backgroundDelayChosen = saved?.BackgroundDelay;
+            Settings.StartUp.BackgroundDelay = backgroundDelayChosen ?? StartUpSettingsState.BackgroundDelayByDefault;
             ShowProfiles();
             RefreshGamerpics();
         }
@@ -291,6 +307,7 @@ namespace XboxSeries.Core
         {
             BootVideo = Settings.StartUp.BootVideo,
             AskWhosPlaying = Settings.StartUp.AskWhosPlaying,
+            BackgroundDelay = backgroundDelayChosen,
             Profiles = profiles.Select(p => new SavedProfile { Id = p.Id, Gamertag = p.Gamertag, RealName = p.RealName, Picture = p.Picture }).ToList(),
             LastProfileId = lastProfileId,
         }));
@@ -369,6 +386,9 @@ namespace XboxSeries.Core
             public BootVideo BootVideo { get; set; } = BootVideo.XboxSeriesX;
 
             public bool AskWhosPlaying { get; set; } = true;
+
+            /// <summary>Null until the player sets it, so the default stays the default's to give.</summary>
+            public bool? BackgroundDelay { get; set; }
 
             public List<SavedProfile> Profiles { get; set; }
 

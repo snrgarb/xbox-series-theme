@@ -33,10 +33,14 @@ namespace XboxSeries.Core
         private static readonly TimeSpan DoubleTapWindow = TimeSpan.FromMilliseconds(300);
 
         /// <summary>
-        /// How long focus has to stay on a Recent-row tile before the hero follows it. Only long enough that a held
-        /// d-pad, which Playnite repeats every 80 ms, passes over tiles without their art being read and flickered
-        /// through: a single step has the hero on its way before the eye has left the tile (#147; at 1.5 s, with the
-        /// art's decoding and the crossfade after it, the hero trailed focus by seconds).
+        /// How long focus has to stay on a Recent-row tile before the hero follows it with Background delay on, so the
+        /// art changes only for a game the player has stopped on.
+        /// </summary>
+        private static readonly TimeSpan HeroDelay = TimeSpan.FromSeconds(1.5);
+
+        /// <summary>
+        /// The same with Background delay off: only long enough that a held d-pad, which Playnite repeats every 80 ms,
+        /// passes over tiles without their art being read and flickered through (#147).
         /// </summary>
         private static readonly TimeSpan HeroSettle = TimeSpan.FromMilliseconds(150);
 
@@ -1153,8 +1157,8 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// A game tile on Home got focus: Menu now opens its tile menu. The hero shows a Recent-row tile's game art at once
-        /// coming into the row onto the swirl, and along the row once focus has stayed on a tile for a moment, the last
-        /// art up meanwhile. Any other tile, as a Group's, has the swirl behind Home.
+        /// coming into the row onto the swirl, and along the row once focus has stayed on a tile for a moment (1.5 s with
+        /// Settings' Background delay on, 150 ms with it off, as it is set at that moment), the last art up meanwhile. Any other tile, as a Group's, has the swirl behind Home.
         /// </summary>
         public void FocusHomeTile(HomeTile tile)
         {
@@ -1175,7 +1179,7 @@ namespace XboxSeries.Core
                 return;
             }
 
-            heroTimer = clock.After(HeroSettle, () =>
+            heroTimer = clock.After(Settings.StartUp.BackgroundDelay ? HeroDelay : HeroSettle, () =>
             {
                 heroTimer = null;
                 ShowHeroOf(gameId);
