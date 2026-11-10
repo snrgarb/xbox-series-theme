@@ -18,7 +18,7 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Theme settings' Personalisation page: its boxes, and the page each opens in their place (Boot video, Profiles, a
     /// profile, its Picture, Who's playing today?). Every box shows its name
-    /// alone; what it's set to shows on the page it opens. The pad moves between a page's boxes; A opens or
+    /// alone; what it's set to shows on the page it opens, but for Background delay, a checkbox A turns over in place. The pad moves between a page's boxes; A opens or
     /// sets, and B steps back a page at a time, focus going back to the box that opened it, then from Personalisation's
     /// boxes to Theme settings' own. Every choice goes straight to the core, which saves it; the pane holds which page
     /// shows and nothing else.
@@ -93,6 +93,14 @@ namespace XboxSeries.Extension
         }
 
         private StartUpSettingsState State => core.Settings.StartUp;
+
+        /// <summary>Personalisation's own boxes as the pad moves between them: a row each, Background delay alone on the last.</summary>
+        private Button[][] Rows => new[]
+        {
+            new[] { BootVideoBox, ProfilesBox },
+            new[] { AskBox },
+            new[] { BackgroundDelayBox },
+        };
 
         private Profile Profile => State.Profiles.FirstOrDefault(p => p.Id == profileId);
 
@@ -245,7 +253,7 @@ namespace XboxSeries.Extension
         /// <summary>
         /// The pad on a page: the D-pad moves between its boxes, row by row, and stays put at the edges; A presses the box
         /// focused; B steps back a page, or from Personalisation's boxes to Theme settings' boxes, as Left from their
-        /// first column does.
+        /// first column does. Personalisation's own boxes go by <see cref="Rows"/>, its last rows a box each.
         /// </summary>
         private void OnPaneKeyDown(object sender, KeyEventArgs e)
         {
@@ -263,18 +271,21 @@ namespace XboxSeries.Extension
             }
 
             var columns = Columns();
-            var column = here % columns;
             var pad = PlayniteInput.PadButtonOf(e);
             if (pad == ControllerInput.A)
             {
                 e.Handled = true;
                 Press(buttons[here]);
             }
-            else if (pad == ControllerInput.B || (e.Key == Key.Left && column == 0 && page == Page.Personalisation))
+            else if (pad == ControllerInput.B)
             {
                 // Handled here, before the page's B takes it back to where Settings was opened from.
                 e.Handled = true;
                 Back();
+            }
+            else if (page == Page.Personalisation)
+            {
+                MoveOnBoxes(e);
             }
             else if (e.Key == Key.Left || e.Key == Key.Right)
             {
@@ -297,6 +308,42 @@ namespace XboxSeries.Extension
             }
         }
 
+        /// <summary>The D-pad on Personalisation's own boxes: along a row, or to the row above or below, at its same column or its last box.</summary>
+        private void MoveOnBoxes(KeyEventArgs e)
+        {
+            var rows = Rows;
+            var row = Array.FindIndex(rows, r => Array.IndexOf(r, e.OriginalSource) >= 0);
+            if (row < 0)
+            {
+                return;
+            }
+
+            var column = Array.IndexOf(rows[row], e.OriginalSource);
+            if (e.Key == Key.Left && column == 0)
+            {
+                e.Handled = true;
+                Back();
+            }
+            else if (e.Key == Key.Left || e.Key == Key.Right)
+            {
+                e.Handled = true;
+                var next = column + (e.Key == Key.Left ? -1 : 1);
+                if (next < rows[row].Length)
+                {
+                    FocusBox(rows[row][next]);
+                }
+            }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                e.Handled = true;
+                var next = row + (e.Key == Key.Up ? -1 : 1);
+                if (next >= 0 && next < rows.Length)
+                {
+                    FocusBox(rows[next][Math.Min(column, rows[next].Length - 1)]);
+                }
+            }
+        }
+
         private void Press(Button button)
         {
             if (button == BootVideoBox)
@@ -313,6 +360,10 @@ namespace XboxSeries.Extension
             {
                 Open(Page.WhosPlaying, button);
                 FocusSoon(() => AtIndex(State.AskWhosPlaying ? 0 : 1));
+            }
+            else if (button == BackgroundDelayBox)
+            {
+                core.SetBackgroundDelay(!State.BackgroundDelay);
             }
             else if (button.DataContext is ChoiceRow row && row.Value is BootVideo video)
             {

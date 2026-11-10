@@ -159,8 +159,9 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Hero_waits_for_focus_to_settle_on_a_tile_before_following_it_along_the_row()
+        public void With_Background_delay_on_the_hero_waits_for_focus_to_settle_on_a_tile_before_following_it_along_the_row()
         {
+            core.SetBackgroundDelay(true);
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
@@ -179,8 +180,9 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Scrolling_past_tiles_leaves_the_hero_until_focus_settles()
+        public void With_Background_delay_on_scrolling_past_tiles_leaves_the_hero_until_focus_settles()
         {
+            core.SetBackgroundDelay(true);
             core.OnLibraryChanged(new FakeLibrary()
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), backgroundImage: @"C:\art\halo-bg.jpg")
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11), backgroundImage: @"C:\art\hades-bg.jpg")
@@ -446,7 +448,7 @@ namespace XboxSeries.Core.Tests
 
         private string[] RecentRow() => core.Home.RecentRow.Select(t => t.Title).ToArray();
 
-        /// <summary>Focus stays put long enough for the hero to follow it.</summary>
+        /// <summary>Focus stays put long enough for the hero to follow it, with Background delay on or off.</summary>
         private void Settle() => clock.Advance(TimeSpan.FromSeconds(1.5));
 
         private HomeTile Tile(string title) => core.Home.RecentRow.Single(t => t.Title == title);
