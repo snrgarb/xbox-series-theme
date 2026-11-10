@@ -384,12 +384,18 @@ namespace XboxSeries.Core
         {
             var installed = GameListFilter.Installed.Apply(library.Games).ToList();
             var finished = installedThisSession.Select(id => installed.FirstOrDefault(g => g.Id == id)).Where(g => g != null);
-            MyGames.RecentlyInstalled = finished
+            var recent = finished
                 .Concat(installed.OrderByDescending(g => g.InstalledAt ?? g.Added ?? DateTime.MinValue))
                 .Distinct()
                 .Take(RecentlyInstalledCount)
                 .Select(TileOf)
                 .ToList();
+
+            // The row keeps its covers while they read the same: new ones would take focus from the old and load their art again.
+            if (!SameTiles(recent, MyGames.RecentlyInstalled))
+            {
+                MyGames.RecentlyInstalled = recent;
+            }
         }
 
         /// <summary>What a game's tile reads of its install: "Queued", "Installing..." or, when it isn't installing, null.</summary>

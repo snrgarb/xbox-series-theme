@@ -58,7 +58,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Opening_the_Guide_reads_the_battery_and_clock_afresh()
+        public void The_Guide_opens_with_the_battery_as_last_read_then_reads_it_afresh()
         {
             controller.Battery = ControllerBattery.Wireless(3);
             clock.Advance(TimeSpan.FromSeconds(10));
@@ -67,7 +67,12 @@ namespace XboxSeries.Core.Tests
             core.OnControllerButton(ControllerButton.Guide, ButtonState.Released);
             clock.Advance(TimeSpan.FromMilliseconds(300));
 
+            // It opens showing the battery as last read, rather than wait for the pad to be asked.
             Assert.True(core.Guide.IsOpen);
+            Assert.Equal(ControllerBattery.Wireless(60), core.Status.Battery);
+
+            clock.Advance(TimeSpan.FromMilliseconds(500));
+
             Assert.Equal(ControllerBattery.Wireless(3), core.Status.Battery);
         }
 

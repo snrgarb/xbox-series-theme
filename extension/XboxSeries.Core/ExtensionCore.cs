@@ -51,6 +51,12 @@ namespace XboxSeries.Core
         private static readonly TimeSpan HeroLeave = TimeSpan.FromMilliseconds(100);
 
         /// <summary>
+        /// How long after the Guide opens the pad's battery is read: once the Guide is up and has flown in, as the read
+        /// can take a moment (for a Bluetooth pad, Windows looks through its devices) that the Guide shouldn't wait for.
+        /// </summary>
+        private static readonly TimeSpan BatteryReadAfterGuideOpens = TimeSpan.FromMilliseconds(500);
+
+        /// <summary>
         /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it, when focus came there
         /// this soon after reaching another. Opening one has Playnite refilter its list and the page lay its content out
         /// again, a frame or more each, so focus passing down the nav (a held d-pad repeats faster than this) opens only
@@ -168,6 +174,7 @@ namespace XboxSeries.Core
         private Guid? tappedGame;
         private IDisposable tapTimer;
         private IDisposable heroTimer;
+        private IDisposable guideBatteryTimer;
         private HomeTile focusedTile;
 
         /// <summary>
@@ -266,9 +273,11 @@ namespace XboxSeries.Core
             ToastFinishedUninstalls();
             RefreshQueue();
             RefreshRecentlyInstalled();
-            RefreshHome();
+            RefreshHomeRows();
             RefreshFullLibraryCount();
             RefreshApps(snapshot.Apps);
+
+            // Once, after the Apps it finds among: Search's tiles read running and installing as Home's do.
             RefreshSearch();
 
             // The ring only shows on the page; Windows is asked for a drive's space no more often than that needs.
@@ -411,8 +420,13 @@ namespace XboxSeries.Core
 
         private void RefreshStatus()
         {
-            Status.Time = clock.Now.ToString("t", CultureInfo.CurrentCulture);
+            RefreshTime();
             Status.Battery = controller.Battery;
+        }
+
+        private void RefreshTime()
+        {
+            Status.Time = clock.Now.ToString("t", CultureInfo.CurrentCulture);
         }
 
         /// <summary>
@@ -1281,11 +1295,22 @@ namespace XboxSeries.Core
             tapTimer = null;
         }
 
+        /// <summary>Home's rows and Play history as the library and the Queue are now, and Search's with them.</summary>
+        private void RefreshHome()
+        {
+            RefreshHomeRows();
+
+            // Search's tiles read running and installing as Home's do.
+            RefreshSearch();
+        }
+
         /// <summary>
         /// Rebuilds the Recent row: the running game first, then played games by last played, padded with recently
-        /// added ones, never hidden ones. The Play history tile's collage is the played games that come next.
+        /// added ones, never hidden ones. The Play history tile's collage is the played games that come next. A row is
+        /// only replaced when what it shows changed, since a new row rebuilds every tile and reads every cover again,
+        /// and a library update pushes the library several times a second.
         /// </summary>
-        private void RefreshHome()
+        private void RefreshHomeRows()
         {
             var running = GameById(runningGame);
             var played = PlayedGames().ToList();
@@ -1298,22 +1323,34 @@ namespace XboxSeries.Core
                 .Take(RecentRowCount)
                 .ToList();
 
-            Home.RecentRow = row.Select(TileOf).ToList();
-            Home.PlayHistory = played.Where(g => !row.Contains(g))
+            var recentRow = row.Select(TileOf).ToList();
+            if (!SameTiles(recentRow, Home.RecentRow))
+            {
+                Home.RecentRow = recentRow;
+            }
+
+            var collage = played.Where(g => !row.Contains(g))
                 .Take(PlayHistoryCollageCount)
                 .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
                 .ToList();
-            Home.Groups = Groups();
+            if (!SameTiles(collage, Home.PlayHistory))
+            {
+                Home.PlayHistory = collage;
+            }
+
+            var groups = Groups();
+            if (!SameGroups(groups, Home.Groups))
+            {
+                Home.Groups = groups;
+            }
+
             MyGames.GameCount = GameListFilter.Installed.Apply(library.Games).Count();
-            RefreshPlayHistory();
+            RefreshPlayHistory(played);
 
             // The hero stays on the focused game while it is still there, with its art as it is now; else the swirl.
             var hero = heroGame == null ? null : row.Concat(played).FirstOrDefault(g => g.Id == heroGame);
             heroGame = hero?.Id;
             Home.Hero = HeroArtOf(hero);
-
-            // Search's tiles read running and installing as Home's do.
-            RefreshSearch();
         }
 
         /// <summary>
@@ -1343,6 +1380,12 @@ namespace XboxSeries.Core
 
             return groups;
         }
+
+        /// <summary>Whether two lists of Groups would show the same: the same Groups, each of the same preset, name, tiles and collage.</summary>
+        private static bool SameGroups(IReadOnlyList<HomeGroup> a, IReadOnlyList<HomeGroup> b) =>
+            a.Count == b.Count
+            && a.Zip(b, (x, y) => x.Name == y.Name && x.FilterPresetId == y.FilterPresetId
+                && SameTiles(x.Tiles, y.Tiles) && SameTiles(x.SeeAll, y.SeeAll)).All(same => same);
 
         /// <summary>A Group of its first games, and the See all tile's collage of the ones after them.</summary>
         private HomeGroup Group(string name, Guid? presetId, IEnumerable<LibraryGame> games, GameSort sort, SortDirection direction)
@@ -1781,17 +1824,32 @@ namespace XboxSeries.Core
             return char.ToUpperInvariant(directory[0]) + ":\\";
         }
 
-        /// <summary>Rebuilds Play history: played games, newest first, never hidden ones, in sections by when they were played.</summary>
-        private void RefreshPlayHistory()
+        /// <summary>
+        /// Rebuilds Play history: played games, newest first, never hidden ones, in sections by when they were played.
+        /// <paramref name="played"/> is <see cref="PlayedGames"/> when the caller has them already. The sections are only
+        /// replaced when what they show changed, since new ones rebuild every row and read every cover again.
+        /// </summary>
+        private void RefreshPlayHistory(IReadOnlyList<LibraryGame> played = null)
         {
             var today = clock.Now.Date;
-            MyGames.PlayHistory = PlayedGames()
+            var sections = (played ?? PlayedGames().ToList())
                 .GroupBy(g => PlayedWhen(g.LastActivity.Value, today))
                 .Select(section => new PlayHistorySection(
                     section.Key,
                     section.Select(g => new PlayHistoryEntry(TileOf(g), g.LastActivity.Value, g.Platform)).ToList()))
                 .ToList();
+            if (!SameSections(sections, MyGames.PlayHistory))
+            {
+                MyGames.PlayHistory = sections;
+            }
         }
+
+        /// <summary>Whether two Play histories would show the same: the same sections, each of the same games, played when and on what.</summary>
+        private static bool SameSections(IReadOnlyList<PlayHistorySection> a, IReadOnlyList<PlayHistorySection> b) =>
+            a.Count == b.Count
+            && a.Zip(b, (x, y) => x.Title == y.Title && x.Entries.Count == y.Entries.Count
+                && x.Entries.Zip(y.Entries, (e, f) => SameTile(e.Tile, f.Tile) && e.LastPlayed == f.LastPlayed && e.Platform == f.Platform)
+                    .All(same => same)).All(same => same);
 
         /// <summary>
         /// The Play history section of a game last played at <paramref name="played"/>: Playnite's own last-activity
@@ -1847,7 +1905,14 @@ namespace XboxSeries.Core
                 recordedForeground = windowSystem.ForegroundWindow;
             }
 
-            RefreshStatus();
+            // The clock at once; the battery as last read, at most a minute ago, and afresh once the Guide is up.
+            RefreshTime();
+            guideBatteryTimer?.Dispose();
+            guideBatteryTimer = clock.After(BatteryReadAfterGuideOpens, () =>
+            {
+                guideBatteryTimer = null;
+                Status.Battery = controller.Battery;
+            });
             DropToasts();
             ShowTab(GuideTabKind.Landing);
             Guide.IsOverlayShown = true;

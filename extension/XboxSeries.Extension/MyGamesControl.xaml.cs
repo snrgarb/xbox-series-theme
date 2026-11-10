@@ -540,33 +540,60 @@ namespace XboxSeries.Extension
         /// "Looking for more?" under Games' last row, as on the console, rather than fixed under the grid: shown only while
         /// that row is all in view, so once the grid is scrolled to its end. Placed from the last tile itself, as Playnite's
         /// panel scrolls by moving its tiles; until it is built, the row isn't in view. Again once the page has laid out,
-        /// as Games coming back shows the grid without scrolling it.
+        /// as Games coming back shows the grid without scrolling it. Only what changes is set: the grid tells of every
+        /// step it scrolls, and hiding the line to show it again would lay the page out on each.
         /// </summary>
         private void PlaceLookingForMore()
         {
-            LookingForMore.Visibility = Visibility.Collapsed;
+            var top = LookingForMoreTop();
+            if (top == null)
+            {
+                if (LookingForMore.Visibility != Visibility.Collapsed)
+                {
+                    LookingForMore.Visibility = Visibility.Collapsed;
+                }
+
+                return;
+            }
+
+            var margin = new Thickness(3, top.Value + TileGap, 0, 0);
+            if (LookingForMore.Margin != margin)
+            {
+                LookingForMore.Margin = margin;
+            }
+
+            if (LookingForMore.Visibility != Visibility.Visible)
+            {
+                LookingForMore.Visibility = Visibility.Visible;
+            }
+        }
+
+        /// <summary>
+        /// Where Games' last row ends, from the top of "Looking for more?"'s own row of the page, while that row is all
+        /// in view; null while it isn't, or off Games. With the last tile not built yet, it is looked for once more.
+        /// </summary>
+        private double? LookingForMoreTop()
+        {
             if (core.MyGames.Item != MyGamesItem.Games || mainList == null || mainList.Items.Count == 0)
             {
-                return;
+                return null;
             }
 
             var last = mainList.ItemContainerGenerator.ContainerFromIndex(mainList.Items.Count - 1) as FrameworkElement;
             if (last == null || !last.IsVisible)
             {
                 Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(PlaceShownLookingForMore));
-                return;
+                return null;
             }
 
             var bottom = last.TranslatePoint(new Point(0, last.ActualHeight), mainList).Y;
             if (bottom > mainList.ActualHeight + 1)
             {
-                return;
+                return null;
             }
 
             var grid = (Grid)LookingForMore.Parent;
-            var top = last.TranslatePoint(new Point(0, last.ActualHeight), grid).Y - grid.RowDefinitions[Grid.GetRow(LookingForMore)].Offset;
-            LookingForMore.Margin = new Thickness(3, top + TileGap, 0, 0);
-            LookingForMore.Visibility = Visibility.Visible;
+            return last.TranslatePoint(new Point(0, last.ActualHeight), grid).Y - grid.RowDefinitions[Grid.GetRow(LookingForMore)].Offset;
         }
 
         /// <summary>Places "Looking for more?" once more, if the grid's last tile is built by then.</summary>

@@ -323,9 +323,7 @@ namespace XboxSeries.Core
 
         /// <summary>Whether two rows of tiles would show the same: the same games, as each reads now.</summary>
         private static bool SameTiles(IReadOnlyList<HomeTile> a, IReadOnlyList<HomeTile> b) =>
-            a.Count == b.Count
-            && a.Zip(b, (x, y) => x.GameId == y.GameId && x.Title == y.Title && x.CoverImage == y.CoverImage
-                && x.Source == y.Source && x.IsRunning == y.IsRunning && x.Status == y.Status).All(same => same);
+            a.Count == b.Count && a.Zip(b, SameTile).All(same => same);
 
         /// <summary>
         /// Whether the page is up with nothing over it. Playnite's own buttons reach the page before the pad's reach the

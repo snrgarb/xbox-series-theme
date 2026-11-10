@@ -35,8 +35,6 @@ namespace XboxSeries.Core
             DateTime? added,
             bool hidden,
             bool installed,
-            IReadOnlyList<string> series,
-            IReadOnlyList<string> genres,
             string source,
             string installDirectory,
             string backgroundImage = null,
@@ -60,8 +58,6 @@ namespace XboxSeries.Core
             Added = added;
             Hidden = hidden;
             Installed = installed;
-            Series = series;
-            Genres = genres;
             Source = source;
             InstallDirectory = installDirectory;
             BackgroundImage = backgroundImage;
@@ -86,8 +82,6 @@ namespace XboxSeries.Core
         public DateTime? Added { get; }
         public bool Hidden { get; }
         public bool Installed { get; }
-        public IReadOnlyList<string> Series { get; }
-        public IReadOnlyList<string> Genres { get; }
 
         /// <summary>The library source (Steam, Xbox, ...), or null for games without one.</summary>
         public string Source { get; }
@@ -162,7 +156,10 @@ namespace XboxSeries.Core
         /// <summary>The Playnite flag that makes this preset a Group on Home.</summary>
         public bool ShowInFullscreenQuickSelection { get; }
 
-        /// <summary>The games the preset's filter matches, as Playnite evaluates it, in no particular order.</summary>
+        /// <summary>
+        /// The games the preset's filter matches, as Playnite evaluates it, in no particular order. Only a preset that
+        /// is a Group has them: nothing reads another's, so its filter isn't evaluated and this is empty.
+        /// </summary>
         public IReadOnlyList<Guid> Games { get; }
 
         /// <summary>The preset's own sort; null when it has none, or one the core doesn't support, so name order applies.</summary>
