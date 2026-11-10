@@ -1,12 +1,15 @@
 # Release: a manual run on main cuts one GitHub Release, tagged by date (v<year>.<month>.<n>, e.g. v2026.11.0), that
 # carries the Boot shell exe, the Dashboard theme .pthm and the extension .pext, each at its own version
-# (docs/development.md#releases).
+# (docs/development.md#releases). It's published as a pre-release, in place of the pre-release before it, with every
+# change since the last full release in its notes; making it a full release is done by hand, once it has proved itself.
 #   Plan      build/components.sh plan: a component changed since its last <component>-v<x.y.z> tag must have a higher
 #             version, and is built; an unchanged one must have the same version, and its file is re-attached byte for
 #             byte from the release that carried it. Anything else refuses, as does a README whose download table
-#             doesn't link this release's files.
+#             doesn't link this release's files. Also writes the changelog (build/changelog.sh): the commits since
+#             the last full release, whatever pre-releases came between.
 #   Release   builds and checks what changed, scans each built file on VirusTotal (build/VirusTotal.ps1), creates the
-#             release as a draft, pushes the dated tag and the built components' tags at once, then publishes it.
+#             release as a draft, pushes the dated tag and the built components' tags at once, publishes it as a
+#             pre-release, then deletes the pre-releases before it (their tags stay: a released tag is never deleted).
 # A failure before the tags are pushed leaves nothing behind but, at most, a draft, deleted on the way out. Should
 # publishing fail after the push, publish the draft by hand: the tags can't be moved (the `release tags` ruleset).
 name: Release
@@ -46,6 +49,7 @@ jobs:
       bootshell_asset: ${{ steps.plan.outputs.bootshell_asset }}
       bootshell_tag: ${{ steps.plan.outputs.bootshell_tag }}
       bootshell_from: ${{ steps.plan.outputs.bootshell_from }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     steps:
       - name: Refuse a branch other than main
         if: github.ref != 'refs/heads/main'
@@ -91,6 +95,21 @@ jobs:
           done
           exit $missing
 
+      # Since the last full release, which is what GitHub calls the latest: a pre-release is never that, so the
+      # pre-releases cut since are passed over and their changes listed again, until one is made a full release.
+      - name: Write the changelog
+        id: changelog
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! base="$(gh release view --json tagName --jq .tagName 2>&1)"; then
+            if grep -qi 'release not found' <<< "$base"; then base=""; else echo "::error title=Changelog::Couldn't find the last full release: $base"; exit 1; fi
+          fi
+          changelog="$(build/changelog.sh $base)"
+          { echo 'changelog<<END_OF_CHANGELOG'; echo "$changelog"; echo 'END_OF_CHANGELOG'; } >> "$GITHUB_OUTPUT"
+          { echo; echo "$changelog"; } >> "$GITHUB_STEP_SUMMARY"
+
   release:
     name: Build, scan and release
     needs: plan
@@ -120,7 +139,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      # Each file the release carries goes into release/, under the name it's released as.
+      # Each file the release carries goes into release/, under the name it's released as. The release that built an
+      # unchanged file may be a pre-release since replaced: every release carries all three files, so the newest one
+      # published has the same file, re-attached to it in its turn.
       - name: Re-attach the unchanged components' files
         shell: pwsh
         run: |
@@ -130,6 +151,13 @@ jobs:
             if ((Get-Item "env:${c}_ACTION").Value -ne 'reattach') { continue }
             $asset = (Get-Item "env:${c}_ASSET").Value
             $from = (Get-Item "env:${c}_FROM").Value
+            gh release view $from --json tagName 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+              $newest = gh release list --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName'
+              if ($LASTEXITCODE -ne 0 -or -not $newest) { throw "Release $from, which built $asset, is gone, and there is no other release to take it from" }
+              "Release $from, which built $asset, was replaced: taking it from $newest"
+              $from = $newest
+            }
             $output = gh release download $from --pattern $asset --dir release 2>&1
             if ($LASTEXITCODE -ne 0) { throw "Couldn't download $asset from release ${from}: $output" }
             if (-not (Test-Path "release/$asset")) { throw "Release $from has no $asset" }
@@ -261,6 +289,7 @@ jobs:
           EXTENSION_TAG: ${{ needs.plan.outputs.extension_tag }}
           BOOTSHELL_TAG: ${{ needs.plan.outputs.bootshell_tag }}
           BOOTSHELL_VERSION: ${{ needs.plan.outputs.bootshell_version }}
+          CHANGELOG: ${{ needs.plan.outputs.changelog }}
         run: |
           $ErrorActionPreference = 'Stop'
           $rows = foreach ($c in @(
@@ -279,18 +308,20 @@ jobs:
             '| Component | Version | File | | |'
             '|---|---|---|---|---|'
             $rows
+            ''
+            $env:CHANGELOG
           ) | Set-Content notes.md
           Get-Content notes.md
 
-      # Titled with its tag, and "(early access)" after it until the Bundle's first stable release. A full release, not a
-      # pre-release, so that GitHub can mark it Latest, which the README's releases/latest link and the sidebar follow.
+      # Titled with its tag, and "(early access)" after it until the Bundle's first stable release. A pre-release: the
+      # README's releases/latest link and the sidebar stay on the last one made a full release by hand.
       - name: Create the release as a draft
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $files = @(Get-ChildItem release | ForEach-Object FullName)
           if ($files.Count -ne 3) { throw "Expected three files to release; found: $((Get-ChildItem release).Name -join ', ')" }
-          gh release create $env:TAG @files --draft --target $env:GITHUB_SHA `
+          gh release create $env:TAG @files --draft --prerelease --target $env:GITHUB_SHA `
             --title "$env:TAG (early access)" --notes-file notes.md
           if ($LASTEXITCODE -ne 0) { throw 'gh release create failed' }
 
@@ -311,8 +342,25 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          gh release edit $env:TAG --draft=false --latest
-          if ($LASTEXITCODE -ne 0) { throw "Couldn't publish the draft ${env:TAG}: publish it by hand, its tags are pushed" }
+          gh release edit $env:TAG --draft=false --prerelease
+          if ($LASTEXITCODE -ne 0) { throw "Couldn't publish the draft ${env:TAG}: publish it by hand, as a pre-release, its tags are pushed" }
+
+      # One pre-release at a time: this one takes the place of those before it, whose changes its notes list again. Only
+      # the releases go, with their files; their tags stay, as the `release tags` ruleset has it. One made a full
+      # release by hand is no longer a pre-release, and stays. A failure here leaves an old pre-release up beside the
+      # new one, to delete by hand: the release itself is out.
+      - name: Delete the pre-releases before it
+        shell: pwsh
+        run: |
+          $earlier = gh release list --limit 100 --json tagName,isPrerelease,isDraft `
+            --jq '.[] | select(.isPrerelease and (.isDraft | not)) | .tagName'
+          if ($LASTEXITCODE -ne 0) { "::warning title=Release::Couldn't list the releases to find the earlier pre-releases"; $global:LASTEXITCODE = 0; exit 0 }
+          foreach ($tag in @($earlier) | Where-Object { $_ -and $_ -ne $env:TAG }) {
+            gh release delete $tag --yes 2>&1 | Out-Host
+            if ($LASTEXITCODE -eq 0) { "Deleted the pre-release $tag; its tag stays" }
+            else { "::warning title=Release::Couldn't delete the earlier pre-release ${tag}: gh release delete $tag" }
+          }
+          $global:LASTEXITCODE = 0
 
       - name: Delete the draft
         if: failure()
