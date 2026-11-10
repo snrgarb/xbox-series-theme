@@ -283,6 +283,13 @@ try {
     if ($errors) { $failures += "$errors errors logged before the restart" }
 
     # 4. Playnite stopped and started again, its first logs kept as first-*.log so the lines read are the new start's.
+    # Closed as its window's close does it, so Playnite saves that it shows the Dashboard, which it chose on this first
+    # start; killed, it would come up again on its own theme and the extension would stay dormant.
+    $playnite = Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($playnite) {
+        $playnite.CloseMainWindow() | Out-Null
+        if (-not $playnite.WaitForExit(20000)) { Say 'Playnite did not close in 20 s; stopping it' }
+    }
     Stop-Playnite
     Start-Sleep -Seconds 2
     Save-PlayniteFiles -Move 'first'
