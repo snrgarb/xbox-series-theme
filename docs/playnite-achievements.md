@@ -9,13 +9,14 @@ How the Bundle gets achievements, what a user has to set up today for them to wo
   - one **Rare** unlock gets the blue pill with the diamond and its own sound, collapsing as the sound's closing flourish starts, 8.45 s in;
   - several unlocks together get "<n> achievements unlocked".
 - **Home's top bar** shows the **Score** total under the gamertag, as the console's.
+- **Home's Achievements tile** shows the **Score** total under its title and opens the **Guide** on Profile & system. With no totals it says why instead: "Needs PlayniteAchievements" without it, "Nothing recorded yet" while PlayniteAchievements is read and no game has achievements (no platform signed in, or nothing refreshed).
 - **The Guide's Profile & system** shows the **Score** total, the number of achievements unlocked, and the last three unlocks.
 - Not built yet: the **Achievements page** in the Game hub (#34).
 
 Without PlayniteAchievements (not installed, disabled, or a version the adapter can't read), every achievement feature is off and nothing fails (#83):
 
 - no Achievement unlocked **Toast** of any form;
-- no **Score** on Home's top bar;
+- no **Score** on Home's top bar, and Home's Achievements tile, which is always there, says "Needs PlayniteAchievements" (#151);
 - no totals line and no recent unlocks on the **Guide**'s Profile & system, with no gap left where they were;
 - in Debug builds, no **Achievement**, **Rare achievement** or **Three achievements** box on the Debug menu's Notifications page.
 
@@ -92,7 +93,7 @@ All of this is in PlayniteAchievements' own UI. The Bundle cannot do any of it f
 ## Known gaps
 
 - **No version contract.** A PlayniteAchievements update that renames a member silently turns achievements off; only the log says so. This needs an onboarding/status check (below) and a re-check of the adapter on each of its releases.
-- **Silent failure states.** The user sees no achievements but can't tell why:
+- **Silent failure states.** The user sees no achievements and, but for the line on Home's Achievements tile (which tells "without PlayniteAchievements" from "nothing recorded" and no further), can't tell why:
   - PlayniteAchievements isn't installed;
   - the installed version is one the adapter can't read;
   - no platform is signed in;

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Playnite.SDK;
 using Playnite.SDK.Events;
 using XboxSeries.Core;
 
@@ -15,11 +16,27 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class PromoRow : UserControl
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
+
         private ExtensionCore core;
 
         public PromoRow()
         {
             InitializeComponent();
+
+            // The log says which tile has focus, as it does for Home's other tiles a press of A depends on.
+            GotKeyboardFocus += (_, e) =>
+            {
+                var name = e.NewFocus == DiscordTile ? "Discord"
+                    : e.NewFocus == PlayniteSettingsTile ? "Playnite settings"
+                    : e.NewFocus == AchievementsTile ? "Achievements"
+                    : e.NewFocus == DownloadsTile ? "Downloads"
+                    : null;
+                if (name != null)
+                {
+                    logger.Info($"Home focus on the {name} tile");
+                }
+            };
         }
 
         internal void Attach(ExtensionCore extensionCore)

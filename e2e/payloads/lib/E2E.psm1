@@ -59,14 +59,14 @@ function Get-PlayniteLog {
 # Waits for a line matching $Pattern in Playnite's logs, written after $After lines were there; returns the line, or
 # $null after $Seconds. Throws if Playnite exits meanwhile.
 function Wait-PlayniteLog([string] $Pattern, [int] $Seconds = 30, [int] $After = 0) {
-    $deadline = (Get-Date).AddSeconds($Seconds)
+    $watch = [Diagnostics.Stopwatch]::StartNew()  # not the clock, which the VM's time sync can move mid-test
     do {
         $lines = @((Get-PlayniteLog) -split "`n")
         $hit = $lines | Select-Object -Skip $After | Where-Object { $_ -match $Pattern } | Select-Object -First 1
         if ($hit) { return $hit }
         if ($script:Playnite -and $script:Playnite.HasExited) { throw "Playnite exited with $($script:Playnite.ExitCode)" }
         Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
+    } while ($watch.Elapsed.TotalSeconds -lt $Seconds)
     return $null
 }
 
@@ -98,9 +98,11 @@ function Initialize-Playnite([string] $PayloadDir) {
         $pthm = Join-Path $PayloadDir $entry.Name
         [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $pthm, $true)
     } finally { $zip.Dispose() }
-    ConvertTo-Json @(@{ InstallType = 0; Path = $pthm }, @{ InstallType = 0; Path = $pext.FullName }) |
+    # Any other add-on the test brought (its addons.txt, which e2e/run.sh fetches into addons\) is queued after them.
+    $queued = @($pthm, $pext.FullName) + @(Get-ChildItem (Join-Path $PayloadDir 'addons') -Filter *.pext -ErrorAction SilentlyContinue | ForEach-Object FullName)
+    ConvertTo-Json @($queued | ForEach-Object { @{ InstallType = 0; Path = $_ } }) |
         Set-Content (Join-Path $script:Data 'extinstalls.json')
-    Say "fresh Playnite, $($entry.Name) and $($pext.Name) queued"
+    Say "fresh Playnite, $(($queued | Split-Path -Leaf) -join ', ') queued"
 }
 
 function Start-Fullscreen {
@@ -114,9 +116,15 @@ function Stop-Playnite {
     Get-Process Playnite.* -ErrorAction SilentlyContinue | Stop-Process -Force
 }
 
-function Save-PlayniteFiles {
+# Playnite's logs and settings, copied beside the test's output. With -Move, once Playnite has stopped, its two logs are
+# kept there as <Move>-playnite.log and <Move>-extensions.log instead and taken away, so the next start writes new ones.
+function Save-PlayniteFiles([string] $Move) {
     foreach ($f in 'playnite.log', 'extensions.log', 'fullscreenConfig.json', 'config.json') {
         Copy-Item (Join-Path $script:Data $f) $script:Out -ErrorAction SilentlyContinue
+    }
+    foreach ($f in $(if ($Move) { 'playnite.log', 'extensions.log' })) {
+        Move-Item (Join-Path $script:Data $f) (Join-Path $script:Out "$Move-$f") -Force -ErrorAction SilentlyContinue
+        Remove-Item (Join-Path $script:Out $f) -ErrorAction SilentlyContinue
     }
 }
 
@@ -239,6 +247,12 @@ function Get-Library {
 function Start-Dashboard([string] $PayloadDir, [switch] $Library, [hashtable[]] $Games = @()) {
     Initialize-Playnite $PayloadDir
     if ($Library -or $Games.Count) { Initialize-Library -Games $Games }
+    Enter-Dashboard
+}
+
+# Starts Fullscreen on Playnite as it is, without making it new, and takes Start-up through to Home: for a test that
+# stops Playnite and starts it again, after Save-PlayniteFiles -Move, so the logs waited on are the new start's alone.
+function Enter-Dashboard {
     Start-Fullscreen | Out-Null
     if (-not (Wait-PlayniteLog 'Xbox Series extension started on the Dashboard' 120)) {
         $dormant = Wait-PlayniteLog 'Xbox Series extension stays dormant[^\r\n]*' 1
