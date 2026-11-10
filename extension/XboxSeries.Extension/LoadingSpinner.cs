@@ -130,10 +130,14 @@ namespace XboxSeries.Extension
         /// <summary>Turns from the start of a turn, over and over.</summary>
         private void Spin()
         {
-            BeginAnimation(ElapsedProperty, new DoubleAnimation(0, Period.TotalSeconds, new Duration(Period))
+            var turn = new DoubleAnimation(0, Period.TotalSeconds, new Duration(Period))
             {
                 RepeatBehavior = RepeatBehavior.Forever,
-            });
+            };
+
+            // As the Dashboard's own spinner: each frame draws the arcs again, and 30 a second is all they need.
+            Timeline.SetDesiredFrameRate(turn, 30);
+            BeginAnimation(ElapsedProperty, turn);
         }
 
         /// <summary>

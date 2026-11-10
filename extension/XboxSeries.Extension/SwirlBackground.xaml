@@ -12,9 +12,10 @@
         <!--
             The slow movement, only while the swirl is loaded and visible, so it never keeps WPF rendering behind a game
             or Playnite: the whole turning a few degrees back and forth, and each corner's bands drifting along their own
-            way at their own pace.
+            way at their own pace. At 30 frames a second, not the screen's rate: nothing in it moves faster than some
+            10 px a second, and each of its frames draws all of Home again.
         -->
-        <Storyboard x:Key="Swirl">
+        <Storyboard x:Key="Swirl" Timeline.DesiredFrameRate="30">
             <DoubleAnimation Storyboard.TargetName="SwirlTurn" Storyboard.TargetProperty="Angle"
                              From="-5" To="5" Duration="0:0:22" AutoReverse="True" RepeatBehavior="Forever">
                 <DoubleAnimation.EasingFunction>

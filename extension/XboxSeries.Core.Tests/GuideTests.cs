@@ -21,7 +21,7 @@ namespace XboxSeries.Core.Tests
         public void Guide_is_closed_at_start()
         {
             var library = new FakeLibrary()
-                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), series: new[] { "Halo" }, genres: new[] { "Shooter" }, source: "Steam")
+                .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12), source: "Steam")
                 .WithGame("Forza Horizon 5", added: new DateTime(2026, 9, 1), installed: false, source: "Xbox")
                 .WithFilterPreset("Favourites", showInFullscreenQuickSelection: true)
                 .WithApp("Discord", @"C:\Discord\Update.exe", "--processStart Discord.exe");
