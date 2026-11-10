@@ -55,7 +55,15 @@ Each component has a version of its own, and one GitHub Release, tagged by date,
 | Extension | `extension/XboxSeries.Extension/XboxSeries.Extension.csproj` | `XboxSeries_<x.y.z>.pext`, with the theme inside | `extension-v<x.y.z>` |
 | Boot shell | `bootshell/XboxSeries.BootShell/XboxSeries.BootShell.csproj` | `XboxSeries.BootShell.exe` | `bootshell-v<x.y.z>` |
 
-The release is `v<year>.<month>.<n>`, `n` counting that month's releases from 0 (`v2026.11.0`, then `v2026.11.1`), titled with its tag, "v2026.11.0 (early access)"; its notes list each component's version and file. Each is published as the Latest release, which the README's [latest release](https://github.com/snrgarb/xbox-series-theme/releases/latest) link and the repository's sidebar follow; until the Bundle's first stable release, its title ends in "(early access)". It isn't marked a pre-release, as GitHub never makes a pre-release Latest.
+The release is `v<year>.<month>.<n>`, `n` counting that month's releases from 0 (`v2026.11.0`, then `v2026.11.1`), titled with its tag, "v2026.11.0 (early access)"; until the Bundle's first stable release, its title ends in "(early access)". Its notes list each component's version and file, then the changelog ([`build/changelog.sh`](../build/changelog.sh)): the header of every commit since the last full release, under Features, Fixes and Other.
+
+**Each release is published as a pre-release, and there is one pre-release at a time.** A new one takes the place of the one before it: that release and its files are deleted (its tags stay, as every released tag does), and the new one's changelog starts again from the last full release, so it lists what the replaced ones did too. A pre-release becomes a full release by hand, once it has proved itself:
+
+```sh
+gh release edit v<year>.<month>.<n> --prerelease=false --latest
+```
+
+or on GitHub, Edit on the release: untick "Set as a pre-release" and tick "Set as the latest release". From then it's the Latest release, which the README's [latest release](https://github.com/snrgarb/xbox-series-theme/releases/latest) link and the repository's sidebar follow, the next release's changelog starts from it, and no later release deletes it.
 
 **Bump a component only when it changed** since its last `<component>-v<x.y.z>` tag, by the biggest [version effect](commits.md#version-effect) among its commits. What counts as a change is what the component ships from, not its tests (`build/components.sh` lists the paths): the extension packs the theme, so a theme change is an extension change too, and `shared/` and `Directory.Build.props` count for each component that builds from them. In an MSBuild file, the `<Version>` line and comments don't count. **The theme and the extension share Major.Minor**: CI fails when they don't, and when one changes to a new Major.Minor, it takes the other to it at `.0`, changed or not; two unchanged ones can't take each other.
 
@@ -67,7 +75,7 @@ To release, once the milestone's issues are closed:
    - nothing changed at all, or the theme and the extension don't share Major.Minor;
    - the README doesn't link this release's files.
 
-   Otherwise its Release job builds what changed (tests first), checks the `.pext` holds the release's own `.pthm`, scans each built file on VirusTotal (`build/VirusTotal.ps1`), and re-attaches each unchanged component's file byte for byte from the release that built it. It creates the release as a draft, pushes the dated tag and each built component's tag at once, then publishes it, with a table of each file's version, origin, and VirusTotal report.
+   Otherwise its Release job builds what changed (tests first), checks the `.pext` holds the release's own `.pthm`, scans each built file on VirusTotal (`build/VirusTotal.ps1`), and re-attaches each unchanged component's file byte for byte from the release that built it, or, when that was a pre-release since replaced, from the newest release, which carries the same file. It creates the release as a draft, pushes the dated tag and each built component's tag at once, publishes it as a pre-release, then deletes the pre-releases before it, with a table of each file's version, origin, and VirusTotal report.
 3. Close the milestone.
 
 `.github/workflows/downloads.yml` builds all three files from any branch, as an Actions artifact, for a try between releases; it releases and tags nothing.

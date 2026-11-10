@@ -3,7 +3,7 @@
 #   Changes                     which components a PR touches; a push to main, or a PR whose files can't be listed,
 #                               builds all three
 #   Versions                    the theme and the extension share Major.Minor (build/components.sh), and that script's
-#                               tests pass
+#                               tests and the changelog's (build/changelog.sh) pass
 #   Theme: pack and verify      packs the .pthm in Debug and Release, stamped with the theme's version
 #   Extension: build and test   the Core tests, the extension in Debug and Release, and the bundle artifact: both
 #                               .pext, which the end-to-end tests install (e2e/run.sh)
@@ -71,6 +71,9 @@ jobs:
 
       - name: Test build/components.sh
         run: build/components.test.sh
+
+      - name: Test build/changelog.sh
+        run: build/changelog.test.sh
 
   theme:
     name: 'Theme: pack and verify'

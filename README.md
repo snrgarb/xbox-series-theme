@@ -4,7 +4,7 @@ The Xbox Series Theme makes Playnite 10 look and work like the Xbox Series X|S d
 
 ## Downloads
 
-**[Get the latest release](https://github.com/snrgarb/xbox-series-theme/releases/latest)**: the theme, the extension and the Boot shell, in one release.
+**[Get the latest release](https://github.com/snrgarb/xbox-series-theme/releases/latest)**: the theme, the extension and the Boot shell, in one release. The table below links the newest build, which is a pre-release until it has proved itself and can be ahead of the latest release.
 
 | Component | Version | Released | Download |
 |---|---|---|---|
@@ -12,7 +12,7 @@ The Xbox Series Theme makes Playnite 10 look and work like the Xbox Series X|S d
 | Extension | 0.2.0 | 2026-11-10 | [XboxSeries_0.2.0.pext](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.1/XboxSeries_0.2.0.pext) |
 | Boot shell | 1.0.0 | 2026-11-05 | [XboxSeries.BootShell.exe](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.1/XboxSeries.BootShell.exe) |
 
-All three are early-access releases. For older versions, see [Releases](https://github.com/snrgarb/xbox-series-theme/releases).
+All three are early-access releases. For older versions, and what changed in each, see [Releases](https://github.com/snrgarb/xbox-series-theme/releases).
 
 The theme and the extension are the Bundle. Install the two together, from the same release. The Boot shell is optional.
 
