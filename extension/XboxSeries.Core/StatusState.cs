@@ -12,6 +12,7 @@ namespace XboxSeries.Core
         private string time = "";
         private Profile profile;
         private ProfileAchievements achievements;
+        private string achievementsNote;
         private ControllerBattery battery = ControllerBattery.None;
         private int notificationCount;
         private bool isInDiscordCall;
@@ -36,6 +37,17 @@ namespace XboxSeries.Core
         {
             get => achievements;
             internal set => Set(ref achievements, value, nameof(Achievements));
+        }
+
+        /// <summary>
+        /// Why there are no <see cref="Achievements"/>, which Home's Achievements tile says under its title in the Score's
+        /// place: that PlayniteAchievements is needed, or that it has recorded nothing yet. Null with totals, and until
+        /// PlayniteAchievements has been looked for and, when it is there, first read.
+        /// </summary>
+        public string AchievementsNote
+        {
+            get => achievementsNote;
+            internal set => Set(ref achievementsNote, value, nameof(AchievementsNote));
         }
 
         /// <summary>The time to the minute, in the user's own short format.</summary>

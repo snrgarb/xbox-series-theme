@@ -118,7 +118,8 @@
 
         <!--
             3. Achievements: green, the trophy centred (U+1F3C6, not in the icon font, so in the body font, as the Guide's),
-            the Score total under the title; with no totals there is no subtitle.
+            the Score total under the title; with no totals, why there are none (AchievementsNote: PlayniteAchievements
+            is needed, or has recorded nothing yet), as Downloads says "Nothing queued"; neither until that is known.
         -->
         <Button x:Name="AchievementsTile" Grid.Column="4" Style="{StaticResource PromoTile}" Click="OnTileClick" KeyDown="OnTileKeyDown">
             <Button.Background>
@@ -136,6 +137,17 @@
                             <Style TargetType="TextBlock" BasedOn="{StaticResource Subtitle}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Achievements}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="{Binding AchievementsNote}" Foreground="{DynamicResource XboxTextDimBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Subtitle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding AchievementsNote}" Value="{x:Null}">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                     </DataTrigger>
                                 </Style.Triggers>

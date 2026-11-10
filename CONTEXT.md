@@ -13,14 +13,14 @@ The Playnite Fullscreen-mode theme that restyles Playnite's own screens to look 
 _Avoid_: skin, home screen (Home is one page of the Dashboard)
 
 **Home**:
-The Dashboard's landing page, modelled on the Xbox Home screen. Behind it is the art of the **Recent row** game that has focus, once focus has rested on it as long as **Settings**' Background delay says, and the green swirl with focus anywhere else. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
+The Dashboard's landing page, modelled on the Xbox Home screen. Behind it is the art of the **Recent row** game that has focus, once focus has rested on it as long as **Settings**' Background delay says, and the green swirl with focus anywhere else. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it, or with no totals why: "Needs PlayniteAchievements" without it, "Nothing recorded yet" while it has no game's achievements) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
 
 **Recent row**:
 The row of most recently played games on **Home**, ending in the Play history tile.
 _Avoid_: Jump back in, MRU
 
 **My games & apps**:
-The Dashboard's library page: a left nav (Games, Apps, Groups, Play history, Full library) beside the games it selects. It exists only when the extension is installed.
+The Dashboard's library page: a left nav (Games, Apps, Play history, Full library, Manage) beside what it selects. **Groups** aren't in the nav: Full library's tabs are the user's filter presets, and See all at the end of a Group on **Home** opens Full library on that Group's preset. It exists only when the extension is installed.
 _Avoid_: library page, collection
 
 **Apps**:

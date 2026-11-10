@@ -1437,7 +1437,9 @@ namespace XboxSeries.Core
         public void FocusMyGamesNav(MyGamesItem item)
         {
             CancelNavSettle();
-            var passing = clock.Now - lastNavFocus < NavSettle;
+            // Not before the last focus: a clock set back, as by a time sync, isn't focus passing by for as long as it was set back.
+            var sinceLast = clock.Now - lastNavFocus;
+            var passing = sinceLast >= TimeSpan.Zero && sinceLast < NavSettle;
             lastNavFocus = clock.Now;
             if (!MyGames.IsShown || (MyGames.Item != item && !passing))
             {

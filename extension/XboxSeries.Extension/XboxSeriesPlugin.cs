@@ -276,6 +276,39 @@ namespace XboxSeries.Extension
             achievements.Unlocked += (game, unlock) => Guarded.Run("Announcing an unlock", () => core.OnAchievementUnlocked(game, unlock));
             Guarded.Run("Starting the achievements",
                 () => StartupTiming.Time("Starting the achievements", () => achievements.Start(PlayniteApi.MainView.UIDispatcher)));
+
+            // Found or not, it has been looked for: without it, Home's Achievements tile says so. The log says what the
+            // tile does, as the totals come and go: the only sign, off the screen, of which case a user is in.
+            string said = null;
+            core.Status.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName != nameof(StatusState.Achievements) && e.PropertyName != nameof(StatusState.AchievementsNote))
+                {
+                    return;
+                }
+
+                var totals = core.Status.Achievements;
+                var says = totals != null
+                    ? $"Achievements: {totals.Score} Score, {totals.Unlocked} unlocked"
+                    : $"Achievements: none ({core.Status.AchievementsNote ?? "not read yet"})";
+                if (says != said)
+                {
+                    said = says;
+                    logger.Info(says);
+                }
+            };
+            Guarded.Run("Saying whether there are achievements", core.OnAchievementsLookedFor);
+
+            // The Tile menu and its More options flyout, with their rows in order, as each opens and closes.
+            core.Home.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(HomeState.TileMenu) || e.PropertyName == nameof(HomeState.TileMenuFlyout))
+                {
+                    var menu = e.PropertyName == nameof(HomeState.TileMenu) ? core.Home.TileMenu : core.Home.TileMenuFlyout;
+                    var what = e.PropertyName == nameof(HomeState.TileMenu) ? "Tile menu" : "Tile menu's flyout";
+                    logger.Info(menu == null ? $"{what} closed" : $"{what} {menu.Title}: {string.Join(", ", menu.Options.Select(o => o.Label))}");
+                }
+            };
             PlayniteApi.Notifications.Messages.CollectionChanged += (_, __) => OnUiThread(PushNotifications);
 
             // Discord's frames and token answers arrive on background threads. Subscribed before the core signs in with

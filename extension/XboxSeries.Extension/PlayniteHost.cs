@@ -191,6 +191,7 @@ namespace XboxSeries.Extension
             if (SelectInMainList(gameId) && api.MainView.ActiveFullscreenView == FullscreenView.List)
             {
                 api.MainView.ToggleFullscreenView();
+                logger.Info($"Game hub opened for {api.Database.Games.Get(gameId)?.Name}");
             }
         }
 
@@ -287,6 +288,7 @@ namespace XboxSeries.Extension
             {
                 try
                 {
+                    logger.Info($"Playnite's Extensions picker opens for {game.Name}");
                     open.Invoke(Activator.CreateInstance(menu, Activator.CreateInstance(factory), model, game), null);
                 }
                 catch (Exception e)
@@ -706,6 +708,7 @@ namespace XboxSeries.Extension
         {
             // The saved preset itself, as its tab applies it, so Playnite keeps it selected and lit.
             api.MainView.ApplyFilterPreset(presetId);
+            logger.Info($"Filter preset {api.Database.FilterPresets.Get(presetId)?.Name} selected");
         }
 
         public GameSort? MainListSort => PlayniteLibrary.ToGameSort(api.MainView.SortOrder);

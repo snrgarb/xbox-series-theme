@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Events;
 using XboxSeries.Core;
@@ -20,6 +21,7 @@ namespace XboxSeries.Extension
     /// </summary>
     public partial class RecentRowControl : PluginUserControl
     {
+        private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private readonly HomeScreen homeScreen;
         private readonly TileGrowth growth;
@@ -57,6 +59,11 @@ namespace XboxSeries.Extension
                 if (promosFocused)
                 {
                     lastPromo = Math.Max(0, Promos.AllTiles.ToList().IndexOf((Button)e.NewFocus));
+                }
+
+                if (e.NewFocus == PlayHistoryTile)
+                {
+                    logger.Info("Home focus on the Play history tile");
                 }
 
                 homeScreen.LastFocusedRow = this;
@@ -247,6 +254,7 @@ namespace XboxSeries.Extension
             {
                 lastFocusedGame = tile.GameId;
                 HeroTiming.Focused(tile.Title);
+                logger.Info($"Home focus on the Recent tile {tile.Title}");
                 core.FocusHomeTile(tile);
             }
         }

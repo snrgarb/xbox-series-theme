@@ -21,6 +21,12 @@ namespace XboxSeries.Core
         /// <summary>The rare Toast's line, before the view adds " - &lt;n&gt;%".</summary>
         private const string RareAchievementUnlockedLine = "Rare Achievement unlocked";
 
+        /// <summary>Home's Achievements tile's line without PlayniteAchievements: not installed, disabled, or a version that can't be read.</summary>
+        private const string NeedsPlayniteAchievementsNote = "Needs PlayniteAchievements";
+
+        /// <summary>Home's Achievements tile's line while PlayniteAchievements is read and no game has any achievements: nothing signed in to, or never refreshed.</summary>
+        private const string NothingRecordedNote = "Nothing recorded yet";
+
         /// <summary>An achievement fewer than this percentage of players have is rare, as the console's rule; one of unknown rarity never is.</summary>
         private const double RareBelow = 10;
 
@@ -129,6 +135,13 @@ namespace XboxSeries.Core
         /// not even the Debug menu's made-up unlocks.
         /// </summary>
         public bool HasAchievements => achievements.IsAvailable;
+
+        /// <summary>
+        /// The extension has looked for PlayniteAchievements, every plugin loaded by then, found or not: from now on Home's
+        /// Achievements tile says when it isn't there (<see cref="StatusState.AchievementsNote"/>). Found, the tile says
+        /// nothing until the first read.
+        /// </summary>
+        public void OnAchievementsLookedFor() => RefreshAchievements();
 
         /// <summary>
         /// PlayniteAchievements recorded unlocks or refreshed a game: <see cref="IAchievements.Games"/> is read again.
@@ -324,6 +337,8 @@ namespace XboxSeries.Core
         /// The Profile's totals and last unlocks, over every game this PC has achievements for; none at all without
         /// PlayniteAchievements, with no game having any, or before the first read, so unlocks heard live never make
         /// totals on their own. Profile &amp; system showing shows them in place, and Home's top bar shows the Score.
+        /// Without totals, Home's Achievements tile says why: PlayniteAchievements isn't there, or it is, has been read
+        /// and has nothing; not yet read, it says nothing.
         /// </summary>
         private void RefreshAchievements()
         {
@@ -341,7 +356,17 @@ namespace XboxSeries.Core
                 recentAchievements = unlocked.OrderByDescending(u => u.Achievement.UnlockedAt).Take(RecentAchievementCount).ToList();
             }
 
-            Status.Achievements = Guide.Achievements;
+            // Whichever of the two the tile is to show is set first, so it never shows neither, or the note of a moment ago.
+            if (any)
+            {
+                Status.Achievements = Guide.Achievements;
+                Status.AchievementsNote = null;
+            }
+            else
+            {
+                Status.AchievementsNote = !HasAchievements ? NeedsPlayniteAchievementsNote : achievementsRead ? NothingRecordedNote : null;
+                Status.Achievements = null;
+            }
             ShowAchievementsInGuide();
         }
 
