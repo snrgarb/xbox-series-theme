@@ -8,9 +8,9 @@ The Xbox Series Theme makes Playnite 10 look and work like the Xbox Series X|S d
 
 | Component | Version | Released | Download |
 |---|---|---|---|
-| Dashboard theme | 0.1.0 | 2026-11-05 | [XboxSeries_Dashboard_0.1.0.pthm](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.0/XboxSeries_Dashboard_0.1.0.pthm) |
-| Extension | 0.1.0 | 2026-11-05 | [XboxSeries_0.1.0.pext](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.0/XboxSeries_0.1.0.pext) |
-| Boot shell | 1.0.0 | 2026-11-05 | [XboxSeries.BootShell.exe](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.0/XboxSeries.BootShell.exe) |
+| Dashboard theme | 0.2.0 | 2026-11-10 | [XboxSeries_Dashboard_0.2.0.pthm](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.1/XboxSeries_Dashboard_0.2.0.pthm) |
+| Extension | 0.2.0 | 2026-11-10 | [XboxSeries_0.2.0.pext](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.1/XboxSeries_0.2.0.pext) |
+| Boot shell | 1.0.0 | 2026-11-05 | [XboxSeries.BootShell.exe](https://github.com/snrgarb/xbox-series-theme/releases/download/v2026.11.1/XboxSeries.BootShell.exe) |
 
 All three are early-access releases. For older versions, see [Releases](https://github.com/snrgarb/xbox-series-theme/releases).
 
