@@ -38,7 +38,6 @@ namespace XboxSeries.Extension
         /// Whether focus on the first screen is, or goes back to, the placeholder tiles under the row rather than the row
         /// itself, and which of them; and the Recent-row tile Down left for them, which Up goes back to.
         /// </summary>
-
         private bool promosFocused;
         private int lastPromo;
         private Button leftForPromos;
