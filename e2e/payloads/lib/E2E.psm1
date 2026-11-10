@@ -141,6 +141,9 @@ function Connect-Pad {
     $client = New-Object Nefarius.ViGEm.Client.ViGEmClient
     $script:Pad = $client.CreateXbox360Controller()
     $script:Pad.Connect()
+    # Above Playnite, which on a VM with no GPU draws in software and can take every core: a press whose release comes
+    # late is a held one, and past 0.7 s Playnite repeats it, moving focus twice.
+    try { (Get-Process -Id $PID).PriorityClass = 'High' } catch { Say "could not raise the test's priority: $_" }
     Say "virtual pad connected"
 }
 
@@ -148,10 +151,14 @@ function Connect-Pad {
 function Push-Button([string] $Button, [int] $HoldMs = 120) {
     $b = [Nefarius.ViGEm.Client.Targets.Xbox360.Xbox360Button]::$Button
     if (-not $b) { throw "No button $Button" }
+    $held = [Diagnostics.Stopwatch]::StartNew()
     $script:Pad.SetButtonState($b, $true)
     Start-Sleep -Milliseconds $HoldMs
     $script:Pad.SetButtonState($b, $false)
-    Say "pressed $Button for $HoldMs ms"
+    $held.Stop()
+    # A hold that ran long says so: past 0.7 s Playnite takes it for a held button and repeats it.
+    $late = if ($held.ElapsedMilliseconds -gt $HoldMs + 200) { ", held $($held.ElapsedMilliseconds) ms" }
+    Say "pressed $Button for $HoldMs ms$late"
 }
 
 function Disconnect-Pad { if ($script:Pad) { try { $script:Pad.Disconnect() } catch {} } }

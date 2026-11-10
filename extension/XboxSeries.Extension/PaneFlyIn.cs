@@ -63,12 +63,15 @@ namespace XboxSeries.Extension
             (asPicture ? new Slide(pane) : new Slide()).Start(new Vector(direction * Travel, 0), pane);
         }
 
-        /// <summary>Which way along the nav or tabs <paramref name="now"/> is from what was shown, 0 if not reached along them.</summary>
+        /// <summary>
+        /// Which way along the nav or tabs <paramref name="now"/> is from what was shown, 0 if not reached along them,
+        /// and with Reduce motion on, when the new content is just there.
+        /// </summary>
         private static int Direction<T>(ref T shown, T now, Func<T, int> indexOf, bool along)
         {
             var from = shown;
             shown = now;
-            return along ? Math.Sign(indexOf(now) - indexOf(from)) : 0;
+            return along && !Motion.Reduced ? Math.Sign(indexOf(now) - indexOf(from)) : 0;
         }
 
         /// <summary>Puts <paramref name="panes"/> where they settle at once, as when the page opens, closes or goes.</summary>

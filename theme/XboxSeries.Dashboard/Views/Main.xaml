@@ -121,35 +121,46 @@
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
                             <Setter TargetName="Label" Property="Visibility" Value="Visible" />
-                            <Trigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                         To="1.2" Duration="0:0:0.12">
-                                            <DoubleAnimation.EasingFunction>
-                                                <CubicEase EasingMode="EaseOut" />
-                                            </DoubleAnimation.EasingFunction>
-                                        </DoubleAnimation>
-                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                         To="1.2" Duration="0:0:0.12">
-                                            <DoubleAnimation.EasingFunction>
-                                                <CubicEase EasingMode="EaseOut" />
-                                            </DoubleAnimation.EasingFunction>
-                                        </DoubleAnimation>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
-                                                         To="1" Duration="0:0:0.12" />
-                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
-                                                         To="1" Duration="0:0:0.12" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.ExitActions>
                         </Trigger>
+
+                        <!--
+                            The icon grows a little on focus, unless the extension's Reduce motion is on (Settings >
+                            Theme settings > Personalisation); without the extension the binding falls back to off.
+                        -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsFocused, RelativeSource={RelativeSource Self}}" Value="True" />
+                                <Condition Binding="{PluginSettings Plugin=XboxSeries, Path=StartUp.ReduceMotion, FallbackValue=False}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1.2" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1.2" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </MultiDataTrigger.EnterActions>
+                            <MultiDataTrigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </MultiDataTrigger.ExitActions>
+                        </MultiDataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -229,12 +240,20 @@
 
                         <!--
                             With a real name, the gamertag (with the Score under it) and the real name take turns in the
-                            name's place, as on the console, each for 7.2 s, a 0.3 s crossfade to the other.
+                            name's place, as on the console, each for 7.2 s, a 0.3 s crossfade to the other. Only while
+                            the profile shows, so the swap doesn't keep WPF drawing behind another page, at 30 frames a
+                            second, enough for a fade; and not with the extension's Reduce motion on, when the gamertag
+                            stays.
                         -->
-                        <DataTrigger Binding="{Binding Tag.Profile.HasRealName, RelativeSource={RelativeSource Self}, FallbackValue=False}" Value="True">
-                            <DataTrigger.EnterActions>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Tag.Profile.HasRealName, RelativeSource={RelativeSource Self}, FallbackValue=False}" Value="True" />
+                                <Condition Binding="{Binding IsVisible, RelativeSource={RelativeSource Self}}" Value="True" />
+                                <Condition Binding="{PluginSettings Plugin=XboxSeries, Path=StartUp.ReduceMotion, FallbackValue=False}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.EnterActions>
                                 <BeginStoryboard x:Name="NameSwap">
-                                    <Storyboard RepeatBehavior="Forever">
+                                    <Storyboard RepeatBehavior="Forever" Timeline.DesiredFrameRate="30">
                                         <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GamertagAndScore" Storyboard.TargetProperty="Opacity" Duration="0:0:15">
                                             <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1" />
                                             <DiscreteDoubleKeyFrame KeyTime="0:0:7.2" Value="1" />
@@ -251,11 +270,11 @@
                                         </DoubleAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </BeginStoryboard>
-                            </DataTrigger.EnterActions>
-                            <DataTrigger.ExitActions>
+                            </MultiDataTrigger.EnterActions>
+                            <MultiDataTrigger.ExitActions>
                                 <RemoveStoryboard BeginStoryboardName="NameSwap" />
-                            </DataTrigger.ExitActions>
-                        </DataTrigger>
+                            </MultiDataTrigger.ExitActions>
+                        </MultiDataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

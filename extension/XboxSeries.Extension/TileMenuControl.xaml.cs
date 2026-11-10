@@ -183,8 +183,8 @@ namespace XboxSeries.Extension
             }
 
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            flyoutSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-FlyoutInDistance, 0, FlyoutInDuration) { EasingFunction = ease });
-            FlyoutPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, FlyoutInDuration));
+            flyoutSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-FlyoutInDistance, 0, Motion.Of(FlyoutInDuration)) { EasingFunction = ease });
+            FlyoutPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, Motion.Of(FlyoutInDuration)));
         }
 
         /// <summary>
@@ -208,6 +208,8 @@ namespace XboxSeries.Extension
 
         private void Fly(double riseTo, double opacityTo, Duration duration, EasingMode easing, double? from, Action completed)
         {
+            // With Reduce motion on, no time long: the menu is there, or gone, at once, and closing still ends.
+            duration = Motion.Of(duration);
             var ease = new CubicEase { EasingMode = easing };
             var move = new DoubleAnimation(riseTo, duration) { EasingFunction = ease };
             var fade = new DoubleAnimation(opacityTo, duration);

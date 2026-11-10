@@ -245,21 +245,22 @@ namespace XboxSeries.Extension
                 NativeMethods.SWP_SHOWWINDOW | NativeMethods.SWP_NOACTIVATE);
         }
 
-        /// <summary>The banner growing from its centre as it fades in.</summary>
+        /// <summary>The banner growing from its centre as it fades in; with Reduce motion on, at its size at once and only fading in.</summary>
         private void GrowIn()
         {
             var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-            Scale(new DoubleAnimation(GrowFrom, 1, GrowDuration) { EasingFunction = ease });
+            Scale(new DoubleAnimation(GrowFrom, 1, Motion.Of(GrowDuration)) { EasingFunction = ease });
             Card.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, GrowDuration) { EasingFunction = ease });
         }
 
         /// <summary>
-        /// The tile and text as the Toast's kind comes in: sliding in, or in their place at once. Either replaces whatever
-        /// they were at, as a slide part done or the last Toast's place.
+        /// The tile and text as the Toast's kind comes in: sliding in, or in their place at once, as every kind's are
+        /// with Reduce motion on. Either replaces whatever they were at, as a slide part done or the last Toast's
+        /// place.
         /// </summary>
         private void ComeIn()
         {
-            if (Slides)
+            if (Slides && !Motion.Reduced)
             {
                 SlideIn();
             }
@@ -287,8 +288,9 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The Toast going: the banner growing a little, then shrinking a little, fading out from halfway through its shrink,
-        /// its tile and text where they are; then the window hiding if the Toast hasn't shown or gone again.
+        /// The Toast going: the banner growing a little, then shrinking a little, fading out from halfway through its
+        /// shrink, its tile and text where they are; then the window hiding if the Toast hasn't shown or gone again.
+        /// With Reduce motion on it keeps its size and only fades out, when it would have.
         /// </summary>
         private void Go()
         {
@@ -305,10 +307,14 @@ namespace XboxSeries.Extension
             };
 
             // From wherever the banner is, as part way through its grow in.
-            var scale = new DoubleAnimationUsingKeyFrames();
-            scale.KeyFrames.Add(new EasingDoubleKeyFrame(PopTo, KeyTime.FromTimeSpan(PopDuration), new CubicEase { EasingMode = EasingMode.EaseOut }));
-            scale.KeyFrames.Add(new EasingDoubleKeyFrame(ShrinkTo, KeyTime.FromTimeSpan(PopDuration + ShrinkDuration), new CubicEase { EasingMode = EasingMode.EaseInOut }));
-            Scale(scale);
+            if (!Motion.Reduced)
+            {
+                var scale = new DoubleAnimationUsingKeyFrames();
+                scale.KeyFrames.Add(new EasingDoubleKeyFrame(PopTo, KeyTime.FromTimeSpan(PopDuration), new CubicEase { EasingMode = EasingMode.EaseOut }));
+                scale.KeyFrames.Add(new EasingDoubleKeyFrame(ShrinkTo, KeyTime.FromTimeSpan(PopDuration + ShrinkDuration), new CubicEase { EasingMode = EasingMode.EaseInOut }));
+                Scale(scale);
+            }
+
             Card.BeginAnimation(OpacityProperty, fade);
         }
 

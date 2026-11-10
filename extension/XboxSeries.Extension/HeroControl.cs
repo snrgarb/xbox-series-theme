@@ -23,6 +23,9 @@ namespace XboxSeries.Extension
     {
         private static readonly Duration CrossfadeTime = TimeSpan.FromMilliseconds(400);
 
+        /// <summary>The crossfade with Settings' Reduce motion on: still a fade, so the art doesn't flash in, but a short one.</summary>
+        private static readonly Duration ReducedCrossfadeTime = TimeSpan.FromMilliseconds(150);
+
         private readonly HomeState home;
 
         /// <summary>The swirl, under the art: shown while art is fading in or out over it, and none is up.</summary>
@@ -123,7 +126,8 @@ namespace XboxSeries.Extension
             // To-only, so a crossfade interrupted by quick focus changes carries on from where each layer is. The swirl
             // shows beneath throughout, and goes, so it stops turning, once art covers it again.
             swirl.Visibility = Visibility.Visible;
-            var fadeIn = new DoubleAnimation(art == null ? 0 : 1, CrossfadeTime);
+            var crossfade = Motion.Reduced ? ReducedCrossfadeTime : CrossfadeTime;
+            var fadeIn = new DoubleAnimation(art == null ? 0 : 1, crossfade);
             fadeIn.Completed += (_, __) =>
             {
                 HeroTiming.Log($"{name} shown");
@@ -133,7 +137,7 @@ namespace XboxSeries.Extension
                 }
             };
             front.Root.BeginAnimation(OpacityProperty, fadeIn);
-            back.Root.BeginAnimation(OpacityProperty, new DoubleAnimation(0, CrossfadeTime));
+            back.Root.BeginAnimation(OpacityProperty, new DoubleAnimation(0, crossfade));
         }
     }
 }

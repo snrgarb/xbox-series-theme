@@ -61,12 +61,15 @@ namespace XboxSeries.Extension
 
                 CompositionTarget.Rendering -= pendingSlide;
                 pendingSlide = null;
-                ContentSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, OverlayWindow.OpenDuration)
+
+                // With Reduce motion on, no time long and no lag: the contents are in their place as that frame is
+                // drawn.
+                ContentSlide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, Motion.Of(OverlayWindow.OpenDuration))
                 {
-                    BeginTime = ContentLag,
+                    BeginTime = Motion.Of(ContentLag),
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
                 });
-                Contents.BeginAnimation(OpacityProperty, new DoubleAnimation(1, OverlayWindow.OpenDuration) { BeginTime = ContentLag });
+                Contents.BeginAnimation(OpacityProperty, new DoubleAnimation(1, Motion.Of(OverlayWindow.OpenDuration)) { BeginTime = Motion.Of(ContentLag) });
             };
             CompositionTarget.Rendering += pendingSlide;
         }

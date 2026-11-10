@@ -83,7 +83,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Flies <paramref name="row"/> in, or out toward <paramref name="hiddenOffset"/> (up when negative), fading as it
-        /// goes. A row that is out can't be focused or clicked, so focus never lands on a tile no one can see.
+        /// goes, or there at once with Reduce motion on. A row that is out can't be focused or clicked, so focus never
+        /// lands on a tile no one can see.
         /// </summary>
         public static void Fly(FrameworkElement row, bool shown, double hiddenOffset, bool animate = true)
         {
@@ -91,7 +92,7 @@ namespace XboxSeries.Extension
 
             var opacity = shown ? 1.0 : 0.0;
             var offset = shown ? 0.0 : hiddenOffset;
-            if (animate)
+            if (animate && !Motion.Reduced)
             {
                 var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
                 row.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(opacity, FlyDuration) { EasingFunction = ease });
@@ -124,13 +125,14 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Home revealed from under Start-up's swirl as it fades, as on the console: <paramref name="row"/> (the Recent row and the
-        /// placeholder tiles under it) flies up into place from a little below, fading in, rises a little too high and
-        /// drops back to settle; a moment after, the top bar's buttons (My games &amp; apps, Search and Settings) drop in
-        /// from above the screen's top, fading in. Until then they are disabled as well as unseen, so that Up from the
-        /// row can't focus one no one can see. Both start where they start at once, while the Start-up window still
-        /// covers Home, so nothing at rest shows first. A <see cref="Fly"/> during it, as Down to the Groups,
-        /// takes the row over from wherever it has got to.
+        /// Home revealed from under Start-up's swirl as it fades, as on the console: <paramref name="row"/> (the Recent
+        /// row and the placeholder tiles under it) flies up into place from a little below, fading in, rises a little
+        /// too high and drops back to settle; a moment after, the top bar's buttons (My games &amp; apps, Search and
+        /// Settings) drop in from above the screen's top, fading in. Until then they are disabled as well as unseen, so
+        /// that Up from the row can't focus one no one can see. Both start where they start at once, while the Start-up
+        /// window still covers Home, so nothing at rest shows first. A <see cref="Fly"/> during it, as Down to the
+        /// Groups, takes the row over from wherever it has got to. With Reduce motion on, the row is in its place at
+        /// once and the top bar is left as it rests, there and enabled.
         /// </summary>
         /// <remarks>
         /// Every animation is of a render transform, opacity or IsEnabled, never layout, and stops when it ends, leaving
@@ -140,6 +142,11 @@ namespace XboxSeries.Extension
         public static void Reveal(FrameworkElement row)
         {
             Fly(row, shown: true, hiddenOffset: 0, animate: false);
+            if (Motion.Reduced)
+            {
+                return;
+            }
+
             var rise = new DoubleAnimationUsingKeyFrames { Duration = RevealSettled, FillBehavior = FillBehavior.Stop };
             rise.KeyFrames.Add(new DiscreteDoubleKeyFrame(RevealRiseDistance, KeyTime.FromTimeSpan(TimeSpan.Zero)));
             rise.KeyFrames.Add(new EasingDoubleKeyFrame(-RevealOvershoot, KeyTime.FromTimeSpan(RevealRisen), new CubicEase { EasingMode = EasingMode.EaseOut }));

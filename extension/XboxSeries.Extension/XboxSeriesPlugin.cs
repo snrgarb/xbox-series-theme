@@ -103,6 +103,10 @@ namespace XboxSeries.Extension
                 achievements: achievements, inputActivity: inputActivity);
             core.StartupEnded += () => startup?.End();
 
+            // Reduce motion as it was saved, which the core has read, before any view or the Start-up sequence shows:
+            // Home's elements are asked for seconds before OnApplicationStarted.
+            Motion.Follow(core.Settings.StartUp);
+
             // The Guide's Switch profile: Who's playing today? over everything, as on waking. Raised on the UI thread
             // from the Guide's A press, and shown once that press has been handled.
             core.WhosPlayingAsked += plan => OnUiThread(() =>
@@ -118,7 +122,18 @@ namespace XboxSeries.Extension
                 SourceName = "XboxSeries",
                 ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "Search", "TextEntry", "Hints" },
             });
+
+            // What the Dashboard reads of the Bundle's options, as {PluginSettings Plugin=XboxSeries,
+            // Path=StartUp.ReduceMotion}: Playnite binds to this plugin, with the path after DashboardSettings.
+            AddSettingsSupport(new AddSettingsSupportArgs { SourceName = "XboxSeries", SettingsRoot = nameof(DashboardSettings) });
         }
+
+        /// <summary>
+        /// The Bundle's options as the Dashboard's XAML binds to them through Playnite's PluginSettings markup, which
+        /// needs a public property of the plugin to start from. The theme reads StartUp.ReduceMotion, which tells it
+        /// when it changes; renaming either breaks the theme of the same version.
+        /// </summary>
+        public SettingsState DashboardSettings => core.Settings;
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {

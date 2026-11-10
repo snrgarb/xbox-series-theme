@@ -74,7 +74,9 @@ namespace XboxSeries.Extension
         {
             var elapsed = frameClock.Elapsed;
             frameClock.Restart();
-            var step = 1 - Math.Exp(-elapsed.TotalMilliseconds / GrowthTimeConstant.TotalMilliseconds);
+
+            // With Reduce motion on, every tile takes its size in this one frame.
+            var step = Motion.Reduced ? 1 : 1 - Math.Exp(-elapsed.TotalMilliseconds / GrowthTimeConstant.TotalMilliseconds);
 
             // No allocations here: this runs every frame while tiles change size.
             var all = tiles();
