@@ -320,13 +320,20 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Every_plugin_hook_names_the_extension_by_its_id()
+        public void Every_plugin_hook_names_the_extension_by_its_id_or_for_its_settings_by_their_source_name()
         {
-            var plugins = DashboardXaml()
-                .SelectMany(file => Regex.Matches(File.ReadAllText(file), @"\{Plugin\w+ Plugin=(XboxSeries[^,}\s]*)").Cast<Match>())
-                .Select(match => match.Groups[1].Value);
+            var hooks = DashboardXaml()
+                .SelectMany(file => Regex.Matches(File.ReadAllText(file), @"\{(Plugin\w+) Plugin=(XboxSeries[^,}\s]*)").Cast<Match>())
+                .Select(match => (Hook: match.Groups[1].Value, Plugin: match.Groups[2].Value))
+                .ToList();
 
-            Assert.All(plugins, plugin => Assert.Equal(ExtensionId(), plugin));
+            // Playnite keys an add-on's status by its id, but its settings by the SourceName it hands AddSettingsSupport
+            // (#156), which is the one its custom elements go by.
+            Assert.Contains(hooks, hook => hook.Hook == "PluginStatus");
+            Assert.Contains(hooks, hook => hook.Hook == "PluginSettings");
+            Assert.All(hooks, hook => Assert.Equal(hook.Hook == "PluginSettings" ? "XboxSeries" : ExtensionId(), hook.Plugin));
+            Assert.Contains("AddSettingsSupport(new AddSettingsSupportArgs { SourceName = \"XboxSeries\",",
+                File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Extension", "XboxSeriesPlugin.cs")));
         }
 
         [Theory]
