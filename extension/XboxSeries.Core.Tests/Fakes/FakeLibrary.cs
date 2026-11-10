@@ -20,8 +20,6 @@ namespace XboxSeries.Core.Tests.Fakes
             DateTime? added = null,
             bool hidden = false,
             bool installed = true,
-            string[] series = null,
-            string[] genres = null,
             string source = null,
             string installDirectory = null,
             string backgroundImage = null,
@@ -38,7 +36,7 @@ namespace XboxSeries.Core.Tests.Fakes
             bool custom = false,
             string[] otherActions = null,
             bool hdr = false) =>
-            WithGame(Guid.NewGuid(), name, lastActivity, added, hidden, installed, series, genres, source, installDirectory, backgroundImage, coverImage,
+            WithGame(Guid.NewGuid(), name, lastActivity, added, hidden, installed, source, installDirectory, backgroundImage, coverImage,
                 favorite, playtime, playCount, releaseDate, modified, sortingName, platform, installing, installedAt, custom, otherActions, hdr);
 
         /// <summary>A game with a known id, to stand for the same game in a later snapshot.</summary>
@@ -49,8 +47,6 @@ namespace XboxSeries.Core.Tests.Fakes
             DateTime? added = null,
             bool hidden = false,
             bool installed = true,
-            string[] series = null,
-            string[] genres = null,
             string source = null,
             string installDirectory = null,
             string backgroundImage = null,
@@ -75,8 +71,6 @@ namespace XboxSeries.Core.Tests.Fakes
                 added,
                 hidden,
                 installed,
-                series ?? new string[0],
-                genres ?? new string[0],
                 source,
                 installDirectory,
                 backgroundImage,
@@ -105,10 +99,20 @@ namespace XboxSeries.Core.Tests.Fakes
             bool showInFullscreenQuickSelection = false,
             string[] games = null,
             GameSort? sort = null,
+            SortDirection direction = SortDirection.Ascending) =>
+            WithFilterPreset(Guid.NewGuid(), name, showInFullscreenQuickSelection, games, sort, direction);
+
+        /// <summary>A filter preset with a known id, to stand for the same preset in a later snapshot.</summary>
+        public FakeLibrary WithFilterPreset(
+            Guid id,
+            string name,
+            bool showInFullscreenQuickSelection = false,
+            string[] games = null,
+            GameSort? sort = null,
             SortDirection direction = SortDirection.Ascending)
         {
             presetGames.Add(games ?? new string[0]);
-            filterPresets.Add(new FilterPreset(Guid.NewGuid(), name, showInFullscreenQuickSelection, new Guid[0], sort, direction));
+            filterPresets.Add(new FilterPreset(id, name, showInFullscreenQuickSelection, new Guid[0], sort, direction));
             return this;
         }
 

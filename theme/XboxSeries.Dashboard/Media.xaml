@@ -46,7 +46,7 @@
                         <Trigger Property="IsVisible" Value="True">
                             <Trigger.EnterActions>
                                 <BeginStoryboard x:Name="Spin">
-                                    <Storyboard Duration="0:0:1.2" RepeatBehavior="Forever">
+                                    <Storyboard Duration="0:0:1.2" RepeatBehavior="Forever" Timeline.DesiredFrameRate="30">
                                         <PointAnimationUsingKeyFrames Storyboard.TargetName="Tail" Storyboard.TargetProperty="(Path.Data).(PathGeometry.Figures)[0].(PathFigure.StartPoint)">
                                             <LinearPointKeyFrame KeyTime="0:0:0" Value="50,4" />
                                             <LinearPointKeyFrame KeyTime="0:0:0.25" Value="50,4" />

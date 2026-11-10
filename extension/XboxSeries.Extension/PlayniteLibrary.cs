@@ -14,19 +14,38 @@ namespace XboxSeries.Extension
     internal static class PlayniteLibrary
     {
         private static readonly ILogger logger = LogManager.GetLogger();
+        private static readonly object installFoldersLock = new object();
+
+        /// <summary>
+        /// Each installed game's install folder and when it was made, as the last snapshot read them, so a snapshot
+        /// asks the disk only about a game newly installed, or installed somewhere else: a library update makes
+        /// several snapshots a second. A game that isn't installed has no entry, so one installed again is read again;
+        /// nor has one whose folder couldn't be read, which is asked again each time.
+        /// </summary>
+        private static Dictionary<Guid, InstallFolder> installFolders = new Dictionary<Guid, InstallFolder>();
 
         public static LibrarySnapshot Snapshot(IPlayniteAPI api)
         {
             var database = api.Database;
-            var games = database.Games.Select(g => GameOf(api, g)).ToList();
+            List<LibraryGame> games;
+            lock (installFoldersLock)
+            {
+                // Only the games of this snapshot are kept, so those removed or uninstalled drop out.
+                var folders = new Dictionary<Guid, InstallFolder>();
+                games = database.Games.Select(g => GameOf(api, g, installFolders, folders)).ToList();
+                installFolders = folders;
+            }
 
-            // In Playnite's own order, each with the games its filter matches, as Playnite's own lists evaluate it.
+            // In Playnite's own order. Each that is a Group has the games its filter matches, as Playnite's own lists
+            // evaluate it; the core reads no other preset's games, so their filters aren't run over the library.
             var presets = SortedFilterPresets(api)
                 .Select(p => new FilterPreset(
                     p.Id,
                     p.Name,
                     p.ShowInFullscreeQuickSelection,
-                    p.Settings == null ? new List<Guid>() : database.GetFilteredGames(p.Settings).Select(g => g.Id).ToList(),
+                    p.Settings == null || !p.ShowInFullscreeQuickSelection
+                        ? new List<Guid>()
+                        : database.GetFilteredGames(p.Settings).Select(g => g.Id).ToList(),
                     p.SortingOrder == null ? null : ToGameSort(p.SortingOrder.Value),
                     p.SortingOrderDirection == SortOrderDirection.Descending ? SortDirection.Descending : SortDirection.Ascending))
                 .ToList();
@@ -34,9 +53,26 @@ namespace XboxSeries.Extension
             return new LibrarySnapshot(games, presets, Apps(api));
         }
 
-        private static LibraryGame GameOf(IPlayniteAPI api, Game g)
+        /// <summary>
+        /// The game as the core knows it. When its install folder was made comes from <paramref name="known"/> while the
+        /// game is installed where it was then, else from the disk, and goes into <paramref name="current"/>.
+        /// </summary>
+        private static LibraryGame GameOf(
+            IPlayniteAPI api, Game g, Dictionary<Guid, InstallFolder> known, Dictionary<Guid, InstallFolder> current)
         {
             var directory = string.IsNullOrEmpty(g.InstallDirectory) ? null : api.ExpandGameVariables(g, g.InstallDirectory);
+            DateTime? installedAt = null;
+            if (g.IsInstalled && directory != null)
+            {
+                installedAt = known.TryGetValue(g.Id, out var folder) && string.Equals(folder.Path, directory, StringComparison.Ordinal)
+                    ? folder.Created
+                    : CreationTimeOf(directory);
+                if (installedAt != null)
+                {
+                    current[g.Id] = new InstallFolder(directory, installedAt.Value);
+                }
+            }
+
             return new LibraryGame(
                 g.Id,
                 g.Name,
@@ -44,8 +80,6 @@ namespace XboxSeries.Extension
                 g.Added,
                 g.Hidden,
                 g.IsInstalled,
-                g.Series?.Select(s => s.Name).ToList() ?? new List<string>(),
-                g.Genres?.Select(s => s.Name).ToList() ?? new List<string>(),
                 g.Source?.Name,
                 directory,
                 FullPath(api.Database, g.BackgroundImage),
@@ -58,7 +92,7 @@ namespace XboxSeries.Extension
                 g.SortingName,
                 g.Platforms?.FirstOrDefault()?.Name,
                 installing: g.IsInstalling,
-                installedAt: g.IsInstalled ? CreationTimeOf(directory) : null,
+                installedAt: installedAt,
                 isCustom: g.IsCustomGame,
                 otherActions: g.GameActions?.Where(a => !a.IsPlayAction).Select(a => a.Name).ToList(),
                 systemHdr: g.EnableSystemHdr);
@@ -78,6 +112,19 @@ namespace XboxSeries.Extension
             {
                 return null;
             }
+        }
+
+        /// <summary>A game's install folder, and when it was made.</summary>
+        private sealed class InstallFolder
+        {
+            public InstallFolder(string directory, DateTime created)
+            {
+                Path = directory;
+                Created = created;
+            }
+
+            public string Path { get; }
+            public DateTime Created { get; }
         }
 
         /// <summary>

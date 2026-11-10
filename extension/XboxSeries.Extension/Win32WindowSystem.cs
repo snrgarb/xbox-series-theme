@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Playnite.SDK;
@@ -77,7 +78,10 @@ namespace XboxSeries.Extension
             Overlay.Focus();
 
             // Diagnostic: if the game still reacts to the pad while Playnite is in front, the game reads the pad in the background.
-            logger.Info($"Guide opened over {ProcessNameOf(before)}; the foreground belongs to {ProcessNameOf(NativeMethods.GetForegroundWindow())}");
+            // Written from another thread: naming a window's process reads every process there is, which the Guide
+            // needn't wait for before it shows.
+            var after = NativeMethods.GetForegroundWindow();
+            Task.Run(() => logger.Info($"Guide opened over {ProcessNameOf(before)}; the foreground belongs to {ProcessNameOf(after)}"));
         }
 
         private static string ProcessNameOf(IntPtr window)
