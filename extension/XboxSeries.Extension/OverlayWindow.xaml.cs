@@ -316,6 +316,10 @@ namespace XboxSeries.Extension
         {
             CancelPendingOpen();
 
+            // With Reduce motion on, no time long: the panel and its contents are where they end at once, and each
+            // animation still ends, so what is done as it does (hiding the window, slid out) is done.
+            duration = Motion.Of(duration);
+
             // To-only animations, so reopening mid slide-out continues from where the panel and its contents are.
             var slide = new DoubleAnimation(slideTo, duration) { EasingFunction = new CubicEase { EasingMode = easing } };
             var slidesIn = slideTo > offscreenX;
@@ -343,7 +347,7 @@ namespace XboxSeries.Extension
             {
                 var contents = new DoubleAnimation(0, duration)
                 {
-                    BeginTime = ContentLag,
+                    BeginTime = Motion.Of(ContentLag),
                     EasingFunction = new CubicEase { EasingMode = easing },
                 };
                 contents.Completed += (_, __) =>

@@ -192,13 +192,13 @@ namespace XboxSeries.Extension
             }
         }
 
-        /// <summary>Slides the Groups so that <paramref name="row"/> sits at the top of the screen.</summary>
+        /// <summary>Slides the Groups so that <paramref name="row"/> sits at the top of the screen; there at once with Reduce motion on.</summary>
         private void ScrollTo(FrameworkElement row)
         {
             var scroll = -row.TranslatePoint(new Point(0, 0), Rows).Y;
             Scroll.BeginAnimation(
                 TranslateTransform.YProperty,
-                new DoubleAnimation(scroll, ScrollDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                new DoubleAnimation(scroll, Motion.Of(ScrollDuration)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
             ShowWholeGroupsOnly(scroll);
         }
 
@@ -219,7 +219,7 @@ namespace XboxSeries.Extension
                 var group = (FrameworkElement)VisualTreeHelper.GetChild(row, 0);
                 var top = group.TranslatePoint(new Point(0, 0), Rows).Y + scroll;
                 var fits = top >= 0 && top + group.ActualHeight <= View.ActualHeight;
-                row.BeginAnimation(OpacityProperty, new DoubleAnimation(fits ? 1 : 0, ScrollDuration));
+                row.BeginAnimation(OpacityProperty, new DoubleAnimation(fits ? 1 : 0, Motion.Of(ScrollDuration)));
             }
         }
 

@@ -13,8 +13,9 @@ namespace XboxSeries.Core
     public sealed partial class ExtensionCore
     {
         /// <summary>
-        /// The secret store's name for the Personalisation options, as JSON: the boot video, whether Who's playing today? asks,
-        /// Background delay, the profiles and the one last signed in. They aren't secret, but the store keeps the extension's own options.
+        /// The secret store's name for the Personalisation options, as JSON: the boot video, whether Who's playing
+        /// today? asks, Background delay, Reduce motion, the profiles and the one last signed in. They aren't secret,
+        /// but the store keeps the extension's own options.
         /// </summary>
         private const string StartUpSecret = "StartUp";
 
@@ -28,6 +29,9 @@ namespace XboxSeries.Core
 
         /// <summary>Background delay as the player set it; null while they never have, and the default stands.</summary>
         private bool? backgroundDelayChosen;
+
+        /// <summary>Reduce motion as the player set it; null while they never have, and the default stands.</summary>
+        private bool? reduceMotionChosen;
 
         /// <summary>Signing you in's <see cref="SigningInDuration"/>, while it shows; null otherwise.</summary>
         private IDisposable signingInTimer;
@@ -155,6 +159,17 @@ namespace XboxSeries.Core
         {
             backgroundDelayChosen = on;
             Settings.StartUp.BackgroundDelay = on;
+            SaveStartUp();
+        }
+
+        /// <summary>
+        /// Settings' Reduce motion box: whether the Dashboard's animations are turned off. Saved at once, and in force
+        /// at once: the views and the theme follow <see cref="StartUpSettingsState.ReduceMotion"/>.
+        /// </summary>
+        public void SetReduceMotion(bool on)
+        {
+            reduceMotionChosen = on;
+            Settings.StartUp.ReduceMotion = on;
             SaveStartUp();
         }
 
@@ -299,6 +314,8 @@ namespace XboxSeries.Core
             Settings.StartUp.AskWhosPlaying = saved?.AskWhosPlaying ?? true;
             backgroundDelayChosen = saved?.BackgroundDelay;
             Settings.StartUp.BackgroundDelay = backgroundDelayChosen ?? StartUpSettingsState.BackgroundDelayByDefault;
+            reduceMotionChosen = saved?.ReduceMotion;
+            Settings.StartUp.ReduceMotion = reduceMotionChosen ?? StartUpSettingsState.ReduceMotionByDefault;
             ShowProfiles();
             RefreshGamerpics();
         }
@@ -308,6 +325,7 @@ namespace XboxSeries.Core
             BootVideo = Settings.StartUp.BootVideo,
             AskWhosPlaying = Settings.StartUp.AskWhosPlaying,
             BackgroundDelay = backgroundDelayChosen,
+            ReduceMotion = reduceMotionChosen,
             Profiles = profiles.Select(p => new SavedProfile { Id = p.Id, Gamertag = p.Gamertag, RealName = p.RealName, Picture = p.Picture }).ToList(),
             LastProfileId = lastProfileId,
         }));
@@ -389,6 +407,9 @@ namespace XboxSeries.Core
 
             /// <summary>Null until the player sets it, so the default stays the default's to give.</summary>
             public bool? BackgroundDelay { get; set; }
+
+            /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
+            public bool? ReduceMotion { get; set; }
 
             public List<SavedProfile> Profiles { get; set; }
 

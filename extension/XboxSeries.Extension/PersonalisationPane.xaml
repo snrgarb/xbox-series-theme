@@ -5,9 +5,10 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False" KeyDown="OnPaneKeyDown">
     <!--
-        Theme settings' Personalisation page, as the console's General and Account: a grid of dark boxes two wide, each a
-        line icon and its name alone, opening a page of its own in their place, and Background delay's checkbox. Its DataContext
-        is the core's StartUpSettingsState; the page showing and its header follow the code-behind. In Settings' palette and 1080p units (SettingsControl.xaml).
+        Theme settings' Personalisation page, as the console's General and Account: a grid of dark boxes two wide, each
+        a line icon and its name alone, opening a page of its own in their place, and Background delay's and Reduce
+        motion's checkboxes. Its DataContext is the core's StartUpSettingsState; the page showing and its header follow
+        the code-behind. In Settings' palette and 1080p units (SettingsControl.xaml).
     -->
     <UserControl.Resources>
         <ResourceDictionary>
@@ -118,8 +119,9 @@
     <Grid Margin="0,20,0,0">
         <!--
             Personalisation's boxes: Boot video, Profiles and Who's playing today?, each opening its page, then
-            Background delay, a checkbox setting as Playnite settings' Update after downloads: on a row of its own, its
-            name at the box's left and the checkbox at its right, and while it has focus its info beside it.
+            Background delay and Reduce motion, checkbox settings as Playnite settings' Update after downloads: each on
+            a row of its own, its name at the box's left and the checkbox at its right, and while it has focus its info
+            beside it.
         -->
         <Grid x:Name="PersonalisationPage" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Grid.ColumnDefinitions>
@@ -127,6 +129,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -166,12 +169,46 @@
                 </Grid>
             </Button>
 
-            <!-- Beside the box while it has focus, top-aligned with it, as the console's. -->
-            <TextBlock x:Name="BackgroundDelayInfo" Grid.Row="2" Grid.Column="1" Style="{StaticResource Text}"
+            <!--
+                Beside the box while it has focus, top-aligned with it, as the console's. Over the row below's empty
+                place too, so text taller than the box doesn't push Reduce motion down as it shows.
+            -->
+            <TextBlock x:Name="BackgroundDelayInfo" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1" Style="{StaticResource Text}"
                        Text="Waits a moment on a game before Home's background shows its art. Turn it off to change the background as you move along your recent games."
                        TextWrapping="Wrap" TextTrimming="None" Width="400" Margin="30,8,0,0" VerticalAlignment="Top"
                        HorizontalAlignment="Left"
                        Visibility="{Binding IsKeyboardFocused, ElementName=BackgroundDelayBox, Converter={StaticResource Visibility}}" />
+
+            <!--
+                Reduce motion: whether the Dashboard's animations are turned off, for a PC they cost frames on. Built as
+                Background delay: no icon, the ticked box on, the empty square off; A turns it over at once, saved.
+            -->
+            <Button x:Name="ReduceMotionBox" Grid.Row="3" Grid.Column="0" Style="{StaticResource Box}" Padding="30,0,24,0"
+                    Click="OnBoxClick">
+                <Grid>
+                    <TextBlock Text="Reduce motion" Style="{StaticResource Text}" VerticalAlignment="Center" Margin="0,0,50,0" />
+                    <TextBlock x:Name="ReduceMotionCheck" HorizontalAlignment="Right">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                <Setter Property="FontSize" Value="34" />
+                                <Setter Property="Text" Value="&#xE739;" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ReduceMotion}" Value="True">
+                                        <Setter Property="Text" Value="&#xE73A;" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Button>
+
+            <!-- Beside its box while it has focus, as Background delay's. -->
+            <TextBlock x:Name="ReduceMotionInfo" Grid.Row="3" Grid.Column="1" Style="{StaticResource Text}"
+                       Text="Shows pages, rows and tiles in place and holds the background still. Turn it on if the Dashboard feels slow on this PC."
+                       TextWrapping="Wrap" TextTrimming="None" Width="400" Margin="30,8,0,0" VerticalAlignment="Top"
+                       HorizontalAlignment="Left"
+                       Visibility="{Binding IsKeyboardFocused, ElementName=ReduceMotionBox, Converter={StaticResource Visibility}}" />
         </Grid>
 
         <!-- Boot video: each generation's, oldest first after Off, the one that plays ticked. -->

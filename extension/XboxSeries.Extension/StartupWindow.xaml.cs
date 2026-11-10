@@ -315,12 +315,13 @@ namespace XboxSeries.Extension
         /// <summary>
         /// Slides Who's playing today?'s row sideways so the focused profile's centre is at the screen's: the row hangs
         /// from a profile-wide slot centred on the screen, so it moves left a profile's width for each place along. A
-        /// focus moved while it shows eases there; one set as it first shows, or before, is there at once, so nothing jumps.
+        /// focus moved while it shows eases there; one set as it first shows, or before, is there at once, so nothing
+        /// jumps, as is every one with Reduce motion on.
         /// </summary>
         private void SlideToFocused(bool animate)
         {
             var to = -ProfileWidth * startup.FocusedIndex;
-            if (animate)
+            if (animate && !Motion.Reduced)
             {
                 Slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(to, SlideDuration)
                 {

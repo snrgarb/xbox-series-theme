@@ -94,12 +94,13 @@ namespace XboxSeries.Extension
 
         private StartUpSettingsState State => core.Settings.StartUp;
 
-        /// <summary>Personalisation's own boxes as the pad moves between them: a row each, Background delay alone on the last.</summary>
+        /// <summary>Personalisation's own boxes as the pad moves between them: a row each, Background delay and Reduce motion alone on theirs.</summary>
         private Button[][] Rows => new[]
         {
             new[] { BootVideoBox, ProfilesBox },
             new[] { AskBox },
             new[] { BackgroundDelayBox },
+            new[] { ReduceMotionBox },
         };
 
         private Profile Profile => State.Profiles.FirstOrDefault(p => p.Id == profileId);
@@ -364,6 +365,10 @@ namespace XboxSeries.Extension
             else if (button == BackgroundDelayBox)
             {
                 core.SetBackgroundDelay(!State.BackgroundDelay);
+            }
+            else if (button == ReduceMotionBox)
+            {
+                core.SetReduceMotion(!State.ReduceMotion);
             }
             else if (button.DataContext is ChoiceRow row && row.Value is BootVideo video)
             {

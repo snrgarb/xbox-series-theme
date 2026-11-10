@@ -239,7 +239,8 @@ namespace XboxSeries.Extension
                     press = null;
                 }
 
-                if (Math.Abs(to - from) < 0.5)
+                // No distance to slide, or Reduce motion on: the row is there at once.
+                if (Math.Abs(to - from) < 0.5 || Motion.Reduced)
                 {
                     Stop();
                     Scroller.ScrollToHorizontalOffset(to);

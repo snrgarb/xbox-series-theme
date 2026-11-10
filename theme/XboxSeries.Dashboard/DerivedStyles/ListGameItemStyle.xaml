@@ -46,6 +46,19 @@
                             <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity"
                                              To="0" Duration="0:0:0.1" />
                         </Storyboard>
+                        <!--
+                            Their twins for the extension's Reduce motion: the title band there, and gone, at once.
+                            Storyboards no time long rather than Setters, so each takes the band over from whichever ran
+                            last.
+                        -->
+                        <Storyboard x:Key="FocusedOnAtOnce">
+                            <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity"
+                                             To="1" Duration="0:0:0" />
+                        </Storyboard>
+                        <Storyboard x:Key="FocusedOffAtOnce">
+                            <DoubleAnimation Storyboard.TargetName="TitleBand" Storyboard.TargetProperty="Opacity"
+                                             To="0" Duration="0:0:0" />
+                        </Storyboard>
                     </ControlTemplate.Resources>
                     <!--
                         A fixed gap, as on the console, rather than Playnite's item spacing, so My games & apps' grid can line
@@ -99,13 +112,36 @@
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                             <Setter Property="Panel.ZIndex" Value="90" />
-                            <Trigger.EnterActions>
-                                <BeginStoryboard Storyboard="{StaticResource FocusedOn}" />
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard Storyboard="{StaticResource FocusedOff}" />
-                            </Trigger.ExitActions>
                         </Trigger>
+                        <!--
+                            The title band fades in on focus and out off it; with the extension's Reduce motion on
+                            (Settings > Theme settings > Personalisation) it shows and goes at once. Without the
+                            extension the binding falls back to off.
+                        -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsFocused, RelativeSource={RelativeSource Self}}" Value="True" />
+                                <Condition Binding="{PluginSettings Plugin=XboxSeries, Path=StartUp.ReduceMotion, FallbackValue=False}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.EnterActions>
+                                <BeginStoryboard Storyboard="{StaticResource FocusedOn}" />
+                            </MultiDataTrigger.EnterActions>
+                            <MultiDataTrigger.ExitActions>
+                                <BeginStoryboard Storyboard="{StaticResource FocusedOff}" />
+                            </MultiDataTrigger.ExitActions>
+                        </MultiDataTrigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsFocused, RelativeSource={RelativeSource Self}}" Value="True" />
+                                <Condition Binding="{PluginSettings Plugin=XboxSeries, Path=StartUp.ReduceMotion, FallbackValue=False}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.EnterActions>
+                                <BeginStoryboard Storyboard="{StaticResource FocusedOnAtOnce}" />
+                            </MultiDataTrigger.EnterActions>
+                            <MultiDataTrigger.ExitActions>
+                                <BeginStoryboard Storyboard="{StaticResource FocusedOffAtOnce}" />
+                            </MultiDataTrigger.ExitActions>
+                        </MultiDataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
                                 <Condition Binding="{Binding IsFocused, RelativeSource={RelativeSource Self}}" Value="True" />

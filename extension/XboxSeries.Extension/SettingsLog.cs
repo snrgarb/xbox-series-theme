@@ -6,11 +6,11 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Settings in extensions.log, in lines beginning "[Settings]": the page opening, with the category and page it opens
-    /// on, each page of Theme settings it then shows, and closing; the rail item or box that gets focus, by its name; and
-    /// Background delay as it is at the start and whenever it is turned over. A line each time, so they stay; the
-    /// end-to-end test background-follows-selection turns Background delay off with the pad and reads them to know
-    /// where it is before each press.
+    /// Settings in extensions.log, in lines beginning "[Settings]": the page opening, with the category and page it
+    /// opens on, each page of Theme settings it then shows, and closing; the rail item or box that gets focus, by its
+    /// name; and Background delay and Reduce motion as they are at the start and whenever one is turned over. A line
+    /// each time, so they stay; the end-to-end tests background-follows-selection and reduce-motion turn theirs over
+    /// with the pad and read them to know where Settings is before each press.
     /// </summary>
     internal static class SettingsLog
     {
@@ -20,6 +20,7 @@ namespace XboxSeries.Extension
         {
             var settings = core.Settings;
             LogBackgroundDelay(settings.StartUp, "is");
+            LogReduceMotion(settings.StartUp, "is");
             settings.Opened += (s, e) => logger.Info($"[Settings] opened on {settings.Category}, page {settings.ThemePage}");
             settings.PropertyChanged += (s, e) =>
             {
@@ -37,6 +38,10 @@ namespace XboxSeries.Extension
                 if (e.PropertyName == nameof(StartUpSettingsState.BackgroundDelay))
                 {
                     LogBackgroundDelay(settings.StartUp, "turned");
+                }
+                else if (e.PropertyName == nameof(StartUpSettingsState.ReduceMotion))
+                {
+                    LogReduceMotion(settings.StartUp, "turned");
                 }
             };
         }
@@ -58,5 +63,8 @@ namespace XboxSeries.Extension
 
         private static void LogBackgroundDelay(StartUpSettingsState state, string verb) =>
             logger.Info($"[Settings] Background delay {verb} {(state.BackgroundDelay ? "on" : "off")}");
+
+        private static void LogReduceMotion(StartUpSettingsState state, string verb) =>
+            logger.Info($"[Settings] Reduce motion {verb} {(state.ReduceMotion ? "on" : "off")}");
     }
 }

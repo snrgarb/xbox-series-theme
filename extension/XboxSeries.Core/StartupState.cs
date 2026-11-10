@@ -178,17 +178,21 @@ namespace XboxSeries.Core
     }
 
     /// <summary>
-    /// Personalisation, in Settings: the boot video, the profiles, whether Who's playing today? asks, and whether Home's
-    /// background waits on a game before showing its art.
+    /// Personalisation, in Settings: the boot video, the profiles, whether Who's playing today? asks, whether Home's
+    /// background waits on a game before showing its art, and whether the Dashboard's animations are turned off.
     /// </summary>
     public sealed class StartUpSettingsState : INotifyPropertyChanged
     {
         /// <summary>Whether Background delay is on until the player sets it: on, as Home has waited since 0.1.0.</summary>
         public const bool BackgroundDelayByDefault = true;
 
+        /// <summary>Whether Reduce motion is on until the player sets it: off, the Dashboard moving as it always has.</summary>
+        public const bool ReduceMotionByDefault = false;
+
         private BootVideo bootVideo = BootVideo.XboxSeriesX;
         private bool askWhosPlaying = true;
         private bool backgroundDelay = BackgroundDelayByDefault;
+        private bool reduceMotion = ReduceMotionByDefault;
         private IReadOnlyList<Profile> profiles = new Profile[0];
         private IReadOnlyList<string> gamerpics = new string[0];
 
@@ -215,6 +219,17 @@ namespace XboxSeries.Core
         {
             get => backgroundDelay;
             internal set => Set(ref backgroundDelay, value, nameof(BackgroundDelay));
+        }
+
+        /// <summary>
+        /// Whether the Dashboard's animations are turned off, for a PC they cost frames on: the swirl stands still,
+        /// pages, rows and tiles show in place rather than sliding or growing, and Home's hero crossfades in 150 ms.
+        /// The theme reads it too, as the plugin's StartUp.ReduceMotion. <see cref="ReduceMotionByDefault"/> until set.
+        /// </summary>
+        public bool ReduceMotion
+        {
+            get => reduceMotion;
+            internal set => Set(ref reduceMotion, value, nameof(ReduceMotion));
         }
 
         /// <summary>Every profile, in the order Who's playing today? shows them. There is always at least one.</summary>
