@@ -782,19 +782,17 @@
 
                                     <!--
                                         Cover, filling the card as every game tile shows it (XboxTileArt), in the
-                                        card's own corners; Playnite loads it into its part, hidden, which hands it on. With
-                                        the extension, the game's Xbox poster over it, the card being taller than wide, in
-                                        XboxTileArt too, while the game has one. With the game's source (or platform) as a
-                                        badge.
+                                        card's own corners; Playnite loads it into its part, hidden, which hands it on. With the
+                                        game's source (or platform) as a badge.
                                     -->
                                     <ButtonEx Style="{StaticResource XboxHubCard}" Width="375" Padding="0">
                                         <Grid ClipToBounds="True">
-                                            <Grid.Resources>
-                                                <CornerRadius x:Key="XboxTileArtCornerRadius">4</CornerRadius>
-                                            </Grid.Resources>
                                             <Image x:Name="PART_ImageCover" Visibility="Hidden" />
-                                            <ContentControl Style="{DynamicResource XboxTileArt}" Content="{Binding Source, ElementName=PART_ImageCover}" />
-                                            <ContentControl x:Name="XboxSeries_Poster" Focusable="False" IsTabStop="False" IsHitTestVisible="False" />
+                                            <ContentControl Style="{DynamicResource XboxTileArt}" Content="{Binding Source, ElementName=PART_ImageCover}">
+                                                <ContentControl.Resources>
+                                                    <CornerRadius x:Key="XboxTileArtCornerRadius">4</CornerRadius>
+                                                </ContentControl.Resources>
+                                            </ContentControl>
                                             <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10"
                                                     Padding="8,4" CornerRadius="3" Background="{DynamicResource XboxChipBrush}">
                                                 <Grid>

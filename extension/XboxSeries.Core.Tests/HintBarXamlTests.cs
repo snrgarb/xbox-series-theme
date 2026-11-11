@@ -32,7 +32,7 @@ namespace XboxSeries.Core.Tests
         {
             var plugin = File.ReadAllText(Path.Combine(ExtensionDir, "XboxSeriesPlugin.cs"));
 
-            Assert.Contains("\"Hints\", ", plugin);
+            Assert.Contains("\"Hints\" }", plugin);
             Assert.Contains("case \"Hints\": return new HintBarControl(core);", plugin);
         }
 

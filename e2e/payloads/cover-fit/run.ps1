@@ -1,12 +1,10 @@
-# Art fit: every game tile fills itself with its game's art, cropped to the tile's shape, with no bands
-# top and bottom or at the sides. Screenshots only, judged by eye: the seed's library (real games' posters) plus three
-# games whose covers have a red border and their edges labelled TOP, BOTTOM, L and R: a 2:3 cover (600x900), a Steam
-# header (920x430) and a square one (512x512), played most recently so they lead the Recent row, added last so they lead
-# empty Search, and tagged E2E Picks. On every shot, every tile is art to its edges, with no dark or blurred band; a
-# cover of its tile's own shape (the square on the Recent row, the 2:3 on a Group card) shows all four red edges; one
-# taller than its tile keeps TOP and loses from the bottom only, so a logo at its top stays; and one wider than its tile
-# loses the same amount from both sides. The seed's real games show their Xbox box art or poster instead, once the
-# extension has fetched it ("[Xbox art] <game>: ..." in its log).
+# Art fit: every game tile fills itself with its game's art from Playnite's library, cropped to the tile's shape from
+# the top and centred across, with no bands top and bottom or at the sides. Screenshots only, judged by eye: the seed's
+# library (real games' posters) plus three games whose covers have a red border and their edges labelled TOP, BOTTOM, L
+# and R: a 2:3 cover (600x900), a Steam header (920x430) and a square one (512x512), played most recently so they lead
+# the Recent row, added last so they lead empty Search, and tagged E2E Picks. On every shot, every tile is art to its edges, with no dark or blurred band; a
+# cover of its tile's own shape (the square on the Recent row, the 2:3 on a Group card) shows all four red edges, a
+# taller one keeps its TOP and loses its bottom, and a wider one loses the same amount from both sides.
 #
 #   home-portrait, home-header, home-square   the Recent row, focus on each in turn
 #   hub-portrait, hub-header, hub-square      each one's Game hub, its cover card first

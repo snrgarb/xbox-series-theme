@@ -621,7 +621,6 @@ namespace XboxSeries.Core
             a.GameId == b.GameId
             && a.Title == b.Title
             && a.CoverImage == b.CoverImage
-            && a.Art == b.Art
             && a.Source == b.Source
             && a.IsRunning == b.IsRunning
             && a.Status == b.Status;

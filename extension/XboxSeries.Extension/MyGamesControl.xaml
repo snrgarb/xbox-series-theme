@@ -727,7 +727,7 @@
                             </Grid.ColumnDefinitions>
                             <Grid Background="#FF1A1A1A">
                                 <ContentControl Style="{StaticResource TileArt}"
-                                                Content="{Binding Tile.Art, Converter={StaticResource Image}, ConverterParameter=200}" />
+                                                Content="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}" />
                             </Grid>
                             <StackPanel Grid.Column="1" Margin="22,0,24,0" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="28"
