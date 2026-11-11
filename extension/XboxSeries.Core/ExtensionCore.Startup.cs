@@ -33,6 +33,9 @@ namespace XboxSeries.Core
         /// <summary>Reduce motion as the player set it; null while they never have, and the default stands.</summary>
         private bool? reduceMotionChosen;
 
+        /// <summary>Show Play history as the player set it; null while they never have, and the default stands.</summary>
+        private bool? showPlayHistoryChosen;
+
         /// <summary>Signing you in's <see cref="SigningInDuration"/>, while it shows; null otherwise.</summary>
         private IDisposable signingInTimer;
 
@@ -171,6 +174,18 @@ namespace XboxSeries.Core
             reduceMotionChosen = on;
             Settings.StartUp.ReduceMotion = on;
             SaveStartUp();
+        }
+
+        /// <summary>
+        /// Settings' Show Play history box: whether Home's Recent row ends in the Play history tile or holds an eighth game
+        /// in its place. Saved at once, shared by every profile, and in force at once: the row is rebuilt.
+        /// </summary>
+        public void SetShowPlayHistory(bool on)
+        {
+            showPlayHistoryChosen = on;
+            Settings.StartUp.ShowPlayHistory = on;
+            SaveStartUp();
+            RefreshHomeRows();
         }
 
         /// <summary>Settings' Profiles page: a new profile, after the others, wearing the Windows account picture.</summary>
@@ -316,6 +331,8 @@ namespace XboxSeries.Core
             Settings.StartUp.BackgroundDelay = backgroundDelayChosen ?? StartUpSettingsState.BackgroundDelayByDefault;
             reduceMotionChosen = saved?.ReduceMotion;
             Settings.StartUp.ReduceMotion = reduceMotionChosen ?? StartUpSettingsState.ReduceMotionByDefault;
+            showPlayHistoryChosen = saved?.ShowPlayHistory;
+            Settings.StartUp.ShowPlayHistory = showPlayHistoryChosen ?? StartUpSettingsState.ShowPlayHistoryByDefault;
             ShowProfiles();
             RefreshGamerpics();
         }
@@ -326,6 +343,7 @@ namespace XboxSeries.Core
             AskWhosPlaying = Settings.StartUp.AskWhosPlaying,
             BackgroundDelay = backgroundDelayChosen,
             ReduceMotion = reduceMotionChosen,
+            ShowPlayHistory = showPlayHistoryChosen,
             Profiles = profiles.Select(p => new SavedProfile { Id = p.Id, Gamertag = p.Gamertag, RealName = p.RealName, Picture = p.Picture }).ToList(),
             LastProfileId = lastProfileId,
         }));
@@ -410,6 +428,9 @@ namespace XboxSeries.Core
 
             /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
             public bool? ReduceMotion { get; set; }
+
+            /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
+            public bool? ShowPlayHistory { get; set; }
 
             public List<SavedProfile> Profiles { get; set; }
 
