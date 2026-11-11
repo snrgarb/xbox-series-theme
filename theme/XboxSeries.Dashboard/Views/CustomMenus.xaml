@@ -35,7 +35,7 @@
                         <ContentPresenter Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          TextElement.FontFamily="{DynamicResource XboxFont}" TextElement.FontSize="22"
+                                          TextElement.FontFamily="{DynamicResource XboxFont}" TextElement.FontSize="26"
                                           TextElement.Foreground="{TemplateBinding Foreground}" />
                         <Border x:Name="FocusRing" BorderThickness="4" CornerRadius="7"
                                 BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden" IsHitTestVisible="False">

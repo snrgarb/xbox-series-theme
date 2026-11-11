@@ -168,7 +168,7 @@
                             <StackPanel x:Name="Lines" VerticalAlignment="Center">
                                 <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="34"
                                            Foreground="White" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="DetailLine" Text="{Binding Detail}" FontFamily="{DynamicResource XboxFont}" FontSize="24"
+                                <TextBlock x:Name="DetailLine" Text="{Binding Detail}" FontFamily="{DynamicResource XboxFont}" FontSize="26"
                                            Foreground="White" TextTrimming="CharacterEllipsis">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">

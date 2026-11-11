@@ -38,7 +38,7 @@
             <Style x:Key="Text" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="Foreground" Value="White" />
-                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontSize" Value="26" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
@@ -48,7 +48,7 @@
             </Style>
 
             <Style x:Key="NavText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
-                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontSize" Value="26" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 
@@ -390,7 +390,7 @@
                 <Setter Property="Width" Value="400" />
                 <Setter Property="Height" Value="60" />
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
-                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontSize" Value="26" />
                 <Setter Property="Foreground" Value="White" />
                 <Setter Property="TextAlignment" Value="Left" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -550,16 +550,16 @@
                         </Style.Triggers>
                     </Style>
                 </StackPanel.Style>
-                <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="18" />
+                <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="26" />
                 <DockPanel Margin="0,2,0,0">
-                    <TextBlock DockPanel.Dock="Right" Text="{Binding Speed}" Style="{StaticResource Text}" FontSize="18" />
-                    <TextBlock Text="{Binding State}" Style="{StaticResource Text}" FontSize="18" />
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Speed}" Style="{StaticResource Text}" FontSize="26" />
+                    <TextBlock Text="{Binding State}" Style="{StaticResource Text}" FontSize="26" />
                 </DockPanel>
                 <!--
                     Such as "67.80 MB of 3.55 GB, 1.9%"; without the amount, no line at all; a share the library can't give
                     drops its ", " with it (a null skips the StringFormat).
                 -->
-                <TextBlock FontSize="18" Margin="0,2,0,0">
+                <TextBlock FontSize="26" Margin="0,2,0,0">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource Text}">
                             <Style.Triggers>
@@ -643,7 +643,7 @@
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" Style="{StaticResource NavIcon}" FontSize="18"
                                    Width="Auto" />
-                        <TextBlock Text="{Binding SortLabel}" Style="{StaticResource Text}" FontSize="22" />
+                        <TextBlock Text="{Binding SortLabel}" Style="{StaticResource Text}" FontSize="26" />
                     </DockPanel>
                 </Button>
                 <TextBox x:Name="NameBox" DockPanel.Dock="Left" Style="{StaticResource NameBox}" Margin="24,0,0,0"
@@ -654,7 +654,7 @@
                         Click="OnFilterClick">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE71C;" Style="{StaticResource NavIcon}" FontSize="20" Width="Auto" Margin="0,0,14,0" />
-                        <TextBlock Text="Filter" Style="{StaticResource Text}" FontSize="22" />
+                        <TextBlock Text="Filter" Style="{StaticResource Text}" FontSize="26" />
                     </StackPanel>
                 </Button>
                 <!-- Full library's count: the games its grid shows, under the user's tab and any name. -->
@@ -677,7 +677,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Button Style="{StaticResource SortOption}" Click="OnSortOptionClick">
-                                    <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="22" />
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource Text}" FontSize="26" />
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -730,7 +730,7 @@
                                                 Content="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}" />
                             </Grid>
                             <StackPanel Grid.Column="1" Margin="22,0,24,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="28"
+                                <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="26"
                                            FontFamily="{DynamicResource XboxFontSemibold}" />
                                 <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
                                     <TextBlock Text="{Binding LastPlayed, StringFormat=d, ConverterCulture={x:Static glob:CultureInfo.CurrentCulture}}"
@@ -797,7 +797,7 @@
                 <TextBlock Text="Looking for more?" Style="{StaticResource Text}" Margin="0,0,0,12" />
                 <Button x:Name="SeeFullLibrary" Style="{StaticResource FooterButton}" Click="OnSeeFullLibrary"
                         KeyDown="OnSeeFullLibraryKeyDown">
-                    <TextBlock Text="SEE FULL LIBRARY" Style="{StaticResource Text}" FontSize="22" />
+                    <TextBlock Text="SEE FULL LIBRARY" Style="{StaticResource Text}" FontSize="26" />
                 </Button>
             </StackPanel>
 
@@ -808,9 +808,9 @@
             <Button x:Name="QueueBox" Grid.Row="1" Style="{StaticResource Box}" Tag="&#xE896;" Margin="0,4,0,0"
                     Click="OnQueueBoxClick" KeyDown="OnQueueBoxKeyDown">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Right" Text="{Binding QueueCount}" Style="{StaticResource Text}" FontSize="24"
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding QueueCount}" Style="{StaticResource Text}" FontSize="26"
                                Visibility="{Binding HasQueue, Converter={StaticResource Visibility}}" />
-                    <TextBlock Text="Queue" Style="{StaticResource Text}" FontSize="24" />
+                    <TextBlock Text="Queue" Style="{StaticResource Text}" FontSize="26" />
                 </DockPanel>
             </Button>
         </Grid>
@@ -896,17 +896,17 @@
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
-                                                <TextBlock Text="{Binding Entry.Speed}" Style="{StaticResource Text}" FontSize="24"
+                                                <TextBlock Text="{Binding Entry.Speed}" Style="{StaticResource Text}" FontSize="26"
                                                            HorizontalAlignment="Right" />
-                                                <TextBlock Text="{Binding Entry.Tile.Title}" Style="{StaticResource Text}" FontSize="24"
+                                                <TextBlock Text="{Binding Entry.Tile.Title}" Style="{StaticResource Text}" FontSize="26"
                                                            FontFamily="{DynamicResource XboxFontSemibold}" FontWeight="Bold"
                                                            Margin="0,0,160,0" />
-                                                <TextBlock Grid.Row="1" Text="{Binding Entry.State}" Style="{StaticResource Text}" FontSize="24" />
+                                                <TextBlock Grid.Row="1" Text="{Binding Entry.State}" Style="{StaticResource Text}" FontSize="26" />
                                                 <DockPanel Grid.Row="2" Margin="0,34,0,0">
                                                     <TextBlock DockPanel.Dock="Right" Text="{Binding Entry.Percent}" Style="{StaticResource Text}"
-                                                               FontSize="24" />
+                                                               FontSize="26" />
                                                     <TextBlock Text="{Binding Entry.Amount, StringFormat='Network: {0}'}" Style="{StaticResource Text}"
-                                                               FontSize="24" />
+                                                               FontSize="26" />
                                                 </DockPanel>
                                                 <Grid Grid.Row="3" Height="5" Margin="0,12,0,0">
                                                     <Border Background="#FF4A4A4A" />
@@ -942,7 +942,7 @@
                             <TextBlock Text="&#xE896;" FontFamily="{DynamicResource XboxIconFont}" FontSize="64" Foreground="White"
                                        HorizontalAlignment="Center" />
                             <TextBlock Text="When games and apps are installing, you'll see them here" Style="{StaticResource Text}"
-                                       FontSize="30" FontWeight="350" Margin="0,40,0,0" HorizontalAlignment="Center" />
+                                       FontSize="26" Margin="0,40,0,0" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

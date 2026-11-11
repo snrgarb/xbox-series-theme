@@ -55,7 +55,7 @@
                                 <TextBlock x:Name="Icon" Width="36" Margin="48,0,0,0" FontFamily="{DynamicResource XboxIconFont}" FontSize="30"
                                            Foreground="White" TextAlignment="Center" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding Label}" Margin="42,0,0,0" VerticalAlignment="Center"
-                                           FontFamily="{DynamicResource XboxFont}" FontSize="25" Foreground="White" />
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="White" />
                             </StackPanel>
                             <Border x:Name="FocusRing" Style="{StaticResource Ring}">
                                 <Border Style="{DynamicResource XboxFocusGlowCache}">
@@ -100,7 +100,7 @@
                         </Style>
                     </Border.Style>
                 </Border>
-                <TextBlock Text="CLOSE" FontFamily="{DynamicResource XboxFont}" FontSize="21" FontWeight="Bold" Foreground="White"
+                <TextBlock Text="CLOSE" FontFamily="{DynamicResource XboxFont}" FontSize="26" FontWeight="Bold" Foreground="White"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <Border>
                     <Border.Style>

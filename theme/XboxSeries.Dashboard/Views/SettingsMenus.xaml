@@ -112,7 +112,7 @@
     <Style x:Key="XboxSettingsText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
@@ -168,7 +168,7 @@
                 <!-- Install notice: theme-only users, never focusable. -->
                 <TextBlock x:Name="XboxInstallNotice" Canvas.Left="520" Canvas.Top="1012"
                            Text="Get the Xbox Series extension for the full Settings: github.com/snrgarb/xbox-series-theme"
-                           FontFamily="{DynamicResource XboxFont}" FontSize="16"
+                           FontFamily="{DynamicResource XboxFont}" FontSize="26"
                            Foreground="{DynamicResource XboxTextDimBrush}" IsHitTestVisible="False">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">

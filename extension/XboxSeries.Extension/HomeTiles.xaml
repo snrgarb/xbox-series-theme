@@ -76,7 +76,7 @@
                                     Visibility="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StatusOf}, ConverterParameter=Visibility}">
                                 <TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource StatusOf}}"
                                            Margin="8" TextTrimming="CharacterEllipsis"
-                                           FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White" />
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="{DynamicResource HomeTileTitleSize}" Foreground="White" />
                             </Border>
 
                             <!--
@@ -163,7 +163,7 @@
             </Viewbox>
             <!-- Only for want of a cover: none, or one that won't load (DataTemplate.Triggers, on the picture shown). -->
             <TextBlock x:Name="Title" Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
-                       TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White"
+                       TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="{DynamicResource HomeTileTitleSize}" Foreground="White"
                        Visibility="Collapsed" />
             <!-- The game's library source, bottom left like the console's badges; the title replaces it on focus. -->
             <!--

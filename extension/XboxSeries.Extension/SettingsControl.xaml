@@ -21,7 +21,7 @@
             <Style x:Key="Text" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="Foreground" Value="White" />
-                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontSize" Value="26" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
@@ -474,7 +474,7 @@
                     <StackPanel Grid.Column="1" Width="220" VerticalAlignment="Top">
                         <Image Source="/XboxSeries.Extension;component/DiscordPortalQr.png" Width="200" Height="200"
                                RenderOptions.BitmapScalingMode="NearestNeighbor" HorizontalAlignment="Center" />
-                        <TextBlock Text="{Binding PortalUrl}" Style="{StaticResource MutedText}" FontSize="16"
+                        <TextBlock Text="{Binding PortalUrl}" Style="{StaticResource MutedText}" FontSize="26"
                                    TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
                     </StackPanel>
                 </Grid>

@@ -274,7 +274,7 @@
     <SolidColorBrush x:Key="XboxTileBrush" Color="#FF3B3B3B" />
     <!-- Every text in Playnite's windows is set in this, directly or through its buttons' templates. -->
     <Style x:Key="TextBlockBaseStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
     </Style>

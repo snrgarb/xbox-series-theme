@@ -33,7 +33,7 @@
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
@@ -91,7 +91,7 @@
             <Border x:Name="Label" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="-150,-48,-150,0"
                     Padding="10,4" CornerRadius="3" Background="{DynamicResource XboxChipBrush}"
                     BorderBrush="#80FFFFFF" BorderThickness="1" Visibility="Collapsed">
-                <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource XboxHubText}" FontSize="17" />
+                <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource XboxHubText}" FontSize="26" />
             </Border>
         </Grid>
         <ControlTemplate.Triggers>
@@ -244,7 +244,7 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Border Background="#40FFFFFF" CornerRadius="16" Padding="14,4" Margin="0,8,8,0">
-                        <TextBlock Text="{Binding Name}" Style="{StaticResource XboxHubText}" FontSize="18" />
+                        <TextBlock Text="{Binding Name}" Style="{StaticResource XboxHubText}" FontSize="26" />
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

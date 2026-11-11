@@ -190,9 +190,9 @@
                                 </Border>
                             </Grid>
                             <StackPanel Grid.Column="1" Margin="22,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="26"
                                            TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
-                                <TextBlock Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22" Foreground="#B3FFFFFF"
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="26" Foreground="#B3FFFFFF"
                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                 <!--
                                     How far into the track it is, as the volume slider draws its level: the accent on a dim
@@ -221,10 +221,10 @@
                                     <!-- Segoe Fluent Icons / MDL2 Assets: play while it plays, pause while it is paused. -->
                                     <TextBlock x:Name="PlayState" Text="&#xE769;" Style="{StaticResource GuideIcon}" FontSize="16"
                                                Foreground="#B3FFFFFF" Width="20" />
-                                    <TextBlock Grid.Column="1" Text="{Binding App}" Style="{StaticResource GuideText}" FontSize="20" Foreground="#B3FFFFFF"
+                                    <TextBlock Grid.Column="1" Text="{Binding App}" Style="{StaticResource GuideText}" FontSize="26" Foreground="#B3FFFFFF"
                                                Margin="8,0,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                     <!-- The time played and the track's length, as 1:05 / 3:20, past an hour 1:02:07. -->
-                                    <TextBlock x:Name="ProgressTime" Grid.Column="2" Style="{StaticResource GuideText}" FontSize="20"
+                                    <TextBlock x:Name="ProgressTime" Grid.Column="2" Style="{StaticResource GuideText}" FontSize="26"
                                                Foreground="#B3FFFFFF" Margin="12,0,0,0" TextWrapping="NoWrap">
                                         <TextBlock.Text>
                                             <MultiBinding StringFormat="{}{0} / {1}">
@@ -294,12 +294,12 @@
                             </ItemsControl>
                         </Grid>
                         <StackPanel x:Name="Text" Margin="112,0,16,0" VerticalAlignment="Center">
-                            <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="25"
+                            <TextBlock x:Name="Title" Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="26"
                                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="68" />
-                            <TextBlock x:Name="Running" Text="Running" Style="{StaticResource GuideText}" FontSize="22"
+                            <TextBlock x:Name="Running" Text="Running" Style="{StaticResource GuideText}" FontSize="26"
                                        Foreground="#B3FFFFFF" Visibility="Collapsed" />
                             <!-- Who is calling, under Answer; a recent achievement's game, under its name. -->
-                            <TextBlock x:Name="Calling" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="22"
+                            <TextBlock x:Name="Calling" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="26"
                                        Foreground="#B3FFFFFF" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
                             <!--
                                 Audio's Output and Input dropdowns, as the console's Settings ones: a box under the title naming
@@ -309,7 +309,7 @@
                             -->
                             <Grid x:Name="DropBox" Height="48" Margin="0,10,0,0" Visibility="Collapsed">
                                 <Border CornerRadius="4" BorderThickness="2" BorderBrush="#80FFFFFF" Background="#14FFFFFF" />
-                                <TextBlock Text="{Binding Selection}" Style="{StaticResource GuideText}" FontSize="22" Margin="14,0,46,0"
+                                <TextBlock Text="{Binding Selection}" Style="{StaticResource GuideText}" FontSize="26" Margin="14,0,46,0"
                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                                 <TextBlock x:Name="Chevron" Text="&#xE70D;" Style="{StaticResource GuideIcon}" FontSize="16"
                                            HorizontalAlignment="Right" Margin="0,0,16,0" />
@@ -370,10 +370,10 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <!-- A voice channel nobody is in. -->
-                            <TextBlock x:Name="EmptyChannel" Text="Empty" Style="{StaticResource GuideText}" FontSize="20"
+                            <TextBlock x:Name="EmptyChannel" Text="Empty" Style="{StaticResource GuideText}" FontSize="26"
                                        Foreground="#B3FFFFFF" Margin="0,4,0,0" Visibility="Collapsed" />
                         </StackPanel>
-                        <TextBlock x:Name="LevelText" Text="{Binding Level}" Style="{StaticResource GuideText}" FontSize="24"
+                        <TextBlock x:Name="LevelText" Text="{Binding Level}" Style="{StaticResource GuideText}" FontSize="26"
                                    HorizontalAlignment="Right" Margin="0,0,24,0" Visibility="Collapsed" />
                         <!-- Audio's mute switch: a pill, filled in the accent with its knob to the right when on. -->
                         <Grid x:Name="Switch" Width="48" Height="24" HorizontalAlignment="Right" Margin="0,0,24,0" Visibility="Collapsed">
@@ -411,9 +411,9 @@
                                     </Border.Background>
                                 </Border>
                             </Grid>
-                            <TextBlock Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="20" Margin="0,10,0,0"
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource GuideText}" FontSize="26" Margin="0,10,0,0"
                                        TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
-                            <TextBlock x:Name="TileDetail" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="17"
+                            <TextBlock x:Name="TileDetail" Text="{Binding Detail}" Style="{StaticResource GuideText}" FontSize="26"
                                        Foreground="#B3FFFFFF" TextAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <!-- As Home's tiles: standing 4 px off the entry, its corners following the entry's (4 + 4 + 4), carrying the glow band. -->
@@ -444,10 +444,10 @@
                             </StackPanel.Style>
                             <Border Height="1" Margin="30,14,30,26" Background="#33FFFFFF" />
                             <StackPanel Orientation="Horizontal" Margin="33,0,16,12">
-                                <TextBlock Text="&#x1F3C6;" Style="{StaticResource GuideText}" FontSize="22" Width="36" TextAlignment="Center" />
+                                <TextBlock Text="&#x1F3C6;" Style="{StaticResource GuideText}" FontSize="26" Width="36" TextAlignment="Center" />
                                 <TextBlock Text="{Binding DataContext.Achievements.Score, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}, StringFormat={}{0:N0} G}"
-                                           Style="{StaticResource GuideText}" FontSize="22" Margin="12,0,0,0" />
-                                <TextBlock FontSize="22" Foreground="#B3FFFFFF" Margin="24,0,0,0">
+                                           Style="{StaticResource GuideText}" FontSize="26" Margin="12,0,0,0" />
+                                <TextBlock FontSize="26" Foreground="#B3FFFFFF" Margin="24,0,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
                                             <Setter Property="Text" Value="{Binding DataContext.Achievements.Unlocked, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}, StringFormat={}{0:N0} achievements}" />
@@ -515,7 +515,7 @@
                         <Setter TargetName="Cover" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
                         <Setter TargetName="Entry" Property="Margin" Value="9,0,9,12" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="RecentGame">
                         <Setter TargetName="CoverArt" Property="Source" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=180}" />
@@ -523,7 +523,7 @@
                         <Setter TargetName="Cover" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
                         <Setter TargetName="Entry" Property="Margin" Value="9,0,9,12" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="Profile">
                         <Setter TargetName="Avatar" Property="Tag" Value="{Binding Image, Converter={StaticResource Image}, ConverterParameter=120}" />
@@ -531,7 +531,7 @@
                         <Setter TargetName="Avatar" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <!-- Switch profile, under the profile card: a row like Settings', the achievements following it. -->
@@ -541,7 +541,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="AchievementsSection" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <!-- Switch profile while a game runs: greyed out, as the media controls are when they can't act. -->
@@ -560,7 +560,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="Power">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE7E8;" />
@@ -568,7 +568,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                     </DataTrigger>
                     <!--
                         A notification: a card in the console's inbox, slightly lighter than the panel, with
@@ -585,7 +585,7 @@
                         <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
                         <Setter TargetName="Glyph" Property="Padding" Value="0,24,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,18,24,18" />
-                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="MaxHeight" Value="120" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="Volume">
@@ -594,7 +594,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Slider" Property="Visibility" Value="Visible" />
                         <Setter TargetName="LevelText" Property="Visibility" Value="Visible" />
                     </DataTrigger>
@@ -604,7 +604,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <!--
@@ -622,7 +622,7 @@
                         <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
                         <Setter TargetName="Glyph" Property="Padding" Value="0,22,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,24,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                         <Setter TargetName="DropBox" Property="Visibility" Value="Visible" />
                     </DataTrigger>
@@ -634,7 +634,7 @@
                         <Setter TargetName="Glyph" Property="VerticalAlignment" Value="Top" />
                         <Setter TargetName="Glyph" Property="Padding" Value="0,22,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,24,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                         <Setter TargetName="DropBox" Property="Visibility" Value="Visible" />
                     </DataTrigger>
@@ -649,7 +649,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="20" />
                         <Setter TargetName="Glyph" Property="Margin" Value="14,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="52,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <MultiDataTrigger>
@@ -665,7 +665,7 @@
                         <Setter TargetName="DiscordMark" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="105" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="27" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordIdle">
@@ -675,7 +675,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
                     </DataTrigger>
                     <!--
@@ -689,7 +689,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
                     </DataTrigger>
                     <!--
@@ -718,7 +718,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="Foreground" Value="#B3FFFFFF" />
                     </DataTrigger>
                     <!--
@@ -732,7 +732,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="24" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordParticipant">
@@ -742,7 +742,7 @@
                         <Setter TargetName="CallMarks" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="72" />
                         <Setter TargetName="Text" Property="Margin" Value="88,0,96,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="22" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsSpeaking}" Value="True">
@@ -761,7 +761,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Kind}" Value="DiscordDeafen">
@@ -770,7 +770,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Switch" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <!-- Leave: the hang-up, in Discord's red. -->
@@ -781,7 +781,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                     </DataTrigger>
                     <!--
                         The Discord tab's shortcuts: tiles, three to a row, 160 square with 18 between them and below each
@@ -819,7 +819,7 @@
                         <Setter TargetName="Glyph" Property="FontSize" Value="26" />
                         <Setter TargetName="Glyph" Property="Margin" Value="18,0,0,0" />
                         <Setter TargetName="Text" Property="Margin" Value="69,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsOn}" Value="True">
                         <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource GlyphLightBrush}" />
@@ -837,7 +837,7 @@
                         <Setter TargetName="ServerIcon" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <!--
@@ -852,7 +852,7 @@
                         <Setter TargetName="Glyph" Property="Padding" Value="0,14,0,0" />
                         <Setter TargetName="Entry" Property="Height" Value="NaN" />
                         <Setter TargetName="Text" Property="Margin" Value="69,16,16,16" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Occupants.Count}" Value="0">
@@ -869,7 +869,7 @@
                         <Setter TargetName="Calling" Property="Visibility" Value="Visible" />
                         <Setter TargetName="Entry" Property="Height" Value="105" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="25" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                         <Setter TargetName="Title" Property="Foreground" Value="#FF23A55A" />
                     </DataTrigger>
@@ -886,7 +886,7 @@
                         <Setter TargetName="Divider" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="Entry" Property="Height" Value="96" />
                         <Setter TargetName="Text" Property="Margin" Value="96,0,16,0" />
-                        <Setter TargetName="Title" Property="FontSize" Value="24" />
+                        <Setter TargetName="Title" Property="FontSize" Value="26" />
                         <Setter TargetName="Title" Property="TextWrapping" Value="NoWrap" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
@@ -962,7 +962,7 @@
                                     <TextBlock Text="&#xE700;" Style="{StaticResource GuideIcon}" FontSize="12" HorizontalAlignment="Center" />
                                 </Grid>
                             </Grid>
-                            <TextBlock Text="{Binding Text}" Style="{StaticResource GuideText}" FontSize="24" Margin="14,0,0,0" />
+                            <TextBlock Text="{Binding Text}" Style="{StaticResource GuideText}" FontSize="26" Margin="14,0,0,0" />
                         </StackPanel>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding Button}" Value="Start">
@@ -1113,7 +1113,7 @@
                                                 Background="{DynamicResource GlyphLightBrush}" Visibility="Collapsed"
                                                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0">
                                             <TextBlock Text="{Binding Status.NotificationCount, RelativeSource={RelativeSource AncestorType=local:OverlayWindow}}"
-                                                       Style="{StaticResource GuideText}" FontSize="16" HorizontalAlignment="Center" />
+                                                       Style="{StaticResource GuideText}" FontSize="26" HorizontalAlignment="Center" />
                                         </Border>
                                         <!-- The entries' ring, 4 px off the square, carrying the glow as a blurred band. -->
                                         <Border x:Name="Ring" Margin="-8" BorderThickness="4" CornerRadius="12"
@@ -1272,7 +1272,7 @@
                             Notifications with none to show; the Servers flyout, or a server's voice channels, once Discord has
                             answered with none.
                         -->
-                        <TextBlock DockPanel.Dock="Top" FontSize="24" Foreground="#B3FFFFFF" Margin="28,0,0,0">
+                        <TextBlock DockPanel.Dock="Top" FontSize="26" Foreground="#B3FFFFFF" Margin="28,0,0,0">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource GuideText}">
                                     <Setter Property="Visibility" Value="Collapsed" />

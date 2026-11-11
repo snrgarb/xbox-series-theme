@@ -24,7 +24,7 @@
                                 <Control Style="{DynamicResource XboxFocusGlow}" />
                             </Border>
                         </Border>
-                        <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource XboxFont}" FontSize="24" Margin="22,0,22,0"
+                        <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource XboxFont}" FontSize="26" Margin="22,0,22,0"
                                    Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
                     </Grid>
                     <ControlTemplate.Triggers>

@@ -8,13 +8,13 @@
     <Style x:Key="Text" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
     <Style x:Key="MutedText" TargetType="TextBlock" BasedOn="{StaticResource Text}">
         <Setter Property="Foreground" Value="#B3FFFFFF" />
-        <Setter Property="FontSize" Value="19" />
+        <Setter Property="FontSize" Value="26" />
     </Style>
 
     <!-- Segoe Fluent Icons / MDL2 Assets glyphs. -->

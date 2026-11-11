@@ -32,7 +32,7 @@
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
-                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="{DynamicResource FontSize}"
+                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="26"
                                    Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis"
                                    IsHitTestVisible="False" Margin="{TemplateBinding Padding}"
                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -120,7 +120,7 @@
                         <TextBlock x:Name="Tick" Text="&#xE73E;" FontFamily="{DynamicResource XboxIconFont}" FontSize="20"
                                    Foreground="{DynamicResource XboxTextBrush}" Visibility="Hidden"
                                    VerticalAlignment="Center" HorizontalAlignment="Left" Margin="14,0,0,0" />
-                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="{DynamicResource FontSize}"
+                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="26"
                                    Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis"
                                    Margin="{TemplateBinding Padding}"
                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
