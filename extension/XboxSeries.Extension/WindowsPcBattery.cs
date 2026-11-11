@@ -8,9 +8,10 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Adapter: the PC's own battery, as Windows reports it in <see cref="SystemInformation.PowerStatus"/>, the same
     /// reading Playnite's own top bar shows with the theme alone. No battery when its charge status says
-    /// <see cref="BatteryChargeStatus.NoSystemBattery"/>, as on a desktop, or Unknown, which includes it. Charging while on
-    /// mains with the Charging flag. The core reads it every 30 s, and again as the plugin hears Windows'
-    /// PowerModeChanged.
+    /// <see cref="BatteryChargeStatus.NoSystemBattery"/>, as on a desktop. Unknown (255) has that bit too, but means
+    /// Windows can't read the status now, so it reads as null and the last reading stands. A percent of 255, shown as
+    /// 2.55, is a charge Windows doesn't know: a battery without a percent. Charging while on mains with the Charging
+    /// flag. Once on the Dashboard, the core reads it every 30 s, and again as the plugin hears Windows' PowerModeChanged.
     /// A Debug build fakes one when XBOXSERIES_FAKE_BATTERY is set, as "57,charging" (<see cref="PcBattery.FromFake"/>),
     /// for the e2e VM, which has none; a Release build never reads the variable.
     /// </summary>
@@ -40,25 +41,30 @@ namespace XboxSeries.Extension
             {
                 var power = SystemInformation.PowerStatus;
                 var status = power.BatteryChargeStatus;
+                if (status == BatteryChargeStatus.Unknown)
+                {
+                    return null;
+                }
+
                 if ((status & BatteryChargeStatus.NoSystemBattery) != 0)
                 {
                     return PcBattery.None;
                 }
 
-                // BatteryLifePercent is 0 to 1, or 2.55 when Windows doesn't know it, which PcBattery holds to 100.
-                var percent = (int)Math.Round(power.BatteryLifePercent * 100);
+                // BatteryLifePercent is 0 to 1, or 2.55 when Windows doesn't know it.
                 var charging = power.PowerLineStatus == PowerLineStatus.Online && (status & BatteryChargeStatus.Charging) != 0;
-                return PcBattery.Of(percent, charging);
+                var life = power.BatteryLifePercent;
+                return life > 1f ? PcBattery.WithoutPercent(charging) : PcBattery.Of((int)Math.Round(life * 100), charging);
             }
             catch (Exception e) when (!(e is OutOfMemoryException))
             {
                 if (!readingFailed)
                 {
                     readingFailed = true;
-                    logger.Warn(e, "Couldn't read the PC's battery; the Status area shows none");
+                    logger.Warn(e, "Couldn't read the PC's battery; the Status area keeps its last reading");
                 }
 
-                return PcBattery.None;
+                return null;
             }
         }
 

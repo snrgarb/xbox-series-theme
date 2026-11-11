@@ -179,6 +179,9 @@ namespace XboxSeries.Core
         private IDisposable tapTimer;
         private IDisposable heroTimer;
         private IDisposable guideBatteryTimer;
+
+        /// <summary>The PC's battery's next read; null until <see cref="StartPcBattery"/>, and once stopped.</summary>
+        private IDisposable pcBatteryTimer;
         private HomeTile focusedTile;
 
         /// <summary>
@@ -236,7 +239,6 @@ namespace XboxSeries.Core
             this.playnite = playnite;
             this.sounds = sounds;
             TickStatus();
-            TickPcBattery();
             LoadDiscordApp();
             LoadShortcuts();
             LoadRecentServers();
@@ -425,23 +427,41 @@ namespace XboxSeries.Core
             Status.Battery = controller.Battery;
         }
 
-        /// <summary>The PC's own battery, read afresh and again in <see cref="PcBatteryReadEvery"/>.</summary>
-        private void TickPcBattery()
+        /// <summary>
+        /// The Dashboard is up: the PC's own battery is read now and every <see cref="PcBatteryReadEvery"/> from here on,
+        /// until <see cref="OnApplicationStopped"/>. Not before, so Desktop mode or another theme never reads it.
+        /// </summary>
+        public void StartPcBattery()
         {
-            Status.PcBattery = pcBattery.Read();
-            if (pcBattery != NoPcBattery.Instance)
-            {
-                clock.After(PcBatteryReadEvery, TickPcBattery);
-            }
+            ReadPcBattery();
         }
 
         /// <summary>
         /// Windows says the power changed, as the PC is plugged in or unplugged or its battery's state moves on: the PC's
-        /// battery shows it now, not on the next read.
+        /// battery shows it now, and the next read is a full <see cref="PcBatteryReadEvery"/> away. Nothing before
+        /// <see cref="StartPcBattery"/>.
         /// </summary>
         public void OnPowerChanged()
         {
-            Status.PcBattery = pcBattery.Read();
+            if (pcBatteryTimer != null)
+            {
+                ReadPcBattery();
+            }
+        }
+
+        /// <summary>
+        /// The PC's battery read, taken over what shows by <see cref="PcBattery.Update"/>, which keeps the last reading
+        /// while Windows can't say, and the next read set; a core given no port reads none and sets none.
+        /// </summary>
+        private void ReadPcBattery()
+        {
+            pcBatteryTimer?.Dispose();
+            pcBatteryTimer = null;
+            Status.PcBattery = PcBattery.Update(Status.PcBattery, pcBattery.Read());
+            if (pcBattery != NoPcBattery.Instance)
+            {
+                pcBatteryTimer = clock.After(PcBatteryReadEvery, ReadPcBattery);
+            }
         }
 
         private void RefreshStatus()
@@ -1808,6 +1828,8 @@ namespace XboxSeries.Core
         /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back, and a game frozen under the Guide thaws.</summary>
         public void OnApplicationStopped()
         {
+            pcBatteryTimer?.Dispose();
+            pcBatteryTimer = null;
             ThawGame();
             ForgetLibraryName();
             GiveBackMainList();

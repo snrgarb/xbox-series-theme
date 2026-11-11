@@ -315,13 +315,20 @@ namespace XboxSeries.Extension
             };
             Guarded.Run("Saying whether there are achievements", core.OnAchievementsLookedFor);
 
-            // The PC's own battery in the Status area, as it starts and as it changes: "none" on a desktop, as the e2e VM.
-            logger.Info($"[Status] PC battery: {core.Status.PcBattery}");
+            // The PC's own battery in the Status area, read from now on, on the Dashboard alone. Logged as it starts,
+            // "none" on a desktop as the e2e VM, and again as one comes or goes or starts or stops charging, not as
+            // its percent moves.
+            core.StartPcBattery();
+            var pcLogged = core.Status.PcBattery;
+            logger.Info($"[Status] PC battery: {pcLogged}");
             core.Status.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName == nameof(StatusState.PcBattery))
+                var now = core.Status.PcBattery;
+                if (e.PropertyName == nameof(StatusState.PcBattery)
+                    && (now.IsPresent != pcLogged.IsPresent || now.IsCharging != pcLogged.IsCharging))
                 {
-                    logger.Info($"[Status] PC battery: {core.Status.PcBattery}");
+                    pcLogged = now;
+                    logger.Info($"[Status] PC battery: {now}");
                 }
             };
 
@@ -505,7 +512,11 @@ namespace XboxSeries.Extension
             ShowStartup(core.OnStartup());
         }
 
-        /// <summary>Windows woke from sleep: Who's playing today? again, if it asks. Raised on a thread of its own.</summary>
+        /// <summary>
+        /// Windows' power changed, raised on a thread of its own: the PC's battery is read again, whatever changed
+        /// (plugged in, unplugged, the battery's state, or waking); and on waking from sleep, Who's playing today? again,
+        /// if it asks.
+        /// </summary>
         private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
             // Plugged in, unplugged, the battery's state moved on, or waking: the PC's battery shows it now.

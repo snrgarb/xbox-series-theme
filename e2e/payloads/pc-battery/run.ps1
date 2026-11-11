@@ -1,6 +1,6 @@
 # The PC's own battery in the Status area (#209). The VM has no battery, so a Debug build fakes one when Playnite starts
 # with XBOXSERIES_FAKE_BATTERY set; a Release build ignores it. What the log says:
-#   [Status] PC battery: none|57%, charging                        as the extension starts, and as it changes
+#   [Status] PC battery: none|57%, charging                        on the Dashboard, then as one comes or goes or charges
 #   [Status] PC battery faked by XBOXSERIES_FAKE_BATTERY=...: ...  a Debug build taking the variable
 #   Guide opened over <process>; ...                               the Guide took the foreground
 #

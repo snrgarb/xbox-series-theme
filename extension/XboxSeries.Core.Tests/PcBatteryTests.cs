@@ -10,12 +10,20 @@ namespace XboxSeries.Core.Tests
         private readonly FakeClock clock = new FakeClock(new DateTime(2026, 11, 11, 20, 0, 0));
         private readonly FakePcBattery pc = new FakePcBattery();
 
-        private ExtensionCore Start()
+        private ExtensionCore Make()
         {
             var windows = new FakeWindowSystem();
             return new ExtensionCore(clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(),
                 new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads(),
                 pcBattery: pc);
+        }
+
+        // The core as the plugin has it on the Dashboard, the PC's battery started.
+        private ExtensionCore Start()
+        {
+            var core = Make();
+            core.StartPcBattery();
+            return core;
         }
 
         [Fact]
@@ -36,6 +44,7 @@ namespace XboxSeries.Core.Tests
             var windows = new FakeWindowSystem();
             var core = new ExtensionCore(clock, windows, new FakePlayniteHost(windows), new FakeSoundPlayer(), new FakeDrives(), new FakeUserAccount(),
                 new FakeAudio(), new FakeController(), new FakeDiscordTransport(), new FakeDiscordOAuth(), new FakeSecretStore(), new FakeDownloads());
+            core.StartPcBattery();
 
             Assert.False(core.Status.PcBattery.IsPresent);
         }
@@ -71,7 +80,7 @@ namespace XboxSeries.Core.Tests
 
         [Theory]
         [InlineData(-5, 0)]
-        [InlineData(255, 100)]
+        [InlineData(150, 100)]
         public void A_charge_Windows_reports_out_of_range_is_held_to_0_to_100(int reported, int shown)
         {
             Assert.Equal(shown, PcBattery.Of(reported, charging: false).Percent);
@@ -93,6 +102,88 @@ namespace XboxSeries.Core.Tests
             pc.Battery = PcBattery.Of(78, charging: false);
             clock.Advance(TimeSpan.FromSeconds(30));
             Assert.Equal(78, core.Status.PcBattery.Percent);
+        }
+
+        [Fact]
+        public void A_charge_Windows_does_not_know_shows_the_cell_without_a_percent()
+        {
+            pc.Battery = PcBattery.WithoutPercent(charging: false);
+
+            var shown = Start().Status.PcBattery;
+
+            Assert.True(shown.IsPresent);
+            Assert.False(shown.HasPercent);
+            Assert.Equal("", shown.Text);
+        }
+
+        [Fact]
+        public void A_charge_Windows_stops_knowing_keeps_the_last_percent_known()
+        {
+            pc.Battery = PcBattery.Of(60, charging: false);
+            var core = Start();
+
+            pc.Battery = PcBattery.WithoutPercent(charging: true);
+            clock.Advance(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(PcBattery.Of(60, charging: true), core.Status.PcBattery);
+            Assert.Equal("60%", core.Status.PcBattery.Text);
+        }
+
+        [Fact]
+        public void A_status_Windows_cannot_read_keeps_the_last_reading()
+        {
+            pc.Battery = PcBattery.Of(45, charging: true);
+            var core = Start();
+
+            pc.Battery = null;
+            clock.Advance(TimeSpan.FromSeconds(30));
+            core.OnPowerChanged();
+
+            Assert.Equal(PcBattery.Of(45, charging: true), core.Status.PcBattery);
+        }
+
+        [Fact]
+        public void Nothing_is_read_until_the_Dashboard_starts_it()
+        {
+            pc.Battery = PcBattery.Of(70, charging: false);
+            var core = Make();
+
+            clock.Advance(TimeSpan.FromMinutes(2));
+            core.OnPowerChanged();
+
+            Assert.Equal(PcBattery.None, core.Status.PcBattery);
+            Assert.Equal(0, pc.Reads);
+        }
+
+        [Fact]
+        public void Reading_stops_as_Playnite_stops()
+        {
+            pc.Battery = PcBattery.Of(70, charging: false);
+            var core = Start();
+
+            core.OnApplicationStopped();
+            var reads = pc.Reads;
+            clock.Advance(TimeSpan.FromMinutes(2));
+            core.OnPowerChanged();
+
+            Assert.Equal(reads, pc.Reads);
+        }
+
+        [Fact]
+        public void A_power_change_puts_the_next_read_30_seconds_after_it()
+        {
+            pc.Battery = PcBattery.Of(80, charging: false);
+            var core = Start();
+
+            clock.Advance(TimeSpan.FromSeconds(20));
+            core.OnPowerChanged();
+            var reads = pc.Reads;
+
+            clock.Advance(TimeSpan.FromSeconds(29));
+            Assert.Equal(reads, pc.Reads);
+
+            clock.Advance(TimeSpan.FromSeconds(1));
+            Assert.Equal(reads + 1, pc.Reads);
         }
 
         [Fact]

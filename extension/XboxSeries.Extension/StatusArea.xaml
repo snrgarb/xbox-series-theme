@@ -31,11 +31,12 @@
 
         <!--
             The PC's own battery, on a laptop or handheld: its percentage, then a cell filled to it as the pad's, and a bolt
-            while it charges. A PC with no battery, as a desktop, shows nothing and takes no room.
+            while it charges; a charge Windows doesn't know shows the cell alone, empty. A PC with no battery, as a
+            desktop, shows nothing and takes no room.
         -->
         <DataTemplate x:Key="PcBatteryTemplate">
             <StackPanel x:Name="PcBattery" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
-                <TextBlock Text="{Binding PcBattery.Text}" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White"
+                <TextBlock x:Name="PcPercent" Text="{Binding PcBattery.Text}" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White"
                            VerticalAlignment="Center" Margin="0,0,8,0" />
                 <ContentControl Content="{Binding PcBattery.Percent}" ContentTemplate="{StaticResource CellTemplate}" Focusable="False"
                                 VerticalAlignment="Center" />
@@ -49,6 +50,9 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding PcBattery.IsCharging}" Value="True">
                     <Setter TargetName="Bolt" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding PcBattery.HasPercent}" Value="False">
+                    <Setter TargetName="PcPercent" Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
