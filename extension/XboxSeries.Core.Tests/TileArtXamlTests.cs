@@ -115,6 +115,12 @@ namespace XboxSeries.Core.Tests
             var tile = XDocument.Load(Extension("SearchControl.xaml")).Descendants()
                 .Single(e => e.Name.LocalName == "DataTemplate" && (string)e.Attribute(X + "Key") == "GameTile");
             AssertWearsPair(tile, "{StaticResource TileArt}", "{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=480}");
+
+            // The title stands in for want of a picture shown, not of a path: a cover set but missing or corrupt shows it too.
+            var cover = Named(tile, "ContentControl").Single(c => (string)c.Attribute("Style") == "{StaticResource TileArt}");
+            Assert.Contains(Named(tile, "DataTrigger"), t => (string)t.Attribute("Binding") == $"{{Binding Content, ElementName={(string)cover.Attribute(X + "Name")}}}"
+                                                             && (string)t.Attribute("Value") == "{x:Null}");
+            Assert.DoesNotContain(Named(tile, "DataTrigger"), t => (string)t.Attribute("Binding") == "{Binding CoverImage}");
         }
 
         [Fact]
@@ -138,6 +144,9 @@ namespace XboxSeries.Core.Tests
             var part = Named(tile, "Image").Single(i => (string)i.Attribute(X + "Name") == "PART_ImageCover");
             Assert.Equal("Hidden", (string)part.Attribute("Visibility"));
             Assert.DoesNotContain(tile.DescendantsAndSelf().Attributes(), a => a.Value.Contains("CoverArtStretch"));
+            // The uninstalled darkening follows the pair's corners.
+            Assert.Equal("{DynamicResource XboxTileArtCornerRadius}",
+                (string)Named(tile, "Border").Single(b => (string)b.Attribute(X + "Name") == "BorderDarken").Attribute("CornerRadius"));
         }
 
         [Fact]

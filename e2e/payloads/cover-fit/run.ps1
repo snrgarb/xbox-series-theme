@@ -1,7 +1,7 @@
 # Art fit (#205): every game tile shows its game's whole art, over a blurred copy of it. Screenshots only, judged by
 # eye: the seed's library plus three games whose covers have a red border and their edges labelled TOP, BOTTOM, L and
 # R: a 2:3 cover (600x900), a Steam header (920x430) and a square one (512x512), played most recently so they lead the
-# Recent row, and tagged E2E Picks. On every shot, each of the three shows all four red edges and all four labels, and
+# Recent row, added last so they lead empty Search, and tagged E2E Picks. On every shot, each of the three shows all four red edges and all four labels, and
 # a cover of its tile's own shape (the square on the Recent row, the 2:3 on a Group card) fills it with no bands.
 #
 #   home-portrait, home-header, home-square   the Recent row, focus on each in turn
@@ -77,10 +77,10 @@ try {
     Connect-Pad
     Initialize-Playnite $PSScriptRoot
     Initialize-Library -Games @(
-        @{ Name = 'Portrait Edges'; IsInstalled = $true; PlayedHoursAgo = 0.1; Playtime = 3600; Tags = 'E2E Picks'; Source = 'Steam'
+        @{ Name = 'Portrait Edges'; IsInstalled = $true; PlayedHoursAgo = 0.1; AddedMinutesAgo = -1; Playtime = 3600; Tags = 'E2E Picks'; Source = 'Steam'
            Description = 'A long description to fill the About card. ' * 8 }
-        @{ Name = 'Header Edges'; IsInstalled = $false; PlayedHoursAgo = 0.2; Tags = 'E2E Picks'; Source = 'Steam' }
-        @{ Name = 'Square Edges'; IsInstalled = $true; PlayedHoursAgo = 0.3; Tags = 'E2E Picks'; Source = 'GOG' })
+        @{ Name = 'Header Edges'; IsInstalled = $false; PlayedHoursAgo = 0.2; AddedMinutesAgo = -2; Tags = 'E2E Picks'; Source = 'Steam' }
+        @{ Name = 'Square Edges'; IsInstalled = $true; PlayedHoursAgo = 0.3; AddedMinutesAgo = -3; Tags = 'E2E Picks'; Source = 'GOG' })
     $lib = Get-Content (Join-Path $Out 'library.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     foreach ($g in $lib.Games) {
         switch ($g.Name) {
