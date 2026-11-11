@@ -122,7 +122,7 @@ namespace XboxSeries.Core.Tests
         {
             var doc = XDocument.Load(Extension("MyGamesControl.xaml"));
             XElement Template(string list) => doc.Descendants().Single(e => (string)e.Attribute(X + "Name") == list)
-                .Descendants().Single(e => e.Name.LocalName == "DataTemplate");
+                .Descendants().Single(e => e.Name.LocalName.EndsWith(".ItemTemplate")).Elements().Single();
 
             AssertWearsPair(Template("History"), "{StaticResource TileArt}", "{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}");
             AssertWearsPair(Template("QueueRows"), "{StaticResource TileArt}", "{Binding Cover, Converter={StaticResource Image}, ConverterParameter=300}");
