@@ -190,6 +190,66 @@
         </Setter>
     </Style>
     <!--
+        A game's art on a tile, whole whatever its shape (#205), as the extension's tiles show it (its TileArt): the art
+        Uniform and centred, over a copy of it that fills the tile, blurred and under a 40% black layer. Art of the tile's
+        own shape covers the copy, so it looks as it always did. Content is the art Playnite loaded into the tile's
+        PART_ImageCover, so nothing is loaded or decoded twice.
+        The copy is laid out 24 wide (in high quality, from the art), drawn once into a picture that size and stretched to
+        fill the tile, so the stretch blurs it; a blur effect would be worked out again on the CPU, at the 4K screen's
+        size, whenever WPF loses the graphics card (#95). Loose XAML has no rounded clip, so both are cut to the tile's
+        corners here, XboxTileArtCornerRadius, which a tile with other corners sets over this one: the art as a rounded
+        border's fill, as the tiles always drew it, and the copy by an opacity mask of that same shape (Shape), drawn
+        once with it into a picture of the tile's size, which the list then only moves as it scrolls.
+    -->
+    <CornerRadius x:Key="XboxTileArtCornerRadius">6</CornerRadius>
+    <Style x:Key="XboxTileArt" TargetType="ContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Grid>
+                        <!-- The tile's shape, in its dark grey, which also shows until the art arrives. -->
+                        <Border x:Name="Shape" CornerRadius="{DynamicResource XboxTileArtCornerRadius}" Background="#FF1A1A1A" />
+                        <Grid x:Name="Copy">
+                            <Grid.CacheMode>
+                                <BitmapCache RenderAtScale="1" />
+                            </Grid.CacheMode>
+                            <Grid ClipToBounds="True">
+                                <Grid.OpacityMask>
+                                    <VisualBrush Visual="{Binding ElementName=Shape}" />
+                                </Grid.OpacityMask>
+                                <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Grid.CacheMode>
+                                            <BitmapCache RenderAtScale="1" />
+                                        </Grid.CacheMode>
+                                        <!-- RenderOptions stop at a cache, so set on the picture itself. -->
+                                        <Image Width="24" Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                                    </Grid>
+                                </Viewbox>
+                                <Rectangle Fill="#66000000" />
+                            </Grid>
+                        </Grid>
+                        <Border CornerRadius="{DynamicResource XboxTileArtCornerRadius}" RenderOptions.BitmapScalingMode="Fant">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
+                                            Stretch="Uniform" AlignmentX="Center" AlignmentY="Center" />
+                            </Border.Background>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Content" Value="{x:Null}">
+                            <Setter TargetName="Copy" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
         Xbox green (brand #107C10), the Toast's banner, as the console's notifications wear it. The brand's Xbox light
         green, #FF9BF00B, is the alternative to try on the TV against the reference photos.
     -->

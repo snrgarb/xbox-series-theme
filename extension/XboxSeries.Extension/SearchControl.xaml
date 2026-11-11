@@ -153,7 +153,8 @@
             </Style>
 
             <!--
-                A game: its cover, square, over a grey caption holding its title and, while it's being installed, its state.
+                A game: its cover, whole over its blurred copy (TileArt) in a square, over a grey caption holding its title
+                and, while it's being installed, its state.
                 The cover is decoded at twice its 1080p size, for the 4K screen's 2 pixels to a 1080p one, and no larger.
                 The caption's text is the console's 26 px (#203): two lines of title (2 x 26 x 1.33, Segoe UI's line, = 69.2;
                 three would be 103.7, so a MaxHeight of 72 trims the second) and the state under them, 34.6, between 14 above
@@ -166,16 +167,16 @@
                         <RowDefinition Height="132" />
                     </Grid.RowDefinitions>
                     <Grid Background="#FF1A1A1A">
-                        <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=480}"
-                               Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
-                        <!-- With no cover, its title in its place. -->
+                        <ContentControl x:Name="Cover" Style="{StaticResource TileArt}"
+                                        Content="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=480}" />
+                        <!-- With no cover, or one that won't load (on the picture, as HomeTileArt), its title in its place. -->
                         <TextBlock Text="{Binding Title}" Margin="12" TextWrapping="Wrap" TextAlignment="Center"
                                    VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="20" Foreground="White">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
+                                        <DataTrigger Binding="{Binding Content, ElementName=Cover}" Value="{x:Null}">
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </Style.Triggers>
