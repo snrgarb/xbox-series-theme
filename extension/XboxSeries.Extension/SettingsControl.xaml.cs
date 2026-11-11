@@ -427,7 +427,7 @@ namespace XboxSeries.Extension
                 e.Handled = true;
                 if (pad == ControllerInput.A)
                 {
-                    core.SetGuideOn(!core.Settings.Guide.IsGuideOn);
+                    ToggleGuide();
                 }
                 else if (pad == ControllerInput.B || e.Key == Key.Left)
                 {
@@ -456,7 +456,10 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>The Guide page's checkbox clicked with the mouse: turned over, as A does.</summary>
-        private void OnGuideOnBoxClick(object sender, RoutedEventArgs e) => core.SetGuideOn(!core.Settings.Guide.IsGuideOn);
+        private void OnGuideOnBoxClick(object sender, RoutedEventArgs e) => ToggleGuide();
+
+        /// <summary>Turns the Guide page's checkbox over: the Guide off if it was on, on if it was off.</summary>
+        private void ToggleGuide() => core.SetGuideOn(!core.Settings.Guide.IsGuideOn);
 
         // The Idle page's two dropdowns, top to bottom.
 

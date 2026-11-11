@@ -614,12 +614,19 @@ namespace XboxSeries.Core
             Home.ReturnFromGame(gameId);
         }
 
-        /// <summary>Takes away a menu or prompt about a game. Power is about the PC, so it stays.</summary>
+        /// <summary>
+        /// Takes away a menu or prompt about a game. Power is about the PC, so it stays. A prompt shown on its own, with
+        /// the Guide off, goes with the dim it showed over, focus handed back to the window in front.
+        /// </summary>
         private void CloseGameDialog()
         {
             if (Guide.Dialog != null && !Guide.Dialog.IsWide)
             {
                 Guide.Dialog = null;
+                if (Guide.IsOpen && !Guide.ShowsPanel)
+                {
+                    DismissAtOnce(ReturnToRecordedWindow);
+                }
             }
         }
 

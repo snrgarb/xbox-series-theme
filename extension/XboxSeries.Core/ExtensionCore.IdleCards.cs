@@ -120,7 +120,9 @@ namespace XboxSeries.Core
         private List<IdleCard> IdleCardPool() =>
             (HasAchievements && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
-                .Concat(IdleTips.Where(t => Settings.Guide.IsGuideOn || !t.Buttons.Contains(ControllerButton.Guide)).Select(t => new IdleCard(IdleCardKind.Tip, t.Text, null, header: "Tip", prompt: "Got it", buttons: t.Buttons)))
+                .Concat(IdleTips
+                    .Where(t => Settings.Guide.IsGuideOn || !t.Buttons.Contains(ControllerButton.Guide))
+                    .Select(t => new IdleCard(IdleCardKind.Tip, t.Text, null, header: "Tip", prompt: "Got it", buttons: t.Buttons)))
                 .ToList();
 
         /// <summary>

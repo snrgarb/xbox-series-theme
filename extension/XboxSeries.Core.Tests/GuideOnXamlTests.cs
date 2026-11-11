@@ -43,8 +43,9 @@ namespace XboxSeries.Core.Tests
             var code = Code("SettingsControl.xaml.cs");
 
             Assert.Matches(new Regex(@"case ThemeSettingsPage\.Guide:\s*GuideOnBox\.Focus\(\);"), code);
-            Assert.Matches(new Regex(@"pad == ControllerInput\.A\)\s*\{\s*core\.SetGuideOn\(!core\.Settings\.Guide\.IsGuideOn\);"), code);
-            Assert.Matches(new Regex(@"OnGuideOnBoxClick\(object sender, RoutedEventArgs e\) => core\.SetGuideOn\(!core\.Settings\.Guide\.IsGuideOn\);"), code);
+            Assert.Matches(new Regex(@"pad == ControllerInput\.A\)\s*\{\s*ToggleGuide\(\);"), code);
+            Assert.Contains("OnGuideOnBoxClick(object sender, RoutedEventArgs e) => ToggleGuide();", code);
+            Assert.Contains("ToggleGuide() => core.SetGuideOn(!core.Settings.Guide.IsGuideOn);", code);
         }
 
         [Fact]

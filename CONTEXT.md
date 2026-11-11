@@ -76,7 +76,7 @@ One continuous run of a game, from launch to exit, as recorded by the extension.
 _Avoid_: playthrough, visit
 
 **Guide**:
-The panel, modelled on the Xbox Guide, shown over any foreground window when the Guide button is pressed.
+The panel, modelled on the Xbox Guide, shown over any foreground window when the Guide button is pressed. **Settings**' Guide page can turn it off, when it never shows.
 _Avoid_: overlay (the overlay is the window hosting the Guide, not the Guide itself), menu, sidebar
 
 **Overlay**:

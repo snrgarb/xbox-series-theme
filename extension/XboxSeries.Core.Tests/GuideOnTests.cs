@@ -16,6 +16,9 @@ namespace XboxSeries.Core.Tests
     {
         private GuideSettingsState Options => core.Settings.Guide;
 
+        /// <summary>Halo Infinite's id, once <see cref="StartHaloWithHadesBeside"/> has started it.</summary>
+        private Guid haloId;
+
         private void TurnOff() => core.SetGuideOn(false);
 
         [Fact]
@@ -169,6 +172,19 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Off_a_prompt_about_a_game_that_exits_on_its_own_goes_with_its_dim()
+        {
+            var hades = StartHaloWithHadesBeside();
+            TurnOff();
+            core.PlayGame(hades);
+
+            core.OnGameStopped(haloId);
+
+            Assert.Null(Guide.Dialog);
+            Assert.False(Guide.IsOpen);
+        }
+
+        [Fact]
         public void On_a_prompt_still_shows_over_the_Guide_which_stays_open_on_Cancel()
         {
             var game = StartHaloWithHadesBeside();
@@ -190,7 +206,8 @@ namespace XboxSeries.Core.Tests
                 .WithGame("Halo Infinite", lastActivity: new DateTime(2026, 10, 12))
                 .WithGame("Hades", lastActivity: new DateTime(2026, 10, 11));
             core.OnLibraryChanged(library.Snapshot());
-            core.OnGameStarted(library.Id("Halo Infinite"));
+            haloId = library.Id("Halo Infinite");
+            core.OnGameStarted(haloId);
             return library.Id("Hades");
         }
 
