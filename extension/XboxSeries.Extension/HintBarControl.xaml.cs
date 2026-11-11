@@ -33,6 +33,8 @@ namespace XboxSeries.Extension
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // Loaded again without an Unloaded between, it lets go of what it followed before following afresh.
+            Detach();
             core.Home.PropertyChanged += OnHomeChanged;
             Follow();
 
@@ -53,6 +55,23 @@ namespace XboxSeries.Extension
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            var followedList = mainList != null;
+            var followedHub = gameHub != null;
+            Detach();
+            if (followedList)
+            {
+                core.LeaveGameGrid();
+            }
+
+            if (followedHub)
+            {
+                core.LeaveGameHub();
+            }
+        }
+
+        /// <summary>Stops following the core, Playnite's main list and the Game hub, letting go of the hub's backdrop.</summary>
+        private void Detach()
+        {
             core.Home.PropertyChanged -= OnHomeChanged;
             backdrop?.Stop();
             backdrop = null;
@@ -60,14 +79,12 @@ namespace XboxSeries.Extension
             {
                 mainList.IsKeyboardFocusWithinChanged -= OnMainListFocusChanged;
                 mainList = null;
-                core.LeaveGameGrid();
             }
 
             if (gameHub != null)
             {
                 gameHub.IsKeyboardFocusWithinChanged -= OnGameHubFocusChanged;
                 gameHub = null;
-                core.LeaveGameHub();
             }
         }
 

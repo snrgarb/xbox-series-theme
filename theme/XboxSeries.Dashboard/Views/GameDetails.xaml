@@ -373,8 +373,8 @@
 
                         <!--
                             The hub is a panel over the screen it was opened from, as the console's. Back to front: the game's
-                            art full screen; with the extension, over it, the screen it was opened from; then the band, which
-                            shows the game's art again, darker, under the hub's content.
+                            art full screen; with the extension, over it above and below the band, the screen it was opened
+                            from; then the band, through which the art shows, darker, under the hub's content.
 
                             The art: the game's own background art, blurred; without one, its cover, blurred; without either,
                             the plain dashboard background behind them. Dimmed by the gradient after it.
@@ -465,10 +465,12 @@
                         </Rectangle>
 
                         <!--
-                            With the extension, the screen the hub was opened from, outside the band: the page under the hub,
-                            drawn once as the hub opens into a picture an eighth of its size and softened there, stretched to
-                            the screen and darkened 60%. It covers the art above, and is let go as the hub closes. With the theme
-                            alone, or no snapshot, it stays collapsed and the game's art shows there instead.
+                            With the extension, the screen the hub was opened from, above and below the band: the page under
+                            the hub, drawn once as the hub opens into a picture an eighth of its size and softened there. Each
+                            strip is the band's gap high and shows its edge of that picture stretched to the whole screen, so
+                            both line up with what was on screen, darkened 60%. Inside the band the art behind shows through.
+                            The picture is let go as the hub closes. With the theme alone, or no snapshot, it stays collapsed
+                            and the game's art shows there instead.
                         -->
                         <Grid x:Name="XboxHubBackdrop" IsHitTestVisible="False">
                             <Grid.Style>
@@ -481,26 +483,28 @@
                                     </Style.Triggers>
                                 </Style>
                             </Grid.Style>
-                            <Image Source="{PluginSettings Plugin=XboxSeries, Path=HubBackdrop.Snapshot}" Stretch="UniformToFill"
-                                   RenderOptions.BitmapScalingMode="HighQuality" />
-                            <Rectangle Fill="#99000000" />
+                            <Grid x:Name="XboxHubBackdropTop" Height="88" VerticalAlignment="Top" ClipToBounds="True">
+                                <Grid Height="{Binding ActualHeight, ElementName=XboxHubBackdrop}" VerticalAlignment="Top">
+                                    <Image Source="{PluginSettings Plugin=XboxSeries, Path=HubBackdrop.Snapshot}" Stretch="Fill"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <Rectangle Fill="#99000000" />
+                                </Grid>
+                            </Grid>
+                            <Grid x:Name="XboxHubBackdropBottom" Height="88" VerticalAlignment="Bottom" ClipToBounds="True">
+                                <Grid Height="{Binding ActualHeight, ElementName=XboxHubBackdrop}" VerticalAlignment="Bottom">
+                                    <Image Source="{PluginSettings Plugin=XboxSeries, Path=HubBackdrop.Snapshot}" Stretch="Fill"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <Rectangle Fill="#99000000" />
+                                </Grid>
+                            </Grid>
                         </Grid>
 
                         <!--
                             The console's band, across the whole width, with an equal gap above and below it. Everything else
-                            sits inside it; the cards scroll across it to the edge. It shows the game's art, the full-screen
-                            art above drawn again where it lies, under #B3000000 to keep the text readable; under that, the
-                            dashboard background, so a game with no art doesn't show the screen behind through it.
+                            sits inside it; the cards scroll across it to the edge. The game's art behind shows through it,
+                            darkened by #B3000000 to keep the text readable.
                         -->
-                        <Grid x:Name="Band" Margin="0,88,0,88" ClipToBounds="True" IsHitTestVisible="False">
-                            <Rectangle Fill="{DynamicResource MainBackgourndBrush}" />
-                            <Rectangle>
-                                <Rectangle.Fill>
-                                    <VisualBrush Visual="{Binding ElementName=XboxHubArt}" Stretch="UniformToFill" />
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <Rectangle Fill="#B3000000" />
-                        </Grid>
+                        <Border x:Name="Band" Margin="0,88,0,88" Background="#B3000000" IsHitTestVisible="False" />
 
                         <Grid Margin="80,128,80,0">
                             <Grid.RowDefinitions>
