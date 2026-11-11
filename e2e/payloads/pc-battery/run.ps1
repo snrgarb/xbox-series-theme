@@ -6,14 +6,16 @@
 #
 # 1. No variable, as the VM is: "PC battery: none", and no "faked" line. Home's top bar and the Guide show the Status
 #    area as today, with no PC battery: compare home-plain-topbar.jpg and guide-plain-status.jpg with guide-over-game's.
-# 2. Playnite closed, and started again with XBOXSERIES_FAKE_BATTERY=57,charging: the "faked" line, and
+# 2. Playnite closed, and started again with XBOXSERIES_FAKE_BATTERY=57,charging and XBOXSERIES_FAKE_PAD_BATTERY=88
+#    (the VM's virtual pad is on a cable, so its battery is faked too, to show both side by side): the "faked" lines, and
 #    "PC battery: 57%, charging". Home's top bar and the Guide show 57% and Windows' upright charging battery, bolt inside,
-#    before the pad's battery, which lies on its side (home-fake-topbar.jpg, guide-fake-status.jpg).
+#    before the pad's 88% battery, which lies on its side (home-fake-topbar.jpg, guide-fake-status.jpg).
 # Screenshots are whole screens, with the top bar and the Guide's top right cut out of them beside.
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
 $fake = '57,charging'
+$padFake = '88'
 
 # The extension's lines matching $Pattern after line $After of its log.
 function Get-LogLines([string] $Pattern, [int] $After = 0) {
@@ -71,6 +73,7 @@ function Get-LoggedErrors {
 try {
     # 1. No variable: nothing new.
     Remove-Item Env:XBOXSERIES_FAKE_BATTERY -ErrorAction SilentlyContinue
+    Remove-Item Env:XBOXSERIES_FAKE_PAD_BATTERY -ErrorAction SilentlyContinue
     Connect-Pad
     Start-Dashboard $PSScriptRoot -Library
     Start-Sleep -Seconds 4
@@ -96,7 +99,8 @@ try {
     Start-Sleep -Seconds 2
     Save-PlayniteFiles -Move 'plain'
     $env:XBOXSERIES_FAKE_BATTERY = $fake
-    Say "Playnite stopped; starting it again with XBOXSERIES_FAKE_BATTERY=$fake"
+    $env:XBOXSERIES_FAKE_PAD_BATTERY = $padFake
+    Say "Playnite stopped; starting it again with XBOXSERIES_FAKE_BATTERY=$fake and XBOXSERIES_FAKE_PAD_BATTERY=$padFake"
     Enter-Dashboard
     Start-Sleep -Seconds 4
     $said = Get-LogLines '\[Status\] PC battery'
@@ -106,6 +110,11 @@ try {
     }
     if (-not @($said | Where-Object { $_ -match '\[Status\] PC battery: 57%, charging$' }).Count) {
         $failures += 'With the variable, no "[Status] PC battery: 57%, charging" line'
+    }
+    $pad = Get-LogLines '\[Status\] pad battery faked'
+    $pad | ForEach-Object { Say "logged: $_" }
+    if (-not @($pad | Where-Object { $_ -match "XBOXSERIES_FAKE_PAD_BATTERY=$padFake`: $padFake%$" }).Count) {
+        $failures += 'With the pad variable, no "pad battery faked" line'
     }
     $failures += Save-StatusArea 'fake'
 
@@ -124,5 +133,6 @@ try {
     Stop-Playnite
     Disconnect-Pad
     Remove-Item Env:XBOXSERIES_FAKE_BATTERY -ErrorAction SilentlyContinue
+    Remove-Item Env:XBOXSERIES_FAKE_PAD_BATTERY -ErrorAction SilentlyContinue
 }
 exit $(if ($result -eq 'PASS') { 0 } else { 1 })

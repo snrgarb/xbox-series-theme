@@ -40,7 +40,7 @@
                 <TextBlock x:Name="PcPercent" Text="{Binding PcBattery.Text}" FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="White"
                            VerticalAlignment="Center" Margin="0,0,4,0" />
                 <!-- Segoe Fluent Icons / MDL2 Assets' VerticalBattery glyphs, as PcBattery.Glyph picks them. -->
-                <TextBlock x:Name="PcGlyph" Text="{Binding PcBattery.Glyph}" FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
+                <TextBlock x:Name="PcGlyph" Text="{Binding PcBattery.Glyph}" FontFamily="{DynamicResource XboxIconFont}" FontSize="26"
                            Foreground="White" VerticalAlignment="Center" />
             </StackPanel>
             <DataTemplate.Triggers>
