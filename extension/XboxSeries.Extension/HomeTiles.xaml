@@ -128,8 +128,8 @@
     </Style>
 
     <!--
-        A game's art on a tile, as every game tile in the extension shows it: filling the tile, centred and cropped to the
-        tile's shape, with no bands, as on the console. Content is the art, already decoded. The tile rounds it; this only
+        A game's art on a tile, as every game tile in the extension shows it: filling the tile, cropped to the tile's shape
+        from the top (so a logo at the top of a poster stays) and centred across, with no bands, as on the console. Content is the art, already decoded. The tile rounds it; this only
         crops it to the tile's edges.
     -->
     <Style x:Key="TileArt" TargetType="ContentControl">
@@ -140,7 +140,7 @@
                 <ControlTemplate TargetType="ContentControl">
                     <Grid ClipToBounds="True">
                         <Image Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Stretch="UniformToFill"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" />
+                               HorizontalAlignment="Center" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="Fant" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -241,7 +241,7 @@
             <Setter.Value>
                 <DataTemplate>
                     <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
-                           Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
+                           Stretch="UniformToFill" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
                 </DataTemplate>
             </Setter.Value>
         </Setter>

@@ -7,7 +7,8 @@ using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
-    // Every game tile fills itself with its art, cropped to the tile's shape and centred, with no bands, as on the console
+    // Every game tile fills itself with its art, cropped to the tile's shape from the top and centred across (so a logo at
+    // the top of a 2:3 poster stays on a square tile), with no bands, as on the console
     // (it was briefly the whole art over a blurred copy, #205, which left bands top and bottom). One pair per package,
     // TileArt in the extension and XboxTileArt in the theme, which every listed tile wears rather than its own copy. The
     // XAML isn't run here; these read it.
@@ -49,7 +50,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("{Binding Content, RelativeSource={RelativeSource TemplatedParent}}", (string)art.Attribute("Source"));
             Assert.Equal("UniformToFill", (string)art.Attribute("Stretch"));
             Assert.Equal("Center", (string)art.Attribute("HorizontalAlignment"));
-            Assert.Equal("Center", (string)art.Attribute("VerticalAlignment"));
+            Assert.Equal("Top", (string)art.Attribute("VerticalAlignment"));
             Assert.Equal("Fant", (string)art.Attribute("RenderOptions.BitmapScalingMode"));
             // Cropped to the tile's edges.
             Assert.Equal("True", (string)Named(template, "Grid").First().Attribute("ClipToBounds"));
@@ -66,7 +67,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("{Binding Content, RelativeSource={RelativeSource TemplatedParent}}", (string)art.Attribute("ImageSource"));
             Assert.Equal("UniformToFill", (string)art.Attribute("Stretch"));
             Assert.Equal("Center", (string)art.Attribute("AlignmentX"));
-            Assert.Equal("Center", (string)art.Attribute("AlignmentY"));
+            Assert.Equal("Top", (string)art.Attribute("AlignmentY"));
             Assert.Equal("{DynamicResource XboxTileArtCornerRadius}", (string)art.Parent.Parent.Attribute("CornerRadius"));
             Assert.Equal("6", Named(XDocument.Load(Theme("Constants.xaml")).Root, "CornerRadius")
                 .Single(c => (string)c.Attribute(X + "Key") == "XboxTileArtCornerRadius").Value);
