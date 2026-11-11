@@ -39,11 +39,11 @@ namespace XboxSeries.Core.Tests
             // An empty square off, the ticked one on, following the core's state.
             var style = check.Descendants().Single(e => e.Name.LocalName == "Style");
             Assert.Equal("{StaticResource Icon}", (string)style.Attribute("BasedOn"));
-            Assert.Equal("", (string)style.Elements().Single(e => e.Name.LocalName == "Setter" && (string)e.Attribute("Property") == "Text").Attribute("Value"));
+            Assert.Equal("", (string)style.Elements().Single(e => e.Name.LocalName == "Setter" && (string)e.Attribute("Property") == "Text").Attribute("Value"));
             var on = style.Descendants().Single(e => e.Name.LocalName == "DataTrigger");
             Assert.Equal("{Binding ShowPlayHistory}", (string)on.Attribute("Binding"));
             Assert.Equal("True", (string)on.Attribute("Value"));
-            Assert.Equal("", (string)on.Elements().Single().Attribute("Value"));
+            Assert.Equal("", (string)on.Elements().Single().Attribute("Value"));
         }
 
         [Fact]
