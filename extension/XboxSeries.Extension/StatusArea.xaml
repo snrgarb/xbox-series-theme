@@ -37,8 +37,13 @@
         -->
         <DataTemplate x:Key="PcBatteryTemplate">
             <StackPanel x:Name="PcBattery" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                <!-- Raised 2 px: Segoe UI's ink sits 2 px under its line's middle, under the battery's centre. -->
                 <TextBlock x:Name="PcPercent" Text="{Binding PcBattery.Text}" FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="White"
-                           VerticalAlignment="Center" Margin="0,0,4,0" />
+                           VerticalAlignment="Center" Margin="0,0,4,0">
+                    <TextBlock.RenderTransform>
+                        <TranslateTransform Y="-2" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
                 <!-- Segoe Fluent Icons / MDL2 Assets' VerticalBattery glyphs, as PcBattery.Glyph picks them. -->
                 <TextBlock x:Name="PcGlyph" Text="{Binding PcBattery.Glyph}" FontFamily="{DynamicResource XboxIconFont}" FontSize="26"
                            Foreground="White" VerticalAlignment="Center" />
@@ -59,8 +64,13 @@
         -->
         <DataTemplate x:Key="BatteryTemplate">
             <StackPanel x:Name="Battery" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Raised 2 px onto the cell's centre, as the PC's percent is. -->
                 <TextBlock x:Name="Percent" Text="{Binding Battery.Percent, StringFormat={}{0}%}" FontFamily="{DynamicResource XboxFont}"
-                           FontSize="26" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0" />
+                           FontSize="26" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <TextBlock.RenderTransform>
+                        <TranslateTransform Y="-2" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
                 <ContentControl x:Name="Cell" Content="{Binding Battery.Percent}" ContentTemplate="{StaticResource CellTemplate}"
                                 Focusable="False" VerticalAlignment="Center" />
                 <!-- Segoe Fluent Icons / MDL2 Assets' game controller. -->
@@ -126,8 +136,13 @@
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
                 <ContentControl x:Name="Battery" Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}"
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular" FontSize="22" Foreground="White"
-                           VerticalAlignment="Center" />
+                <!-- Bahnschrift's ink sits 2 px over its line's middle: lowered onto the batteries' and icons' centre. -->
+                <TextBlock x:Name="Clock" Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular" FontSize="22" Foreground="White"
+                           VerticalAlignment="Center">
+                    <TextBlock.RenderTransform>
+                        <TranslateTransform Y="2" />
+                    </TextBlock.RenderTransform>
+                </TextBlock>
             </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Battery.Connection}" Value="None">

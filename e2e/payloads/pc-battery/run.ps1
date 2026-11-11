@@ -10,6 +10,7 @@
 #    (the VM's virtual pad is on a cable, so its battery is faked too, to show both side by side): the "faked" lines, and
 #    "PC battery: 57%, charging". Home's top bar and the Guide show 57% and Windows' upright charging battery, bolt inside,
 #    before the pad's 88% battery, which lies on its side (home-fake-topbar.jpg, guide-fake-status.jpg).
+# In both, everything on the top bar is centred on one line, within 1 px (Test-TopBarLine).
 # Screenshots are whole screens, with the top bar and the Guide's top right cut out of them beside.
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
@@ -44,12 +45,56 @@ function Save-ScreenPart([string] $Name, [double] $Left, [double] $Top, [double]
     $g.Dispose(); $bmp.Dispose()
 }
 
+# Whether everything on Home's top bar sits on one line: the bar is 60 tall with its top 84 down a 1080-line screen, so
+# its middle is 114 down. The white ink of each thing on it (the picture, the gamertag, the icons, the percents, the
+# batteries, the clock), told apart by gaps of more than 8 columns, must be centred within 1 px of that. Text's ink sits
+# off its line's middle by a font's own amount, so a bar laid out by its boxes alone can still look ragged; this
+# measures what shows. What is off, if anything.
+function Test-TopBarLine([string] $Phase) {
+    $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $scale = $b.Height / 1080.0
+    $top = [int](70 * $scale); $height = [int](90 * $scale)
+    $bmp = New-Object System.Drawing.Bitmap $b.Width, $height
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.CopyFromScreen((New-Object System.Drawing.Point 0, $top), [System.Drawing.Point]::Empty, $bmp.Size)
+    $g.Dispose()
+    $inkTop = New-Object int[] $b.Width; $inkBottom = New-Object int[] $b.Width
+    for ($x = 0; $x -lt $b.Width; $x++) {
+        $inkTop[$x] = -1
+        for ($y = 0; $y -lt $height; $y++) {
+            $p = $bmp.GetPixel($x, $y)
+            if ($p.R -gt 200 -and $p.G -gt 200 -and $p.B -gt 200) {
+                if ($inkTop[$x] -lt 0) { $inkTop[$x] = $y }
+                $inkBottom[$x] = $y
+            }
+        }
+    }
+    $bmp.Dispose()
+    $middle = 114 * $scale
+    $bad = @()
+    $x = 0
+    while ($x -lt $b.Width) {
+        if ($inkTop[$x] -lt 0) { $x++; continue }
+        $start = $x; $end = $x; $t = [int]::MaxValue; $bt = -1; $gap = 0
+        while ($x -lt $b.Width -and $gap -le 8) {
+            if ($inkTop[$x] -ge 0) { $end = $x; $gap = 0; $t = [Math]::Min($t, $inkTop[$x]); $bt = [Math]::Max($bt, $inkBottom[$x]) } else { $gap++ }
+            $x++
+        }
+        $centre = $top + ($t + $bt) / 2.0
+        $off = $centre - $middle
+        Say ("${Phase}: top bar ink x {0}-{1}, y {2}-{3}, centre {4:0.0}, {5:+0.0;-0.0;0} from the line" -f $start, $end, ($top + $t), ($top + $bt), $centre, $off) | Out-Host
+        if ([Math]::Abs($off) -gt 1 * $scale) { $bad += ("${Phase}: top bar ink at x {0}-{1} is centred {2:+0.0;-0.0} px off the bar's line" -f $start, $end, $off) }
+    }
+    ,$bad
+}
+
 # Home's top bar, then the Guide opened over Home with its Status area at the top right, and closed again; what is
 # wrong, if anything.
 function Save-StatusArea([string] $Phase) {
     $bad = @()
     Save-Screen "home-$Phase" | Out-Host
     Save-ScreenPart "home-$Phase-topbar" 0.5 0 0.5 0.12 | Out-Host
+    $bad += Test-TopBarLine $Phase
     $mark = @(Get-ExtensionLog).Count
     Push-Button Guide | Out-Host
     $opened = Wait-LogLine 'Guide opened over' $mark 5
