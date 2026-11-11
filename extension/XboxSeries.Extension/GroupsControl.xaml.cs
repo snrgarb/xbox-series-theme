@@ -50,6 +50,7 @@ namespace XboxSeries.Extension
             GotKeyboardFocus += OnGotKeyboardFocus;
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
+            KeyDown += OnKeyDown;
             IsVisibleChanged += OnVisibleChanged;
 
             // The Groups laid out anew: rebuilt, or grown or shrunk with the screen.
@@ -188,20 +189,12 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The D-pad moves along a Group and between Groups, keeping to the same place in the row as far as the next row
-        /// goes. Up from the first Group goes back up to the wide tiles. B anywhere on the Groups goes back to the
-        /// Recent row, on the game it last had focus.
+        /// goes. Up from the first Group goes back up to the wide tiles.
         /// </summary>
         private void OnPreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (!(Keyboard.FocusedElement is Button tile) || !(Rows.ContainerFromElement(tile) is DependencyObject row))
             {
-                return;
-            }
-
-            if (PlayniteInput.PadButtonOf(e) == ControllerInput.B)
-            {
-                e.Handled = true;
-                page.LeaveGroups(toWideTiles: false);
                 return;
             }
 
@@ -218,6 +211,21 @@ namespace XboxSeries.Extension
             }
 
             e.Handled = true;
+        }
+
+        /// <summary>
+        /// B anywhere on the Groups goes back to the Recent row, on the game it last had focus. Playnite raises the pad's
+        /// B on what has focus as a KeyDown alone, with no PreviewKeyDown before it, as My games &amp; apps and Settings
+        /// find it on the view host; here it comes up from the focused tile. Handled, so nothing above takes it too.
+        /// </summary>
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!e.Handled && PlayniteInput.PadButtonOf(e) == ControllerInput.B && Keyboard.FocusedElement is Button tile && IsAncestorOf(tile))
+            {
+                e.Handled = true;
+                logger.Info("Home: B on the Groups, back to the Recent row");
+                page.LeaveGroups(toWideTiles: false);
+            }
         }
 
         /// <summary>Focuses the tile at <paramref name="place"/> in a Group, or its last tile if the Group is shorter.</summary>
@@ -238,9 +246,8 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Where the Groups are laid out with the page resting on the Recent row, in the Dashboard's pixels: each Group's
-        /// top, its cards' top under it and height, from the first Group's first card, and where the wide tiles end above
-        /// them. Taken from where they are now, less the page's scroll so far (on this control, so not in what is
-        /// measured inside it).
+        /// top, and its cards' top under it and height, from the first Group's first card. Taken from where they are now,
+        /// less the page's scroll so far (on this control, so not in what is measured inside it).
         /// </summary>
         public HomePageLayout Layout()
         {
@@ -267,9 +274,7 @@ namespace XboxSeries.Extension
                 }
             }
 
-            // The room left for the Recent row and the wide tiles ends where they do.
-            var rowsBottom = origin + AboveGroups.TranslatePoint(new Point(0, AboveGroups.ActualHeight), this).Y;
-            return new HomePageLayout(screenHeight, tops, cardsTop, cardHeight, rowsBottom);
+            return new HomePageLayout(screenHeight, tops, cardsTop, cardHeight);
         }
 
         /// <summary>The name of the Group at <paramref name="group"/>, for the log.</summary>

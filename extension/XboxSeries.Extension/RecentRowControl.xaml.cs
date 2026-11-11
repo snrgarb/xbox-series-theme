@@ -97,6 +97,7 @@ namespace XboxSeries.Extension
             core.Home.Revealed += OnRevealed;
             page.RowWanted += OnRowWanted;
             page.Row = this;
+            page.RowContent = Page;
             page.TopBar = HomeRows.FindPart(this, "XboxTopBar");
             growth.Start();
 
@@ -120,6 +121,7 @@ namespace XboxSeries.Extension
             if (page.Row == this)
             {
                 page.Row = null;
+                page.RowContent = null;
                 page.TopBar = null;
             }
 

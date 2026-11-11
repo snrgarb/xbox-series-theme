@@ -54,8 +54,11 @@ namespace XboxSeries.Extension
         /// <summary>The Groups, which say where they are laid out and what each is called; null without them.</summary>
         public IHomeGroupsView Groups { get; set; }
 
-        /// <summary>The Recent row's control, with the wide tiles: disabled while it is wholly above the screen.</summary>
+        /// <summary>The Recent row's control, with the wide tiles: disabled while the page rests on the Groups.</summary>
         public UIElement Row { get; set; }
+
+        /// <summary>What the Recent row's control shows, the row and the wide tiles: faded out while the page rests on the Groups.</summary>
+        public UIElement RowContent { get; set; }
 
         /// <summary>The theme's top bar, found by the Recent row: disabled while it is above the screen.</summary>
         public UIElement TopBar { get; set; }
@@ -106,7 +109,7 @@ namespace XboxSeries.Extension
 
             // What comes onto the screen can be focused again at once; what leaves it, once it has gone.
             var topBarShows = HomeRests.TopBarShows(next);
-            var rowsShow = HomeRests.RowsShow(next, measured);
+            var rowsShow = HomeRests.RowsShow(now);
             var groupsShow = now.Kind != HomeRestKind.RecentRow || HomeRests.GroupsShow(next, measured);
             Enable(TopBar, topBarShows, onlyOn: true);
             Enable(Row, rowsShow, onlyOn: true);
@@ -121,6 +124,7 @@ namespace XboxSeries.Extension
                 }
             }
 
+            Fade(RowContent, rowsShow);
             Slide(Scroll, -next.PageOffset, Gone);
             Slide(TopBarScroll, -next.TopBarOffset, null);
             if (moved)
@@ -143,6 +147,17 @@ namespace XboxSeries.Extension
         }
 
         private HomePageLayout Layout() => layout ?? (layout = Groups?.Layout() ?? new HomePageLayout(1080, null, 0, 0));
+
+        /// <summary>
+        /// Fades <paramref name="element"/> in or out over the slide, from wherever it has got to: a fade, so Reduce
+        /// motion leaves it as it is (<see cref="Motion"/>).
+        /// </summary>
+        private static void Fade(UIElement element, bool shown)
+        {
+            element?.BeginAnimation(
+                UIElement.OpacityProperty,
+                new DoubleAnimation(shown ? 1 : 0, SlideDuration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        }
 
         /// <summary>Lets <paramref name="element"/> be focused and clicked, or not; with <paramref name="onlyOn"/>, only ever turns it on.</summary>
         private static void Enable(UIElement element, bool enabled, bool onlyOn = false)

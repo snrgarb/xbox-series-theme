@@ -102,7 +102,10 @@ namespace XboxSeries.Core.Tests
             var groups = Code("GroupsControl.xaml.cs");
 
             Assert.Contains("case Key.Up when group == 0: page.LeaveGroups(toWideTiles: true); break;", groups);
-            Assert.Matches(new Regex(@"if \(PlayniteInput\.PadButtonOf\(e\) == ControllerInput\.B\)\s*\{\s*e\.Handled = true;\s*page\.LeaveGroups\(toWideTiles: false\);"), groups);
+            // Playnite raises the pad's B as a KeyDown alone, never a PreviewKeyDown (as A on See all, OnSeeAllKeyDown).
+            Assert.Contains("KeyDown += OnKeyDown;", groups);
+            Assert.Matches(new Regex(@"void OnKeyDown\(object sender, KeyEventArgs e\)\s*\{\s*if \(!e\.Handled && PlayniteInput\.PadButtonOf\(e\) == ControllerInput\.B .*?\)\s*\{\s*e\.Handled = true;.*?page\.LeaveGroups\(toWideTiles: false\);", RegexOptions.Singleline), groups);
+            Assert.DoesNotMatch(new Regex(@"void OnPreviewKeyDown\(object sender, KeyEventArgs e\)\s*\{[^}]*ControllerInput\.B"), groups);
             // The row puts focus on the wide tiles, or on its last focused game, and the page rests where focus lands.
             Assert.Matches(new Regex(@"void OnRowWanted\(bool toWideTiles\)\s*\{\s*promosFocused = toWideTiles;\s*FocusTileSoon\(\);"), Code("RecentRowControl.xaml.cs"));
         }
@@ -143,6 +146,14 @@ namespace XboxSeries.Core.Tests
             // Measured once, until the layout changes.
             Assert.Contains("private HomePageLayout Layout() => layout ?? (layout = Groups?.Layout()", page);
             Assert.Matches(new Regex(@"public void LayoutChanged\(\)\s*\{\s*layout = null;"), page);
+        }
+
+        [Fact]
+        public void On_the_Groups_the_Recent_row_and_wide_tiles_fade_out_with_the_rise_so_none_of_them_shows_over_the_first()
+        {
+            Assert.Contains("page.RowContent = Page;", Code("RecentRowControl.xaml.cs"));
+            Assert.Contains("var rowsShow = HomeRests.RowsShow(now);", Code("HomeRows.cs"));
+            Assert.Contains("Fade(RowContent, rowsShow);", Code("HomeRows.cs"));
         }
 
         [Fact]

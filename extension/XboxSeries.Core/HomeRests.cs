@@ -51,19 +51,16 @@ namespace XboxSeries.Core
 
     /// <summary>
     /// Home laid out with its page at rest on the Recent row, in the Dashboard's pixels (1080 tall, whatever the screen):
-    /// where each Group's header starts, where its cards start under it and how tall they are, and where the wide tiles
-    /// end. Measured by the view.
+    /// where each Group's header starts, and where its cards start under it and how tall they are. Measured by the view.
     /// </summary>
     public sealed class HomePageLayout
     {
-        public HomePageLayout(double screenHeight, IReadOnlyList<double> groupTops, double cardsTop, double cardHeight,
-            double rowsBottom = double.PositiveInfinity)
+        public HomePageLayout(double screenHeight, IReadOnlyList<double> groupTops, double cardsTop, double cardHeight)
         {
             ScreenHeight = screenHeight;
             GroupTops = groupTops ?? new double[0];
             CardsTop = cardsTop;
             CardHeight = cardHeight;
-            RowsBottom = rowsBottom;
         }
 
         public double ScreenHeight { get; }
@@ -75,9 +72,6 @@ namespace XboxSeries.Core
         public double CardsTop { get; }
 
         public double CardHeight { get; }
-
-        /// <summary>Where the Recent row and the wide tiles under it end, down the page; unmeasured, never.</summary>
-        public double RowsBottom { get; }
     }
 
     /// <summary>
@@ -102,7 +96,8 @@ namespace XboxSeries.Core
     /// the Groups. Where it rests follows focus. On the Recent row it rests as it always has. On the wide tiles it rises
     /// until the first Group's header and the top third of its cards show at the screen's foot; the top bar stays. On a
     /// Group, its header is <see cref="GroupTop"/> from the screen's top, the next Group shows whole and the one after is
-    /// cut by the screen's foot; the top bar has gone up with the page from the wide tiles, above the screen.
+    /// cut by the screen's foot; the top bar has gone up with the page from the wide tiles, above the screen, and the
+    /// Recent row and the wide tiles have faded out (<see cref="RowsShow"/>).
     /// </summary>
     public static class HomeRests
     {
@@ -128,8 +123,12 @@ namespace XboxSeries.Core
         public static bool GroupsShow(HomeRest rest, HomePageLayout layout) =>
             layout.GroupTops.Count > 0 && layout.GroupTops[0] - rest.PageOffset < layout.ScreenHeight;
 
-        /// <summary>Whether any of the Recent row and the wide tiles is on the screen at <paramref name="rest"/>: they end below its top.</summary>
-        public static bool RowsShow(HomeRest rest, HomePageLayout layout) => layout.RowsBottom - rest.PageOffset > 0;
+        /// <summary>
+        /// Whether the Recent row and the wide tiles show with focus at <paramref name="focus"/>: not on the Groups, where
+        /// they fade out as the page rises. On the first Group the wide tiles' foot would otherwise still show over its
+        /// header, the gap under them (40 at the rows' scale) being less than the header's 64 from the screen's top.
+        /// </summary>
+        public static bool RowsShow(HomeFocus focus) => focus.Kind != HomeRestKind.Group;
 
         public static HomeRest At(HomeFocus focus, HomePageLayout layout)
         {
