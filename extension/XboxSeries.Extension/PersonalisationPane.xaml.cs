@@ -94,13 +94,17 @@ namespace XboxSeries.Extension
 
         private StartUpSettingsState State => core.Settings.StartUp;
 
-        /// <summary>Personalisation's own boxes as the pad moves between them: a row each, Background delay and Reduce motion alone on theirs.</summary>
+        /// <summary>
+        /// Personalisation's own boxes as the pad moves between them: a row each, Background delay, Reduce motion and Show
+        /// Play history alone on theirs.
+        /// </summary>
         private Button[][] Rows => new[]
         {
             new[] { BootVideoBox, ProfilesBox },
             new[] { AskBox },
             new[] { BackgroundDelayBox },
             new[] { ReduceMotionBox },
+            new[] { ShowPlayHistoryBox },
         };
 
         private Profile Profile => State.Profiles.FirstOrDefault(p => p.Id == profileId);
@@ -369,6 +373,10 @@ namespace XboxSeries.Extension
             else if (button == ReduceMotionBox)
             {
                 core.SetReduceMotion(!State.ReduceMotion);
+            }
+            else if (button == ShowPlayHistoryBox)
+            {
+                core.SetShowPlayHistory(!State.ShowPlayHistory);
             }
             else if (button.DataContext is ChoiceRow row && row.Value is BootVideo video)
             {

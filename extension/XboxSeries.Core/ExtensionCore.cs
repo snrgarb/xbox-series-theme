@@ -20,6 +20,9 @@ namespace XboxSeries.Core
         /// </summary>
         private const int RecentRowCount = 7;
 
+        /// <summary>How many games the Recent row holds with Show Play history off: one more, in the tile's place.</summary>
+        private const int RecentRowCountWithoutPlayHistory = RecentRowCount + 1;
+
         /// <summary>How many games the Play history tile's collage shows.</summary>
         private const int PlayHistoryCollageCount = 4;
 
@@ -1369,12 +1372,14 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Rebuilds the Recent row: the running game first, then played games by last played, padded with recently
-        /// added ones, never hidden ones. The Play history tile's collage is the played games that come next. A row is
+        /// added ones, never hidden ones: seven before the Play history tile, or eight with Show Play history off and no
+        /// tile. The Play history tile's collage is the played games that come next, built only while the tile shows. A row is
         /// only replaced when what it shows changed, since a new row rebuilds every tile and reads every cover again,
         /// and a library update pushes the library several times a second.
         /// </summary>
         private void RefreshHomeRows()
         {
+            var withPlayHistory = Settings.StartUp.ShowPlayHistory;
             var running = GameById(runningGame);
             var played = PlayedGames().ToList();
             var unplayed = library.Games
@@ -1383,7 +1388,7 @@ namespace XboxSeries.Core
             var row = (running == null ? played : new[] { running }.Concat(played))
                 .Concat(unplayed)
                 .Distinct()
-                .Take(RecentRowCount)
+                .Take(withPlayHistory ? RecentRowCount : RecentRowCountWithoutPlayHistory)
                 .ToList();
 
             var recentRow = row.Select(TileOf).ToList();
@@ -1392,13 +1397,19 @@ namespace XboxSeries.Core
                 Home.RecentRow = recentRow;
             }
 
-            var collage = played.Where(g => !row.Contains(g))
-                .Take(PlayHistoryCollageCount)
-                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
-                .ToList();
-            if (!SameTiles(collage, Home.PlayHistory))
+            Home.HasPlayHistoryTile = withPlayHistory;
+
+            // With no Play history tile its collage isn't built; turning the tile on again rebuilds the row and it.
+            if (withPlayHistory)
             {
-                Home.PlayHistory = collage;
+                var collage = played.Where(g => !row.Contains(g))
+                    .Take(PlayHistoryCollageCount)
+                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
+                    .ToList();
+                if (!SameTiles(collage, Home.PlayHistory))
+                {
+                    Home.PlayHistory = collage;
+                }
             }
 
             var groups = Groups();

@@ -8,9 +8,10 @@ namespace XboxSeries.Extension
     /// <summary>
     /// Settings in extensions.log, in lines beginning "[Settings]": the page opening, with the category and page it
     /// opens on, each page of Theme settings it then shows, and closing; the rail item or box that gets focus, by its
-    /// name; and Background delay, Reduce motion and the Guide as they are at the start and whenever one is turned over. A line
-    /// each time, so they stay; the end-to-end tests background-follows-selection and reduce-motion turn theirs over
-    /// with the pad and read them to know where Settings is before each press.
+    /// name; and Background delay, Reduce motion, Show Play history and the Guide as they are at the start and whenever
+    /// one is turned over. A line each time, so they stay; the end-to-end tests background-follows-selection,
+    /// reduce-motion, guide-off and play-history-off turn theirs over with the pad and read them to know where Settings
+    /// is before each press.
     /// </summary>
     internal static class SettingsLog
     {
@@ -21,6 +22,7 @@ namespace XboxSeries.Extension
             var settings = core.Settings;
             LogBackgroundDelay(settings.StartUp, "is");
             LogReduceMotion(settings.StartUp, "is");
+            LogPlayHistory(settings.StartUp, "is");
             LogGuide(settings.Guide, "is");
             settings.Opened += (s, e) => logger.Info($"[Settings] opened on {settings.Category}, page {settings.ThemePage}");
             settings.PropertyChanged += (s, e) =>
@@ -51,6 +53,10 @@ namespace XboxSeries.Extension
                 {
                     LogReduceMotion(settings.StartUp, "turned");
                 }
+                else if (e.PropertyName == nameof(StartUpSettingsState.ShowPlayHistory))
+                {
+                    LogPlayHistory(settings.StartUp, "turned");
+                }
             };
         }
 
@@ -74,6 +80,9 @@ namespace XboxSeries.Extension
 
         private static void LogGuide(GuideSettingsState state, string verb) =>
             logger.Info($"[Settings] Guide {verb} {(state.IsGuideOn ? "on" : "off")}");
+
+        private static void LogPlayHistory(StartUpSettingsState state, string verb) =>
+            logger.Info($"[Settings] Play history {verb} {(state.ShowPlayHistory ? "on" : "off")}");
 
         private static void LogReduceMotion(StartUpSettingsState state, string verb) =>
             logger.Info($"[Settings] Reduce motion {verb} {(state.ReduceMotion ? "on" : "off")}");
