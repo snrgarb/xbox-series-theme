@@ -350,7 +350,7 @@ namespace XboxSeries.Core
             var pill = rare || shownToast.Kind == ToastKind.AchievementUnlocked;
             var shownFor = rare ? RareAchievementToastDuration : pill ? AchievementShownFor(shownToast.Description) : ToastDuration;
             Toast.Show(
-                shownToast.Text, shownToast.Kind, shownToast.Image, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description,
+                shownToast.Text, shownToast.Kind, shownToast.Image, Settings.Guide.IsGuideOn, shownToast.Detail, shownToast.Score, shownToast.Rarity, shownToast.Description,
                 pill ? shownFor : TimeSpan.Zero);
             sounds.Play(rare ? UiSound.RareAchievement : UiSound.Notification);
             toastTimer = clock.After(shownFor, () =>
@@ -614,12 +614,19 @@ namespace XboxSeries.Core
             Home.ReturnFromGame(gameId);
         }
 
-        /// <summary>Takes away a menu or prompt about a game. Power is about the PC, so it stays.</summary>
+        /// <summary>
+        /// Takes away a menu or prompt about a game. Power is about the PC, so it stays. A prompt shown on its own, with
+        /// the Guide off, goes with the dim it showed over, focus handed back to the window in front.
+        /// </summary>
         private void CloseGameDialog()
         {
             if (Guide.Dialog != null && !Guide.Dialog.IsWide)
             {
                 Guide.Dialog = null;
+                if (Guide.IsOpen && !Guide.ShowsPanel)
+                {
+                    DismissAtOnce(ReturnToRecordedWindow);
+                }
             }
         }
 
@@ -706,7 +713,12 @@ namespace XboxSeries.Core
 
             if (button == ControllerButton.Guide)
             {
-                OnGuideButton(state, at);
+                // With the Guide off it is left to whatever else reads it, a tap and a hold alike.
+                if (Settings.Guide.IsGuideOn)
+                {
+                    OnGuideButton(state, at);
+                }
+
                 return;
             }
 
@@ -858,10 +870,13 @@ namespace XboxSeries.Core
             }
         }
 
-        /// <summary>The profile on Home's top bar: the Guide, on Profile &amp; system.</summary>
+        /// <summary>
+        /// The profile on Home's top bar, and Home's Achievements tile: the Guide, on Profile &amp; system; nothing with the
+        /// Guide off.
+        /// </summary>
         public void OpenProfile()
         {
-            if (Guide.IsOpen)
+            if (Guide.IsOpen || !Settings.Guide.IsGuideOn)
             {
                 return;
             }
@@ -1059,7 +1074,9 @@ namespace XboxSeries.Core
         /// <summary>A menu or prompt was answered: if the answer closes the Guide, close it with <paramref name="dismiss"/>.</summary>
         private void AfterAnswer(Action<Action> dismiss)
         {
-            var handBack = answerHandBack;
+            // A prompt shown on its own, with no Guide behind it to go back to, closes with its answer.
+            var handBack = answerHandBack
+                ?? (Guide.IsOpen && !Guide.ShowsPanel && Guide.Dialog == null ? (Action)ReturnToRecordedWindow : null);
             answerHandBack = null;
             if (handBack != null)
             {
@@ -1621,12 +1638,12 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// Home's Discord tile: the Guide on the Discord tab, or with no Discord tab yet, Settings on Theme settings'
-        /// Discord, focus on its Client ID, to connect it. B steps back to Theme settings' boxes, then to the tile.
+        /// Home's Discord tile: the Guide on the Discord tab, or with no Discord tab yet, or the Guide off, Settings on
+        /// Theme settings' Discord, focus on its Client ID. B steps back to Theme settings' boxes, then to the tile.
         /// </summary>
         public void OpenDiscordFromHome()
         {
-            if (!Settings.Discord.HasDiscordTab)
+            if (!Settings.Discord.HasDiscordTab || !Settings.Guide.IsGuideOn)
             {
                 ShowSettings(SettingsOrigin.HomeTile, inPane: SettingsCategory.ThemeSettings, page: ThemeSettingsPage.Discord);
                 return;
@@ -2316,12 +2333,15 @@ namespace XboxSeries.Core
                 })));
         }
 
-        /// <summary>Shows a menu or prompt over the Guide, opening the Guide first if it is closed.</summary>
+        /// <summary>
+        /// Shows a menu or prompt over the Guide, opening the Guide first if it is closed; with the Guide off, on its own
+        /// over the dim, as Power from a hold is, and answering it hands focus back to the window in front.
+        /// </summary>
         private void ShowDialog(Dialog dialog)
         {
             if (!Guide.IsOpen)
             {
-                OpenGuide();
+                OpenGuide(showsPanel: Settings.Guide.IsGuideOn);
             }
 
             StopRepeat();

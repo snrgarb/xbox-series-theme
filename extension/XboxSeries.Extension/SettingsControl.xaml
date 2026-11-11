@@ -192,6 +192,38 @@
             </Style>
 
             <!--
+                A checkbox drawn as a dropdown's box: the option's name, and at its end, in the chevron's place, the ticked
+                box on and the empty square off, as Personalisation's Background delay. Focused, it lightens and the accent
+                ring stands off it carrying the glow. A turns it over in place.
+            -->
+            <Style x:Key="CheckBox" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Height" Value="58" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Back" CornerRadius="4" BorderThickness="2" BorderBrush="#80FFFFFF" Background="#14FFFFFF" />
+                                <ContentPresenter Margin="18,0,18,0" VerticalAlignment="Center" />
+                                <Border x:Name="FocusRing" Margin="-8" BorderThickness="4" CornerRadius="12"
+                                        BorderBrush="{DynamicResource GlyphLightBrush}" Visibility="Hidden">
+                                    <Border Style="{DynamicResource XboxFocusGlowCache}">
+                                        <Control Style="{DynamicResource XboxFocusGlow}" />
+                                    </Border>
+                                </Border>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Back" Property="Background" Value="#26FFFFFF" />
+                                    <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!--
                 A dropdown's open list, under its box and as wide. Taller than the room left under
                 its box, as Show things after's eleven steps, it is cut to that room and scrolls, the focused choice kept in
                 view (SettingsControl.OpenDropdown). Its scroller stands out past the list's sides, its choices as far in, so
@@ -364,13 +396,35 @@
             </StackPanel>
 
             <!--
-                Theme settings > Guide: its behaviour options, the Now Playing source for now, a dropdown as the Guide's
-                Audio Output and Input are: which app the Audio flyout's Now Playing follows. Its list opens under the box
-                and as wide, laid over what is below rather than pushing it down: the Canvas takes no height. A on Theme
-                settings' Guide comes in; Left or B goes back to it.
+                Theme settings > Guide: its behaviour options. First, Guide, a checkbox A turns over in place, saved at once:
+                off, the Guide never shows and the Guide button is left alone. Under it the Now Playing source, a dropdown as
+                the Guide's Audio Output and Input are: which app the Audio flyout's Now Playing follows. Its list opens under
+                the box and as wide, laid over what is below rather than pushing it down: the Canvas takes no height. A on
+                Theme settings' Guide comes in, onto Guide; Left or B goes back to it.
             -->
             <StackPanel x:Name="GuidePane" Grid.Row="1" DataContext="{Binding Guide}" Visibility="Collapsed"
                         HorizontalAlignment="Left" Width="560" KeyDown="OnGuidePaneKeyDown">
+                <TextBlock Text="Guide" Style="{StaticResource Text}" />
+                <TextBlock Text="Opens the Guide with the Guide button and from Home. Turn it off to leave the Guide button to Steam or another app."
+                           Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,18" />
+                <Button x:Name="GuideOnBox" Style="{StaticResource CheckBox}" Click="OnGuideOnBoxClick" Margin="0,0,0,40">
+                    <Grid>
+                        <TextBlock Text="Use the Guide" Style="{StaticResource Text}" VerticalAlignment="Center" Margin="0,0,50,0" />
+                        <TextBlock x:Name="GuideOnCheck" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   FontFamily="{DynamicResource XboxIconFont}" FontSize="28" Foreground="White">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="&#xE739;" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsGuideOn}" Value="True">
+                                            <Setter Property="Text" Value="&#xE73A;" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Button>
                 <TextBlock Text="Now Playing source" Style="{StaticResource Text}" />
                 <TextBlock Text="The app the Audio flyout's Now Playing follows while it plays or is paused, else whatever Windows shows."
                            Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,18" />

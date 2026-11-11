@@ -229,8 +229,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// A page of Theme settings' first option: Personalisation's first box, Dim after's box, the Now Playing source's
-        /// box, or Discord's Type for the Client ID; for none, the first of Theme settings' own boxes.
+        /// A page of Theme settings' first option: Personalisation's first box, Dim after's box, the Guide's checkbox,
+        /// or Discord's Type for the Client ID; for none, the first of Theme settings' own boxes.
         /// </summary>
         private void FocusThemePage(ThemeSettingsPage page)
         {
@@ -243,7 +243,7 @@ namespace XboxSeries.Extension
                     DimAfterBox.Focus();
                     break;
                 case ThemeSettingsPage.Guide:
-                    NowPlayingSourceBox.Focus();
+                    GuideOnBox.Focus();
                     break;
                 case ThemeSettingsPage.Discord:
                     TypeClientIdButton.Focus();
@@ -414,9 +414,54 @@ namespace XboxSeries.Extension
             }
         }
 
-        // The Guide's dropdown and the Idle page's two, top to bottom.
-        private void OnGuidePaneKeyDown(object sender, KeyEventArgs e) =>
+        /// <summary>
+        /// The pad on the Guide page: its checkbox, Guide, over the Now Playing source's dropdown. On the checkbox A turns
+        /// it over, Down goes to the dropdown, Left or B back to Theme settings' boxes, and Up and Right stay put; Up on
+        /// the dropdown's box comes back to it. The dropdown otherwise takes the pad as the Idle page's do.
+        /// </summary>
+        private void OnGuidePaneKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.OriginalSource == GuideOnBox)
+            {
+                var pad = PlayniteInput.PadButtonOf(e);
+                e.Handled = true;
+                if (pad == ControllerInput.A)
+                {
+                    ToggleGuide();
+                }
+                else if (pad == ControllerInput.B || e.Key == Key.Left)
+                {
+                    core.LeaveThemePage();
+                }
+                else if (e.Key == Key.Down)
+                {
+                    NowPlayingSourceBox.Focus();
+                }
+                else if (e.Key != Key.Up && e.Key != Key.Right)
+                {
+                    e.Handled = false;
+                }
+
+                return;
+            }
+
+            if (e.OriginalSource == NowPlayingSourceBox && e.Key == Key.Up)
+            {
+                e.Handled = true;
+                GuideOnBox.Focus();
+                return;
+            }
+
             OnDropdownsKeyDown(e, nowPlayingSource);
+        }
+
+        /// <summary>The Guide page's checkbox clicked with the mouse: turned over, as A does.</summary>
+        private void OnGuideOnBoxClick(object sender, RoutedEventArgs e) => ToggleGuide();
+
+        /// <summary>Turns the Guide page's checkbox over: the Guide off if it was on, on if it was off.</summary>
+        private void ToggleGuide() => core.SetGuideOn(!core.Settings.Guide.IsGuideOn);
+
+        // The Idle page's two dropdowns, top to bottom.
 
         private void OnIdlePaneKeyDown(object sender, KeyEventArgs e) =>
             OnDropdownsKeyDown(e, dimAfter, showThingsAfter);

@@ -201,6 +201,7 @@ namespace XboxSeries.Extension
 
             // Pushed up for each page of the description in turn, the last cut for the prompt; without one, the first page is.
             var shown = (DataContext as ToastState)?.ShownFor.TotalSeconds ?? 0;
+            var prompts = (DataContext as ToastState)?.HasPrompt ?? true;
             var times = AchievementPages.Plan(descriptions.Count, shown > 0 ? shown : AchievementPages.ConsoleShownFor);
             var pages = new List<KeyValuePair<UIElement, TranslateTransform>> { new KeyValuePair<UIElement, TranslateTransform>(Page1, Page1Shift) };
             foreach (var description in descriptions)
@@ -234,7 +235,7 @@ namespace XboxSeries.Extension
                     opacity.Add(Jump(leaves + PushOut, 0));
                     place.AddRange(new[] { Jump(leaves, 0), To(leaves + PushOut, PushUp, new CubicEase { EasingMode = EasingMode.EaseIn }) });
                 }
-                else
+                else if (prompts)
                 {
                     opacity.Add(Jump(times.Cut, 0));
                 }
@@ -242,7 +243,10 @@ namespace XboxSeries.Extension
                 Animate(board, page, OpacityProperty, opacity.ToArray());
                 Animate(board, pageShift, TranslateTransform.YProperty, place.ToArray());
             }
-            Animate(board, Prompt, OpacityProperty, Jump(0, 0), Jump(times.PromptAt, 0), To(times.PromptEnd, 1));
+            // With the Guide off the button does nothing, so the last page stays rather than cutting to the prompt.
+            Animate(board, Prompt, OpacityProperty, prompts
+                ? new[] { Jump(0, 0), Jump(times.PromptAt, 0), To(times.PromptEnd, 1) }
+                : new[] { Jump(0, 0) });
 
             // The band of light, once across the first page and once across the description's first, as long after it
             // settles as the console's.

@@ -267,7 +267,7 @@ namespace XboxSeries.Core
             PutBackShownToast();
 
             ringToastTimer?.Dispose();
-            Toast.Show(caller + " is calling", ToastKind.Call, image);
+            Toast.Show(caller + " is calling", ToastKind.Call, image, Settings.Guide.IsGuideOn);
             sounds.Play(UiSound.Notification);
             ringToastTimer = clock.After(RingToastDuration, HideRingToast);
         }

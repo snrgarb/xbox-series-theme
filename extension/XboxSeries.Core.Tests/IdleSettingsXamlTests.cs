@@ -86,7 +86,7 @@ namespace XboxSeries.Core.Tests
         [Fact]
         public void The_Guide_and_Idle_pages_share_one_dropdowns_pad_and_open_choose_close()
         {
-            Assert.Matches(new Regex(@"OnGuidePaneKeyDown\(object sender, KeyEventArgs e\) =>\s*OnDropdownsKeyDown\("), Code);
+            Assert.Contains("OnDropdownsKeyDown(e, nowPlayingSource);", Code);
             Assert.Matches(new Regex(@"OnIdlePaneKeyDown\(object sender, KeyEventArgs e\) =>\s*OnDropdownsKeyDown\("), Code);
             Assert.DoesNotContain("OpenNowPlayingSources", Code);
         }

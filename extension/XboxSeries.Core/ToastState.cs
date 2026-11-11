@@ -65,6 +65,7 @@ namespace XboxSeries.Core
         private double? rarity;
         private string description;
         private TimeSpan shownFor;
+        private bool hasPrompt;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -203,6 +204,24 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// Whether the Toast says what the Guide button does with it, "Press ⓧ to view" (or "to start"): not for a
+        /// greeting, which has nothing to view, nor for any Toast with the Guide off, when the button does nothing. Like
+        /// <see cref="Text"/>, it stays as the Toast hides.
+        /// </summary>
+        public bool HasPrompt
+        {
+            get => hasPrompt;
+            internal set
+            {
+                if (hasPrompt != value)
+                {
+                    hasPrompt = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasPrompt)));
+                }
+            }
+        }
+
         public bool IsShown
         {
             get => isShown;
@@ -217,13 +236,15 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// The Toast shows as told: its line, kind and image, and the achievement's name, Score, rarity and description
-        /// where it has them. Every field is set at once, so nothing of the Toast before lingers on this one.
+        /// The Toast shows as told: its line, kind and image, whether it has the Guide button's prompt, and the
+        /// achievement's name, Score, rarity and description where it has them. Every field is set at once, so nothing of
+        /// the Toast before lingers on this one.
         /// </summary>
-        internal void Show(string text, ToastKind kind, string image, string detail = null, int? score = null, double? rarity = null, string description = null,
-            TimeSpan shownFor = default(TimeSpan))
+        internal void Show(string text, ToastKind kind, string image, bool hasPrompt, string detail = null, int? score = null, double? rarity = null,
+            string description = null, TimeSpan shownFor = default(TimeSpan))
         {
             ShownFor = shownFor;
+            HasPrompt = hasPrompt;
             Text = text;
             Kind = kind;
             Image = image;
