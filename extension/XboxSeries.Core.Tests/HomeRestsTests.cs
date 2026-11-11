@@ -126,17 +126,14 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_Recent_row_and_wide_tiles_are_off_the_screen_once_they_end_above_its_top()
+        public void The_Recent_row_and_wide_tiles_are_gone_on_every_Group()
         {
-            // The wide tiles end 1044 down the page, 48 over the first Group.
-            var layout = new HomePageLayout(1080, new double[] { 1092, 1527 }, 61, 330, 1044);
-
-            Assert.True(HomeRests.RowsShow(HomeRests.At(HomeFocus.WideTiles, layout), layout));
-            // On the first Group (risen 1028) their foot is still 16 down the screen; on the second, far above it.
-            Assert.True(HomeRests.RowsShow(HomeRests.At(HomeFocus.Group(0), layout), layout));
-            Assert.False(HomeRests.RowsShow(HomeRests.At(HomeFocus.Group(1), layout), layout));
-            // Not measured: taken as showing.
-            Assert.True(HomeRests.RowsShow(HomeRests.At(HomeFocus.Group(1), Layout), Layout));
+            // On the first Group the wide tiles' foot would still be 16 down the screen, over the header at 64: they
+            // fade out rather than show that sliver, so they are gone there too.
+            Assert.True(HomeRests.RowsShow(HomeFocus.RecentRow));
+            Assert.True(HomeRests.RowsShow(HomeFocus.WideTiles));
+            Assert.False(HomeRests.RowsShow(HomeFocus.Group(0)));
+            Assert.False(HomeRests.RowsShow(HomeFocus.Group(3)));
         }
 
         [Fact]
