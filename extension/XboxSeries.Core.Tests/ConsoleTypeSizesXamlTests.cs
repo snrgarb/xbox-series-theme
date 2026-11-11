@@ -66,6 +66,13 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal(2, band.Count);
             Assert.All(band, t => Assert.Equal(26.0, Size(style, t)));
+            // 26 on screen as the grid's focused tile doesn't grow with the extension: its growth runs only without it.
+            var grow = style.Descendants().Single(e => e.Name.LocalName == "BeginStoryboard"
+                                                       && (string)e.Attribute("Storyboard") == "{StaticResource GrowOn}")
+                .Ancestors().First(e => e.Name.LocalName == "MultiDataTrigger");
+            Assert.Contains(grow.Descendants(), c => c.Name.LocalName == "Condition"
+                                                     && ((string)c.Attribute("Binding")).Contains("Status=Installed")
+                                                     && (string)c.Attribute("Value") == "False");
         }
 
         [Fact]
@@ -126,7 +133,8 @@ namespace XboxSeries.Core.Tests
 
             Assert.Equal("XboxHeaderFont", ResourceKey((string)header.Attribute("FontFamily")));
             Assert.Equal("350", (string)header.Attribute("FontWeight"));
-            Assert.Equal(36.0, Size(groups, header) * Scale("GroupsControl.xaml"), 1);
+            Assert.Equal("{DynamicResource HomeGroupHeaderSize}", (string)header.Attribute("FontSize"));
+            Assert.Equal(36.0, Size(Extension("HomeTiles.xaml"), header) * Scale("GroupsControl.xaml"), 1);
         }
 
         [Fact]
@@ -137,7 +145,7 @@ namespace XboxSeries.Core.Tests
             var group = header.Parent;
             var scale = Scale("GroupsControl.xaml");
 
-            var headerHeight = Size(groups, header) * BahnschriftLine + Thickness((string)header.Attribute("Margin"))[3];
+            var headerHeight = Size(Extension("HomeTiles.xaml"), header) * BahnschriftLine + Thickness((string)header.Attribute("Margin"))[3];
             var card = Number(Keyed(groups, "HomeTileCoverHeight").Value);
             var gap = Thickness((string)group.Attribute("Margin"))[3];
 
@@ -190,7 +198,8 @@ namespace XboxSeries.Core.Tests
         {
             var hub = Hub();
             var card = StyleByKey(hub, "XboxHubCard");
-            var room = Number(SetterValue(card, "Height")) - 2 * Thickness(SetterValue(card, "Padding"))[1];
+            var padding = Thickness(SetterValue(card, "Padding"));
+            var room = Number(SetterValue(card, "Height")) - padding[1] - padding[3];
 
             var title = StyleByKey(hub, "XboxHubCardTitle");
             var label = StyleSize(hub, StyleByKey(hub, "XboxHubRowLabel")) * SegoeLine;

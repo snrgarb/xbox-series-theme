@@ -59,12 +59,9 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,0,0,40">
-                                    <!--
-                                        Bahnschrift SemiLight 36 px on a 1080p screen, as the console's: 36 / 1.1140 (the
-                                        Viewbox's scale at 1920x1080, HomeTiles.xaml) = 32.32 here, 16 over the cards.
-                                    -->
+                                    <!-- Bahnschrift SemiLight 36 px on a 16:9 screen, as the console's (HomeTiles.xaml), 16 over the cards. -->
                                     <TextBlock Text="{Binding Name}" Margin="0,0,0,16" TextTrimming="CharacterEllipsis"
-                                               FontFamily="{DynamicResource XboxHeaderFont}" FontWeight="350" FontSize="32.32"
+                                               FontFamily="{DynamicResource XboxHeaderFont}" FontWeight="350" FontSize="{DynamicResource HomeGroupHeaderSize}"
                                                Foreground="White" />
                                     <StackPanel Orientation="Horizontal">
                                         <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">

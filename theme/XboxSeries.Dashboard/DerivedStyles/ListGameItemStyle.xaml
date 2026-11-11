@@ -81,8 +81,10 @@
                                 </LinearGradientBrush>
                             </Border.Background>
                             <!--
-                                The console's 26 px (#203), unscaled as the grid is laid out at 1080p: two lines of title
-                                (2 x 26 x 1.33, Segoe UI's line, = 69.2; three would be 103.7), then an ellipsis.
+                                The console's 26 px (#203) on My games & apps' grid, which is laid out at 1080p unscaled and
+                                where a focused tile doesn't grow (GrowOn runs only without the extension): two lines of title
+                                (2 x 26 x 1.33, Segoe UI's line, = 69.2; three would be 103.7), then an ellipsis. Theme-only
+                                Home's focused tile grows by 1.12, so its title is 29 there.
                             -->
                             <StackPanel Margin="12,36,12,10">
                                 <TextBlock Text="{Binding DisplayName}"

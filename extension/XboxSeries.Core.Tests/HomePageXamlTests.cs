@@ -54,7 +54,9 @@ namespace XboxSeries.Core.Tests
             // The slot starts 480 down (HomePromoRowTests); the first Group 40 under the room for the rows.
             var groupTop = 480 + margin[1] + (Number(Named(groups, "AboveGroups").Attribute("Height")) + 40) * scale;
             var header = GroupHeader(groups);
-            var cardsTop = (Number(header.Attribute("FontSize")) * 1.2 + Thickness((string)header.Attribute("Margin"))[3]) * scale;
+            var headerSize = Number(Xaml("HomeTiles.xaml").Descendants().Single(e => (string)e.Attribute(X + "Key") == "HomeGroupHeaderSize").Value);
+            Assert.Equal("{DynamicResource HomeGroupHeaderSize}", (string)header.Attribute("FontSize"));
+            var cardsTop = (headerSize * 1.2 + Thickness((string)header.Attribute("Margin"))[3]) * scale;
             var cardHeight = 296 * scale;
             var rest = HomeRests.At(HomeFocus.WideTiles, new HomePageLayout(1080, new[] { groupTop }, cardsTop, cardHeight));
 

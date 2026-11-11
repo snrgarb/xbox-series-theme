@@ -29,15 +29,18 @@
     <BitmapImage x:Key="SourceXboxShadow" UriSource="/XboxSeries.Extension;component/source-xbox-shadow.png" po:Freeze="True" />
 
     <!--
-        A focused tile's title, and the install status under it: Segoe UI Regular 26 px on a 1080p screen, as the console
-        (Xbox Accessibility Guideline 101's floor), two lines then an ellipsis. The Recent row and the Groups are laid out
-        1526 wide and scaled in a Viewbox to the 1700 between their 105 and 115 side margins: at 1920x1080 that is
-        1700 / 1526 = 1.1140, so 26 px on screen is 26 / 1.1140 = 23.34 here. Two lines of it are 2 x 23.34 x 1.33 (Segoe
-        UI's line) = 62.1 tall, three 93.1, so a MaxHeight of 64 shows two and trims the second. Manage Queue's tiles,
-        unscaled, set them at 26 and 72 (MyGamesControl.xaml).
+        Home's text at the console's sizes (#203). The Recent row and the Groups are laid out 1526 wide and scaled in a
+        Viewbox to the width between their 105 and 115 side margins, which follows the screen's width, so these hold at
+        16:9 (1920x1080): there that is 1700 / 1526 = 1.1140, and a size on screen is that size / 1.1140 here.
+        - A focused tile's title, and the install status under it: Segoe UI Regular 26 px, Xbox Accessibility Guideline
+          101's floor, so 26 / 1.1140 = 23.34, two lines then an ellipsis. Two lines of it are 2 x 23.34 x 1.33 (Segoe
+          UI's line) = 62.1 tall, three 93.1, so a MaxHeight of 64 shows two and trims the second. Manage Queue's tiles,
+          unscaled and never growing, set them at 26 and 72 (MyGamesControl.xaml).
+        - A Group's header (GroupsControl.xaml): Bahnschrift SemiLight 36 px, so 36 / 1.1140 = 32.32.
     -->
     <sys:Double x:Key="HomeTileTitleSize">23.34</sys:Double>
     <sys:Double x:Key="HomeTileTitleMaxHeight">64</sys:Double>
+    <sys:Double x:Key="HomeGroupHeaderSize">32.32</sys:Double>
 
     <!-- A Home tile: square, growing in place, ringed in the accent and titled (from Tag) when focused. -->
     <Style x:Key="HomeTile" TargetType="Button">
