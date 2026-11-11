@@ -36,11 +36,11 @@
           101's floor, so 26 / 1.1140 = 23.34, two lines then an ellipsis. Two lines of it are 2 x 23.34 x 1.33 (Segoe
           UI's line) = 62.1 tall, three 93.1, so a MaxHeight of 64 shows two and trims the second. Manage Queue's tiles,
           unscaled and never growing, set them at 26 and 72 (MyGamesControl.xaml).
-        - A Group's header (GroupsControl.xaml): Bahnschrift SemiLight 36 px, so 36 / 1.1140 = 32.32.
+        - A Group's header (GroupsControl.xaml): Bahnschrift Regular 32 px, so 32 / 1.1140 = 28.73.
     -->
     <sys:Double x:Key="HomeTileTitleSize">23.34</sys:Double>
     <sys:Double x:Key="HomeTileTitleMaxHeight">64</sys:Double>
-    <sys:Double x:Key="HomeGroupHeaderSize">32.32</sys:Double>
+    <sys:Double x:Key="HomeGroupHeaderSize">28.73</sys:Double>
 
     <!-- A Home tile: square, growing in place, ringed in the accent and titled (from Tag) when focused. -->
     <Style x:Key="HomeTile" TargetType="Button">

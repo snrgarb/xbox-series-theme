@@ -26,7 +26,7 @@ namespace XboxSeries.Core.Tests
         [InlineData("MyGamesControl.xaml", "Text=Play history", "XboxHeaderFont")]
         [InlineData("MyGamesControl.xaml", "Text=Full library", "XboxHeaderFont")]
         [InlineData("MyGamesControl.xaml", "Text=Manage", "XboxHeaderFont")]
-        // Home's Groups: each Group's heading, in the SemiLight as the console's (#203).
+        // Home's Groups: each Group's heading, in the header face's Regular as the console's.
         [InlineData("GroupsControl.xaml", "Text={Binding Name}", "XboxHeaderFont")]
         // The Guide's tab headings and its flyouts' titles.
         [InlineData("OverlayWindow.xaml", "Sets=Profile & system", "XboxHeaderFont")]

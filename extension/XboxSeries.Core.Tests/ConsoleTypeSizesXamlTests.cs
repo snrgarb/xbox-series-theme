@@ -10,7 +10,8 @@ namespace XboxSeries.Core.Tests
 {
     // Text at the console's sizes (#203, spec #201's Typography): a focused tile's title is Segoe UI Regular 26 px on a
     // 1080p screen, two lines then an ellipsis, as Xbox Accessibility Guideline 101's 26 px floor; Group headers are
-    // Bahnschrift SemiLight 36; the Game hub's cards' text is 24. Home's rows are laid out at 1080p and scaled to the
+    // Bahnschrift Regular 32; the Game hub's cards' text is 26 under Segoe UI Bold 20 titles, its buttons Bahnschrift
+    // Bold 26. Home's rows are laid out at 1080p and scaled to the
     // screen in a Viewbox, so their sizes are worked out here from the Viewbox's scale at 1920x1080. The XAML isn't run.
     public class ConsoleTypeSizesXamlTests
     {
@@ -126,15 +127,15 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Group_headers_are_Bahnschrift_SemiLight_36_on_a_1080p_screen()
+        public void Group_headers_are_Bahnschrift_Regular_32_on_a_1080p_screen()
         {
             var groups = Extension("GroupsControl.xaml");
             var header = GroupHeader(groups);
 
             Assert.Equal("XboxHeaderFont", ResourceKey((string)header.Attribute("FontFamily")));
-            Assert.Equal("350", (string)header.Attribute("FontWeight"));
+            Assert.Null(header.Attribute("FontWeight"));
             Assert.Equal("{DynamicResource HomeGroupHeaderSize}", (string)header.Attribute("FontSize"));
-            Assert.Equal(36.0, Size(Extension("HomeTiles.xaml"), header) * Scale("GroupsControl.xaml"), 1);
+            Assert.Equal(32.0, Size(Extension("HomeTiles.xaml"), header) * Scale("GroupsControl.xaml"), 1);
         }
 
         [Fact]
@@ -156,33 +157,33 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_Game_hubs_card_titles_labels_values_and_About_are_24()
+        public void The_Game_hubs_card_titles_are_20_and_labels_values_and_About_26()
         {
             var hub = Hub();
 
-            Assert.Equal(24.0, StyleSize(hub, StyleByKey(hub, "XboxHubCardTitle")));
-            Assert.Equal(24.0, StyleSize(hub, StyleByKey(hub, "XboxHubRowLabel")));
-            Assert.Equal(24.0, StyleSize(hub, StyleByKey(hub, "XboxHubRowValue")));
+            Assert.Equal(20.0, StyleSize(hub, StyleByKey(hub, "XboxHubCardTitle")));
+            Assert.Equal(26.0, StyleSize(hub, StyleByKey(hub, "XboxHubRowLabel")));
+            Assert.Equal(26.0, StyleSize(hub, StyleByKey(hub, "XboxHubRowValue")));
             // About, and the whole description on Game details.
             var html = hub.Descendants().Where(e => e.Name.LocalName == "HtmlTextView").ToList();
             Assert.Equal(2, html.Count);
-            Assert.All(html, v => Assert.Equal("24", (string)v.Attribute("HtmlFontSize")));
+            Assert.All(html, v => Assert.Equal("26", (string)v.Attribute("HtmlFontSize")));
             // Achievements' count and percent, values as the rest.
             var achievements = hub.Descendants().Single(e => (string)e.Attribute(X + "Name") == "StatsAchievements")
                 .Descendants().Where(e => e.Name.LocalName == "TextBlock").ToList();
             Assert.Equal(5, achievements.Count);
-            Assert.All(achievements, t => Assert.Equal(24.0, Size(hub, t)));
+            Assert.All(achievements, t => Assert.Equal(26.0, Size(hub, t)));
         }
 
         [Fact]
-        public void The_Game_hubs_buttons_are_Bahnschrift_Bold_24_and_their_icons_and_labels_unbolded()
+        public void The_Game_hubs_buttons_are_Bahnschrift_Bold_26_and_their_icons_and_labels_unbolded()
         {
             var hub = Hub();
             var action = StyleByKey(hub, "XboxHubAction");
 
             Assert.Equal("XboxHeaderFont", FontOfStyle(hub, action));
             Assert.Equal("Bold", SetterValue(action, "FontWeight"));
-            Assert.Equal(24.0, StyleSize(hub, action));
+            Assert.Equal(26.0, StyleSize(hub, action));
             // A weight the icon font hasn't is drawn by thickening its glyphs, so the icons stay at their own.
             Assert.Equal("Normal", SetterValue(StyleByKey(hub, "XboxHubIconAction"), "FontWeight"));
             var toggleIcon = hub.Descendants().Single(e => (string)e.Attribute(X + "Name") == "PageToggle")
@@ -190,6 +191,19 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("XboxIconFont", ResourceKey((string)toggleIcon.Attribute("FontFamily")));
             Assert.Equal("Normal", (string)toggleIcon.Attribute("FontWeight"));
             // The hub's text, as the name over an icon action and the main action's source, keeps its Regular in a button.
+            Assert.Equal("Normal", SetterValue(StyleByKey(hub, "XboxHubText"), "FontWeight"));
+        }
+
+        [Fact]
+        public void The_Game_hubs_title_is_47_and_the_facts_under_it_Segoe_UI_Regular_20()
+        {
+            var hub = Hub();
+            var title = hub.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding DisplayName}");
+            var facts = hub.Descendants().Single(e => (string)e.Attribute(X + "Name") == "HeaderFacts");
+
+            Assert.Equal(47.0, Size(hub, title));
+            Assert.Equal(20.0, Size(hub, facts));
+            Assert.Equal("XboxFont", FontOfStyle(hub, StyleByKey(hub, "XboxHubDimText")));
             Assert.Equal("Normal", SetterValue(StyleByKey(hub, "XboxHubText"), "FontWeight"));
         }
 
@@ -212,9 +226,9 @@ namespace XboxSeries.Core.Tests
             var countMargin = Thickness((string)count.Attribute("Margin"));
             var bar = Number(SetterValue(StyleByKey(hub, "XboxHubProgressBar"), "Height"));
 
-            var height = StyleSize(hub, title) * BahnschriftLine + Thickness(SetterValue(title, "Margin"))[3]
+            var height = StyleSize(hub, title) * SegoeLine + Thickness(SetterValue(title, "Margin"))[3]
                          + 4 * row
-                         + label + countMargin[1] + 24 * SegoeLine + countMargin[3] + bar;
+                         + label + countMargin[1] + label + countMargin[3] + bar;
 
             Assert.True(height <= room, $"Your game stats is {height:0.#} tall with every line, in a card with {room} inside");
         }

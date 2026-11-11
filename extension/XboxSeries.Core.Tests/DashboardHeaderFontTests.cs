@@ -17,18 +17,22 @@ namespace XboxSeries.Core.Tests
         private const string Body = "XboxFont";
 
         [Fact]
-        public void The_Game_hubs_title_is_a_header()
+        public void The_Game_hubs_title_is_a_header_in_its_Regular()
         {
             var title = GameDetails().Descendants()
                 .Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding DisplayName}");
 
-            Assert.Equal(HeaderSemibold, ResourceKey((string)title.Attribute("FontFamily")));
+            Assert.Equal("XboxHeaderFont", ResourceKey((string)title.Attribute("FontFamily")));
         }
 
+        // The cards' titles are the console's pane headers: Segoe UI Bold, not the header face.
         [Fact]
-        public void The_Game_hubs_card_titles_are_headers()
+        public void The_Game_hubs_card_titles_are_Segoe_UI_Bold()
         {
-            Assert.Equal(HeaderSemibold, FontOfStyle(GameDetails(), "XboxHubCardTitle"));
+            Assert.Equal(Body, FontOfStyle(GameDetails(), "XboxHubCardTitle"));
+            Assert.Equal("Bold", (string)GameDetails().Descendants()
+                .Single(e => (string)e.Attribute(X + "Key") == "XboxHubCardTitle").Elements()
+                .Single(s => (string)s.Attribute("Property") == "FontWeight").Attribute("Value"));
 
             var titles = GameDetails().Descendants()
                 .Where(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Style") == "{StaticResource XboxHubCardTitle}")
