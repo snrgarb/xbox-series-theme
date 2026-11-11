@@ -30,6 +30,11 @@
                     <Grid>
                         <Image x:Name="PART_ImageCover" Visibility="Hidden" />
                         <ContentControl Style="{DynamicResource XboxTileArt}" Content="{Binding Source, ElementName=PART_ImageCover}" />
+                        <!--
+                            The extension's: the game's Xbox box art over the cover, as Home's square tiles show it, in
+                            XboxTileArt too; empty while the game has none, so the cover shows, and without the extension.
+                        -->
+                        <ContentControl x:Name="XboxSeries_BoxArt" Focusable="False" IsTabStop="False" IsHitTestVisible="False" />
                         <Border Background="#AA000000" CornerRadius="{DynamicResource XboxTileArtCornerRadius}" x:Name="BorderDarken" Visibility="Collapsed" />
 
                         <!--

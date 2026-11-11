@@ -36,6 +36,9 @@ namespace XboxSeries.Core
         /// <summary>Show Play history as the player set it; null while they never have, and the default stands.</summary>
         private bool? showPlayHistoryChosen;
 
+        /// <summary>Xbox store art as the player set it; null while they never have, and the default stands.</summary>
+        private bool? xboxArtChosen;
+
         /// <summary>Signing you in's <see cref="SigningInDuration"/>, while it shows; null otherwise.</summary>
         private IDisposable signingInTimer;
 
@@ -194,6 +197,25 @@ namespace XboxSeries.Core
             RefreshHomeRows();
         }
 
+        /// <summary>
+        /// Settings' Xbox store art box: whether game tiles show the game's art from the Xbox store or only Playnite's
+        /// covers. Saved at once, shared by every profile, and in force at once: off, every tile shows its cover again and
+        /// the store is asked nothing more; on, the library's games are looked up again. Set again to what the player
+        /// chose, nothing is saved or rebuilt.
+        /// </summary>
+        public void SetXboxArt(bool on)
+        {
+            if (xboxArtChosen == on)
+            {
+                return;
+            }
+
+            xboxArtChosen = on;
+            Settings.StartUp.XboxArt = on;
+            SaveStartUp();
+            XboxArtTurned(on);
+        }
+
         /// <summary>Settings' Profiles page: a new profile, after the others, wearing the Windows account picture.</summary>
         public Profile AddProfile(string gamertag)
         {
@@ -339,6 +361,8 @@ namespace XboxSeries.Core
             Settings.StartUp.ReduceMotion = reduceMotionChosen ?? StartUpSettingsState.ReduceMotionByDefault;
             showPlayHistoryChosen = saved?.ShowPlayHistory;
             Settings.StartUp.ShowPlayHistory = showPlayHistoryChosen ?? StartUpSettingsState.ShowPlayHistoryByDefault;
+            xboxArtChosen = saved?.XboxArt;
+            Settings.StartUp.XboxArt = xboxArtChosen ?? StartUpSettingsState.XboxArtByDefault;
             ShowProfiles();
             RefreshGamerpics();
         }
@@ -350,6 +374,7 @@ namespace XboxSeries.Core
             BackgroundDelay = backgroundDelayChosen,
             ReduceMotion = reduceMotionChosen,
             ShowPlayHistory = showPlayHistoryChosen,
+            XboxArt = xboxArtChosen,
             Profiles = profiles.Select(p => new SavedProfile { Id = p.Id, Gamertag = p.Gamertag, RealName = p.RealName, Picture = p.Picture }).ToList(),
             LastProfileId = lastProfileId,
         }));
@@ -437,6 +462,9 @@ namespace XboxSeries.Core
 
             /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
             public bool? ShowPlayHistory { get; set; }
+
+            /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
+            public bool? XboxArt { get; set; }
 
             public List<SavedProfile> Profiles { get; set; }
 
