@@ -172,7 +172,7 @@ namespace XboxSeries.Core.Tests
             var readings = Directory.GetFiles(DashboardDir, "*.xaml", SearchOption.AllDirectories)
                 .SelectMany(file => XDocument.Load(file).Descendants().Attributes())
                 .Select(a => a.Value)
-                .Where(value => value.Contains("Plugin=XboxSeries,"))
+                .Where(value => value.Contains("Plugin=XboxSeries, Path=StartUp.ReduceMotion"))
                 .ToList();
 
             // The top bar's icons, the name swap, and the title band fading and at once.
