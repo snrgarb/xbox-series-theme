@@ -59,7 +59,7 @@ namespace XboxSeries.Extension
 
         private readonly ToastState toast;
 
-        /// <summary>The text's fade between the Toast's line and "Press (Guide) to view", running while it shows, but for a greeting.</summary>
+        /// <summary>The text's fade between the Toast's line and "Press (Guide) to view", running while it shows, for a Toast with the prompt.</summary>
         private readonly Storyboard textCycle;
 
         /// <summary>Counts the goings, so only the latest one's end hides the window.</summary>
@@ -211,12 +211,12 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The text's fade between the Toast's line and the prompt, from the line; a greeting has nothing to view, so it
-        /// keeps to its line, stopped there.
+        /// The text's fade between the Toast's line and the prompt, from the line; a Toast without the prompt (a greeting,
+        /// or any with the Guide off) keeps to its line, stopped there.
         /// </summary>
         private void CycleText()
         {
-            if (toast.Kind == ToastKind.Greeting)
+            if (!toast.HasPrompt)
             {
                 textCycle.Stop(this);
             }

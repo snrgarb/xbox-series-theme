@@ -13,10 +13,13 @@ namespace XboxSeries.Core
     public sealed partial class ExtensionCore
     {
         /// <summary>
-        /// The secret store's name for Theme settings' Guide page's options, as JSON: the Now Playing source. Not secret, but the
-        /// store keeps the extension's own options.
+        /// The secret store's name for Theme settings' Guide page's options, as JSON: whether the Guide is on, once set,
+        /// and the Now Playing source. Not secret, but the store keeps the extension's own options.
         /// </summary>
         private const string GuideSecret = "Guide";
+
+        /// <summary>Whether the Guide is on as the player set it; null while they never have, and the default stands.</summary>
+        private bool? guideOnChosen;
 
         /// <summary>
         /// The apps other than Spotify that have had a media session this run, by name, in the order seen; a saved source
@@ -53,6 +56,17 @@ namespace XboxSeries.Core
             Settings.Guide.NowPlayingSource = choice;
             SaveGuideSettings();
             ShowNowPlaying();
+        }
+
+        /// <summary>
+        /// Settings' Guide checkbox: turns the Guide on or off, in force at once and saved, shared by every profile. Off,
+        /// it never shows; see <see cref="GuideSettingsState.IsGuideOn"/>.
+        /// </summary>
+        public void SetGuideOn(bool on)
+        {
+            guideOnChosen = on;
+            Settings.Guide.IsGuideOn = on;
+            SaveGuideSettings();
         }
 
         /// <summary>
@@ -130,19 +144,28 @@ namespace XboxSeries.Core
                 NoteMediaApp(source);
             }
 
+            guideOnChosen = saved?.IsGuideOn;
+            Settings.Guide.IsGuideOn = guideOnChosen ?? GuideSettingsState.GuideOnByDefault;
             Settings.Guide.NowPlayingSource = source;
             NoteMediaApps();
             ShowNowPlayingSources();
         }
 
-        private void SaveGuideSettings() => secrets.Write(GuideSecret, JsonConvert.SerializeObject(new SavedGuide
-        {
-            NowPlayingSource = Settings.Guide.NowPlayingSource,
-        }));
+        /// <summary>The Guide page's options to the store: whether the Guide is on only once the player has set it.</summary>
+        private void SaveGuideSettings() => secrets.Write(GuideSecret, JsonConvert.SerializeObject(
+            new SavedGuide
+            {
+                IsGuideOn = guideOnChosen,
+                NowPlayingSource = Settings.Guide.NowPlayingSource,
+            },
+            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
 
         /// <summary>What the secret store keeps of Theme settings' Guide page's options.</summary>
         private sealed class SavedGuide
         {
+            /// <summary>Whether the Guide is on; null, and left out, while the player never set it.</summary>
+            public bool? IsGuideOn { get; set; }
+
             public string NowPlayingSource { get; set; }
         }
     }

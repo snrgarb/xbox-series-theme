@@ -31,12 +31,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Opening_Theme_settings_Guide_page_moves_onto_the_dropdown()
+        public void Up_on_the_dropdown_goes_to_the_Guide_checkbox_above_it()
         {
             var code = File.ReadAllText(Path.Combine(ExtensionDir(), "SettingsControl.xaml.cs"));
 
             Assert.Matches(
-                new Regex(@"case ThemeSettingsPage\.Guide:\s*NowPlayingSourceBox\.Focus\(\);"),
+                new Regex(@"e\.OriginalSource == NowPlayingSourceBox && e\.Key == Key\.Up\)\s*\{\s*e\.Handled = true;\s*GuideOnBox\.Focus\(\);"),
                 code);
         }
 

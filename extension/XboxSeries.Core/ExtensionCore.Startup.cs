@@ -264,7 +264,7 @@ namespace XboxSeries.Core
         /// </summary>
         private void Greet(Profile profile)
         {
-            Toast.Show("Hi " + profile.FirstName + "!", ToastKind.Greeting, profile.Picture);
+            Toast.Show("Hi " + profile.FirstName + "!", ToastKind.Greeting, profile.Picture, hasPrompt: false);
             sounds.Play(UiSound.Notification);
             greetingTimer = clock.After(ToastDuration, () =>
             {

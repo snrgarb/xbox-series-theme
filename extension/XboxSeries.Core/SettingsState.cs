@@ -77,7 +77,7 @@ namespace XboxSeries.Core
         /// </summary>
         public Guid? OpenedFromGame { get; internal set; }
 
-        /// <summary>Theme settings' Guide page: its behaviour options, the Now Playing source for now.</summary>
+        /// <summary>Theme settings' Guide page: whether the Guide is on, and the Now Playing source.</summary>
         public GuideSettingsState Guide { get; } = new GuideSettingsState();
 
         /// <summary>Theme settings' Discord page: the Connect checklist, the Client ID and Secret, and the status line.</summary>
@@ -143,10 +143,33 @@ namespace XboxSeries.Core
         /// <summary>The Now Playing source chosen at first.</summary>
         public const string DefaultSource = "Spotify";
 
+        /// <summary>Whether the Guide is on until the player sets it: on, as it has been since 0.1.0.</summary>
+        public const bool GuideOnByDefault = true;
+
+        private bool isGuideOn = GuideOnByDefault;
         private string nowPlayingSource = DefaultSource;
         private IReadOnlyList<string> nowPlayingSources = new[] { AnySource, DefaultSource };
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>
+        /// Whether the Guide is on. Off, it never shows: the Guide button does nothing in the extension, a hold too,
+        /// Home's profile and Achievements tile do nothing, its Discord tile opens Settings' Discord page, Toasts don't say
+        /// "Press ⓧ to view", and a prompt that would show over the Guide, as "Quit X and start Y?", shows on its own.
+        /// <see cref="GuideOnByDefault"/> until set.
+        /// </summary>
+        public bool IsGuideOn
+        {
+            get => isGuideOn;
+            internal set
+            {
+                if (isGuideOn != value)
+                {
+                    isGuideOn = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGuideOn)));
+                }
+            }
+        }
 
         /// <summary>
         /// The app, as people know it, whose media session the Audio flyout's Now Playing card follows while it has one,

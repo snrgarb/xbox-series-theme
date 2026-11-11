@@ -115,12 +115,12 @@ namespace XboxSeries.Core
         /// <summary>
         /// Every card of the Idle screen's pool, unshuffled: the nearly-finished games, the last unlocks, the last games
         /// played, then the tips. Without PlayniteAchievements, or before its first read, the achievement kinds are left
-        /// out, as the totals are.
+        /// out, as the totals are; with the Guide off, the tips about the Guide.
         /// </summary>
         private List<IdleCard> IdleCardPool() =>
             (HasAchievements && achievementsRead ? CloseAchievementsCards().Concat(RecentUnlockCards()) : Enumerable.Empty<IdleCard>())
                 .Concat(RecentlyPlayedCards())
-                .Concat(IdleTips.Select(t => new IdleCard(IdleCardKind.Tip, t.Text, null, header: "Tip", prompt: "Got it", buttons: t.Buttons)))
+                .Concat(IdleTips.Where(t => Settings.Guide.IsGuideOn || !t.Buttons.Contains(ControllerButton.Guide)).Select(t => new IdleCard(IdleCardKind.Tip, t.Text, null, header: "Tip", prompt: "Got it", buttons: t.Buttons)))
                 .ToList();
 
         /// <summary>
