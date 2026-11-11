@@ -35,6 +35,10 @@ namespace XboxSeries.Extension
         private readonly DiscordPipe discordPipe = new DiscordPipe();
         private readonly DiscordOAuth discordOAuth = new DiscordOAuth();
         private readonly PopularGamerpics popularGamerpics;
+        private readonly XboxStoreArt xboxStoreArt;
+
+        /// <summary>Xbox art found and not yet handed to the core, by game, null for none; under its own lock.</summary>
+        private readonly Dictionary<Guid, XboxArt> xboxArtFound = new Dictionary<Guid, XboxArt>();
 
         /// <summary>Input anywhere in Windows, a game's too, for the Idle screen, which dims over a game as over Playnite.</summary>
         private readonly WindowsInputActivity inputActivity = new WindowsInputActivity();
@@ -94,6 +98,12 @@ namespace XboxSeries.Extension
             popularGamerpics = new PopularGamerpics(new HttpClient { Timeout = TimeSpan.FromSeconds(30) },
                 Path.Combine(GetPluginUserDataPath(), "Gamerpics", "Popular"));
 
+            // The games' Xbox art, in the extension's own folder: what was saved before is read here, so Home's first tiles
+            // wear it; looking up the rest waits for Start-up to end (StartXboxArt).
+            xboxStoreArt = new XboxStoreArt(new HttpClient { Timeout = TimeSpan.FromSeconds(30) },
+                Path.Combine(GetPluginUserDataPath(), "XboxArt"), line => logger.Info(line));
+            xboxStoreArt.Found += OnXboxArtFound;
+
             // PlayniteAchievements may load after us: the source finds it only once started.
             achievements = new PlayniteAchievementsSource(api);
 #if DEBUG
@@ -101,8 +111,9 @@ namespace XboxSeries.Extension
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath(), popularGamerpics), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions,
-                achievements: achievements, inputActivity: inputActivity, pcBattery: pcBattery);
+                achievements: achievements, inputActivity: inputActivity, pcBattery: pcBattery, xboxArt: xboxStoreArt);
             core.StartupEnded += () => startup?.End();
+            core.StartupEnded += StartXboxArt;
 
             // Reduce motion as it was saved, which the core has read, before any view or the Start-up sequence shows:
             // Home's elements are asked for seconds before OnApplicationStarted.
@@ -117,11 +128,11 @@ namespace XboxSeries.Extension
             });
 
             // Home's elements, its top bar's status area, My games & apps, Settings, the Game hub's Install, Search, text entry and the hint bar, placed by
-            // the Dashboard as ContentControls named XboxSeries_<element>.
+            // the Dashboard as ContentControls named XboxSeries_<element>; and the Xbox art over the theme's own game tiles.
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "QueueAction", "Search", "TextEntry", "Hints" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "QueueAction", "Search", "TextEntry", "Hints", "BoxArt", "Poster" },
             });
 
             // What the Dashboard reads of the Bundle's options, as {PluginSettings Plugin=XboxSeries,
@@ -142,6 +153,15 @@ namespace XboxSeries.Extension
             if (!IsOnDashboard())
             {
                 return null;
+            }
+
+            // The Xbox art over the theme's tiles: one per tile of My games & apps' grid, and the Game hub's cover card,
+            // not part of Home's build. They read only the core's art, so they need neither Start-up nor the library.
+            // Decoded at the width Search's square tiles and a Group's tall cards decode theirs at.
+            switch (args.Name)
+            {
+                case "BoxArt": return new XboxArtElement(core, TileShape.Square, 480);
+                case "Poster": return new XboxArtElement(core, TileShape.Tall, 300);
             }
 
             // The first of Home's elements is the earliest the extension hears from Playnite on its UI thread with its
@@ -287,6 +307,15 @@ namespace XboxSeries.Extension
             // meanwhile, and Settings reads them again each time it opens.
             _ = FetchPopularGamerpicsAsync();
 
+            // The Xbox art lookups begin as Start-up ends; this is in case it never does, as when its window can't show.
+            var xboxArtFallback = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(1) };
+            xboxArtFallback.Tick += (_, __) =>
+            {
+                xboxArtFallback.Stop();
+                StartXboxArt();
+            };
+            xboxArtFallback.Start();
+
             // PlayniteAchievements, every plugin loaded by now: its changes and live unlocks arrive on the UI thread, and
             // one change once its games are first read, which the core takes as where it starts announcing unlocks.
             achievements.Changed += () => Guarded.Run("Taking the achievements' changes", core.OnAchievementsChanged);
@@ -355,6 +384,53 @@ namespace XboxSeries.Extension
             SettingsLog.Follow(core);
             logger.Info("Xbox Series extension started on the Dashboard");
             StartupTiming.Log($"Our OnApplicationStarted took {started.ElapsedMilliseconds} ms, ending");
+        }
+
+        /// <summary>
+        /// Lets the Xbox art lookups begin, once Start-up has ended, so they never compete with it or with Home's first
+        /// paint. Again, as on waking or Switch profile, does nothing.
+        /// </summary>
+        private void StartXboxArt() => Guarded.Run("Starting the Xbox art lookups", xboxStoreArt.Start);
+
+        /// <summary>
+        /// A game's Xbox art found, from a lookup's thread: kept, and handed to the core on the UI thread with whatever
+        /// else is found in the next <see cref="LibraryPushDelay"/>, so a burst of lookups rebuilds the tiles once, not
+        /// once each.
+        /// </summary>
+        private void OnXboxArtFound(Guid gameId, XboxArt art)
+        {
+            bool first;
+            lock (xboxArtFound)
+            {
+                first = xboxArtFound.Count == 0;
+                xboxArtFound[gameId] = art;
+            }
+
+            if (!first)
+            {
+                return;
+            }
+
+            OnUiThread(() =>
+            {
+                var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = LibraryPushDelay };
+                timer.Tick += (_, __) =>
+                {
+                    timer.Stop();
+                    Dictionary<Guid, XboxArt> found;
+                    lock (xboxArtFound)
+                    {
+                        found = new Dictionary<Guid, XboxArt>(xboxArtFound);
+                        xboxArtFound.Clear();
+                    }
+
+                    if (onDashboard)
+                    {
+                        Guarded.Run("Showing the Xbox art found", () => core.OnXboxArt(found));
+                    }
+                };
+                timer.Start();
+            });
         }
 
         private async Task FetchPopularGamerpicsAsync()

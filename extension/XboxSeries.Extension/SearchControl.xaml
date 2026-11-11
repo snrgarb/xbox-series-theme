@@ -168,7 +168,7 @@
                     </Grid.RowDefinitions>
                     <Grid Background="#FF1A1A1A">
                         <ContentControl x:Name="Cover" Style="{StaticResource TileArt}"
-                                        Content="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=480}" />
+                                        Content="{Binding Art, Converter={StaticResource Image}, ConverterParameter=480}" />
                         <!-- With no cover, or one that won't load (on the picture, as HomeTileArt), its title in its place. -->
                         <TextBlock Text="{Binding Title}" Margin="12" TextWrapping="Wrap" TextAlignment="Center"
                                    VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="20" Foreground="White">

@@ -1866,15 +1866,15 @@ namespace XboxSeries.Extension
                 {
                     entry = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Entry)));
-                    if (cover != value.Tile.CoverImage)
+                    if (cover != value.Tile.Art)
                     {
-                        cover = value.Tile.CoverImage;
+                        cover = value.Tile.Art;
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Cover)));
                     }
                 }
             }
 
-            /// <summary>The full path or URL of the game's cover; null when it has none.</summary>
+            /// <summary>The full path or URL of the game's art on its square tile (its Xbox box art, else its cover); null when it has none.</summary>
             public string Cover => cover;
         }
 

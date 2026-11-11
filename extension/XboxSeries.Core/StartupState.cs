@@ -179,8 +179,8 @@ namespace XboxSeries.Core
 
     /// <summary>
     /// Personalisation, in Settings: the boot video, the profiles, whether Who's playing today? asks, whether Home's
-    /// background waits on a game before showing its art, whether the Dashboard's animations are turned off, and whether
-    /// Home's Recent row ends in the Play history tile.
+    /// background waits on a game before showing its art, whether the Dashboard's animations are turned off, whether
+    /// Home's Recent row ends in the Play history tile, and whether game tiles show the game's art from the Xbox store.
     /// </summary>
     public sealed class StartUpSettingsState : INotifyPropertyChanged
     {
@@ -193,11 +193,15 @@ namespace XboxSeries.Core
         /// <summary>Whether Show Play history is on until the player sets it: on, the Recent row ending in it as since 0.1.0.</summary>
         public const bool ShowPlayHistoryByDefault = true;
 
+        /// <summary>Whether Xbox store art is on until the player sets it: on, as the console's tiles show the store's art.</summary>
+        public const bool XboxArtByDefault = true;
+
         private BootVideo bootVideo = BootVideo.XboxSeriesX;
         private bool askWhosPlaying = true;
         private bool backgroundDelay = BackgroundDelayByDefault;
         private bool reduceMotion = ReduceMotionByDefault;
         private bool showPlayHistory = ShowPlayHistoryByDefault;
+        private bool xboxArt = XboxArtByDefault;
         private IReadOnlyList<Profile> profiles = new Profile[0];
         private IReadOnlyList<string> gamerpics = new string[0];
 
@@ -246,6 +250,17 @@ namespace XboxSeries.Core
         {
             get => showPlayHistory;
             internal set => Set(ref showPlayHistory, value, nameof(ShowPlayHistory));
+        }
+
+        /// <summary>
+        /// Whether game tiles show the game's own art from the Xbox store, as the console's do: its box art on a square
+        /// tile, its poster on a tall one, fetched once over the internet. Off, every tile shows Playnite's cover and
+        /// the store is never asked. <see cref="XboxArtByDefault"/> until set.
+        /// </summary>
+        public bool XboxArt
+        {
+            get => xboxArt;
+            internal set => Set(ref xboxArt, value, nameof(XboxArt));
         }
 
         /// <summary>Every profile, in the order Who's playing today? shows them. There is always at least one.</summary>

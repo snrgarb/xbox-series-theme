@@ -222,9 +222,11 @@ namespace XboxSeries.Core
             IAchievements achievements = null,
             Random random = null,
             IInputActivity inputActivity = null,
-            IPcBattery pcBattery = null)
+            IPcBattery pcBattery = null,
+            IXboxArt xboxArt = null)
         {
             this.pcBattery = pcBattery ?? NoPcBattery.Instance;
+            xboxArtSource = xboxArt ?? NoXboxArt.Instance;
             this.random = random ?? new Random();
             this.inputActivity = inputActivity ?? NoInputActivity.Instance;
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
@@ -247,6 +249,7 @@ namespace XboxSeries.Core
             LoadShortcuts();
             LoadRecentServers();
             LoadStartUp();
+            LoadXboxArt();
             LoadGuideSettings();
             LoadIdleSettings();
             LoadPlayniteSettings();
@@ -304,6 +307,9 @@ namespace XboxSeries.Core
             {
                 RefreshStorage();
             }
+
+            // Last, once the tiles are built from the art already had: a game new to the library is asked for.
+            LookUpXboxArt();
         }
 
         /// <summary>
@@ -1411,7 +1417,7 @@ namespace XboxSeries.Core
             {
                 var collage = played.Where(g => !row.Contains(g))
                     .Take(PlayHistoryCollageCount)
-                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
+                    .Select(g => CollageTileOf(g, TileShape.Square))
                     .ToList();
                 if (!SameTiles(collage, Home.PlayHistory))
                 {
@@ -1476,17 +1482,29 @@ namespace XboxSeries.Core
                 name,
                 presetId,
                 sorted.Take(GroupTileCount)
-                    .Select(TileOf)
+                    .Select(g => ShapedTileOf(g, TileShape.Tall))
                     .ToList(),
                 sorted.Skip(GroupTileCount)
                     .Take(PlayHistoryCollageCount)
-                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
+                    .Select(g => CollageTileOf(g, TileShape.Tall))
                     .ToList());
         }
 
-        /// <summary>A game's tile, marked when the game is running, and reading "Queued" or "Installing..." while it installs.</summary>
-        private HomeTile TileOf(LibraryGame game) =>
-            new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame, StatusOf(game.Id));
+        /// <summary>
+        /// A game's square tile, marked when the game is running, and reading "Queued" or "Installing..." while it
+        /// installs, its art its Xbox box art or else its cover.
+        /// </summary>
+        private HomeTile TileOf(LibraryGame game) => ShapedTileOf(game, TileShape.Square);
+
+        /// <summary>A game's tile of <paramref name="shape"/>, as <see cref="TileOf"/>, its art the Xbox art of that shape or else its cover.</summary>
+        private HomeTile ShapedTileOf(LibraryGame game, TileShape shape) =>
+            new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, game.Id == runningGame, StatusOf(game.Id),
+                TileArt.For(shape, game.CoverImage, ShownXboxArt(game.Id)));
+
+        /// <summary>A game in a collage (Play history's, See all's): never marked running, its art as a tile of that shape's.</summary>
+        private HomeTile CollageTileOf(LibraryGame game, TileShape shape) =>
+            new HomeTile(game.Id, game.Name, game.CoverImage, game.Source, isRunning: false, StatusOf(game.Id),
+                TileArt.For(shape, game.CoverImage, ShownXboxArt(game.Id)));
 
         /// <summary>
         /// Opens My games &amp; apps on <paramref name="item"/>, in place of Settings or Search if up, or moves it there, at

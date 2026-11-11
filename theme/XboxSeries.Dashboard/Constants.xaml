@@ -191,9 +191,12 @@
     </Style>
     <!--
         A game's art on a tile, as the theme's game tiles show it (My games & apps' grid, the Game hub's cover card):
-        filling the tile, centred and cropped to its shape, with no bands, as on the console, in the tile's rounded shape
+        filling the tile, cropped to its shape, with no bands, as on the console, in the tile's rounded shape
         (XboxTileArtCornerRadius, which a tile with other corners sets over this one). Content is the art Playnite
-        loaded into the tile's PART_ImageCover. The tile's dark grey shows until the art arrives.
+        loaded into the tile's PART_ImageCover, its cover, cropped from the top rather than the middle, so a 2:3 cover's
+        logo, most often at its top, stays on a square tile. With the extension, the game's Xbox art of the tile's shape
+        is drawn over it, in this same style, when it has some (XboxSeries_BoxArt, XboxSeries_Poster). The tile's dark
+        grey shows until the art arrives.
     -->
     <CornerRadius x:Key="XboxTileArtCornerRadius">6</CornerRadius>
     <Style x:Key="XboxTileArt" TargetType="ContentControl">
@@ -207,7 +210,7 @@
                         <Border CornerRadius="{DynamicResource XboxTileArtCornerRadius}" RenderOptions.BitmapScalingMode="Fant">
                             <Border.Background>
                                 <ImageBrush ImageSource="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
-                                            Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center" />
+                                            Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Top" />
                             </Border.Background>
                         </Border>
                     </Grid>

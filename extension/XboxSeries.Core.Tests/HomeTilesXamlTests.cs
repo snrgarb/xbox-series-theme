@@ -19,7 +19,7 @@ namespace XboxSeries.Core.Tests
         {
             var face = Face();
             // The cover is the art pair (TileArt), whose content is the picture decoded.
-            var cover = face.Descendants().Single(e => e.Name.LocalName == "ContentControl" && ((string)e.Attribute("Content"))?.Contains("CoverImage") == true);
+            var cover = face.Descendants().Single(e => e.Name.LocalName == "ContentControl" && ((string)e.Attribute("Content"))?.Contains("{Binding Art,") == true);
             var title = face.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Title}");
             var shown = face.Descendants().Single(e => e.Name.LocalName == "DataTrigger"
                                                       && (string)e.Attribute("Binding") == $"{{Binding Content, ElementName={(string)cover.Attribute(X + "Name")}}}");
@@ -28,7 +28,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("{x:Null}", (string)shown.Attribute("Value"));
             Assert.Contains(shown.Elements(), s => (string)s.Attribute("TargetName") == (string)title.Attribute(X + "Name")
                                                    && (string)s.Attribute("Property") == "Visibility" && (string)s.Attribute("Value") == "Visible");
-            Assert.DoesNotContain(face.Descendants(), e => e.Name.LocalName == "DataTrigger" && (string)e.Attribute("Binding") == "{Binding CoverImage}");
+            Assert.DoesNotContain(face.Descendants(), e => e.Name.LocalName == "DataTrigger" && ((string)e.Attribute("Binding") == "{Binding CoverImage}" || (string)e.Attribute("Binding") == "{Binding Art}"));
         }
     }
 }
