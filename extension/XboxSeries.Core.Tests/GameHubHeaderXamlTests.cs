@@ -217,7 +217,10 @@ namespace XboxSeries.Core.Tests
 
         private static readonly string HubPath = Path.Combine(RepoRoot, "theme", "XboxSeries.Dashboard", "Views", "GameDetails.xaml");
 
-        private static XDocument Hub() => XDocument.Load(HubPath);
+        // Read once, so the helpers below hand back the same elements and a test can compare them.
+        private static readonly XDocument Loaded = XDocument.Load(HubPath);
+
+        private static XDocument Hub() => Loaded;
 
         private static XElement FactsStyle() =>
             FactsText().Elements().Single(e => e.Name.LocalName == "TextBlock.Style").Elements().Single();
