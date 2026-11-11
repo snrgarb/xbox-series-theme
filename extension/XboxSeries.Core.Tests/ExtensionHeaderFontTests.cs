@@ -93,6 +93,24 @@ namespace XboxSeries.Core.Tests
                 .Select(e => (string)e.Attribute("Value")).SingleOrDefault());
         }
 
+        // The clock is the console's, Bahnschrift SemiBold (#202): 22 on Home's top bar (the Status area's row) and 56 in
+        // the Guide (stacked), its weight the face's own rather than one laid over it.
+        [Theory]
+        [InlineData("RowTemplate", "22")]
+        [InlineData("StackedTemplate", "56")]
+        public void The_clock_is_Bahnschrift_SemiBold(string template, string size)
+        {
+            var doc = XDocument.Load(Path.Combine(ExtensionDir, "StatusArea.xaml"));
+            var clock = doc.Descendants()
+                .Single(e => e.Name.LocalName == "DataTemplate" && (string)e.Attribute(X + "Key") == template)
+                .Descendants()
+                .Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Time}");
+
+            Assert.Equal("XboxHeaderFontSemibold", ResourceKey((string)clock.Attribute("FontFamily")));
+            Assert.Equal(size, (string)clock.Attribute("FontSize"));
+            Assert.Null(clock.Attribute("FontWeight"));
+        }
+
         // The font key a TextBlock reaches: its own FontFamily, else its inline style's, else its keyed style's, each
         // style followed down its BasedOn. "Key=K" asks for the keyed style K itself.
         private static string FontOf(string file, string selector)
