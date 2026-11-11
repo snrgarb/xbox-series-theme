@@ -153,7 +153,7 @@
             </Style>
 
             <!--
-                A game: its cover, whole over its blurred copy (TileArt) in a square, over a grey caption holding its title
+                A game: its cover, filling a square (TileArt), over a grey caption holding its title
                 and, while it's being installed, its state.
                 The cover is decoded at twice its 1080p size, for the 4K screen's 2 pixels to a 1080p one, and no larger.
                 The caption's text is the console's 26 px (#203): two lines of title (2 x 26 x 1.33, Segoe UI's line, = 69.2;

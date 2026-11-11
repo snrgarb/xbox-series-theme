@@ -7,10 +7,10 @@ using static XboxSeries.Core.Tests.XamlFonts;
 
 namespace XboxSeries.Core.Tests
 {
-    // Every game tile shows its whole art (#205): the art Uniform, centred, over a copy of it drawn 24 wide and stretched
-    // to fill the tile, under a 40% black layer. One pair per package, TileArt in the extension and XboxTileArt in the
-    // theme, which every listed tile wears rather than its own copy. The copy is the art the tile already loaded, drawn
-    // small, so no tile decodes its art twice. The XAML isn't run here; these read it.
+    // Every game tile fills itself with its art, cropped to the tile's shape and centred, with no bands, as on the console
+    // (it was briefly the whole art over a blurred copy, #205, which left bands top and bottom). One pair per package,
+    // TileArt in the extension and XboxTileArt in the theme, which every listed tile wears rather than its own copy. The
+    // XAML isn't run here; these read it.
     public class TileArtXamlTests
     {
         private static string Extension(string file) => Path.Combine(RepoRoot, "extension", "XboxSeries.Extension", file);
@@ -28,58 +28,46 @@ namespace XboxSeries.Core.Tests
             return Named(style, "ControlTemplate").Single();
         }
 
-        // The copy: an Image 24 wide of the tile's art, drawn into a picture its own size (BitmapCache) and stretched by a
-        // Viewbox to fill the tile, scaled down to it in high quality; then the 40% black layer over it.
-        private static void AssertBlurredCopy(XElement template)
+        // No blurred copy and nothing over the art: no small copy, no darkening layer, no cache or mask, no blur.
+        private static void AssertNoCopy(XElement template)
         {
-            var copy = Named(template, "Image").Single(i => (string)i.Attribute("Width") == "24");
-            Assert.Equal("{Binding Content, RelativeSource={RelativeSource TemplatedParent}}", (string)copy.Attribute("Source"));
-            Assert.Equal("Uniform", (string)copy.Attribute("Stretch"));
-            Assert.Equal("HighQuality", (string)copy.Attribute("RenderOptions.BitmapScalingMode"));
-
-            var cached = copy.Parent;
-            Assert.Contains(cached.Elements(), c => c.Name.LocalName.EndsWith(".CacheMode") && c.Elements().Single().Name.LocalName == "BitmapCache");
-            var viewbox = cached.Parent;
-            Assert.Equal("Viewbox", viewbox.Name.LocalName);
-            Assert.Equal("UniformToFill", (string)viewbox.Attribute("Stretch"));
-
-            Assert.Contains(viewbox.ElementsAfterSelf(), e => e.Name.LocalName == "Rectangle" && (string)e.Attribute("Fill") == "#66000000");
+            Assert.DoesNotContain(Named(template, "Image"), i => (string)i.Attribute("Width") == "24");
+            Assert.Empty(Named(template, "Viewbox"));
+            Assert.Empty(Named(template, "Rectangle"));
+            Assert.Empty(Named(template, "BitmapCache"));
+            Assert.Empty(Named(template, "VisualBrush"));
             Assert.Empty(Named(template, "BlurEffect"));
         }
 
         [Fact]
-        public void The_extensions_pair_is_the_art_whole_over_its_blurred_copy()
+        public void The_extensions_pair_is_the_art_filling_the_tile()
         {
             var template = PairTemplate(Extension("HomeTiles.xaml"), "TileArt");
-            AssertBlurredCopy(template);
+            AssertNoCopy(template);
 
-            var art = Named(template, "Image").Single(i => (string)i.Attribute("Width") != "24");
+            var art = Named(template, "Image").Single();
             Assert.Equal("{Binding Content, RelativeSource={RelativeSource TemplatedParent}}", (string)art.Attribute("Source"));
-            Assert.Equal("Uniform", (string)art.Attribute("Stretch"));
-            Assert.True(art.IsAfter(Named(template, "Rectangle").Single()), "the art is drawn over its copy");
-            // Inside the tile: the copy, filling, is cut to the tile's edges.
+            Assert.Equal("UniformToFill", (string)art.Attribute("Stretch"));
+            Assert.Equal("Center", (string)art.Attribute("HorizontalAlignment"));
+            Assert.Equal("Center", (string)art.Attribute("VerticalAlignment"));
+            Assert.Equal("Fant", (string)art.Attribute("RenderOptions.BitmapScalingMode"));
+            // Cropped to the tile's edges.
             Assert.Equal("True", (string)Named(template, "Grid").First().Attribute("ClipToBounds"));
         }
 
         [Fact]
-        public void The_themes_pair_is_the_art_whole_over_its_blurred_copy_inside_the_tiles_corners()
+        public void The_themes_pair_is_the_art_filling_the_tile_inside_its_corners()
         {
             var template = PairTemplate(Theme("Constants.xaml"), "XboxTileArt");
-            AssertBlurredCopy(template);
+            AssertNoCopy(template);
 
-            // The art, Uniform and centred, painted in the tile's rounded shape over the copy.
+            // The art, filling and centred, painted in the tile's rounded shape.
             var art = Named(template, "ImageBrush").Single();
             Assert.Equal("{Binding Content, RelativeSource={RelativeSource TemplatedParent}}", (string)art.Attribute("ImageSource"));
-            Assert.Equal("Uniform", (string)art.Attribute("Stretch"));
+            Assert.Equal("UniformToFill", (string)art.Attribute("Stretch"));
+            Assert.Equal("Center", (string)art.Attribute("AlignmentX"));
+            Assert.Equal("Center", (string)art.Attribute("AlignmentY"));
             Assert.Equal("{DynamicResource XboxTileArtCornerRadius}", (string)art.Parent.Parent.Attribute("CornerRadius"));
-            Assert.True(art.IsAfter(Named(template, "Rectangle").Single()), "the art is drawn over its copy");
-
-            // The copy is cut to the same rounded shape, the tile's corner radius, by a mask drawn once with it.
-            var shape = Named(template, "Border").Single(b => (string)b.Attribute(X + "Name") == "Shape");
-            Assert.Equal("{DynamicResource XboxTileArtCornerRadius}", (string)shape.Attribute("CornerRadius"));
-            var mask = Named(template, "VisualBrush").Single();
-            Assert.Equal("{Binding ElementName=Shape}", (string)mask.Attribute("Visual"));
-            Assert.Contains(mask.Ancestors(), a => a.Name.LocalName == "Grid.OpacityMask");
             Assert.Equal("6", Named(XDocument.Load(Theme("Constants.xaml")).Root, "CornerRadius")
                 .Single(c => (string)c.Attribute(X + "Key") == "XboxTileArtCornerRadius").Value);
         }
@@ -90,7 +78,7 @@ namespace XboxSeries.Core.Tests
             var pair = Named(tile, "ContentControl").SingleOrDefault(c => (string)c.Attribute("Style") == style);
             Assert.True(pair != null, $"no {style} in {tile.Name.LocalName} {tile.Attribute(X + "Key")}");
             Assert.Equal(art, (string)pair.Attribute("Content"));
-            // No art of its own drawn beside it, filling and cropped.
+            // No art of its own drawn beside it.
             Assert.DoesNotContain(Named(tile, "Image"), i => (string)i.Attribute("Stretch") == "UniformToFill");
         }
 

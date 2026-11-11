@@ -24,8 +24,8 @@
                 <ControlTemplate TargetType="{x:Type GameListItem}">
                     <!--
                         Rounded corners, as Home's tiles: Playnite loads the cover into its Image, as it always has, which
-                        is hidden, and the tile shows it whole over its blurred copy (XboxTileArt, in Constants.xaml),
-                        whatever Playnite's cover stretch setting says, as every game tile in the Dashboard does.
+                        is hidden, and the tile shows it filling the tile (XboxTileArt, in Constants.xaml), whatever
+                        Playnite's cover stretch setting says, as every game tile in the Dashboard does.
                     -->
                     <Grid>
                         <Image x:Name="PART_ImageCover" Visibility="Hidden" />

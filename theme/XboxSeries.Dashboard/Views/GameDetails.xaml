@@ -781,7 +781,7 @@
                                 <StackPanel Orientation="Horizontal" Margin="80,24,64,24">
 
                                     <!--
-                                        Cover, whole over its blurred copy as every game tile shows it (XboxTileArt), in the
+                                        Cover, filling the card as every game tile shows it (XboxTileArt), in the
                                         card's own corners; Playnite loads it into its part, hidden, which hands it on. With the
                                         game's source (or platform) as a badge.
                                     -->
