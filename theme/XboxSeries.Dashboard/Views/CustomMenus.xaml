@@ -31,7 +31,7 @@
                         <!-- The panel's full width, the ring's overhang in from the row's sides; 4 inside the ring's 4 above and below, 56 tall. -->
                         <Border x:Name="Fill" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowFocusBrush}" Visibility="Hidden" />
                         <Border x:Name="Lit" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowLitBrush}" Visibility="Hidden" />
-                        <!-- The label in Segoe UI 22, each text of the content template taking it up. -->
+                        <!-- The label in Segoe UI 26, each text of the content template taking it up. -->
                         <ContentPresenter Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"

@@ -317,10 +317,10 @@ namespace XboxSeries.Core.Tests
 
         [Theory]
         [MemberData(nameof(ConsoleMenus))]
-        public void A_console_menus_labels_are_22(string file, string rowKey, string borderKey)
+        public void A_console_menus_labels_are_26(string file, string rowKey, string borderKey)
         {
             Assert.Contains(RowTemplate(file, rowKey).Descendants(),
-                e => (string)e.Attribute("FontSize") == "22" || (string)e.Attribute("TextElement.FontSize") == "22");
+                e => (string)e.Attribute("FontSize") == "26" || (string)e.Attribute("TextElement.FontSize") == "26");
         }
 
         [Fact]

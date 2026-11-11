@@ -41,7 +41,7 @@
 
             <!-- As Home's game tiles: the name on up to two lines over a near-black band, so it reads over any art. -->
             <Border x:Name="TitleBand" VerticalAlignment="Bottom" Opacity="0" IsHitTestVisible="False" Background="#E6000000">
-                <TextBlock Text="{Binding Name}" Margin="8" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="52"
+                <TextBlock Text="{Binding Name}" Margin="8" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="72"
                            FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="White" />
             </Border>
         </Grid>

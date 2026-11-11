@@ -116,7 +116,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(44, iconLeft + iconWidth / 2);
             Assert.Equal(88, labelLeft);
             Assert.Equal("22", (string)icon.Attribute("FontSize"));
-            Assert.Equal("22", (string)label.Attribute("FontSize"));
+            Assert.Equal("26", (string)label.Attribute("FontSize"));
             Assert.Equal("{DynamicResource XboxFont}", (string)label.Attribute("FontFamily"));
         }
 

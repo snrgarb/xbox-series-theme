@@ -55,7 +55,7 @@ namespace XboxSeries.Core.Tests
         [InlineData("MyGamesControl.xaml", "Name=Count", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text={Binding SortLabel}", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text=Filter", "XboxFont")]
-        [InlineData("MyGamesControl.xaml", "Text={Binding Tile.Title}|FontSize=28", "XboxFontSemibold")]
+        [InlineData("MyGamesControl.xaml", "Text={Binding Tile.Title}|FontFamily={DynamicResource XboxFontSemibold}", "XboxFontSemibold")]
         [InlineData("MyGamesControl.xaml", "Text=Games you play show up here.", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text=All storage", "XboxFont")]
         // Tile captions.
