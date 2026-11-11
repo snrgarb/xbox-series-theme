@@ -14,6 +14,7 @@ namespace XboxSeries.Core
         private ProfileAchievements achievements;
         private string achievementsNote;
         private ControllerBattery battery = ControllerBattery.None;
+        private PcBattery pcBattery = PcBattery.None;
         private int notificationCount;
         private bool isInDiscordCall;
         private bool isDiscordMuted;
@@ -62,6 +63,13 @@ namespace XboxSeries.Core
         {
             get => battery;
             internal set => Set(ref battery, value, nameof(Battery));
+        }
+
+        /// <summary>The PC's own battery, shown before the controller's; <see cref="PcBattery.None"/>, showing nothing, on a desktop.</summary>
+        public PcBattery PcBattery
+        {
+            get => pcBattery;
+            internal set => Set(ref pcBattery, value, nameof(PcBattery));
         }
 
         /// <summary>How many of Playnite's own notifications there are.</summary>
