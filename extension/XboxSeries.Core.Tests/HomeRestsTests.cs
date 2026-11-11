@@ -100,6 +100,46 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
+        public void Focus_on_a_Group_past_the_last_laid_out_rests_on_and_is_named_as_the_last()
+        {
+            Assert.Equal(HomeFocus.Group(3), HomeRests.RestingFocus(HomeFocus.Group(9), Layout));
+            Assert.Equal(HomeFocus.Group(1), HomeRests.RestingFocus(HomeFocus.Group(1), Layout));
+            Assert.Equal(HomeFocus.WideTiles, HomeRests.RestingFocus(HomeFocus.WideTiles, Layout));
+        }
+
+        [Fact]
+        public void The_top_bar_is_off_the_screen_only_on_the_Groups()
+        {
+            Assert.True(HomeRests.TopBarShows(HomeRests.At(HomeFocus.RecentRow, Layout)));
+            Assert.True(HomeRests.TopBarShows(HomeRests.At(HomeFocus.WideTiles, Layout)));
+            Assert.False(HomeRests.TopBarShows(HomeRests.At(HomeFocus.Group(0), Layout)));
+        }
+
+        [Fact]
+        public void The_Groups_are_off_the_screen_only_while_the_first_starts_below_its_foot()
+        {
+            // At rest on the Recent row the first Group starts at 1092, under the foot at 1080; on the wide tiles at 909.
+            Assert.False(HomeRests.GroupsShow(HomeRests.At(HomeFocus.RecentRow, Layout), Layout));
+            Assert.True(HomeRests.GroupsShow(HomeRests.At(HomeFocus.WideTiles, Layout), Layout));
+            var narrow = new HomePageLayout(1080, new double[] { 1005 }, 52, 280);
+            Assert.True(HomeRests.GroupsShow(HomeRests.At(HomeFocus.RecentRow, narrow), narrow));
+        }
+
+        [Fact]
+        public void The_Recent_row_and_wide_tiles_are_off_the_screen_once_they_end_above_its_top()
+        {
+            // The wide tiles end 1044 down the page, 48 over the first Group.
+            var layout = new HomePageLayout(1080, new double[] { 1092, 1527 }, 61, 330, 1044);
+
+            Assert.True(HomeRests.RowsShow(HomeRests.At(HomeFocus.WideTiles, layout), layout));
+            // On the first Group (risen 1028) their foot is still 16 down the screen; on the second, far above it.
+            Assert.True(HomeRests.RowsShow(HomeRests.At(HomeFocus.Group(0), layout), layout));
+            Assert.False(HomeRests.RowsShow(HomeRests.At(HomeFocus.Group(1), layout), layout));
+            // Not measured: taken as showing.
+            Assert.True(HomeRests.RowsShow(HomeRests.At(HomeFocus.Group(1), Layout), Layout));
+        }
+
+        [Fact]
         public void The_log_says_each_resting_point_for_the_end_to_end_tests()
         {
             Assert.Equal("Home rests at RecentRow", HomeRests.Says(HomeFocus.RecentRow, null));
