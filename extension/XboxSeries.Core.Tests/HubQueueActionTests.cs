@@ -141,12 +141,14 @@ namespace XboxSeries.Core.Tests
             var id = library.Id("33 Immortals");
             core.OpenSearch();
             core.ChooseSearchGame(id);
+            var filterUnderHub = playnite.MainListFilter;
             core.OpenQueueFromHub(id);
 
             core.LeaveMyGames();
 
-            // The user's own filter, given back as Search went, could leave the game out; the hub needs it in the list.
-            Assert.False(playnite.ShowsUsersOwnFilter);
+            // The user's own filter, given back as Search went, could leave the game out; the hub's own goes back on.
+            Assert.NotNull(filterUnderHub);
+            Assert.Same(filterUnderHub, playnite.MainListFilter);
             Assert.Contains("33 Immortals", playnite.MainListFilter.Apply(library.Snapshot().Games).Select(g => g.Name));
             Assert.Equal(new[] { id, id }, playnite.OpenedHubs);
             Assert.True(core.TakeHubQueueFocus(id));
@@ -165,6 +167,130 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(MyGamesItem.Manage, core.MyGames.Item);
             Assert.Empty(playnite.OpenedHubs);
             Assert.False(core.HubReturnsToQueue(id));
+        }
+
+        [Fact]
+        public void From_Full_library_narrowed_by_name_B_puts_the_name_back_with_the_hub()
+        {
+            var library = new FakeLibrary()
+                .WithGame("33 Immortals", installed: false, installing: true)
+                .WithGame("Halo Infinite");
+            playnite.Library = library.Snapshot();
+            core.OnLibraryChanged(library.Snapshot());
+            var id = library.Id("33 Immortals");
+            core.OpenMyGames(MyGamesItem.FullLibrary);
+            core.TypeFullLibraryName();
+            core.TypeText("imm");
+            core.ConfirmTextEntry();
+            core.OpenQueueFromHub(id);
+            Assert.Equal(string.Empty, core.MyGames.NameFilter);
+
+            core.LeaveMyGames();
+
+            Assert.Equal(MyGamesItem.FullLibrary, core.MyGames.Item);
+            Assert.Equal("imm", core.MyGames.NameFilter);
+            Assert.Equal(new[] { "33 Immortals" }, playnite.MainList());
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void A_hub_over_Manage_Queue_that_a_hub_opened_goes_back_to_each_hub_in_turn()
+        {
+            var library = new FakeLibrary()
+                .WithGame("33 Immortals", installed: false, installing: true)
+                .WithGame("Hades", installed: false, installing: true);
+            core.OnLibraryChanged(library.Snapshot());
+            var first = library.Id("33 Immortals");
+            var second = library.Id("Hades");
+            core.OpenMyGames(MyGamesItem.Games);
+            core.OpenQueueFromHub(first);
+            // A on Hades' row on Manage Queue opens its hub over the page; its Queue opens Manage Queue again.
+            core.OpenQueueFromHub(second);
+
+            core.LeaveMyGames();
+
+            Assert.Equal(new[] { second }, playnite.OpenedHubs);
+            Assert.Equal(MyGamesItem.ManageQueue, core.MyGames.Item);
+            Assert.True(core.TakeHubQueueFocus(second));
+
+            // B on Hades' hub closes it, back on Manage Queue; B there goes back to the first hub, over Games.
+            core.LeaveMyGames();
+
+            Assert.Equal(new[] { second, first }, playnite.OpenedHubs);
+            Assert.Equal(MyGamesItem.Games, core.MyGames.Item);
+            Assert.True(core.TakeHubQueueFocus(first));
+        }
+
+        [Fact]
+        public void A_hub_over_Manage_Queue_opened_from_Home_goes_back_to_it_then_Home()
+        {
+            var id = InstallingGame();
+            core.OpenQueueFromHome();
+            core.OpenQueueFromHub(id);
+
+            core.LeaveMyGames();
+
+            Assert.Equal(MyGamesItem.ManageQueue, core.MyGames.Item);
+            core.LeaveMyGames();
+
+            Assert.False(core.MyGames.IsShown);
+            Assert.Equal(new[] { id }, playnite.OpenedHubs);
+        }
+
+        [Fact]
+        public void A_hub_that_wont_open_again_leaves_no_focus_waiting_for_Queue()
+        {
+            var id = InstallingGame();
+            core.OpenQueueFromHub(id);
+            playnite.HubsThatWontOpen.Add(id);
+
+            core.LeaveMyGames();
+
+            Assert.False(core.HubReturnsToQueue(id));
+            Assert.False(core.TakeHubQueueFocus(id));
+        }
+
+        [Fact]
+        public void The_focus_waiting_for_Queue_goes_as_the_page_opens()
+        {
+            var id = InstallingGame();
+            core.OpenQueueFromHub(id);
+            core.LeaveMyGames();
+
+            core.OpenMyGames(MyGamesItem.Games);
+
+            Assert.False(core.HubReturnsToQueue(id));
+        }
+
+        [Fact]
+        public void The_focus_waiting_for_Queue_goes_as_another_hub_opens()
+        {
+            var library = new FakeLibrary()
+                .WithGame("33 Immortals", installed: false, installing: true)
+                .WithGame("Halo Infinite", added: new DateTime(2026, 11, 1));
+            core.OnLibraryChanged(library.Snapshot());
+            var id = library.Id("33 Immortals");
+            core.OpenQueueFromHub(id);
+            core.LeaveMyGames();
+            Assert.True(core.HubReturnsToQueue(id));
+
+            core.OpenSearch();
+            core.ChooseSearchGame(library.Id("Halo Infinite"));
+
+            Assert.False(core.HubReturnsToQueue(id));
+        }
+
+        [Fact]
+        public void Over_My_games_and_apps_the_hubs_game_is_the_tile_focus_goes_back_to_once_the_hub_closes()
+        {
+            var id = InstallingGame();
+            core.OpenMyGames(MyGamesItem.Games);
+            core.OpenQueueFromHub(id);
+
+            core.LeaveMyGames();
+
+            Assert.Equal(id, core.MyGames.TakeTileBehindHub());
+            Assert.Null(core.MyGames.TakeTileBehindHub());
         }
 
         /// <summary>A game Playnite is installing, in the Queue; its id.</summary>
