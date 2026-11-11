@@ -349,6 +349,39 @@ namespace XboxSeries.Extension
             timer.Start();
         }
 
+#if DEBUG
+        /// <summary>Whether the faked download has been logged, so it is logged once.</summary>
+        private bool fakeDownloadLogged;
+#endif
+
+        /// <summary>
+        /// For the e2e VM, which has no Steam to download with: in a Debug build with XBOXSERIES_FAKE_DOWNLOAD set to a
+        /// game's name, that game, while Playnite lists it as not installed, reads as one Steam is installing, so it
+        /// joins the Queue, Queued, as an install started in Steam itself would. Null otherwise; a Release build never
+        /// reads the variable.
+        /// </summary>
+        private Guid? FakeDownload()
+        {
+#if DEBUG
+            var name = Environment.GetEnvironmentVariable("XBOXSERIES_FAKE_DOWNLOAD");
+            if (string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+
+            var game = api.Database.Games.FirstOrDefault(g => g.Name == name && !g.IsInstalled);
+            if (game != null && !fakeDownloadLogged)
+            {
+                fakeDownloadLogged = true;
+                logger.Info($"[Queue] download faked by XBOXSERIES_FAKE_DOWNLOAD={name}: Steam reads as installing {game.Name}");
+            }
+
+            return game?.Id;
+#else
+            return null;
+#endif
+        }
+
         /// <summary>Whether the window is Steam's: the client's own, or its web helper's, which draws the main window.</summary>
         private static bool IsSteamWindow(IntPtr window)
         {
@@ -359,10 +392,16 @@ namespace XboxSeries.Extension
         /// <summary>
         /// Asked once a second on the UI thread, so it lists each library's steamapps once and reads only the
         /// manifests of Steam games Playnite has as not installed, which are few; the rest are known by name alone.
+        /// A Debug build adds the game XBOXSERIES_FAKE_DOWNLOAD names (<see cref="FakeDownload"/>).
         /// </summary>
         public IReadOnlyList<Guid> Installing()
         {
             var installing = new List<Guid>();
+            if (FakeDownload() is Guid fake)
+            {
+                installing.Add(fake);
+            }
+
             try
             {
                 var games = SteamGames();

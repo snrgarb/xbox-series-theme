@@ -120,7 +120,7 @@ namespace XboxSeries.Extension
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "XboxSeries",
-                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "Search", "TextEntry", "Hints" },
+                ElementList = new List<string> { "Hero", "RecentRow", "Groups", "TileMenu", "MyGames", "Settings", "Status", "InstallAction", "QueueAction", "Search", "TextEntry", "Hints" },
             });
 
             // What the Dashboard reads of the Bundle's options, as {PluginSettings Plugin=XboxSeries,
@@ -185,6 +185,7 @@ namespace XboxSeries.Extension
                     return settings;
                 case "Status": return new StatusControl(core);
                 case "InstallAction": return new InstallActionControl(core);
+                case "QueueAction": return new QueueActionControl(core);
                 case "Hints": return new HintBarControl(core);
                 case "Search": return new SearchControl(core);
                 case "TextEntry": return new TextEntryControl(core);

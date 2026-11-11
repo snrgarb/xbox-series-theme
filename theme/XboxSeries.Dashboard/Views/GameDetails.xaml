@@ -171,9 +171,10 @@
 
     <!--
         An icon-only action; its Tag names it above the button while it has focus. Its icon at the icon font's own weight,
-        which has no Bold: WPF would draw one by thickening the glyph.
+        which has no Bold: WPF would draw one by thickening the glyph. For any button, so that the extension's own Queue, a
+        plain Button, wears it too.
     -->
-    <Style x:Key="XboxHubIconAction" TargetType="ButtonEx" BasedOn="{StaticResource XboxHubAction}">
+    <Style x:Key="XboxHubIconAction" TargetType="ButtonBase" BasedOn="{StaticResource XboxHubAction}">
         <Setter Property="Width" Value="80" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
@@ -558,6 +559,12 @@
                                 <ContentControl x:Name="XboxSeries_InstallAction" Focusable="False" IsTabStop="False" />
                                 <ButtonEx x:Name="PART_ButtonOptions" Style="{StaticResource XboxHubIconAction}"
                                           Tag="Manage" Content="&#xE713;" />
+                                <!--
+                                    With the extension, its own Queue, an icon action as Manage is: shown only while the game
+                                    is in the Queue, Installing or Queued; A opens Manage Queue, and B there comes back here,
+                                    focus on Queue. Empty, and so never shown, without the extension.
+                                -->
+                                <ContentControl x:Name="XboxSeries_QueueAction" Focusable="False" IsTabStop="False" />
                                 <!-- Turns between the two pages; it names the page it turns to. -->
                                 <ToggleButtonEx x:Name="PageToggle" Style="{StaticResource XboxHubAction}">
                                     <StackPanel Orientation="Horizontal">

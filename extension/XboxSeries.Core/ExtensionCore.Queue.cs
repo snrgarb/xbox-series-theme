@@ -107,6 +107,93 @@ namespace XboxSeries.Core
             return game != null && !game.Installing && installOrder.Contains(gameId) ? StatusOf(gameId) : null;
         }
 
+        /// <summary>The game whose Game hub's Queue opened Manage Queue, which B there goes back to; null otherwise.</summary>
+        private Guid? queueReturnsToHub;
+
+        /// <summary>
+        /// What that hub was over as its Queue opened Manage Queue, to put back under it as B goes back: My games &amp; apps'
+        /// item (null for Home or Search), whether Manage Queue there went back to Home, and whether Search was up.
+        /// </summary>
+        private MyGamesItem? hubWasOverItem;
+        private bool hubWasOverQueueForHome;
+        private bool hubWasOverSearch;
+
+        /// <summary>The game whose hub B on Manage Queue opened again, until its Queue takes focus.</summary>
+        private Guid? hubQueueFocus;
+
+        /// <summary>
+        /// Whether the game's Game hub shows Queue, after Manage: while the Queue holds the game, Installing or Queued,
+        /// as the console's hub offers its queue only while the game downloads. My games &amp; apps' Queue changing
+        /// (<see cref="MyGamesState.Queue"/>) is when to ask again.
+        /// </summary>
+        public bool HubShowsQueue(Guid gameId) => MyGames.Queue.Any(e => e.Tile.GameId == gameId);
+
+        /// <summary>
+        /// A on the Game hub's Queue: the hub closes and My games &amp; apps opens on Manage Queue, B there going back to the
+        /// hub, focus on Queue (<see cref="TakeHubQueueFocus"/>), rather than to Manage. Nothing for a game that has just
+        /// left the Queue.
+        /// </summary>
+        public void OpenQueueFromHub(Guid gameId)
+        {
+            if (!HubShowsQueue(gameId))
+            {
+                return;
+            }
+
+            var overItem = MyGames.IsShown ? MyGames.Item : (MyGamesItem?)null;
+            var overQueueForHome = queueLeavesForHome;
+            var overSearch = Search.IsShown;
+            playnite.CloseGameHub(gameId);
+            OpenMyGames(MyGamesItem.ManageQueue);
+            queueReturnsToHub = gameId;
+            hubWasOverItem = overItem;
+            hubWasOverQueueForHome = overQueueForHome;
+            hubWasOverSearch = overSearch;
+            hubQueueFocus = null;
+        }
+
+        /// <summary>
+        /// B on Manage Queue opened from a Game hub: what the hub was over comes back (My games &amp; apps as it was, or
+        /// Home), and the hub opens again over it, its Queue to take focus. Search, which Manage Queue took the place of,
+        /// isn't put back: the hub opens over Home, the main list taking every game so the hub's game is in it.
+        /// </summary>
+        private void ReturnToHubFromQueue(Guid gameId)
+        {
+            queueReturnsToHub = null;
+            if (hubWasOverItem is MyGamesItem item)
+            {
+                // Set, not opened: opening would put the item's own filter on the main list, which the hub's game was in.
+                MyGames.Item = item;
+                queueLeavesForHome = hubWasOverQueueForHome;
+            }
+            else
+            {
+                CloseMyGames();
+                if (hubWasOverSearch)
+                {
+                    ShowInMainList(GameListFilter.LastPlayed);
+                }
+            }
+
+            hubQueueFocus = gameId;
+            playnite.OpenGameHub(gameId);
+        }
+
+        /// <summary>Whether the game's hub was opened again by B on Manage Queue, so its Queue, not Play or Install, takes focus.</summary>
+        public bool HubReturnsToQueue(Guid gameId) => hubQueueFocus == gameId;
+
+        /// <summary>The game's hub's Queue taking focus as B on Manage Queue opened the hub again: true once, then false.</summary>
+        public bool TakeHubQueueFocus(Guid gameId)
+        {
+            if (hubQueueFocus != gameId)
+            {
+                return false;
+            }
+
+            hubQueueFocus = null;
+            return true;
+        }
+
         /// <summary>
         /// The Tile menu's Install, as the Game hub's: through the client without its windows while
         /// <see cref="CanInstallSilently"/>, otherwise Playnite's own Install, unless it is already installing or queued.

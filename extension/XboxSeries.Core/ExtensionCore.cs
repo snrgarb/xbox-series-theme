@@ -1449,6 +1449,7 @@ namespace XboxSeries.Core
         {
             CancelNavSettle();
             queueLeavesForHome = false;
+            queueReturnsToHub = null;
 
             // Search goes first, giving back any filter of its own, before Games puts its filter on.
             CloseSearch();
@@ -1597,7 +1598,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it (Home, from its Downloads tile), or on Full library narrowed by
+        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it (Home, from its Downloads tile;
+        /// the Game hub, from its Queue, focus on Queue: <see cref="OpenQueueFromHub"/>), or on Full library narrowed by
         /// name, back to its whole tab. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
         /// prompt still showing answers the B instead.
         /// </summary>
@@ -1605,7 +1607,11 @@ namespace XboxSeries.Core
         {
             if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
-                if (MyGames.Item == MyGamesItem.ManageQueue && !queueLeavesForHome)
+                if (MyGames.Item == MyGamesItem.ManageQueue && queueReturnsToHub is Guid hubGame)
+                {
+                    ReturnToHubFromQueue(hubGame);
+                }
+                else if (MyGames.Item == MyGamesItem.ManageQueue && !queueLeavesForHome)
                 {
                     MyGames.Item = MyGamesItem.Manage;
                 }
