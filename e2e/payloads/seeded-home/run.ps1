@@ -25,7 +25,7 @@
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
-$picks = 'Amber Circuit', 'Dune Signal', 'Ember Vale', 'Hollow Peak', 'Iron Tide', 'Lumen Drift'
+$picks = 'Alan Wake 2', 'Dead Cells', 'Elden Ring', 'Hades', 'Halo Infinite', 'Minecraft Dungeons'
 
 function Get-Mark { @(Get-ExtensionLog).Count }
 

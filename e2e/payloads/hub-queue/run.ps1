@@ -8,11 +8,11 @@
 #   My games & apps shows ManageQueue | My games & apps closed      the page
 #   [Hub] back from Manage Queue, focus on Queue for <game>         B on Manage Queue, back in the hub
 #
-# 1. A game not in the Queue (Amber Circuit, the Recent row's first): its hub logs "Queue action hidden".
-# 2. Dune Signal, queued by the variable: its hub logs "Queue action shown" (hub-queue.jpg: Queued, Manage, then the
+# 1. A game not in the Queue (Alan Wake 2, the Recent row's first): its hub logs "Queue action hidden".
+# 2. Dead Cells, queued by the variable: its hub logs "Queue action shown" (hub-queue.jpg: Queued, Manage, then the
 #    download glyph). Right to Queue, which logs its focus and names itself above (hub-queue-focus.jpg).
-# 3. A on Queue: Manage Queue opens with Dune Signal in it (manage-queue.jpg).
-# 4. B: the hub opens again on Dune Signal, focus on Queue (hub-back.jpg), not on Manage.
+# 3. A on Queue: Manage Queue opens with Dead Cells in it (manage-queue.jpg).
+# 4. B: the hub opens again on Dead Cells, focus on Queue (hub-back.jpg), not on Manage.
 # 5. B again: the hub closes, back to Home (home-after.jpg).
 #
 # No press is counted blind: each move waits for the extension's log, by a stopwatch and by the log's line count,
@@ -20,8 +20,8 @@
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
-$queued = 'Dune Signal'
-$plain = 'Amber Circuit'
+$queued = 'Dead Cells'
+$plain = 'Alan Wake 2'
 $told = 'Home focus on|My games & apps (shows|closed)|Game hub opened|Manage Queue opened|\[Hub\]|\[Queue\]'
 
 function Get-Mark { (Get-ExtensionLog).Count }

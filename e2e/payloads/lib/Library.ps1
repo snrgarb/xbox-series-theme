@@ -76,13 +76,24 @@ try {
                     }
                 }
                 $files = $db.GetFileStoragePath($game.Id)
-                New-SeedImage (Join-Path $files 'cover.png') $game.Name 600 900 $hue 0.85
+                # A real game's Xbox store art where e2e/run.sh staged it (lib\art\<name>\, from lib\art.txt), as
+                # Playnite's metadata download leaves a game: its Poster as the cover and its hero art as the background.
+                # Else, and for -BackgroundWidth's heavy backgrounds, drawn ones with the name on them.
+                $art = Join-Path $PSScriptRoot "art\$($game.Name)"
+                if (Test-Path "$art\cover.jpg") {
+                    Copy-Item "$art\cover.jpg" (Join-Path $files 'cover.jpg')
+                    $game.CoverImage = "$($game.Id)\cover.jpg"
+                } else {
+                    New-SeedImage (Join-Path $files 'cover.png') $game.Name 600 900 $hue 0.85
+                    $game.CoverImage = "$($game.Id)\cover.png"
+                }
                 if ($BackgroundWidth) {
                     New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" $BackgroundWidth ([int]($BackgroundWidth * 9 / 16)) $hue 0.45 -Grain
+                } elseif (Test-Path "$art\background.jpg") {
+                    Copy-Item "$art\background.jpg" (Join-Path $files 'background.jpg')
                 } else {
                     New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" 1920 1080 $hue 0.45
                 }
-                $game.CoverImage = "$($game.Id)\cover.png"
                 $game.BackgroundImage = "$($game.Id)\background.jpg"
                 $db.Games.Add($game)
                 # Playnite stamps Added as it adds; the Recent row pads itself with the most recently added. A minute

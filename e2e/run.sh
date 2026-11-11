@@ -59,6 +59,22 @@ if [[ ! -f "$vigem" ]] || ! echo "$vigem_sha256  $vigem" | sha256sum -c --quiet 
 fi
 cp "$vigem" "$stage/lib/Nefarius.ViGEm.Client.dll"
 
+# The seeded library's art, real games' Xbox store art, one picture a line in lib/art.txt as
+# "<cover|background> <url> <sha256> <game>": fetched once, pinned by checksum, kept under artifacts/e2e/.cache by its
+# checksum, and staged as lib/art/<game>/<cover|background>.jpg, where Library.ps1 finds them.
+mkdir -p "$stage/lib/art" "$repo/artifacts/e2e/.cache"
+while read -r kind url sha256 game; do
+    [[ -z "$kind" || "$kind" == \#* ]] && continue
+    art="$repo/artifacts/e2e/.cache/xbox-art-$sha256.jpg"
+    if [[ ! -f "$art" ]] || ! echo "$sha256  $art" | sha256sum -c --quiet 2>/dev/null; then
+        curl -fsSL -o "$art" "$url"
+        echo "$sha256  $art" | sha256sum -c --quiet || { rm -f "$art"; echo "checksum mismatch for $game's $kind ($url)" >&2; exit 1; }
+    fi
+    mkdir -p "$stage/lib/art/$game"
+    cp "$art" "$stage/lib/art/$game/$kind.jpg"
+done < "$here/payloads/lib/art.txt"
+rm -f "$stage/lib/art.txt"
+
 # The other add-ons a test installs beside the Bundle, one a line in its addons.txt as "<url> <sha256>": fetched once,
 # pinned by checksum, kept under artifacts/e2e/.cache, and staged as addons/, where Initialize-Playnite finds them.
 if [[ -f "$payload_src/addons.txt" ]]; then

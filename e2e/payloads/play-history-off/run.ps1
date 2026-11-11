@@ -37,7 +37,7 @@ function Wait-LogLine([string] $Pattern, [int] $After, [int] $Seconds = 6) {
     $false
 }
 
-# Home's focus by the log's last word on it, as "the Recent tile Amber Circuit" or "the Play history tile"; $null with none.
+# Home's focus by the log's last word on it, as "the Recent tile Alan Wake 2" or "the Play history tile"; $null with none.
 function Get-HomeFocus {
     $last = Get-LogLines 'Home focus on ' 0 | Select-Object -Last 1
     if ($last) { $last -replace '^.*Home focus on ', '' }
