@@ -44,13 +44,17 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Manage_Queues_Recently_installed_tiles_unscaled_set_the_title_at_26()
+        public void Manage_Queues_Recently_installed_tiles_unscaled_set_the_title_at_26_still_two_lines()
         {
             var myGames = Extension("MyGamesControl.xaml");
-            var key = ResourceKey((string)TitleBand(Extension("HomeTiles.xaml"))[0].Attribute("FontSize"));
+            var title = TitleBand(Extension("HomeTiles.xaml"))[0];
+            var size = ResourceKey((string)title.Attribute("FontSize"));
+            var maxHeight = ResourceKey((string)title.Attribute("MaxHeight"));
 
-            Assert.NotNull(key);
-            Assert.Equal(26.0, Number(Keyed(myGames, key).Value));
+            Assert.NotNull(size);
+            Assert.NotNull(maxHeight);
+            Assert.Equal(26.0, Number(Keyed(myGames, size).Value));
+            Assert.InRange(Number(Keyed(myGames, maxHeight).Value), 2 * 26 * SegoeLine, 3 * 26 * SegoeLine - 1);
         }
 
         [Fact]
@@ -94,7 +98,7 @@ namespace XboxSeries.Core.Tests
                 var line = Size(doc, title) * SegoeLine;
                 Assert.Equal("Wrap", (string)title.Attribute("TextWrapping"));
                 Assert.Equal("CharacterEllipsis", Trimming(doc, title));
-                Assert.InRange(Number((string)title.Attribute("MaxHeight")), 2 * line, 3 * line - 1);
+                Assert.InRange(Resolved(doc, (string)title.Attribute("MaxHeight")), 2 * line, 3 * line - 1);
                 Assert.Null(title.Attribute("FontWeight"));
                 Assert.Equal("XboxFont", ResourceKey((string)title.Attribute("FontFamily")) ?? FontOfStyle(doc, ResourceKey((string)title.Attribute("Style"))));
             });
@@ -260,11 +264,17 @@ namespace XboxSeries.Core.Tests
             var own = (string)text.Attribute("FontSize");
             if (own != null)
             {
-                var key = ResourceKey(own);
-                return key == null ? Number(own) : Number(Keyed(doc, key).Value);
+                return Resolved(doc, own);
             }
 
             return StyleSize(doc, StyleByKey(doc, ResourceKey((string)text.Attribute("Style"))));
+        }
+
+        // A number written in place, or the sys:Double resource it names.
+        private static double Resolved(XDocument doc, string value)
+        {
+            var key = ResourceKey(value);
+            return key == null ? Number(value) : Number(Keyed(doc, key).Value);
         }
 
         private static string Trimming(XDocument doc, XElement text) =>

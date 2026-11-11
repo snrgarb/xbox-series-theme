@@ -41,7 +41,13 @@
             28 px wider each side than the row, cancelled by its margins, so the clip clears the focus ring, 6 px out from
             a tile, and its glow band, some 26 px out.
         -->
-        <Grid x:Name="View" Width="1582" Height="740" Margin="-28,0" ClipToBounds="True">
+        <!--
+            750 tall, grown from 740 for the 36 px header (#203): two whole Groups, header (32.32 at Bahnschrift's 1.2 line,
+            and 16 under it) and 296 cards each with 40 between, are 2 x (38.8 + 16 + 296) + 40 = 742, so the second isn't
+            faded out. Scaled (750 x 1.1140 = 835.5) it still ends above the screen's foot from its place 240 down, so the
+            width still sets the scale.
+        -->
+        <Grid x:Name="View" Width="1582" Height="750" Margin="-28,0" ClipToBounds="True">
             <!--
                 On a Canvas, which never cuts its content to its own size: the Groups run on past the bottom, and a layout
                 clip on them would slide up with them as they scroll, cutting off the Groups coming into view.
@@ -54,8 +60,13 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,0,0,40">
-                                <TextBlock Text="{Binding Name}" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"
-                                           FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="24" Foreground="White" />
+                                <!--
+                                    Bahnschrift SemiLight 36 px on a 1080p screen, as the console's: 36 / 1.1140 (the
+                                    Viewbox's scale at 1920x1080, HomeTiles.xaml) = 32.32 here, 16 over the cards.
+                                -->
+                                <TextBlock Text="{Binding Name}" Margin="0,0,0,16" TextTrimming="CharacterEllipsis"
+                                           FontFamily="{DynamicResource XboxHeaderFont}" FontWeight="350" FontSize="32.32"
+                                           Foreground="White" />
                                 <StackPanel Orientation="Horizontal">
                                     <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
                                         <ItemsControl.ItemsPanel>
