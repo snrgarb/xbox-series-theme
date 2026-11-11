@@ -22,14 +22,14 @@ namespace XboxSeries.Core.Tests
             doc.Descendants().Single(e => (string)e.Attribute(X + "Name") == name);
 
         [Fact]
-        public void Personalisations_boxes_are_Boot_video_Profiles_Whos_playing_today_then_Background_delay_and_Reduce_motion_on_rows_of_their_own()
+        public void Personalisations_boxes_are_Boot_video_Profiles_Whos_playing_today_then_Background_delay_Reduce_motion_and_Show_Play_history_on_rows_of_their_own()
         {
             var page = Named(Load("PersonalisationPane.xaml"), "PersonalisationPage");
             var boxes = page.Elements().Where(e => e.Name.LocalName == "Button").ToList();
 
-            Assert.Equal(new[] { "BootVideoBox", "ProfilesBox", "AskBox", "BackgroundDelayBox", "ReduceMotionBox" },
+            Assert.Equal(new[] { "BootVideoBox", "ProfilesBox", "AskBox", "BackgroundDelayBox", "ReduceMotionBox", "ShowPlayHistoryBox" },
                 boxes.Select(b => (string)b.Attribute(X + "Name")));
-            Assert.Equal(new[] { "0,0", "0,1", "1,0", "2,0", "3,0" },
+            Assert.Equal(new[] { "0,0", "0,1", "1,0", "2,0", "3,0", "4,0" },
                 boxes.Select(b => $"{(string)b.Attribute("Grid.Row")},{(string)b.Attribute("Grid.Column")}"));
             Assert.All(boxes, box =>
             {

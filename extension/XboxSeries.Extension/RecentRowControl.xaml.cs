@@ -27,7 +27,7 @@ namespace XboxSeries.Extension
         private readonly HomePage page;
         private readonly TileGrowth growth;
 
-        /// <summary>Every tile, game tiles then Play history, found once per rebuild of the row; null when stale.</summary>
+        /// <summary>Every tile, game tiles then Play history while it shows, found once per rebuild of the row; null when stale.</summary>
         private List<Button> allTiles;
         private Guid? lastFocusedGame;
 
@@ -135,6 +135,13 @@ namespace XboxSeries.Extension
 
         private void OnHomeChanged(object sender, PropertyChangedEventArgs e)
         {
+            // The Play history tile shown or gone: the tiles to grow and space are found again, the row's width kept.
+            if (e.PropertyName == nameof(HomeState.HasPlayHistoryTile))
+            {
+                allTiles = null;
+                growth.Start();
+            }
+
             // Rebuilding the row replaces its tiles, and with them the focused one: put focus back on the same game.
             if (e.PropertyName == nameof(HomeState.RecentRow) && hasFocus)
             {
@@ -328,7 +335,11 @@ namespace XboxSeries.Extension
             if (tile == null || !tile.IsVisible || !IsAncestorOf(tile))
             {
                 var tiles = GameTiles();
-                tile = tiles.FirstOrDefault(b => ((HomeTile)b.DataContext).GameId == lastFocusedGame) ?? tiles.FirstOrDefault() ?? PlayHistoryTile;
+                tile = tiles.FirstOrDefault(b => ((HomeTile)b.DataContext).GameId == lastFocusedGame) ?? tiles.FirstOrDefault() ?? (core.Home.HasPlayHistoryTile ? PlayHistoryTile : null);
+                if (tile == null)
+                {
+                    return;
+                }
             }
 
             tile.Focus();
@@ -350,7 +361,11 @@ namespace XboxSeries.Extension
 
             var tiles = GameTiles();
             var complete = tiles.Count == Tiles.Items.Count;
-            tiles.Add(PlayHistoryTile);
+            if (core.Home.HasPlayHistoryTile)
+            {
+                tiles.Add(PlayHistoryTile);
+            }
+
             growth.Forget(tiles);
 
             // Kept only once every game tile is built; until then the next frame looks again.
