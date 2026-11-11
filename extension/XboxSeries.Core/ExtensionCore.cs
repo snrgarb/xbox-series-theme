@@ -20,6 +20,9 @@ namespace XboxSeries.Core
         /// </summary>
         private const int RecentRowCount = 7;
 
+        /// <summary>How many games the Recent row holds with Show Play history off: one more, in the tile's place.</summary>
+        private const int RecentRowCountWithoutPlayHistory = RecentRowCount + 1;
+
         /// <summary>How many games the Play history tile's collage shows.</summary>
         private const int PlayHistoryCollageCount = 4;
 
@@ -55,6 +58,9 @@ namespace XboxSeries.Core
         /// can take a moment (for a Bluetooth pad, Windows looks through its devices) that the Guide shouldn't wait for.
         /// </summary>
         private static readonly TimeSpan BatteryReadAfterGuideOpens = TimeSpan.FromMilliseconds(500);
+
+        /// <summary>How often the PC's own battery is read, besides as Windows says the power changed.</summary>
+        private static readonly TimeSpan PcBatteryReadEvery = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it, when focus came there
@@ -109,6 +115,7 @@ namespace XboxSeries.Core
         private readonly IUserAccount account;
         private readonly IAudio audio;
         private readonly IController controller;
+        private readonly IPcBattery pcBattery;
         private readonly IMediaSessions mediaSessions;
         private readonly IAchievements achievements;
 
@@ -175,6 +182,9 @@ namespace XboxSeries.Core
         private IDisposable tapTimer;
         private IDisposable heroTimer;
         private IDisposable guideBatteryTimer;
+
+        /// <summary>The PC's battery's next read; null until <see cref="StartPcBattery"/>, and once stopped.</summary>
+        private IDisposable pcBatteryTimer;
         private HomeTile focusedTile;
 
         /// <summary>
@@ -211,8 +221,10 @@ namespace XboxSeries.Core
             IMediaSessions mediaSessions = null,
             IAchievements achievements = null,
             Random random = null,
-            IInputActivity inputActivity = null)
+            IInputActivity inputActivity = null,
+            IPcBattery pcBattery = null)
         {
+            this.pcBattery = pcBattery ?? NoPcBattery.Instance;
             this.random = random ?? new Random();
             this.inputActivity = inputActivity ?? NoInputActivity.Instance;
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
@@ -423,6 +435,43 @@ namespace XboxSeries.Core
         public void OnControllersChanged()
         {
             Status.Battery = controller.Battery;
+        }
+
+        /// <summary>
+        /// The Dashboard is up: the PC's own battery is read now and every <see cref="PcBatteryReadEvery"/> from here on,
+        /// until <see cref="OnApplicationStopped"/>. Not before, so Desktop mode or another theme never reads it.
+        /// </summary>
+        public void StartPcBattery()
+        {
+            ReadPcBattery();
+        }
+
+        /// <summary>
+        /// Windows says the power changed, as the PC is plugged in or unplugged or its battery's state moves on: the PC's
+        /// battery shows it now, and the next read is a full <see cref="PcBatteryReadEvery"/> away. Nothing before
+        /// <see cref="StartPcBattery"/>.
+        /// </summary>
+        public void OnPowerChanged()
+        {
+            if (pcBatteryTimer != null)
+            {
+                ReadPcBattery();
+            }
+        }
+
+        /// <summary>
+        /// The PC's battery read, taken over what shows by <see cref="PcBattery.Update"/>, which keeps the last reading
+        /// while Windows can't say, and the next read set; a core given no port reads none and sets none.
+        /// </summary>
+        private void ReadPcBattery()
+        {
+            pcBatteryTimer?.Dispose();
+            pcBatteryTimer = null;
+            Status.PcBattery = PcBattery.Update(Status.PcBattery, pcBattery.Read());
+            if (pcBattery != NoPcBattery.Instance)
+            {
+                pcBatteryTimer = clock.After(PcBatteryReadEvery, ReadPcBattery);
+            }
         }
 
         private void RefreshStatus()
@@ -1330,12 +1379,14 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Rebuilds the Recent row: the running game first, then played games by last played, padded with recently
-        /// added ones, never hidden ones. The Play history tile's collage is the played games that come next. A row is
+        /// added ones, never hidden ones: seven before the Play history tile, or eight with Show Play history off and no
+        /// tile. The Play history tile's collage is the played games that come next, built only while the tile shows. A row is
         /// only replaced when what it shows changed, since a new row rebuilds every tile and reads every cover again,
         /// and a library update pushes the library several times a second.
         /// </summary>
         private void RefreshHomeRows()
         {
+            var withPlayHistory = Settings.StartUp.ShowPlayHistory;
             var running = GameById(runningGame);
             var played = PlayedGames().ToList();
             var unplayed = library.Games
@@ -1344,7 +1395,7 @@ namespace XboxSeries.Core
             var row = (running == null ? played : new[] { running }.Concat(played))
                 .Concat(unplayed)
                 .Distinct()
-                .Take(RecentRowCount)
+                .Take(withPlayHistory ? RecentRowCount : RecentRowCountWithoutPlayHistory)
                 .ToList();
 
             var recentRow = row.Select(TileOf).ToList();
@@ -1353,13 +1404,19 @@ namespace XboxSeries.Core
                 Home.RecentRow = recentRow;
             }
 
-            var collage = played.Where(g => !row.Contains(g))
-                .Take(PlayHistoryCollageCount)
-                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
-                .ToList();
-            if (!SameTiles(collage, Home.PlayHistory))
+            Home.HasPlayHistoryTile = withPlayHistory;
+
+            // With no Play history tile its collage isn't built; turning the tile on again rebuilds the row and it.
+            if (withPlayHistory)
             {
-                Home.PlayHistory = collage;
+                var collage = played.Where(g => !row.Contains(g))
+                    .Take(PlayHistoryCollageCount)
+                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
+                    .ToList();
+                if (!SameTiles(collage, Home.PlayHistory))
+                {
+                    Home.PlayHistory = collage;
+                }
             }
 
             var groups = Groups();
@@ -1788,6 +1845,8 @@ namespace XboxSeries.Core
         /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back, and a game frozen under the Guide thaws.</summary>
         public void OnApplicationStopped()
         {
+            pcBatteryTimer?.Dispose();
+            pcBatteryTimer = null;
             ThawGame();
             ForgetLibraryName();
             GiveBackMainList();

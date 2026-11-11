@@ -179,7 +179,8 @@ namespace XboxSeries.Core
 
     /// <summary>
     /// Personalisation, in Settings: the boot video, the profiles, whether Who's playing today? asks, whether Home's
-    /// background waits on a game before showing its art, and whether the Dashboard's animations are turned off.
+    /// background waits on a game before showing its art, whether the Dashboard's animations are turned off, and whether
+    /// Home's Recent row ends in the Play history tile.
     /// </summary>
     public sealed class StartUpSettingsState : INotifyPropertyChanged
     {
@@ -189,10 +190,14 @@ namespace XboxSeries.Core
         /// <summary>Whether Reduce motion is on until the player sets it: off, the Dashboard moving as it always has.</summary>
         public const bool ReduceMotionByDefault = false;
 
+        /// <summary>Whether Show Play history is on until the player sets it: on, the Recent row ending in it as since 0.1.0.</summary>
+        public const bool ShowPlayHistoryByDefault = true;
+
         private BootVideo bootVideo = BootVideo.XboxSeriesX;
         private bool askWhosPlaying = true;
         private bool backgroundDelay = BackgroundDelayByDefault;
         private bool reduceMotion = ReduceMotionByDefault;
+        private bool showPlayHistory = ShowPlayHistoryByDefault;
         private IReadOnlyList<Profile> profiles = new Profile[0];
         private IReadOnlyList<string> gamerpics = new string[0];
 
@@ -230,6 +235,17 @@ namespace XboxSeries.Core
         {
             get => reduceMotion;
             internal set => Set(ref reduceMotion, value, nameof(ReduceMotion));
+        }
+
+        /// <summary>
+        /// Whether Home's Recent row ends in the Play history tile after seven games; off, it holds eight games and no
+        /// tile, as the console lets the tile be hidden. Play history stays in My games &amp; apps' nav either way.
+        /// <see cref="ShowPlayHistoryByDefault"/> until set.
+        /// </summary>
+        public bool ShowPlayHistory
+        {
+            get => showPlayHistory;
+            internal set => Set(ref showPlayHistory, value, nameof(ShowPlayHistory));
         }
 
         /// <summary>Every profile, in the order Who's playing today? shows them. There is always at least one.</summary>

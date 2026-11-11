@@ -18,10 +18,11 @@ namespace XboxSeries.Core.Tests
         public void The_title_shows_whenever_the_cover_shows_no_picture()
         {
             var face = Face();
-            var cover = face.Descendants().Single(e => e.Name.LocalName == "Image" && ((string)e.Attribute("Source"))?.Contains("CoverImage") == true);
+            // The cover is the art pair (TileArt), whose content is the picture decoded.
+            var cover = face.Descendants().Single(e => e.Name.LocalName == "ContentControl" && ((string)e.Attribute("Content"))?.Contains("CoverImage") == true);
             var title = face.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Title}");
             var shown = face.Descendants().Single(e => e.Name.LocalName == "DataTrigger"
-                                                      && (string)e.Attribute("Binding") == $"{{Binding Source, ElementName={(string)cover.Attribute(X + "Name")}}}");
+                                                      && (string)e.Attribute("Binding") == $"{{Binding Content, ElementName={(string)cover.Attribute(X + "Name")}}}");
 
             Assert.Equal("Collapsed", (string)title.Attribute("Visibility"));
             Assert.Equal("{x:Null}", (string)shown.Attribute("Value"));

@@ -78,7 +78,7 @@ namespace XboxSeries.Core.Tests
 
             // A row for each box's row, and the info above spanning this row's empty place, so its height isn't its
             // row's.
-            Assert.Equal(4, Named(pane, "PersonalisationPage").Descendants().Count(e => e.Name.LocalName == "RowDefinition"));
+            Assert.Equal(5, Named(pane, "PersonalisationPage").Descendants().Count(e => e.Name.LocalName == "RowDefinition"));
             Assert.Equal("2", (string)Named(pane, "BackgroundDelayInfo").Attribute("Grid.RowSpan"));
         }
 
@@ -87,7 +87,7 @@ namespace XboxSeries.Core.Tests
         {
             var pane = Code("PersonalisationPane.xaml.cs");
 
-            Assert.Matches(new Regex(@"new\[\] \{ AskBox \},\s*new\[\] \{ BackgroundDelayBox \},\s*new\[\] \{ ReduceMotionBox \},\s*\};"), pane);
+            Assert.Matches(new Regex(@"new\[\] \{ AskBox \},\s*new\[\] \{ BackgroundDelayBox \},\s*new\[\] \{ ReduceMotionBox \},"), pane);
             Assert.Matches(new Regex(@"button == ReduceMotionBox\)\s*\{\s*core\.SetReduceMotion\(!State\.ReduceMotion\);"), pane);
         }
 
@@ -124,10 +124,9 @@ namespace XboxSeries.Core.Tests
 
         [Theory]
         [InlineData("TileGrowth.cs", "var step = Motion.Reduced ? 1 : ")]
-        [InlineData("HomeRows.cs", "if (animate && !Motion.Reduced)")]
+        [InlineData("HomeRows.cs", "new DoubleAnimation(to, Motion.Of(SlideDuration))")]
         [InlineData("PaneFlyIn.cs", "return along && !Motion.Reduced ? Math.Sign(indexOf(now) - indexOf(from)) : 0;")]
         [InlineData("SlidingRow.cs", "if (Math.Abs(to - from) < 0.5 || Motion.Reduced)")]
-        [InlineData("GroupsControl.xaml.cs", "new DoubleAnimation(scroll, Motion.Of(ScrollDuration))")]
         [InlineData("OverlayWindow.xaml.cs", "duration = Motion.Of(duration);")]
         [InlineData("OverlayWindow.xaml.cs", "BeginTime = Motion.Of(ContentLag),")]
         [InlineData("WideDialogPanel.xaml.cs", "new DoubleAnimation(0, Motion.Of(OverlayWindow.OpenDuration))")]
@@ -147,7 +146,9 @@ namespace XboxSeries.Core.Tests
         {
             // The row put in place without animating, then nothing more: the top bar's drop and its disabling never
             // begin.
-            Assert.Matches(new Regex(@"Fly\(row, shown: true, hiddenOffset: 0, animate: false\);\s*if \(Motion\.Reduced\)\s*\{\s*return;\s*\}"), Code("HomeRows.cs"));
+            Assert.Matches(
+                new Regex(@"row\.BeginAnimation\(UIElement\.OpacityProperty, null\);\s*groups\?\.BeginAnimation\(UIElement\.OpacityProperty, null\);\s*if \(Motion\.Reduced\)\s*\{\s*return;\s*\}"),
+                Code("HomeRows.cs"));
 
             // The fade out, and the window hiding as it ends, stay outside the gate.
             Assert.Matches(
