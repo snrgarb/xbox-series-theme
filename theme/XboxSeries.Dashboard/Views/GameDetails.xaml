@@ -25,8 +25,13 @@
     <Geometry x:Key="XboxHubSourceSteam">M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z</Geometry>
     <Geometry x:Key="XboxHubSourceXbox">M4.102 21.033C6.211 22.881 8.977 24 12 24c3.026 0 5.789-1.119 7.902-2.967 1.877-1.912-4.316-8.709-7.902-11.417-3.582 2.708-9.779 9.505-7.898 11.417zm11.16-14.406c2.5 2.961 7.484 10.313 6.076 12.912C23.002 17.48 24 14.861 24 12.004c0-3.34-1.365-6.362-3.57-8.536 0 0-.027-.022-.082-.042-.063-.022-.152-.045-.281-.045-.592 0-1.985.434-4.805 3.246zM3.654 3.426c-.057.02-.082.041-.086.042C1.365 5.642 0 8.664 0 12.004c0 2.854.998 5.473 2.661 7.533-1.401-2.605 3.579-9.951 6.08-12.91-2.82-2.813-4.216-3.245-4.806-3.245-.131 0-.223.021-.281.046v-.002zM12 3.551S9.055 1.828 6.755 1.746c-.903-.033-1.454.295-1.521.339C7.379.646 9.659 0 11.984 0H12c2.334 0 4.605.646 6.766 2.085-.068-.046-.615-.372-1.52-.339C14.946 1.828 12 3.545 12 3.545v.006z</Geometry>
 
+    <!--
+        The hub's text, Segoe UI Regular. Regular even in an action, whose Bahnschrift Bold its text would otherwise take
+        up: the name over an icon action, the main action's source.
+    -->
     <Style x:Key="XboxHubText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
         <Setter Property="FontSize" Value="20" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -36,19 +41,24 @@
         <Setter Property="Foreground" Value="{DynamicResource XboxTextDimBrush}" />
     </Style>
 
+    <!--
+        The cards' text at the console's sizes (#203): titles Bahnschrift SemiBold 24, labels, values and About Segoe UI
+        Regular 24. The cards keep their 500: Your game stats with all five lines is 30 + 16 (title) + 4 x 79.8 (label,
+        value and their 2 and 14) + 81.8 (Achievements' label, count and bar) = 447 of the 456 inside its padding.
+    -->
     <Style x:Key="XboxHubCardTitle" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
         <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFontSemibold}" />
-        <Setter Property="FontSize" Value="19" />
+        <Setter Property="FontSize" Value="24" />
         <Setter Property="Margin" Value="0,0,0,16" />
     </Style>
 
     <!-- One label/value line of a card. -->
     <Style x:Key="XboxHubRowLabel" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
-        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontSize" Value="24" />
     </Style>
     <Style x:Key="XboxHubRowValue" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
-        <Setter Property="FontSize" Value="22" />
-        <Setter Property="Margin" Value="0,2,16,18" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="Margin" Value="0,2,16,14" />
     </Style>
 
     <!-- The "•" before a header item: Collapsed unless an earlier item shows (set per item with DataTriggers). -->
@@ -101,11 +111,13 @@
         </ControlTemplate.Triggers>
     </ControlTemplate>
 
+    <!-- Its label in Bahnschrift Bold 24, the console's hub buttons' (#203). -->
     <Style x:Key="XboxHubAction" TargetType="ButtonBase">
         <Setter Property="Background" Value="#33FFFFFF" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-        <Setter Property="FontFamily" Value="{DynamicResource XboxFontSemibold}" />
-        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="24" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Height" Value="80" />
@@ -163,11 +175,15 @@
         </DataTemplate.Triggers>
     </DataTemplate>
 
-    <!-- An icon-only action; its Tag names it above the button while it has focus. -->
+    <!--
+        An icon-only action; its Tag names it above the button while it has focus. Its icon at the icon font's own weight,
+        which has no Bold: WPF would draw one by thickening the glyph.
+    -->
     <Style x:Key="XboxHubIconAction" TargetType="ButtonEx" BasedOn="{StaticResource XboxHubAction}">
         <Setter Property="Width" Value="80" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="FontFamily" Value="{DynamicResource XboxIconFont}" />
+        <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="FontSize" Value="28" />
     </Style>
 
@@ -515,7 +531,7 @@
                                 <!-- Turns between the two pages; it names the page it turns to. -->
                                 <ToggleButtonEx x:Name="PageToggle" Style="{StaticResource XboxHubAction}">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
+                                        <TextBlock FontFamily="{DynamicResource XboxIconFont}" FontWeight="Normal" FontSize="24"
                                                    VerticalAlignment="Center" Margin="0,0,14,0">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -849,14 +865,14 @@
                                                     </StackPanel.Style>
                                                     <TextBlock Text="Achievements" Style="{StaticResource XboxHubRowLabel}" />
                                                     <DockPanel Margin="0,2,0,10">
-                                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource XboxHubDimText}"
+                                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource XboxHubDimText}" FontSize="24"
                                                                    Text="{PluginSettings Plugin=PlayniteAchievements, Path=Percent, StringFormat='{}{0:0}%'}" />
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{PluginSettings Plugin=PlayniteAchievements, Path=Unlocked}"
-                                                                       Style="{StaticResource XboxHubText}" FontSize="22" />
-                                                            <TextBlock Text=" / " Style="{StaticResource XboxHubText}" FontSize="22" />
+                                                                       Style="{StaticResource XboxHubText}" FontSize="24" />
+                                                            <TextBlock Text=" / " Style="{StaticResource XboxHubText}" FontSize="24" />
                                                             <TextBlock Text="{PluginSettings Plugin=PlayniteAchievements, Path=Total}"
-                                                                       Style="{StaticResource XboxHubText}" FontSize="22" />
+                                                                       Style="{StaticResource XboxHubText}" FontSize="24" />
                                                         </StackPanel>
                                                     </DockPanel>
                                                     <ProgressBar Style="{StaticResource XboxHubProgressBar}"
@@ -882,7 +898,7 @@
                                                 <!-- Shown only: disabled so it takes no focus of its own. -->
                                                 <HtmlTextView HtmlText="{Binding Description}" IsEnabled="False" IsHitTestVisible="False" Margin="0,0,0,12"
                                                               ClipToBounds="True"
-                                                              HtmlFontSize="19"
+                                                              HtmlFontSize="24"
                                                               HtmlFontFamily="{DynamicResource XboxFont}"
                                                               HtmlForeground="#E6FFFFFF"
                                                               LinkForeground="{DynamicResource GlyphLightColor}" />
@@ -928,7 +944,7 @@
                                                                 Focusable="True" FocusVisualStyle="{x:Null}"
                                                                 VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                                                     <HtmlTextView x:Name="PART_HtmlDescription"
-                                                                  HtmlFontSize="19"
+                                                                  HtmlFontSize="24"
                                                                   HtmlFontFamily="{DynamicResource XboxFont}"
                                                                   HtmlForeground="#E6FFFFFF"
                                                                   LinkForeground="{DynamicResource GlyphLightColor}"
