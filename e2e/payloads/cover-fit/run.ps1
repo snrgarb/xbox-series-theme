@@ -45,15 +45,17 @@ function Get-LogLines([int] $After, [string] $Pattern) {
     @(Get-ExtensionLog | Select-Object -Skip $After | Where-Object { $_ -match $Pattern } | ForEach-Object { $_.Trim() })
 }
 
-# Presses $Button until the log's last line matching $Told also matches $Pattern, at most $Max times. Throws, after a
-# screenshot "lost-<what>", if it never does.
+# Presses $Button until the log's last line matching $Told also matches $Pattern, at most $Max times, waiting up to
+# 2.5 s after each press for a new $Told line. Throws, after a screenshot "lost-<what>", if it never gets there.
 function Step-To([string] $Button, [string] $Told, [string] $Pattern, [int] $Max, [string] $What) {
     foreach ($n in 0..$Max) {
         $last = Get-LogLines 0 $Told | Select-Object -Last 1
         if ($last -match $Pattern) { Start-Sleep -Milliseconds 500; return }
         if ($n -eq $Max) { break }
+        $mark = Get-Mark
         Push-Button $Button
-        Start-Sleep -Milliseconds 700
+        foreach ($t in 1..10) { if (Get-LogLines $mark $Told) { break }; Start-Sleep -Milliseconds 250 }
+        Start-Sleep -Milliseconds 300
     }
     Save-Screen "lost-$What"
     throw "focus never reached /$Pattern/ with $Max $Button for $What; the log's last word: $last"
@@ -107,17 +109,24 @@ try {
     Push-Button Down; Shot 'groups-2' 2500
     Push-Button Down; Shot 'groups-3' 2500
 
-    # Back to the Recent row (B from the Groups), then Search, empty, and back.
-    Push-Button B; Start-Sleep -Seconds 2
-    Step-Home Left 'Recent tile ' 2 'back-home'
+    # Back to the Recent row: Up through the Groups, from the first to the wide tiles, and from them to the Recent row.
+    # (Left and Right stay within a Group, and B does nothing there.)
+    Step-Home Up 'Recent tile ' 8 'back-home'
+
+    # Search, empty, from the Recent row, and back. Search logs nothing: B puts its keyboard away first, if it is up,
+    # then leaves the page, so a second B only while Home hasn't said where its focus is.
     Push-Button Y; Shot 'search' 3000
-    Push-Button B; Start-Sleep -Milliseconds 800
-    Push-Button B; Start-Sleep -Seconds 2
+    $mark = Get-Mark
+    Push-Button B; Start-Sleep -Milliseconds 1500
+    if (-not (Get-LogLines $mark 'Home focus on ')) { Push-Button B; Start-Sleep -Seconds 2 }
 
     # My games & apps: Play history's rows, from the Recent row's last tile, then the Games grid through the nav.
     Step-Home Right 'Play history tile' 10 'history'
     Push-Button A; Shot 'history' 3000
-    Push-Button Left; Start-Sleep -Milliseconds 700
+    $mark = Get-Mark
+    Push-Button Left
+    foreach ($t in 1..10) { if (Get-LogLines $mark 'My games & apps nav focus on ') { break }; Start-Sleep -Milliseconds 250 }
+    if (-not (Get-LogLines $mark 'My games & apps nav focus on ')) { Save-Screen 'lost-nav'; throw 'Left from Play history did not reach the nav' }
     Step-To Up 'My games & apps nav focus on ' 'nav focus on Games,' 6 'games-1'
     Push-Button Right; Shot 'games-1' 3000
     Push-Button Down; Push-Button Down; Shot 'games-2' 2000
