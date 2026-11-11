@@ -255,6 +255,14 @@ namespace XboxSeries.Core
 
         public SettingsState Settings { get; } = new SettingsState();
 
+        /// <summary>The Game hub's backdrop: the screen it was opened from, held while it is open.</summary>
+        public HubBackdropState HubBackdrop { get; } = new HubBackdropState();
+
+        /// <summary>What the Dashboard's XAML reads of the extension through PluginSettings.</summary>
+        public DashboardBindings Dashboard => dashboard ?? (dashboard = new DashboardBindings(Settings.StartUp, HubBackdrop));
+
+        private DashboardBindings dashboard;
+
         public void OnLibraryChanged(LibrarySnapshot snapshot)
         {
             var previous = library;

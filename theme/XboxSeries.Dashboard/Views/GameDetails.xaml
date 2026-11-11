@@ -371,15 +371,19 @@
                         </Grid.InputBindings>
 
                         <!--
-                            Background: the game's own background art, blurred and dimmed; without one, its cover, blurred and
-                            dimmed; without either, the plain dashboard background behind them.
+                            The hub is a panel over the screen it was opened from, as the console's. Back to front: the game's
+                            art full screen; with the extension, over it, the screen it was opened from; then the band, which
+                            shows the game's art again, darker, under the hub's content.
+
+                            The art: the game's own background art, blurred; without one, its cover, blurred; without either,
+                            the plain dashboard background behind them. Dimmed by the gradient after it.
                             Each is blurred small and stretched to fill the screen: laid out 128 by 72, a fifteenth of the
                             1080p screen, drawn once into a picture that size (times the screen's scaling) and blurred there,
                             by a fifteenth of the radius. Blurred at the screen's own size, the blur is worked out again on the
                             CPU, at 4K, whenever WPF loses the graphics card, as it does when Windows sleeps, and one frame of
                             that took minutes (#95); at this size it is nothing. The stretch smooths it further.
                         -->
-                        <Grid ClipToBounds="True" IsHitTestVisible="False">
+                        <Grid x:Name="XboxHubArt" ClipToBounds="True" IsHitTestVisible="False">
                             <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Grid Width="128" Height="72" ClipToBounds="True">
                                     <Grid.CacheMode>
@@ -431,39 +435,71 @@
                                                IsBlurEnabled="True" BlurAmount="2" />
                                 </Viewbox>
                             </Grid>
+                        </Grid>
 
-                            <Rectangle>
-                                <Rectangle.Style>
-                                    <Style TargetType="Rectangle">
-                                        <Setter Property="Fill">
-                                            <Setter.Value>
-                                                <!-- Dimmed overall, and more so at the left and bottom where the text and cards sit. -->
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="#CC000000" Offset="0" />
-                                                    <GradientStop Color="#66000000" Offset="0.55" />
-                                                    <GradientStop Color="#99000000" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
-                                                    <Condition Binding="{Binding CoverImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Rectangle.Style>
-                            </Rectangle>
+                        <Rectangle IsHitTestVisible="False">
+                            <Rectangle.Style>
+                                <Style TargetType="Rectangle">
+                                    <Setter Property="Fill">
+                                        <Setter.Value>
+                                            <!-- Dimmed overall, and more so at the left and bottom where the text and cards sit. -->
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#CC000000" Offset="0" />
+                                                <GradientStop Color="#66000000" Offset="0.55" />
+                                                <GradientStop Color="#99000000" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding BackgroundImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                <Condition Binding="{Binding CoverImage, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Rectangle.Style>
+                        </Rectangle>
+
+                        <!--
+                            With the extension, the screen the hub was opened from, outside the band: the page under the hub,
+                            drawn once as the hub opens into a picture an eighth of its size and softened there, stretched to
+                            the screen and darkened 60%. It covers the art above, and is let go as the hub closes. With the theme
+                            alone, or no snapshot, it stays collapsed and the game's art shows there instead.
+                        -->
+                        <Grid x:Name="XboxHubBackdrop" IsHitTestVisible="False">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{PluginSettings Plugin=XboxSeries, Path=HubBackdrop.HasSnapshot, FallbackValue=False}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Image Source="{PluginSettings Plugin=XboxSeries, Path=HubBackdrop.Snapshot}" Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <Rectangle Fill="#99000000" />
                         </Grid>
 
                         <!--
-                            The console's band: My games & apps' grey, across the whole width, with an equal gap of the art
-                            above and below it. Everything else sits inside it; the cards scroll across it to the edge.
+                            The console's band, across the whole width, with an equal gap above and below it. Everything else
+                            sits inside it; the cards scroll across it to the edge. It shows the game's art, the full-screen
+                            art above drawn again where it lies, under #B3000000 to keep the text readable; under that, the
+                            dashboard background, so a game with no art doesn't show the screen behind through it.
                         -->
-                        <Border x:Name="Band" Margin="0,88,0,88" Background="#E61F1F1F" IsHitTestVisible="False" />
+                        <Grid x:Name="Band" Margin="0,88,0,88" ClipToBounds="True" IsHitTestVisible="False">
+                            <Rectangle Fill="{DynamicResource MainBackgourndBrush}" />
+                            <Rectangle>
+                                <Rectangle.Fill>
+                                    <VisualBrush Visual="{Binding ElementName=XboxHubArt}" Stretch="UniformToFill" />
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Rectangle Fill="#B3000000" />
+                        </Grid>
 
                         <Grid Margin="80,128,80,0">
                             <Grid.RowDefinitions>

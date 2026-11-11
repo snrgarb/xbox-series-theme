@@ -48,7 +48,7 @@ The theme's one menu for a game, with the console's main rows. Menu opens it on 
 _Avoid_: context menu, game menu (that is Playnite's own, which the theme no longer shows; without the extension, Menu and Manage still open it)
 
 **Game hub**:
-The Dashboard's page for one game, modelled on the Xbox game hub: a header, a row of cards about the game, and its actions. It replaces Playnite's Game details view.
+The Dashboard's page for one game, modelled on the Xbox game hub: a header, a row of cards about the game, and its actions. It replaces Playnite's Game details view. It is a panel over the screen it was opened from: a band across the screen shows the game's art, darkened, and above and below it, with the extension, that screen shows, blurred and darkened (with the theme alone, the game's art).
 _Avoid_: game page, game card, Manage game
 
 **Achievements page**:

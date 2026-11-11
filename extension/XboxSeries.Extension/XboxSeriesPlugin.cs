@@ -129,11 +129,11 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// The Bundle's options as the Dashboard's XAML binds to them through Playnite's PluginSettings markup, which
-        /// needs a public property of the plugin to start from. The theme reads StartUp.ReduceMotion, which tells it
-        /// when it changes; renaming either breaks the theme of the same version.
+        /// What the Dashboard's XAML binds to through Playnite's PluginSettings markup, which needs a public property of
+        /// the plugin to start from: StartUp.ReduceMotion and the Game hub's HubBackdrop (<see cref="DashboardBindings"/>).
+        /// Renaming this breaks the theme of the same version.
         /// </summary>
-        public SettingsState DashboardSettings => core.Settings;
+        public DashboardBindings DashboardSettings => core.Dashboard;
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
