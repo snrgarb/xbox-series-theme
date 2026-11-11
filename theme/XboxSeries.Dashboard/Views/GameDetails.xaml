@@ -61,12 +61,6 @@
         <Setter Property="Margin" Value="0,2,16,14" />
     </Style>
 
-    <!-- The "•" before a header item: Collapsed unless an earlier item shows (set per item with DataTriggers). -->
-    <Style x:Key="XboxHubDot" TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
-        <Setter Property="Text" Value="•" />
-        <Setter Property="Margin" Value="8,0,8,0" />
-    </Style>
-
     <!--
         The green ring that it draws around whatever has focus; the same as Home's tiles. Each use gives it the console's
         focus glow as its child band (XboxFocusGlow), which a style can't add.
@@ -560,173 +554,169 @@
                                 </ToggleButtonEx>
                             </StackPanel>
 
-                            <!-- Header: title, then Publisher • Release year • Install size • Platform • Source beside it. -->
-                            <DockPanel Grid.Row="0">
-                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource XboxHubText}" MaxWidth="1100"
-                                           FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="52" />
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="20,0,0,11">
-                                    <TextBlock x:Name="HeaderPublisher"
-                                               Text="{Binding Publishers, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Publishers.Count}" Value="0">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                            <!--
+                                Header, as the console's: the title alone, then one line of facts under it, Publisher • Release year •
+                                Install size (installed games only) • Platform • Source, then the features, • between them too, then the age
+                                rating's box. A part with nothing to show has empty text, and the dot before a part shows only while that part
+                                and one before it do, so the line never starts with a dot or doubles one. The line trims with an ellipsis rather
+                                than wrapping: the rating is docked first, so it keeps its whole width and the facts get what is left, and the
+                                line keeps to its content, so a short one has the rating straight after it. Above the cards, so both pages
+                                show it.
+                            -->
+                            <TextBlock Grid.Row="0" Text="{Binding DisplayName}" Style="{StaticResource XboxHubText}"
+                                       FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="52" />
 
-                                    <StackPanel x:Name="HeaderYear" Orientation="Horizontal">
-                                        <StackPanel.Style>
-                                            <Style TargetType="StackPanel">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding ReleaseYear}" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </StackPanel.Style>
-                                        <TextBlock>
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding ReleaseYear}" Style="{StaticResource XboxHubDimText}" />
-                                    </StackPanel>
-
-                                    <!-- Installed games only. -->
-                                    <StackPanel x:Name="HeaderInstallSize" Orientation="Horizontal">
-                                        <StackPanel.Style>
-                                            <Style TargetType="StackPanel">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsInstalled}" Value="False">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding InstallSize}" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding InstallSize}" Value="0">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </StackPanel.Style>
-                                        <TextBlock>
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderYear}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding InstallSize, Converter={StaticResource NullableUlongBytesSizeToStringConverter}}"
-                                                   Style="{StaticResource XboxHubDimText}" />
-                                    </StackPanel>
-
-                                    <StackPanel x:Name="HeaderPlatform" Orientation="Horizontal">
-                                        <StackPanel.Style>
-                                            <Style TargetType="StackPanel">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Platforms.Count}" Value="0">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </StackPanel.Style>
-                                        <TextBlock>
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderYear}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderInstallSize}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding Platforms, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}"
-                                                   Style="{StaticResource XboxHubDimText}" />
-                                    </StackPanel>
-
-                                    <StackPanel Orientation="Horizontal">
-                                        <StackPanel.Style>
-                                            <Style TargetType="StackPanel">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding SourceId}" Value="{x:Static sys:Guid.Empty}">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </StackPanel.Style>
-                                        <TextBlock>
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDot}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPublisher}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderYear}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderInstallSize}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Visibility, ElementName=HeaderPlatform}" Value="Visible">
-                                                            <Setter Property="Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding Source.Name}" Style="{StaticResource XboxHubDimText}" />
-                                    </StackPanel>
-                                </StackPanel>
-                            </DockPanel>
-
-                            <!-- Then the features on a line, as the console lists a game's capabilities, and the age rating. -->
-                            <DockPanel Margin="0,6,0,0" Grid.Row="1" MinHeight="48">
-                                <TextBlock DockPanel.Dock="Left"
-                                           Text="{Binding Features, Converter={StaticResource ListToStringConverter}, ConverterParameter=' • '}"
-                                           Style="{StaticResource XboxHubDimText}" FontSize="19" MaxWidth="1000"
-                                           TextWrapping="Wrap" MaxHeight="54" VerticalAlignment="Center" Margin="0,0,28,0" />
-                                <Border HorizontalAlignment="Left" VerticalAlignment="Center" Padding="10,3"
+                            <DockPanel Grid.Row="1" HorizontalAlignment="Left" Margin="0,6,0,0" MinHeight="48">
+                                <Border x:Name="HeaderRating" DockPanel.Dock="Right" VerticalAlignment="Center" Padding="10,3"
                                         BorderBrush="#80FFFFFF" BorderThickness="1" CornerRadius="3">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding AgeRatings.Count}" Value="0">
+                                                <!-- On its text, as the facts: a game with no ratings may have none or an empty list. -->
+                                                <DataTrigger Binding="{Binding Text, ElementName=HeaderRatingText, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBlock Text="{Binding AgeRatings, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}"
-                                               Style="{StaticResource XboxHubText}" FontSize="16" />
+                                    <TextBlock x:Name="HeaderRatingText" Text="{Binding AgeRatings, Converter={StaticResource ListToStringConverter}, ConverterParameter=', '}"
+                                               Style="{StaticResource XboxHubText}" FontSize="20" />
                                 </Border>
+                                <!-- Its gap before the rating goes with it when there are no facts at all, so the rating starts the line. -->
+                                <TextBlock x:Name="HeaderFacts" FontSize="24" VerticalAlignment="Center" Margin="0,0,24,0"
+                                           TextWrapping="NoWrap" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, ElementName=FactPublisher, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactYear, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactInstallSize, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactPlatform, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactSource, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactFeatures, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style><Run x:Name="FactPublisher" Text="{Binding Publishers, Converter={StaticResource ListToStringConverter}, ConverterParameter=', ', Mode=OneWay}"
+                                    /><Run><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value=" • " />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, ElementName=FactPublisher, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Text" Value="" />
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding Text, ElementName=FactYear, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run x:Name="FactYear" Text="{Binding ReleaseYear, Mode=OneWay}"
+                                    /><Run><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value=" • " />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, ElementName=FactPublisher, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactYear, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Text" Value="" />
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding Text, ElementName=FactInstallSize, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run x:Name="FactInstallSize"><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value="{Binding InstallSize, Converter={StaticResource NullableUlongBytesSizeToStringConverter}, Mode=OneWay}" />
+                                            <Style.Triggers>
+                                                <!-- Installed games only. -->
+                                                <DataTrigger Binding="{Binding IsInstalled}" Value="False">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding InstallSize}" Value="{x:Null}">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding InstallSize}" Value="0">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value=" • " />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, ElementName=FactPublisher, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactYear, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactInstallSize, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Text" Value="" />
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding Text, ElementName=FactPlatform, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run x:Name="FactPlatform" Text="{Binding Platforms, Converter={StaticResource ListToStringConverter}, ConverterParameter=', ', Mode=OneWay}"
+                                    /><Run><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value=" • " />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, ElementName=FactPublisher, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactYear, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactInstallSize, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactPlatform, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Text" Value="" />
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding Text, ElementName=FactSource, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run x:Name="FactSource"><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value="{Binding Source.Name, Mode=OneWay}" />
+                                            <Style.Triggers>
+                                                <!-- Playnite gives a game with no source an empty source id rather than none. -->
+                                                <DataTrigger Binding="{Binding SourceId}" Value="{x:Static sys:Guid.Empty}">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run><Run.Style>
+                                        <Style TargetType="Run">
+                                            <Setter Property="Text" Value=" • " />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, ElementName=FactPublisher, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactYear, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactInstallSize, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactPlatform, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                        <Condition Binding="{Binding Text, ElementName=FactSource, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Text" Value="" />
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding Text, ElementName=FactFeatures, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}" Value="True">
+                                                    <Setter Property="Text" Value="" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Run.Style></Run><Run x:Name="FactFeatures" Text="{Binding Features, Converter={StaticResource ListToStringConverter}, ConverterParameter=' • ', Mode=OneWay}"
+                                /></TextBlock>
                             </DockPanel>
 
                             <!--

@@ -12,8 +12,10 @@
 # Achievements tile", "Game hub opened for ...", "Tile menu <game>: <rows>"), and the test stops, saying where focus was,
 # when it didn't. Waits are by a stopwatch and log lines by their order: the VM's clock can jump mid-run. Playnite's
 # main window gives UI Automation nothing, so what Home, the hub and Playnite's own windows show is for looking at:
-# tile-focused.jpg has the tile's line ("Nothing recorded yet", "95 Score"), data-hub.jpg the card's "Achievements 3 / 5",
-# data-extensions*.jpg what PlayniteAchievements offers. The Guide's texts are read, into <step>.txt.
+# tile-focused.jpg has the tile's line ("Nothing recorded yet", "95 Score"), data-hub.jpg the card's "Achievements 3 / 5"
+# and the header's line of facts under the title, too long for it and so cut short before the age rating (#204),
+# data-hub-plain.jpg the line of a game with only a year and a source, data-extensions*.jpg what PlayniteAchievements
+# offers. The Guide's texts are read, into <step>.txt.
 #
 # The achievements are given to PlayniteAchievements as its legacy per-game JSON cache, which it imports as it starts;
 # no store account is signed in.
@@ -389,6 +391,37 @@ try {
     Push-Button A; Start-Sleep -Seconds 4
     Snap 'data-extensions-a'
     Enter-Home 'data-extensions'
+
+    # The Game hub's header for a game with few facts (#204): Brass Lantern, right of Amber Circuit on the Recent row,
+    # has a release year and its source only, so the line under its title is those two and one dot between them, with
+    # no rating (data-hub-plain.jpg). For looking at.
+    # A screenshot only: nothing here stops the run; a step that doesn't come saves a shot and the run carries on.
+    if ($script:AtHome) { try { Move-ToAmberCircuit } catch { Say "  Brass Lantern's hub: $_" } }
+    if ($script:AtHome -and $script:Game -eq 'Amber Circuit') {
+        $mark = Get-Mark
+        Push-Button Right
+        $line = Wait-Line 'Home focus on the Recent tile .+' 3 $mark
+        $plain = if ($line) { Get-Focused $line 'Recent tile (.+)' }
+        if ($plain -ne 'Brass Lantern') {
+            Fail "data: right of Amber Circuit is '$plain', not Brass Lantern"
+            Snap 'data-hub-plain-not-reached'
+        } else {
+            Start-Sleep -Milliseconds 400
+            $mark = Get-Mark
+            Push-Button A
+            if (Wait-Line 'Game hub opened for Brass Lantern' 8 $mark) {
+                Start-Sleep -Seconds 3
+                Snap 'data-hub-plain'
+            } else {
+                Fail 'data: A on Brass Lantern did not open its Game hub'
+                Snap 'data-hub-plain-not-opened'
+            }
+            Enter-Home 'data-hub-plain'
+        }
+    } else {
+        Fail "data: not at Home on Amber Circuit for Brass Lantern's hub (focus on '$($script:Game)')"
+        Snap 'data-hub-plain-not-home'
+    }
     Snap 'data-end'
 
     if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { Fail 'Playnite exited' }

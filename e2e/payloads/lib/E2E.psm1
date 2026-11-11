@@ -182,10 +182,17 @@ function Disconnect-Pad { if ($script:Pad) { try { $script:Pad.Disconnect() } ca
 # The seed library's games, A to N: made-up names, each with a cover and a background of a colour of its own with its
 # name on it. Six are favourites, eight installed, six tagged "E2E Picks"; the first six were played, Amber Circuit
 # last (an hour ago), so the Recent row starts Amber Circuit, Brass Lantern, Cobalt Run, Dune Signal, Ember Vale, Frost
-# Harbor, then the never played ones from Glass Orchard on.
+# Harbor, then the never played ones from Glass Orchard on. Amber Circuit has every fact the Game hub's header shows,
+# more than its line holds, so the line ends in an ellipsis before the age rating; Brass Lantern has a release year
+# and its source only, no publisher, features or rating, so its line is its year, one dot and Steam, no stray dot.
 $script:SeedGames = @(
-    @{ Name = 'Amber Circuit'; IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 1;   Playtime = 36000 }
-    @{ Name = 'Brass Lantern'; IsInstalled = $true;  Favorite = $false;                     Source = 'Steam'; PlayedHoursAgo = 24;  Playtime = 7200 }
+    @{ Name = 'Amber Circuit'; IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 1;   Playtime = 36000
+       Publishers = 'Northwind Interactive Entertainment'; ReleaseYear = 2024; InstallSize = 52500000000; Platforms = 'PC (Windows)'
+       Features = 'Single Player', 'Online Multiplayer', 'Local Co-op', 'Full Controller Support', 'Cloud Saves', 'Achievements',
+           'HDR', 'Steam Workshop', 'Steam Trading Cards', 'VR Supported'
+       AgeRatings = 'PEGI 12' }
+    @{ Name = 'Brass Lantern'; IsInstalled = $true;  Favorite = $false;                     Source = 'Steam'; PlayedHoursAgo = 24;  Playtime = 7200
+       ReleaseYear = 2019 }
     @{ Name = 'Cobalt Run';    IsInstalled = $true;  Favorite = $true;                      Source = 'GOG';   PlayedHoursAgo = 48;  Playtime = 144000 }
     @{ Name = 'Dune Signal';   IsInstalled = $false; Favorite = $false; Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 72;  Playtime = 2700 }
     @{ Name = 'Ember Vale';    IsInstalled = $true;  Favorite = $false; Tags = 'E2E Picks'; Source = 'GOG';   PlayedHoursAgo = 120; Playtime = 18000 }
@@ -227,8 +234,8 @@ function Invoke-Library([string[]] $Arguments) {
 #
 # A game is a hashtable: Name, and any property of Playnite's Game by its name (IsInstalled, Favorite, Hidden,
 # Playtime in seconds, GameId, PluginId, InstallDirectory, Description...; strings, numbers and booleans, as they go
-# through JSON), plus Tags, Categories, Platforms (names, one or several), Source (a name), PlayedHoursAgo (sets
-# LastActivity) and Hue (0 to 360, its pictures' colour):
+# through JSON), plus Tags, Categories, Platforms, Publishers, Features, AgeRatings (names, one or several), Source (a
+# name), ReleaseYear (sets ReleaseDate), PlayedHoursAgo (sets LastActivity) and Hue (0 to 360, its pictures' colour):
 #
 #   Start-Dashboard $PSScriptRoot -Library -Games @(
 #       @{ Name = 'Half-Life 2'; GameId = '220'; PluginId = 'cb91dfc9-b977-43bf-8e70-55f46e410fab'; IsInstalled = $true; Tags = 'E2E Picks' })

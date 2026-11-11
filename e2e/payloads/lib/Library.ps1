@@ -66,6 +66,10 @@ try {
                         'Categories' { $game.CategoryIds = [guid[]] @($value | ForEach-Object { $db.Categories.Add([string] $_).Id }) }
                         'Platforms' { $game.PlatformIds = [guid[]] @($value | ForEach-Object { $db.Platforms.Add([string] $_).Id }) }
                         'Source' { $game.SourceId = $db.Sources.Add([string] $value).Id }
+                        'Publishers' { $game.PublisherIds = [guid[]] @($value | ForEach-Object { $db.Companies.Add([string] $_).Id }) }
+                        'Features' { $game.FeatureIds = [guid[]] @($value | ForEach-Object { $db.Features.Add([string] $_).Id }) }
+                        'AgeRatings' { $game.AgeRatingIds = [guid[]] @($value | ForEach-Object { $db.AgeRatings.Add([string] $_).Id }) }
+                        'ReleaseYear' { $game.ReleaseDate = New-Object Playnite.SDK.Models.ReleaseDate ([int] $value) }
                         'PlayedHoursAgo' { $game.LastActivity = $now.AddHours(-$value) }
                         'AddedMinutesAgo' { $addedAgo = $value }
                         default { $game.($field.Name) = $value }
