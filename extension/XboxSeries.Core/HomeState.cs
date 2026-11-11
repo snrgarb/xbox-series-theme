@@ -9,6 +9,7 @@ namespace XboxSeries.Core
     {
         private IReadOnlyList<HomeTile> recentRow = new HomeTile[0];
         private IReadOnlyList<HomeTile> playHistory = new HomeTile[0];
+        private bool hasPlayHistoryTile = true;
         private IReadOnlyList<HomeGroup> groups = new HomeGroup[0];
         private HeroArt hero;
         private Dialog menu;
@@ -30,7 +31,7 @@ namespace XboxSeries.Core
         /// </summary>
         public event Action Revealed;
 
-        /// <summary>The Recent row's game tiles, left to right. The Play history tile follows them.</summary>
+        /// <summary>The Recent row's game tiles, left to right. The Play history tile follows them, while it is shown.</summary>
         public IReadOnlyList<HomeTile> RecentRow
         {
             get => recentRow;
@@ -42,6 +43,16 @@ namespace XboxSeries.Core
         {
             get => playHistory;
             internal set => Set(ref playHistory, value, nameof(PlayHistory));
+        }
+
+        /// <summary>
+        /// Whether the Recent row ends in the Play history tile, as Personalisation's Show Play history says; without it
+        /// the row holds one game more in its place.
+        /// </summary>
+        public bool HasPlayHistoryTile
+        {
+            get => hasPlayHistoryTile;
+            internal set => Set(ref hasPlayHistoryTile, value, nameof(HasPlayHistoryTile));
         }
 
         /// <summary>The Groups below the Recent row, top to bottom. Each ends in a See all tile.</summary>
