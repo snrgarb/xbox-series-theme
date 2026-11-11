@@ -78,6 +78,47 @@ namespace XboxSeries.Core.Tests
             Assert.True(core.Home.HasPlayHistoryTile);
         }
 
+        [Fact]
+        public void Off_the_Play_history_collage_is_not_built_and_on_again_it_is_built_afresh()
+        {
+            core.SetShowPlayHistory(false);
+            var changed = new List<string>();
+            core.Home.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+            var library = new FakeLibrary();
+            for (var day = 1; day <= 13; day++)
+            {
+                library.WithGame($"Game {day}", lastActivity: new DateTime(2026, 10, day));
+            }
+
+            core.OnLibraryChanged(library.Snapshot());
+
+            Assert.DoesNotContain(nameof(HomeState.PlayHistory), changed);
+
+            core.SetShowPlayHistory(true);
+
+            Assert.Equal(new[] { "Game 6", "Game 5", "Game 4", "Game 3" }, core.Home.PlayHistory.Select(t => t.Title));
+        }
+
+        [Fact]
+        public void Set_again_to_what_the_player_chose_it_saves_nothing_more()
+        {
+            core.SetShowPlayHistory(false);
+            var writes = secrets.Writes;
+
+            core.SetShowPlayHistory(false);
+
+            Assert.Equal(writes, secrets.Writes);
+        }
+
+        [Fact]
+        public void Set_on_while_on_only_by_default_it_is_saved_as_chosen()
+        {
+            core.SetShowPlayHistory(true);
+
+            Assert.Contains("\"ShowPlayHistory\":true", secrets.Values["StartUp"]);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

@@ -178,10 +178,16 @@ namespace XboxSeries.Core
 
         /// <summary>
         /// Settings' Show Play history box: whether Home's Recent row ends in the Play history tile or holds an eighth game
-        /// in its place. Saved at once, shared by every profile, and in force at once: the row is rebuilt.
+        /// in its place. Saved at once, shared by every profile, and in force at once: the row is rebuilt. Set again to
+        /// what the player chose, nothing is saved or rebuilt.
         /// </summary>
         public void SetShowPlayHistory(bool on)
         {
+            if (showPlayHistoryChosen == on)
+            {
+                return;
+            }
+
             showPlayHistoryChosen = on;
             Settings.StartUp.ShowPlayHistory = on;
             SaveStartUp();

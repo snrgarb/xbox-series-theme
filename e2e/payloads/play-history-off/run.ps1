@@ -6,17 +6,16 @@
 #   Home focus on the Recent tile <game>       a game tile of the Recent row took focus
 #   Home focus on the Play history tile        the Play history tile took focus
 #
-# 1. Untouched: "Play history is on", and Right from the row's first game, a press at a time, reaches seven games and
-#    then the Play history tile.
+# 1. Untouched: "Play history is on", and a walk along the row reaches seven distinct games and the Play history tile.
 # 2. Turned off with the pad, through the Settings page: Menu on the focused tile, Customise Home (the fourth row of a
 #    seed game's tile menu), which opens Settings on Personalisation; then down to Show Play history a press at a time,
 #    each chosen by where the extension's "[Settings]" lines say Settings is and checked to have moved it; A, which must
 #    log "Play history turned off", once; then B until Settings closes.
-# 3. Off, with no restart: the same walk reaches eight games and never the Play history tile.
+# 3. Off, with no restart: the same walk reaches eight distinct games and never the Play history tile.
 # 4. Playnite stopped and started again: "Play history is off", and the walk still reaches eight games and no tile.
 #
-# The row either stops at its last tile or wraps to its first; the walk ends at whichever comes first. The tiles each
-# walk reached are in steps.txt, and row-on.jpg, row-off.jpg and row-restarted.jpg show the row at its end.
+# The row wraps, so a walk starts wherever focus is in the row and keeps each distinct tile until one comes round again
+# (or, should the row stop at its ends, walks back the other way). The tiles each walk reached are in steps.txt, and row-on.jpg, row-off.jpg and row-restarted.jpg show the row at its end.
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
@@ -44,66 +43,63 @@ function Get-HomeFocus {
     if ($last) { $last -replace '^.*Home focus on ', '' }
 }
 
-# Puts focus on the Recent row's first game: Down from the top bar, where Home starts, then Left until the log says
-# focus stopped moving or wrapped. Throws when no Recent tile takes focus.
-function Enter-RowStart {
+# Whether Home's focus, by the log, is on the Recent row: one of its games or its Play history tile.
+function Test-InRow { [bool]((Get-HomeFocus) -match '^the (Recent tile .+|Play history tile)$') }
+
+# Puts focus in the Recent row, wherever along it: Down from the top bar, where Home starts, until the log says a tile
+# of the row has it. Throws when none does. Say and Push-Button write to the output, so all of it goes to the host.
+function Enter-Row {
     foreach ($i in 1..3) {
-        if ((Get-HomeFocus) -like 'the Recent tile *') { break }
+        if (Test-InRow) { return }
         $mark = @(Get-ExtensionLog).Count
-        Push-Button Down
+        Push-Button Down | Out-Host
         Wait-LogLine 'Home focus on ' $mark 2 | Out-Null
         Start-Sleep -Milliseconds 400
     }
-    if ((Get-HomeFocus) -notlike 'the Recent tile *') { Save-Screen 'no-recent-row'; throw "No Recent-row tile has focus on Home; it is on: $(Get-HomeFocus)" }
+    if (-not (Test-InRow)) { Save-Screen 'no-recent-row' | Out-Host; throw "No Recent-row tile has focus on Home; it is on: $(Get-HomeFocus)" }
+}
 
-    # Left to the first: a press that logs no new focus has stopped at it; one that lands on a tile seen already wrapped,
-    # and Right takes it back to the first.
-    $seen = @(Get-HomeFocus)
-    foreach ($i in 1..10) {
-        $mark = @(Get-ExtensionLog).Count
-        Push-Button Left
-        if (-not (Wait-LogLine 'Home focus on ' $mark 2)) { return }
-        Start-Sleep -Milliseconds 300
-        $now = Get-HomeFocus
-        if ($seen -contains $now) {
-            $mark = @(Get-ExtensionLog).Count
-            Push-Button Right
-            Wait-LogLine 'Home focus on ' $mark 2 | Out-Null
-            Start-Sleep -Milliseconds 300
-            return
+# Presses $Button once; the tile focus moved to by the log, or $null when it moved nowhere.
+function Step-Row([string] $Button) {
+    $mark = @(Get-ExtensionLog).Count
+    Push-Button $Button | Out-Host
+    if (-not (Wait-LogLine 'Home focus on ' $mark 2)) { return $null }
+    Start-Sleep -Milliseconds 300
+    Get-HomeFocus
+}
+
+# Walks the Recent row from wherever focus is in it with Right, a press at a time, keeping each distinct tile reached,
+# until a press reaches one already kept (the row wraps) or moves nowhere (it stopped at its end: then Left from there
+# to the other end, the same way). The tiles go into $script:RowTiles, in the order reached; nothing is returned, as
+# Say's lines would mix with it. A screenshot "$Shot" at the end.
+function Read-Row([string] $Shot) {
+    Enter-Row
+    $tiles = [Collections.Generic.List[string]]::new()
+    $tiles.Add((Get-HomeFocus))
+    foreach ($button in 'Right', 'Left') {
+        $ended = $false
+        foreach ($i in 1..12) {
+            $now = Step-Row $button
+            if ($null -eq $now) { break }
+            if ($tiles.Contains($now)) { $ended = $true; break }
+            $tiles.Add($now)
         }
-        $seen += $now
+        if ($ended) { break }
     }
+    Save-Screen $Shot | Out-Host
+    Say "${Shot}: $($tiles.Count) tiles: $($tiles -join ' | ')" | Out-Host
+    $script:RowTiles = @($tiles)
 }
-
-# Walks the Recent row from its first game with Right, a press at a time, until a press moves focus nowhere or back to a
-# tile already reached; every tile reached, in order, as Get-HomeFocus names them. A screenshot "$Shot" at the end.
-function Get-RowTiles([string] $Shot) {
-    Enter-RowStart
-    $tiles = @(Get-HomeFocus)
-    foreach ($i in 1..12) {
-        $mark = @(Get-ExtensionLog).Count
-        Push-Button Right
-        if (-not (Wait-LogLine 'Home focus on ' $mark 2)) { break }
-        Start-Sleep -Milliseconds 300
-        $now = Get-HomeFocus
-        if ($tiles -contains $now) { break }
-        $tiles += $now
-    }
-    Save-Screen $Shot
-    Say "${Shot}: $($tiles -join ' | ')"
-    , $tiles
-}
-
-# What is wrong with the row's tiles $Tiles, walked $When, for Show Play history $On: on, seven games then the Play
-# history tile; off, eight games and no tile.
-function Test-Row($Tiles, [bool] $On, [string] $When) {
-    $games = @($Tiles | Where-Object { $_ -like 'the Recent tile *' })
-    $history = @($Tiles | Where-Object { $_ -eq 'the Play history tile' })
+# What is wrong with the row Read-Row last walked ($script:RowTiles), walked $When, for Show Play history $On: on,
+# seven distinct games and the Play history tile; off, eight distinct games and no tile. The walk may start mid-row, as
+# the row wraps, so where the tile comes in the walk isn't judged.
+function Test-Row([bool] $On, [string] $When) {
+    $games = @($script:RowTiles | Where-Object { $_ -like 'the Recent tile *' } | Sort-Object -Unique)
+    $history = @($script:RowTiles | Where-Object { $_ -eq 'the Play history tile' })
     $want = if ($On) { 7 } else { 8 }
     $bad = @()
     if ($games.Count -ne $want) { $bad += "${When}: the Recent row has $($games.Count) games, not $want" }
-    if ($On -and ($history.Count -ne 1 -or $Tiles[-1] -ne 'the Play history tile')) { $bad += "${When}: the Recent row does not end in the Play history tile" }
+    if ($On -and $history.Count -ne 1) { $bad += "${When}: the Recent row has no Play history tile" }
     if (-not $On -and $history.Count) { $bad += "${When}: the Play history tile took focus with Show Play history off" }
     , $bad
 }
@@ -140,6 +136,13 @@ function Move-ToShowPlayHistory([int] $After) {
     foreach ($i in 1..14) {
         $place = Get-SettingsPlace $After
         if ($place -eq 'Personalisation/ShowPlayHistoryBox') { return }
+        # Personalisation has opened but its first box hasn't said it has focus yet: wait for it rather than press.
+        if ($place -eq 'Personalisation/PersonalisationBox') {
+            $waited = [Diagnostics.Stopwatch]::StartNew()
+            while ((Get-SettingsPlace $After) -eq $place -and $waited.ElapsedMilliseconds -lt 3000) { Start-Sleep -Milliseconds 200 }
+            if ((Get-SettingsPlace $After) -eq $place) { Save-Screen 'settings-stuck'; throw "Personalisation opened but none of its boxes took focus" }
+            continue
+        }
         $button = $press[$place]
         if (-not $button) { Save-Screen 'settings-lost'; throw "Settings is at $place, from where the test knows no way to Show Play history" }
         Say "Settings is at ${place}: $button"
@@ -173,10 +176,12 @@ try {
     if (-not @($said | Where-Object { $_ -match '\[Settings\] Play history is on' }).Count) {
         throw 'Show Play history is not on at the start (no "[Settings] Play history is on" line): is this a build with the setting?'
     }
-    $failures += Test-Row (Get-RowTiles 'row-on') $true 'on'
+    Read-Row 'row-on'
+    $failures += Test-Row $true 'on'
 
-    # 2. Turned off with the pad, through Customise Home's Settings, from the row's first game.
-    Enter-RowStart
+    # 2. Turned off with the pad, through Customise Home's Settings, from a game of the row.
+    Enter-Row
+    if ((Get-HomeFocus) -notlike 'the Recent tile *') { Step-Row Right | Out-Null }
     $mark = @(Get-ExtensionLog).Count
     Push-Button Start
     Start-Sleep -Milliseconds 1200
@@ -212,7 +217,8 @@ try {
     Start-Sleep -Seconds 2
 
     # 3. Off, with no restart: eight games, no Play history tile.
-    $failures += Test-Row (Get-RowTiles 'row-off') $false 'off'
+    Read-Row 'row-off'
+    $failures += Test-Row $false 'off'
 
     if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { $failures += 'Playnite exited' }
     $errors = Get-LoggedErrors
@@ -236,7 +242,8 @@ try {
     if (-not @($said | Where-Object { $_ -match '\[Settings\] Play history is off' }).Count) {
         $failures += 'Show Play history is not off after the restart (no "[Settings] Play history is off" line): it was not saved'
     }
-    $failures += Test-Row (Get-RowTiles 'row-restarted') $false 'after the restart'
+    Read-Row 'row-restarted'
+    $failures += Test-Row $false 'after the restart'
 
     if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { $failures += 'Playnite exited after the restart' }
     $errors = Get-LoggedErrors

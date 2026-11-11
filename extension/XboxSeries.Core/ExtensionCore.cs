@@ -1327,7 +1327,7 @@ namespace XboxSeries.Core
         /// <summary>
         /// Rebuilds the Recent row: the running game first, then played games by last played, padded with recently
         /// added ones, never hidden ones: seven before the Play history tile, or eight with Show Play history off and no
-        /// tile. The Play history tile's collage is the played games that come next. A row is
+        /// tile. The Play history tile's collage is the played games that come next, built only while the tile shows. A row is
         /// only replaced when what it shows changed, since a new row rebuilds every tile and reads every cover again,
         /// and a library update pushes the library several times a second.
         /// </summary>
@@ -1353,13 +1353,17 @@ namespace XboxSeries.Core
 
             Home.HasPlayHistoryTile = withPlayHistory;
 
-            var collage = played.Where(g => !row.Contains(g))
-                .Take(PlayHistoryCollageCount)
-                .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
-                .ToList();
-            if (!SameTiles(collage, Home.PlayHistory))
+            // With no Play history tile its collage isn't built; turning the tile on again rebuilds the row and it.
+            if (withPlayHistory)
             {
-                Home.PlayHistory = collage;
+                var collage = played.Where(g => !row.Contains(g))
+                    .Take(PlayHistoryCollageCount)
+                    .Select(g => new HomeTile(g.Id, g.Name, g.CoverImage, g.Source, isRunning: false, StatusOf(g.Id)))
+                    .ToList();
+                if (!SameTiles(collage, Home.PlayHistory))
+                {
+                    Home.PlayHistory = collage;
+                }
             }
 
             var groups = Groups();
