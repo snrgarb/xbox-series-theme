@@ -43,7 +43,7 @@ namespace XboxSeries.Core.Tests
 
             Assert.Same(line, facts.Parent);
             Assert.Same(line, rating.Parent);
-            Assert.Equal("{StaticResource XboxHubDimText}", (string)facts.Attribute("Style"));
+            Assert.Equal("{StaticResource XboxHubDimText}", (string)FactsStyle().Attribute("BasedOn"));
             Assert.Equal(Facts, Values().Select(Bound).ToArray());
             Assert.Contains("AgeRatings", (string)rating.Descendants().Single(e => e.Name.LocalName == "TextBlock").Attribute("Text"));
         }
@@ -103,7 +103,8 @@ namespace XboxSeries.Core.Tests
             Assert.All(bindings, b =>
             {
                 Assert.StartsWith("{Binding Text, ElementName=", b);
-                Assert.Contains("Converter={StaticResource StringNullOrEmptyToBoolConverter}", b);
+                // Inverted, Playnite's converter is True for an empty string.
+                Assert.EndsWith("Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}", b);
             });
         }
 
@@ -165,13 +166,26 @@ namespace XboxSeries.Core.Tests
         public void The_rating_leads_the_line_when_there_are_no_facts()
         {
             var facts = FactsText();
-            var empty = facts.Elements().Single(e => e.Name.LocalName == "TextBlock.Style")
-                .Descendants().Single(e => e.Name.LocalName == "MultiDataTrigger");
+            var empty = FactsStyle().Descendants().Single(e => e.Name.LocalName == "MultiDataTrigger");
             var conditions = empty.Descendants().Where(e => e.Name.LocalName == "Condition").ToList();
 
             Assert.Equal(Values().Select(Name).OrderBy(n => n), conditions.Select(c => ElementName((string)c.Attribute("Binding"))).OrderBy(n => n));
             Assert.Equal("Collapsed", Setter(empty, "Visibility"));
             Assert.Null(Rating().Attribute("Margin"));
+        }
+
+        // Whitespace between two runs, or inside one, is text WPF shows: a space where a part is blank.
+        [Fact]
+        public void The_runs_follow_each_other_with_no_whitespace_between_them()
+        {
+            var hub = XDocument.Load(HubPath, LoadOptions.PreserveWhitespace);
+            var facts = hub.Descendants().Single(e => (string)e.Attribute(X + "Name") == "HeaderFacts");
+            var runs = facts.Elements().Where(e => e.Name.LocalName == "Run").ToList();
+            var first = runs.First();
+
+            Assert.Equal(11, runs.Count);
+            Assert.DoesNotContain(facts.Nodes().SkipWhile(n => n != first), n => n is XText);
+            Assert.All(runs, r => Assert.DoesNotContain(r.Nodes(), n => n is XText));
         }
 
         [Fact]
@@ -201,7 +215,12 @@ namespace XboxSeries.Core.Tests
             Assert.DoesNotContain(hub.Descendants(), e => ((string)e.Attribute(X + "Name"))?.StartsWith("HeaderPublisher") == true);
         }
 
-        private static XDocument Hub() => XDocument.Load(Path.Combine(RepoRoot, "theme", "XboxSeries.Dashboard", "Views", "GameDetails.xaml"));
+        private static readonly string HubPath = Path.Combine(RepoRoot, "theme", "XboxSeries.Dashboard", "Views", "GameDetails.xaml");
+
+        private static XDocument Hub() => XDocument.Load(HubPath);
+
+        private static XElement FactsStyle() =>
+            FactsText().Elements().Single(e => e.Name.LocalName == "TextBlock.Style").Elements().Single();
 
         // The header's rows: what sits in the hub's main grid at Grid.Row n.
         private static List<XElement> InRow(int n)
