@@ -718,8 +718,8 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Grid Background="#FF1A1A1A">
-                                <Image Source="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}"
-                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+                                <ContentControl Style="{StaticResource TileArt}"
+                                                Content="{Binding Tile.CoverImage, Converter={StaticResource Image}, ConverterParameter=200}" />
                             </Grid>
                             <StackPanel Grid.Column="1" Margin="22,0,24,0" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Tile.Title}" Style="{StaticResource Text}" FontSize="28"
@@ -873,8 +873,8 @@
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <Grid Background="#FF1A1A1A">
-                                                <Image Source="{Binding Cover, Converter={StaticResource Image}, ConverterParameter=300}"
-                                                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+                                                <ContentControl Style="{StaticResource TileArt}"
+                                                                Content="{Binding Cover, Converter={StaticResource Image}, ConverterParameter=300}" />
                                             </Grid>
                                             <!--
                                                 Its name, bold, and its state; the speed at the right. Then the amount down of
