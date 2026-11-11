@@ -127,19 +127,61 @@
         </Setter>
     </Style>
 
+    <!--
+        A game's art on a tile, whole whatever its shape (#205), as every game tile in the extension shows it: the art
+        Uniform and centred, over a copy of it that fills the tile, blurred and under a 40% black layer. Art of the tile's
+        own shape covers the copy, so it looks as it always did. Content is the art, already decoded.
+        The copy is that same picture, not a second one decoded small: it is laid out 24 wide (in high quality, from the
+        art) and drawn once into a picture that size, which the Viewbox then stretches to fill the tile, so the stretch
+        blurs it. A blur effect would be worked out again on the CPU, at the 4K screen's size, whenever WPF loses the
+        graphics card (#95); this costs a picture 24 wide (times the screen's scaling), drawn as the art arrives.
+        The tile clips and rounds it: this only keeps the copy inside the tile's edges.
+    -->
+    <Style x:Key="TileArt" TargetType="ContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Grid x:Name="Pair" ClipToBounds="True">
+                        <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid>
+                                <Grid.CacheMode>
+                                    <BitmapCache RenderAtScale="1" />
+                                </Grid.CacheMode>
+                                <!-- RenderOptions stop at a cache, so set on the picture itself. -->
+                                <Image Width="24" Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Grid>
+                        </Viewbox>
+                        <Rectangle Fill="#66000000" />
+                        <Image Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Stretch="Uniform"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- No art: nothing, so whatever the tile shows for want of it (its title) is on its own background. -->
+                        <Trigger Property="Content" Value="{x:Null}">
+                            <Setter TargetName="Pair" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- A game tile's face: its cover (or title, with no cover), library source and Running badge. Content is a HomeTile. -->
     <DataTemplate x:Key="HomeTileArt">
         <Grid>
             <!--
                 The cover is laid out once at a focused tile's size, 245, and scaled to the tile, so as the tile grows and
                 shrinks the graphics card scales the cover it has rather than the cover being laid out and drawn again
-                every frame. It is laid out at the tile's own shape, so this shows the same as the cover filling the tile
+                every frame. It is laid out at the tile's own shape, so this shows the same as the cover on the tile
                 itself: square here, and a Group's tall card sets its own size (HomeTileCoverWidth and Height) over these.
             -->
             <Viewbox Stretch="UniformToFill">
-                <Image x:Name="Cover" Width="{DynamicResource HomeTileCoverWidth}" Height="{DynamicResource HomeTileCoverHeight}"
-                       Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
-                       Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" />
+                <ContentControl x:Name="Cover" Style="{StaticResource TileArt}"
+                                Width="{DynamicResource HomeTileCoverWidth}" Height="{DynamicResource HomeTileCoverHeight}"
+                                Content="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}" />
             </Viewbox>
             <!-- Only for want of a cover: none, or one that won't load (DataTemplate.Triggers, on the picture shown). -->
             <TextBlock x:Name="Title" Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
@@ -180,7 +222,7 @@
         </Grid>
         <DataTemplate.Triggers>
             <!-- The picture, not the path: a cover set but missing or corrupt decodes to none, and the title stands in. -->
-            <DataTrigger Binding="{Binding Source, ElementName=Cover}" Value="{x:Null}">
+            <DataTrigger Binding="{Binding Content, ElementName=Cover}" Value="{x:Null}">
                 <Setter TargetName="Title" Property="Visibility" Value="Visible" />
             </DataTrigger>
             <DataTrigger Binding="{Binding Source}" Value="Steam">
