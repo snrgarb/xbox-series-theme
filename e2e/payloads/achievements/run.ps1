@@ -6,7 +6,7 @@
 # Passes when, in both states, the extension reads PlayniteAchievements, focus reaches the Achievements tile and A on it
 # puts the Guide in front; with nothing recorded the extension logs "Achievements: none (Nothing recorded yet)" (#151)
 # and the Guide has no totals; with the seed it logs "Achievements: 95 Score, 5 unlocked" and the Guide shows them; the
-# Game hub and Playnite's Extensions picker open for Amber Circuit; and Playnite is still up, at Home.
+# Game hub and Playnite's Extensions picker open for Alan Wake 2; and Playnite is still up, at Home.
 #
 # No press is counted blind: each move waits for the extension's log to say where it went ("Home focus on the
 # Achievements tile", "Game hub opened for ...", "Tile menu <game>: <rows>"), and the test stops, saying where focus was,
@@ -134,20 +134,20 @@ function Close-Playnite {
 }
 
 # Three games' achievements, as PlayniteAchievements' legacy cache held a game's: a file a game, named by its id. Five
-# unlocked of nine. By the Bundle's Score rule (no platform points: by rarity) they come to 10 + 15 + 50 for Amber
-# Circuit, 10 for Brass Lantern and 10 for Zenith Rally: 95.
+# unlocked of nine. By the Bundle's Score rule (no platform points: by rarity) they come to 10 + 15 + 50 for Alan
+# Wake 2, 10 for Brotato and 10 for Zenith Rally: 95.
 function Set-SeedAchievements {
     $dir = Join-Path $paData 'achievement_cache'
     New-Item -ItemType Directory $dir -Force | Out-Null
     $now = (Get-Date).ToUniversalTime()
     $games = @(
-        @{ Name = 'Amber Circuit'; AppId = 481; Achievements = @(
+        @{ Name = 'Alan Wake 2'; AppId = 481; Achievements = @(
             @{ ApiName = 'ACH_FIRST_LAP'; DisplayName = 'First Lap'; Description = 'Finish a lap of any circuit'; Hidden = $false; GlobalPercentUnlocked = 82.5; UnlockTimeUtc = $now.AddDays(-9).ToString('o') }
             @{ ApiName = 'ACH_PODIUM'; DisplayName = 'Podium'; Description = 'Finish a race in the first three'; Hidden = $false; GlobalPercentUnlocked = 30.0; UnlockTimeUtc = $now.AddDays(-3).ToString('o') }
             @{ ApiName = 'ACH_CLEAN_SWEEP'; DisplayName = 'Clean Sweep'; Description = 'Win every race of a season'; Hidden = $false; GlobalPercentUnlocked = 4.0; UnlockTimeUtc = $now.AddHours(-5).ToString('o') }
             @{ ApiName = 'ACH_NIGHT_OWL'; DisplayName = 'Night Owl'; Description = 'Win a night race in the rain'; Hidden = $false; GlobalPercentUnlocked = 12.0 }
             @{ ApiName = 'ACH_GHOST'; DisplayName = 'Ghost in the Machine'; Description = 'Beat your own ghost by ten seconds'; Hidden = $true; GlobalPercentUnlocked = 1.5 }) }
-        @{ Name = 'Brass Lantern'; AppId = 482; Achievements = @(
+        @{ Name = 'Brotato'; AppId = 482; Achievements = @(
             @{ ApiName = 'ACH_LIGHT'; DisplayName = 'Let There Be Light'; Description = 'Light the first lantern'; Hidden = $false; UnlockTimeUtc = $now.AddDays(-1).ToString('o') }
             @{ ApiName = 'ACH_DARK'; DisplayName = 'Lights Out'; Description = 'Finish a chapter without a lantern'; Hidden = $false; GlobalPercentUnlocked = 20.0 }) }
         @{ Name = 'Zenith Rally'; AppId = 480; Achievements = @(
@@ -259,9 +259,9 @@ function Enter-Home([string] $Step) {
     Fail "$Step`: could not get back to Home (see $Step-not-home.jpg)"
 }
 
-# Along the Recent row to Amber Circuit's tile, the row's first, from any of its tiles; the game focus ends on is in
+# Along the Recent row to Alan Wake 2's tile, the row's first, from any of its tiles; the game focus ends on is in
 # $script:Game.
-function Move-ToAmberCircuit {
+function Move-ToAlanWake {
     $line = Get-LogLines 0 'Home focus on' | Select-Object -Last 1
     $game = Get-Focused $line 'Recent tile (.+)'
     if (-not $game) {
@@ -269,7 +269,7 @@ function Move-ToAmberCircuit {
         $game = Get-Focused $script:Line 'Recent tile (.+)'
     }
     foreach ($n in 1..8) {
-        if ($game -eq 'Amber Circuit') { break }
+        if ($game -eq 'Alan Wake 2') { break }
         $mark = Get-Mark
         Push-Button Left
         $line = Wait-Line 'Home focus on the (Recent tile .+|Play history tile)' 2 $mark
@@ -343,16 +343,16 @@ try {
     if ($front -ne $guideTitle) {
         Fail "data: A two down from the profile card took the Guide away, to '$front' (see data-guide-recent.jpg for where focus was)"
         Enter-Home 'data-guide'
-        Move-ToAmberCircuit
+        Move-ToAlanWake
     } else { Close-Guide 'data' }
-    if ($script:Game -ne 'Amber Circuit') { Say "  focus is on $($script:Game); moving to Amber Circuit"; Move-ToAmberCircuit }
-    if ($script:Game -ne 'Amber Circuit') { Stop-Test "data: focus is on the Recent tile '$($script:Game)', not Amber Circuit" }
+    if ($script:Game -ne 'Alan Wake 2') { Say "  focus is on $($script:Game); moving to Alan Wake 2"; Move-ToAlanWake }
+    if ($script:Game -ne 'Alan Wake 2') { Stop-Test "data: focus is on the Recent tile '$($script:Game)', not Alan Wake 2" }
 
-    # The Game hub of Amber Circuit: its "Your game stats" card has the Achievements row (data-hub.jpg). Up from Play
+    # The Game hub of Alan Wake 2: its "Your game stats" card has the Achievements row (data-hub.jpg). Up from Play
     # to the card, and A there, which has nothing to do (#34 is not built).
     $mark = Get-Mark
     Push-Button A
-    if (-not (Wait-Line 'Game hub opened for Amber Circuit' 8 $mark)) { Stop-Test 'data: A on Amber Circuit did not open its Game hub' $mark }
+    if (-not (Wait-Line 'Game hub opened for Alan Wake 2' 8 $mark)) { Stop-Test 'data: A on Alan Wake 2 did not open its Game hub' $mark }
     Start-Sleep -Seconds 3
     Snap 'data-hub'
     Push-Button Up; Start-Sleep -Milliseconds 1200
@@ -363,16 +363,16 @@ try {
     Say "  A after Up in the hub: $(if ($front -eq 'Playnite') { 'no window opened (compare data-hub-up.jpg and data-hub-up-a.jpg)' } else { "'$front' came to the front (GameError: focus was still on Play, and the seed's games have nothing to start)" })"
     Enter-Home 'data-hub'
     if (-not $script:AtHome) { Stop-Test 'data: not back at Home after the Game hub' }
-    Move-ToAmberCircuit
-    if ($script:Game -ne 'Amber Circuit') { Stop-Test "data: after the hub focus is on the Recent tile '$($script:Game)', not Amber Circuit" }
+    Move-ToAlanWake
+    if ($script:Game -ne 'Alan Wake 2') { Stop-Test "data: after the hub focus is on the Recent tile '$($script:Game)', not Alan Wake 2" }
     Snap 'data-hub-closed'
 
     # PlayniteAchievements' own entry for the game: the Tile menu (Start) > More options > Extensions, Playnite's
     # picker of every add-on's game menu items, then A on its first item. For looking at.
     $mark = Get-Mark
     Push-Button Start
-    $menu = Wait-Line 'Tile menu Amber Circuit: .+' 5 $mark
-    if (-not $menu) { Stop-Test 'data: Start on Amber Circuit did not open its Tile menu' $mark }
+    $menu = Wait-Line 'Tile menu Alan Wake 2: .+' 5 $mark
+    if (-not $menu) { Stop-Test 'data: Start on Alan Wake 2 did not open its Tile menu' $mark }
     Start-Sleep -Milliseconds 800
     Snap 'data-tilemenu'
     Move-ToRow $menu 'More options'
@@ -385,41 +385,41 @@ try {
     Move-ToRow $more 'Extensions'
     $mark = Get-Mark
     Push-Button A
-    if (-not (Wait-Line "Extensions picker opens for Amber Circuit" 5 $mark)) { Stop-Test 'data: A on Extensions did not open the picker' $mark }
+    if (-not (Wait-Line "Extensions picker opens for Alan Wake 2" 5 $mark)) { Stop-Test 'data: A on Extensions did not open the picker' $mark }
     Start-Sleep -Seconds 3
     Snap 'data-extensions'
     Push-Button A; Start-Sleep -Seconds 4
     Snap 'data-extensions-a'
     Enter-Home 'data-extensions'
 
-    # The Game hub's header for a game with few facts (#204): Brass Lantern, right of Amber Circuit on the Recent row,
+    # The Game hub's header for a game with few facts (#204): Brotato, right of Alan Wake 2 on the Recent row,
     # has a release year and its source only, so the line under its title is those two and one dot between them, with
     # no rating (data-hub-plain.jpg). For looking at.
     # A screenshot only: nothing here stops the run; a step that doesn't come saves a shot and the run carries on.
-    if ($script:AtHome) { try { Move-ToAmberCircuit } catch { Say "  Brass Lantern's hub: $_" } }
-    if ($script:AtHome -and $script:Game -eq 'Amber Circuit') {
+    if ($script:AtHome) { try { Move-ToAlanWake } catch { Say "  Brotato's hub: $_" } }
+    if ($script:AtHome -and $script:Game -eq 'Alan Wake 2') {
         $mark = Get-Mark
         Push-Button Right
         $line = Wait-Line 'Home focus on the Recent tile .+' 3 $mark
         $plain = if ($line) { Get-Focused $line 'Recent tile (.+)' }
-        if ($plain -ne 'Brass Lantern') {
-            Fail "data: right of Amber Circuit is '$plain', not Brass Lantern"
+        if ($plain -ne 'Brotato') {
+            Fail "data: right of Alan Wake 2 is '$plain', not Brotato"
             Snap 'data-hub-plain-not-reached'
         } else {
             Start-Sleep -Milliseconds 400
             $mark = Get-Mark
             Push-Button A
-            if (Wait-Line 'Game hub opened for Brass Lantern' 8 $mark) {
+            if (Wait-Line 'Game hub opened for Brotato' 8 $mark) {
                 Start-Sleep -Seconds 3
                 Snap 'data-hub-plain'
             } else {
-                Fail 'data: A on Brass Lantern did not open its Game hub'
+                Fail 'data: A on Brotato did not open its Game hub'
                 Snap 'data-hub-plain-not-opened'
             }
             Enter-Home 'data-hub-plain'
         }
     } else {
-        Fail "data: not at Home on Amber Circuit for Brass Lantern's hub (focus on '$($script:Game)')"
+        Fail "data: not at Home on Alan Wake 2 for Brotato's hub (focus on '$($script:Game)')"
         Snap 'data-hub-plain-not-home'
     }
     Snap 'data-end'

@@ -179,33 +179,34 @@ function Push-Button([string] $Button, [int] $HoldMs = 120) {
 
 function Disconnect-Pad { if ($script:Pad) { try { $script:Pad.Disconnect() } catch {} } }
 
-# The seed library's games, A to N: made-up names, each with a real game's poster for its cover (lib\posters.txt) and a
-# background of a colour of its own with its name on it. Six are favourites, eight installed, six tagged "E2E Picks";
-# the first six were played, Amber Circuit last (an hour ago), so the Recent row starts Amber Circuit, Brass Lantern,
-# Cobalt Run, Dune Signal, Ember Vale, Frost Harbor, then the never played ones from Glass Orchard on. Amber Circuit has
-# every fact the Game hub's header shows, more than its line holds, so the line ends in an ellipsis before the age
-# rating; Brass Lantern has a release year and its source only, no publisher, features or rating, so its line is its
-# year, one dot and Steam, no stray dot.
+# The seed library's games: fourteen real games, by name in this order, as Playnite's metadata download leaves them,
+# without the games themselves: each with its Xbox store Poster for its cover and its hero art for its background
+# (lib\art.txt). Six are favourites, eight marked installed, six tagged "E2E Picks"; the first six were played, Alan
+# Wake 2 last (an hour ago), so the Recent row starts Alan Wake 2, Brotato, Cuphead, Dead Cells, Elden Ring, Forza
+# Horizon 5, then the never played ones from Grounded on. Alan Wake 2 has every fact the Game hub's header shows, more
+# than its line holds, so the line ends in an ellipsis before the age rating; Brotato has a release year and its source
+# only, no publisher, features or rating, so its line is its year, one dot and Steam, no stray dot. The sources and
+# features are the tests' own, not the games' real stores.
 $script:SeedGames = @(
-    @{ Name = 'Amber Circuit'; IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 1;   Playtime = 36000
-       Publishers = 'Northwind Interactive Entertainment'; ReleaseYear = 2024; InstallSize = 52500000000; Platforms = 'PC (Windows)'
+    @{ Name = 'Alan Wake 2';        IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 1;   Playtime = 36000
+       Publishers = 'Epic Games Publishing'; ReleaseYear = 2023; InstallSize = 52500000000; Platforms = 'PC (Windows)'
        Features = 'Single Player', 'Online Multiplayer', 'Local Co-op', 'Full Controller Support', 'Cloud Saves', 'Achievements',
            'HDR', 'Steam Workshop', 'Steam Trading Cards', 'VR Supported'
-       AgeRatings = 'PEGI 12' }
-    @{ Name = 'Brass Lantern'; IsInstalled = $true;  Favorite = $false;                     Source = 'Steam'; PlayedHoursAgo = 24;  Playtime = 7200
-       ReleaseYear = 2019 }
-    @{ Name = 'Cobalt Run';    IsInstalled = $true;  Favorite = $true;                      Source = 'GOG';   PlayedHoursAgo = 48;  Playtime = 144000 }
-    @{ Name = 'Dune Signal';   IsInstalled = $false; Favorite = $false; Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 72;  Playtime = 2700 }
-    @{ Name = 'Ember Vale';    IsInstalled = $true;  Favorite = $false; Tags = 'E2E Picks'; Source = 'GOG';   PlayedHoursAgo = 120; Playtime = 18000 }
-    @{ Name = 'Frost Harbor';  IsInstalled = $false; Favorite = $true;                      Source = 'Steam'; PlayedHoursAgo = 192; Playtime = 54000 }
-    @{ Name = 'Glass Orchard'; IsInstalled = $true;  Favorite = $false;                     Source = 'Steam' }
-    @{ Name = 'Hollow Peak';   IsInstalled = $false; Favorite = $false; Tags = 'E2E Picks'; Source = 'GOG' }
-    @{ Name = 'Iron Tide';     IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam' }
-    @{ Name = 'Jade Meridian'; IsInstalled = $false; Favorite = $false;                     Source = 'GOG' }
-    @{ Name = 'Kite Protocol'; IsInstalled = $true;  Favorite = $false;                     Source = 'Steam' }
-    @{ Name = 'Lumen Drift';   IsInstalled = $false; Favorite = $true;  Tags = 'E2E Picks'; Source = 'GOG' }
-    @{ Name = 'Mossgate';      IsInstalled = $true;  Favorite = $true }
-    @{ Name = 'Night Ferry';   IsInstalled = $false; Favorite = $false }
+       AgeRatings = 'PEGI 18' }
+    @{ Name = 'Brotato';            IsInstalled = $true;  Favorite = $false;                     Source = 'Steam'; PlayedHoursAgo = 24;  Playtime = 7200
+       ReleaseYear = 2023 }
+    @{ Name = 'Cuphead';            IsInstalled = $true;  Favorite = $true;                      Source = 'GOG';   PlayedHoursAgo = 48;  Playtime = 144000 }
+    @{ Name = 'Dead Cells';         IsInstalled = $false; Favorite = $false; Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 72;  Playtime = 2700 }
+    @{ Name = 'Elden Ring';         IsInstalled = $true;  Favorite = $false; Tags = 'E2E Picks'; Source = 'GOG';   PlayedHoursAgo = 120; Playtime = 18000 }
+    @{ Name = 'Forza Horizon 5';    IsInstalled = $false; Favorite = $true;                      Source = 'Steam'; PlayedHoursAgo = 192; Playtime = 54000 }
+    @{ Name = 'Grounded';           IsInstalled = $true;  Favorite = $false;                     Source = 'Steam' }
+    @{ Name = 'Hades';              IsInstalled = $false; Favorite = $false; Tags = 'E2E Picks'; Source = 'GOG' }
+    @{ Name = 'Halo Infinite';      IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam' }
+    @{ Name = 'Inside';             IsInstalled = $false; Favorite = $false;                     Source = 'GOG' }
+    @{ Name = 'Lies of P';          IsInstalled = $true;  Favorite = $false;                     Source = 'Steam' }
+    @{ Name = 'Minecraft Dungeons'; IsInstalled = $false; Favorite = $true;  Tags = 'E2E Picks'; Source = 'GOG' }
+    @{ Name = 'Ori and the Will of the Wisps'; IsInstalled = $true; Favorite = $true }
+    @{ Name = 'Stardew Valley';     IsInstalled = $false; Favorite = $false }
 )
 
 # The id the seed gives a game by its name: the same on every run, so a test can name a game in Playnite's log, or in
@@ -229,7 +230,7 @@ function Invoke-Library([string[]] $Arguments) {
 #
 # Written: the seed's fourteen games ($script:SeedGames above; -NoSeed leaves them out), then $Games, and a filter
 # preset "My Picks", shown in Fullscreen's quick selection, so a Group on Home, the first one: the games tagged
-# "E2E Picks" (Amber Circuit, Dune Signal, Ember Vale, Hollow Peak, Iron Tide, Lumen Drift; installed and not), by
+# "E2E Picks" (Alan Wake 2, Dead Cells, Elden Ring, Hades, Halo Infinite, Minecraft Dungeons; installed and not), by
 # name, Z to A. A new library's own four presets stay, Groups too, after it: All, Favorites, Most Played, Recently
 # Played (installed only).
 #
@@ -242,10 +243,10 @@ function Invoke-Library([string[]] $Arguments) {
 #       @{ Name = 'Half-Life 2'; GameId = '220'; PluginId = 'cb91dfc9-b977-43bf-8e70-55f46e410fab'; IsInstalled = $true; Tags = 'E2E Picks' })
 #
 # Each game's id is Get-SeedId of its name, unless it gives an Id, and its pictures are library\files\<id>\cover.jpg
-# (a real game's 600x900 poster, the next in lib\posters.txt; past the last, cover.png, drawn with its name on it) and
-# background.jpg (1920x1080, a darker shade of the same colour, reading "<name> background"). Games are added in order,
-# a minute apart, the first the most recently added. What was written is in $env:E2E_OUT\library.json, as Get-Library
-# reads it.
+# (its Xbox store Poster, 600x900, from lib\art.txt; for a game with none, cover.png, drawn with its name on it) and
+# background.jpg (its hero art, 1920x1080; for one with none, a darker shade of the same colour, reading "<name>
+# background"). Games are added in order, a minute apart, the first the most recently added. What was written is in
+# $env:E2E_OUT\library.json, as Get-Library reads it.
 #
 # With -BackgroundWidth, the backgrounds are that wide (3840 for 3840x2160) and grained, so as large and as slow to
 # read and decode as a player's own art, for a test that times it.
