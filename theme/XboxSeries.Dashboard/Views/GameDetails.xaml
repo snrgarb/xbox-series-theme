@@ -743,11 +743,19 @@
                                      Cards' margins) keep the focus ring's glow band inside the clip a wider-than-screen row gets. -->
                                 <StackPanel Orientation="Horizontal" Margin="80,24,64,24">
 
-                                    <!-- Cover, with the game's source (or platform) as a badge. -->
+                                    <!--
+                                        Cover, whole over its blurred copy as every game tile shows it (XboxTileArt), in the
+                                        card's own corners; Playnite loads it into its part, hidden, which hands it on. With the
+                                        game's source (or platform) as a badge.
+                                    -->
                                     <ButtonEx Style="{StaticResource XboxHubCard}" Width="375" Padding="0">
                                         <Grid ClipToBounds="True">
-                                            <Image x:Name="PART_ImageCover" Stretch="UniformToFill"
-                                                   RenderOptions.BitmapScalingMode="Fant" />
+                                            <Image x:Name="PART_ImageCover" Visibility="Hidden" />
+                                            <ContentControl Style="{DynamicResource XboxTileArt}" Content="{Binding Source, ElementName=PART_ImageCover}">
+                                                <ContentControl.Resources>
+                                                    <CornerRadius x:Key="XboxTileArtCornerRadius">4</CornerRadius>
+                                                </ContentControl.Resources>
+                                            </ContentControl>
                                             <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10"
                                                     Padding="8,4" CornerRadius="3" Background="{DynamicResource XboxChipBrush}">
                                                 <Grid>
