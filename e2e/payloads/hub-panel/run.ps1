@@ -1,13 +1,13 @@
 # The Game hub as a panel over the screen it was opened from (#207), on the seeded library. The hub is opened from
 # Home's Recent row (home-hub.jpg), from My games & apps' Play history (mygames-hub.jpg) and from Search
 # (search-hub.jpg), each beside a screenshot of the screen it was opened from (home.jpg, mygames.jpg, search.jpg).
-# Then it is opened and closed twenty times from Home's Recent row, and Playnite's working set taken after the first
+# Then it is opened and closed twenty times from Home's Recent row, and Playnite's private bytes taken after the first
 # cycle and after the last.
 #
 # Passes when each opening from Home and My games & apps logs "[Hub] backdrop snapshot taken (<w>x<h>)" and each
 # closing "[Hub] backdrop snapshot freed"; when the twenty cycles log twenty of each, paired, taken then freed; when
-# Playnite's working set after the twenty is within 30 MB of what it was after the first (logged either way, with the
-# private bytes the extension logged); and when Playnite is still up. Search is tried, not judged: a hub that doesn't
+# Playnite's private bytes after the twenty are within 30 MB of what they were after the first (logged either way,
+# beside those the extension logs with each snapshot); and when Playnite is still up. Search is tried, not judged: a hub that doesn't
 # open from it is said in steps.txt.
 #
 # What the hub shows is for looking at: in home-hub.jpg Home's tiles blurred and darkened above and below the band,
@@ -69,12 +69,13 @@ function Step-To([string] $Button, [string] $Pattern, [int] $Max) {
     $false
 }
 
-# Playnite's working set now, in MB, after a moment for the screen to settle.
-function Get-WorkingSetMb {
+# Playnite's private bytes now, in MB, as the extension logs them with each snapshot, after a moment for the screen
+# to settle.
+function Get-PrivateMb {
     Start-Sleep -Seconds 2
     $p = Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $p) { throw 'Playnite is not running' }
-    [math]::Round($p.WorkingSet64 / 1MB, 1)
+    [math]::Round($p.PrivateMemorySize64 / 1MB, 1)
 }
 
 # A, with focus on a game: the hub must open and log its snapshot. The screenshot $Shot once it has shown. Whether it opened.
@@ -93,9 +94,12 @@ function Open-Hub([string] $From, [string] $Shot) {
     $true
 }
 
-# B in the hub: it must close and let its snapshot go. Whether it did.
+# B in the hub: it must close and let its snapshot go. Whether it did. The log's mark from before B is left in
+# $script:Closed, for Restore-Home to wait on focus told after it.
+$script:Closed = 0
 function Close-Hub([string] $From) {
     $mark = Get-Mark
+    $script:Closed = $mark
     Push-Button B | Out-Null
     $line = Wait-Line $freed 5 $mark
     if (-not $line) { Write-Told $mark | Out-Null; return $false }
@@ -103,15 +107,23 @@ function Close-Hub([string] $From) {
     $true
 }
 
-# Back on Home, focus on a Recent tile: B until Home tells of focus, then Up to the Recent row if it is elsewhere.
-function Restore-Home([string] $What) {
-    foreach ($n in 1..4) {
-        if (Test-FocusOn 'Home focus on the Recent tile ') { return }
+# Back on Home, focus on a Recent tile, told by the log after the mark $After (taken before what should bring Home
+# back): a focus line logged before it is stale. Waits for one; if none comes, B until Home tells of focus, then Up to
+# the Recent row if it is elsewhere.
+function Restore-Home([string] $What, [int] $After) {
+    $recent = 'Home focus on the Recent tile '
+    if (Wait-Line $recent 3 $After) { Start-Sleep -Milliseconds 500; return }
+    foreach ($n in 1..3) {
         $mark = Get-Mark
         Push-Button B
-        if (Wait-Line 'Home focus on ' 3 $mark) { Start-Sleep -Milliseconds 800 }
+        $line = Wait-Line 'Home focus on ' 3 $mark
+        if ($line) {
+            Start-Sleep -Milliseconds 800
+            if ($line -match $recent) { return }
+            break
+        }
     }
-    if (-not (Step-To Up 'Home focus on the Recent tile ' 3)) {
+    if (-not (Step-To Up $recent 3)) {
         Save-Screen "$What-not-home"
         throw "${What}: could not get back to the Recent row (see $What-not-home.jpg)"
     }
@@ -129,11 +141,13 @@ try {
 
     # 1. From Home.
     Save-Screen 'home'
+    $script:Closed = Get-Mark
     if (-not (Open-Hub 'Home' 'home-hub')) { Fail 'A on a Recent tile did not open a hub with a snapshot (see home-hub-not-opened.jpg)' }
     elseif (-not (Close-Hub 'Home')) { Fail 'B in the hub opened from Home did not let its snapshot go' }
-    Restore-Home 'home'
+    Restore-Home 'home' $script:Closed
 
     # 2. From My games & apps: the Recent row's last tile, Play history, opens it with focus on its first game.
+    $left = Get-Mark
     if (-not (Step-To Right 'Home focus on the Play history tile$' 10)) { Fail 'Never reached the Play history tile' }
     else {
         $mark = Get-Mark
@@ -145,13 +159,13 @@ try {
             if (-not (Open-Hub 'My games & apps' 'mygames-hub')) { Fail 'A on a Play history game did not open a hub with a snapshot (see mygames-hub-not-opened.jpg)' }
             elseif (-not (Close-Hub 'My games & apps')) { Fail 'B in the hub opened from My games & apps did not let its snapshot go' }
             else { Start-Sleep -Seconds 1; Save-Screen 'mygames-after-hub' }
-            $mark = Get-Mark
+            $left = Get-Mark
             Push-Button B
-            Wait-Line 'My games & apps closed' 5 $mark | Out-Null
+            Wait-Line 'My games & apps closed' 5 $left | Out-Null
             Start-Sleep -Milliseconds 800
         }
     }
-    Restore-Home 'mygames'
+    Restore-Home 'mygames' $left
 
     # 3. From Search, tried: Y opens it with its keyboard up, B puts the keyboard away, focus going to the first game of
     # those most recently added, and A opens that game's hub.
@@ -165,29 +179,29 @@ try {
         if (-not (Close-Hub 'Search')) { Fail 'B in the hub opened from Search did not let its snapshot go' }
     } else { Say 'Search: no hub opened from it (see search-hub-not-opened.jpg); not judged' }
     # B leaves Search (the keyboard away first, if the hub never opened), back to Home's Recent row.
+    $left = Get-Mark
     foreach ($n in 1..3) {
         $back = Get-Mark
         Push-Button B
         if (Wait-Line 'Home focus on ' 3 $back) { Start-Sleep -Milliseconds 800; break }
     }
     Write-Told $mark
-    Restore-Home 'search'
+    Restore-Home 'search' $left
 
     # 4. Twenty openings and closings from the Recent row.
     $cycleMark = Get-Mark
     $afterFirst = $null
     foreach ($n in 1..$cycles) {
-        if (-not (Test-FocusOn 'Home focus on the Recent tile ')) { Restore-Home "cycle-$n" }
         if (-not (Open-Hub "cycle $n" $(if ($n -eq 1 -or $n -eq $cycles) { "cycle-$n-hub" })) ) { Fail "cycle $n`: the hub did not open with a snapshot"; break }
         if (-not (Close-Hub "cycle $n")) { Fail "cycle $n`: the hub did not let its snapshot go"; break }
-        Start-Sleep -Milliseconds 800
+        Restore-Home "cycle-$n" $script:Closed
         if ($n -eq 1) {
-            $afterFirst = Get-WorkingSetMb
-            Say "working set after the first cycle: $afterFirst MB"
+            $afterFirst = Get-PrivateMb
+            Say "private bytes after the first cycle: $afterFirst MB"
         }
     }
-    $afterLast = Get-WorkingSetMb
-    Say "working set after $cycles cycles: $afterLast MB"
+    $afterLast = Get-PrivateMb
+    Say "private bytes after $cycles cycles: $afterLast MB"
 
     $cycleLines = Get-LogLines $cycleMark "$taken|$freed"
     $cycleLines | ForEach-Object { Say "  log: $($_ -replace '^.*(\[Hub\])', '$1')" }
@@ -201,8 +215,8 @@ try {
     }
     if ($null -ne $afterFirst) {
         $growth = [math]::Round($afterLast - $afterFirst, 1)
-        Say "working set grew $growth MB over cycles 2 to $cycles (allowed: $allowedGrowthMb MB)"
-        if ($growth -gt $allowedGrowthMb) { Fail "Playnite's working set grew $growth MB over $cycles hub openings, more than $allowedGrowthMb MB" }
+        Say "private bytes grew $growth MB over cycles 2 to $cycles (allowed: $allowedGrowthMb MB)"
+        if ($growth -gt $allowedGrowthMb) { Fail "Playnite's private bytes grew $growth MB over $cycles hub openings, more than $allowedGrowthMb MB" }
     }
 
     # Over the whole run, every snapshot taken was freed.

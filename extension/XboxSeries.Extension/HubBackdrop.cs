@@ -93,14 +93,14 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// The page as it is on screen, an eighth of its size and softened, frozen; null while it has no size. Drawn
-        /// through a brush over exactly the page's own bounds, so what is flown off it (Home's other screen) stays out.
-        /// The brush's area runs a blur's width past the picture's edges, so the blur has the page to soften into there
-        /// rather than fading the edges out.
+        /// through a brush over exactly the page's own bounds, so what is flown off it (Home's other screen) stays out,
+        /// at exactly an eighth: a pixel of the picture is 8 by 8 of the page, so stretched back over the page it lines up
+        /// with what was there. A part pixel at the right or bottom edge is left off; the blur softens the edges.
         /// </summary>
         private object Take()
         {
-            var width = (int)Math.Ceiling(page.ActualWidth / Scale);
-            var height = (int)Math.Ceiling(page.ActualHeight / Scale);
+            var width = (int)Math.Floor(page.ActualWidth / Scale);
+            var height = (int)Math.Floor(page.ActualHeight / Scale);
             if (width <= 0 || height <= 0)
             {
                 return null;
@@ -115,7 +115,7 @@ namespace XboxSeries.Extension
             var visual = new DrawingVisual { Effect = new BlurEffect { Radius = Soften, KernelType = KernelType.Gaussian } };
             using (var context = visual.RenderOpen())
             {
-                context.DrawRectangle(brush, null, new Rect(-Soften, -Soften, width + 2 * Soften, height + 2 * Soften));
+                context.DrawRectangle(brush, null, new Rect(0, 0, page.ActualWidth / Scale, page.ActualHeight / Scale));
             }
 
             var snapshot = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);

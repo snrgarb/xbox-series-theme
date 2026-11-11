@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -8,10 +7,10 @@ using static XboxSeries.Core.Tests.XamlFonts;
 namespace XboxSeries.Core.Tests
 {
     // The Game hub as a panel over the screen it was opened from (#207, spec #201's Game hub > Backdrop). Back to front:
-    // the game's art full screen, as before; with the extension, over it, a snapshot of the screen the hub was opened
-    // from, darkened 60%; then the band, which shows the game's art under #B3000000 rather than a flat grey. With the
-    // theme alone, or no snapshot, the snapshot's layer stays collapsed and the art fills the screen as before. The XAML
-    // isn't run here; these read its structure.
+    // the game's art full screen, as before; with the extension, over it above and below the band, a snapshot of the
+    // screen the hub was opened from, darkened 60%; then the band, through which the art shows under #B3000000 rather
+    // than a flat grey. With the theme alone, or no snapshot, the snapshot's layer stays collapsed and the art fills the
+    // screen as before. The XAML isn't run here; these read its structure.
     public class GameHubBackdropXamlTests
     {
         private const string Snapshot = "{PluginSettings Plugin=XboxSeries, Path=HubBackdrop.Snapshot}";
@@ -58,15 +57,28 @@ namespace XboxSeries.Core.Tests
                 && (string)e.Attribute("TargetName") == "XboxHubArt");
         }
 
-        [Fact]
-        public void With_a_snapshot_the_screen_it_was_opened_from_fills_the_screen_darkened_60_percent()
+        [Theory]
+        [InlineData("XboxHubBackdropTop", "Top")]
+        [InlineData("XboxHubBackdropBottom", "Bottom")]
+        public void With_a_snapshot_the_screen_it_was_opened_from_shows_only_outside_the_band_darkened_60_percent(string name, string edge)
         {
+            // A strip the band's gap high, clipping a layer the whole screen high to its own edge: the snapshot is
+            // stretched over the whole screen, so what shows lines up with what was there.
             var backdrop = Named("XboxHubBackdrop");
-            var image = backdrop.Elements().Single(e => e.Name.LocalName == "Image");
-            var dim = backdrop.Elements().Single(e => e.Name.LocalName == "Rectangle");
+            var strip = Named(name);
+            var gap = ((string)Named("Band").Attribute("Margin")).Split(',');
+            var screen = strip.Elements().Single(e => !e.Name.LocalName.Contains("."));
+            var image = screen.Elements().Single(e => e.Name.LocalName == "Image");
+            var dim = screen.Elements().Single(e => e.Name.LocalName == "Rectangle");
 
+            Assert.Same(backdrop, strip.Parent);
+            Assert.Equal(edge == "Top" ? gap[1] : gap[3], (string)strip.Attribute("Height"));
+            Assert.Equal(edge, (string)strip.Attribute("VerticalAlignment"));
+            Assert.Equal("True", (string)strip.Attribute("ClipToBounds"));
+            Assert.Equal("{Binding ActualHeight, ElementName=XboxHubBackdrop}", (string)screen.Attribute("Height"));
+            Assert.Equal(edge, (string)screen.Attribute("VerticalAlignment"));
             Assert.Equal(Snapshot, (string)image.Attribute("Source"));
-            Assert.Equal("UniformToFill", (string)image.Attribute("Stretch"));
+            Assert.Equal("Fill", (string)image.Attribute("Stretch"));
             Assert.Equal("#99000000", (string)dim.Attribute("Fill"));
             Assert.True(dim.IsAfter(image));
             Assert.Null(backdrop.Attribute("Margin"));
@@ -86,23 +98,15 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_band_shows_the_games_art_under_B3_black_not_a_flat_grey()
+        public void The_band_lets_the_games_art_show_through_under_B3_black_not_a_flat_grey()
         {
             var band = Named("Band");
-            var layers = band.Elements().Where(e => !e.Name.LocalName.Contains(".")).ToList();
 
             Assert.Equal("0,88,0,88", (string)band.Attribute("Margin"));
-            Assert.Null(band.Attribute("Background"));
+            Assert.Equal("#B3000000", (string)band.Attribute("Background"));
+            Assert.Empty(band.Elements());
             Assert.DoesNotContain(Hub.Descendants().Attributes(), a => a.Value == "#E61F1F1F");
-
-            // An opaque floor, so a game with no art doesn't show the snapshot through the band; the art, as it is
-            // drawn full screen behind; the dark over it.
-            Assert.Equal(3, layers.Count);
-            Assert.Equal("{DynamicResource MainBackgourndBrush}", (string)layers[0].Attribute("Fill"));
-            var brush = layers[1].Descendants().Single(e => e.Name.LocalName == "VisualBrush");
-            Assert.Equal("{Binding ElementName=XboxHubArt}", (string)brush.Attribute("Visual"));
-            Assert.Equal("UniformToFill", (string)brush.Attribute("Stretch"));
-            Assert.Equal("#B3000000", (string)layers[2].Attribute("Fill"));
+            Assert.DoesNotContain(Hub.Descendants(), e => e.Name.LocalName == "VisualBrush");
         }
 
         private static XElement Named(string name) =>
