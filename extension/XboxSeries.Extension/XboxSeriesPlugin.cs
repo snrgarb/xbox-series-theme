@@ -24,7 +24,7 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private readonly ExtensionCore core;
         private readonly Win32WindowSystem windows;
-        private readonly HomeScreen homeScreen = new HomeScreen();
+        private readonly HomePage homePage = new HomePage();
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
         private readonly GamingInputController controller = new GamingInputController();
@@ -173,8 +173,8 @@ namespace XboxSeries.Extension
             switch (name)
             {
                 case "Hero": return new HeroControl(core.Home);
-                case "RecentRow": return new RecentRowControl(core, homeScreen);
-                case "Groups": return new GroupsControl(core, homeScreen);
+                case "RecentRow": return new RecentRowControl(core, homePage);
+                case "Groups": return new GroupsControl(core, homePage);
                 case "TileMenu": return new TileMenuControl(core);
                 case "MyGames": return new MyGamesControl(core);
                 case "Settings":

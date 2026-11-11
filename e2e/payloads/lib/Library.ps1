@@ -56,6 +56,7 @@ try {
                 $spec = $specs[$i]
                 $game = New-Object Playnite.SDK.Models.Game ([string] $spec.Name)
                 $hue = ($i * 360 / 14 + [Math]::Floor($i / 14) * 13) % 360
+                $addedAgo = $i
                 foreach ($field in $spec.PSObject.Properties) {
                     $value = $field.Value
                     switch ($field.Name) {
@@ -70,6 +71,7 @@ try {
                         'AgeRatings' { $game.AgeRatingIds = [guid[]] @($value | ForEach-Object { $db.AgeRatings.Add([string] $_).Id }) }
                         'ReleaseYear' { $game.ReleaseDate = New-Object Playnite.SDK.Models.ReleaseDate ([int] $value) }
                         'PlayedHoursAgo' { $game.LastActivity = $now.AddHours(-$value) }
+                        'AddedMinutesAgo' { $addedAgo = $value }
                         default { $game.($field.Name) = $value }
                     }
                 }
@@ -83,8 +85,9 @@ try {
                 $game.CoverImage = "$($game.Id)\cover.png"
                 $game.BackgroundImage = "$($game.Id)\background.jpg"
                 $db.Games.Add($game)
-                # Playnite stamps Added as it adds; the Recent row pads itself with the most recently added.
-                $game.Added = $now.AddMinutes(-$i)
+                # Playnite stamps Added as it adds; the Recent row pads itself with the most recently added. A minute
+                # a game, in the order given, unless the game says otherwise (AddedMinutesAgo, below 0 for newer than all).
+                $game.Added = $now.AddMinutes(-$addedAgo)
                 $db.Games.Update($game)
             }
 

@@ -94,7 +94,7 @@
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
                 <ContentControl x:Name="Battery" Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}"
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White"
+                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular" FontSize="22" Foreground="White"
                            VerticalAlignment="Center" />
             </StackPanel>
             <DataTemplate.Triggers>
@@ -108,7 +108,7 @@
         </DataTemplate>
 
         <!--
-            The Guide: Discord in a call and the battery on a line of their own, over the clock large and bold, all to the
+            The Guide: Discord in a call and the battery on a line of their own, over the clock large, all to the
             right, as on the console.
         -->
         <DataTemplate x:Key="StackedTemplate">
@@ -119,7 +119,7 @@
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}" Focusable="False"
                                     VerticalAlignment="Center" />
                 </StackPanel>
-                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxFont}" FontSize="56" FontWeight="Bold"
+                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular" FontSize="56"
                            Foreground="White" HorizontalAlignment="Right" Margin="0,-2,0,0" />
             </StackPanel>
             <DataTemplate.Triggers>

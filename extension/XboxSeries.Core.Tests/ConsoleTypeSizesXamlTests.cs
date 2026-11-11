@@ -138,21 +138,21 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Two_whole_Groups_still_fit_on_the_screen_under_the_larger_header()
+        public void Two_whole_Groups_and_part_of_a_third_show_under_the_larger_header_at_a_Groups_rest()
         {
             var groups = Extension("GroupsControl.xaml");
             var header = GroupHeader(groups);
             var group = header.Parent;
-            var view = groups.Descendants().Single(e => (string)e.Attribute(X + "Name") == "View");
+            var scale = Scale("GroupsControl.xaml");
 
             var headerHeight = Size(Extension("HomeTiles.xaml"), header) * BahnschriftLine + Thickness((string)header.Attribute("Margin"))[3];
             var card = Number(Keyed(groups, "HomeTileCoverHeight").Value);
             var gap = Thickness((string)group.Attribute("Margin"))[3];
 
-            Assert.True(2 * (headerHeight + card) + gap <= Number((string)view.Attribute("Height")),
-                "Two Groups no longer fit the Groups' view, which fades out the second");
-            // The view, scaled, still fits under the top bar (200) and its 40 margin, so the width sets the scale.
-            Assert.True(240 + Number((string)view.Attribute("Height")) * Scale("GroupsControl.xaml") <= 1080);
+            // A Group with focus has its header 64 from the screen's top (#206): it and the next end above the foot, and
+            // the one after them starts above it.
+            Assert.True(64 + (2 * (headerHeight + card) + gap) * scale <= 1080, "The second Group is cut by the screen's foot");
+            Assert.True(64 + 2 * (headerHeight + card + gap) * scale < 1080, "No part of a third Group shows");
         }
 
         [Fact]

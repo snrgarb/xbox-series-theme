@@ -5,7 +5,8 @@
 #   e2e/run.sh <test> [--run <Actions run id>] [--pext <file>] [--release] [--keep]
 #
 #   <test>       a folder under e2e/payloads/ with a run.ps1 (fresh-install, guide-over-game, seeded-home, see-all,
-#                achievements, background-follows-selection, reduce-motion, guide-off, hub-panel, probe)
+#                achievements, background-follows-selection, reduce-motion, guide-off, hub-panel, play-history-off,
+#                cover-fit, probe)
 #   --run        the CI run to take the Bundle from (its bundle artifact); default: the latest run on this branch that
 #                built one; only runs of this repository's own code, never a fork's PR
 #   --pext       a .pext to test instead of downloading one

@@ -13,8 +13,10 @@
 #    chosen by where the extension's "[Settings]" lines say Settings is and checked to have moved it; A, which must log
 #    "Reduce motion turned on", once; then B until Settings closes.
 # 3. On, with no restart: three steps along the row, each crossfade under 300 ms and at least 100 ms shorter than the
-#    shortest before: it is 150 ms. Then Down to the Groups, where the swirl is the background: "swirl still" must
-#    have been logged since the setting was turned on, and "swirl moving" not.
+#    shortest before: it is 150 ms. Then Down twice, down the page through the wide tiles into the Groups, where the
+#    swirl is the background: "swirl still" must have been logged since the setting was turned on, and "swirl moving"
+#    not. Home's page jumps to each resting point rather than sliding (#206): wide-tiles-at-once.jpg and
+#    groups-at-once.jpg are taken as soon as each "Home rests at" line is logged, and must show it already there.
 # 4. Playnite stopped and started again: "Reduce motion is on", a swirl still and none moving, and a step along the
 #    row crossfading in under 300 ms.
 #
@@ -269,9 +271,16 @@ try {
     $rows += $reduced
     Say "Reduce motion on: crossfades of $((@($reduced | Where-Object { $null -ne $_.Crossfade }) | ForEach-Object Crossfade) -join ', ') ms; the shortest with it off was $shortest ms"
 
-    # The Groups: the swirl is behind them, and shows in front as the art fades out over it. It stands still.
-    Push-Button Down
-    Start-Sleep -Milliseconds 2500
+    # The wide tiles, then the Groups: the swirl is behind them, and shows in front as the art fades out over it. It
+    # stands still. The page is at each resting point at once: a shot as soon as the log says it rests there.
+    foreach ($to in @(@{ Rest = 'WideTiles'; Shot = 'wide-tiles-at-once' }, @{ Rest = 'Group '; Shot = 'groups-at-once' })) {
+        $mark = @(Get-ExtensionLog).Count
+        Push-Button Down
+        if (Wait-LogLine "Home rests at $($to.Rest)" $mark 3) { Save-Screen $to.Shot }
+        else { $failures += "Down did not bring Home to rest at $($to.Rest.Trim())" }
+        Start-Sleep -Milliseconds 1200
+    }
+    Start-Sleep -Milliseconds 1000
     Save-Screen 'groups'
     $swirl = @(Get-LogLines '\[Motion\]' $toggle)
     $swirl | ForEach-Object { Say "logged: $_" }
