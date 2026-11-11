@@ -7,9 +7,9 @@ using Xunit;
 
 namespace XboxSeries.Core.Tests
 {
-    // Home's first screen: the Recent row, and under it the console's row of four wide tiles, each going somewhere the Bundle has (#65).
+    // The top of Home's page: the Recent row, and under it the console's row of four wide tiles, each going somewhere the Bundle has (#65).
     // The XAML isn't run here; these checks guard what the row shows, that focus only lights a tile, and that it lines
-    // up with the Recent row and fits on the first screen whatever the screen's width at 1080 tall.
+    // up with the Recent row and fits on the screen, Home at rest, whatever the screen's width at 1080 tall.
     public class HomePromoRowTests
     {
         private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -105,7 +105,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void The_tiles_sit_under_the_Recent_row_in_the_same_control_so_they_fly_with_it()
+        public void The_tiles_sit_under_the_Recent_row_in_the_same_control_so_they_scroll_with_it()
         {
             var recentRow = XDocument.Load(Path.Combine(ExtensionDir, "RecentRowControl.xaml"));
             var host = recentRow.Descendants().Single(e => e.Name.LocalName == "PromoRow");

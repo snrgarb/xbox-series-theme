@@ -6,10 +6,10 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              Focusable="False">
     <!--
-        Home's Groups: the screen below the Recent row, which flies in as the Recent row flies out. One row per Group,
-        its name over up to 6 tall game cards and a See all card, as the console's Home rows: Home's tiles, drawn and
-        ringed and titled on focus the same, but portrait and never growing. Only the Recent row's tiles grow. The focused
-        Group slides to the top of the screen.
+        Home's Groups: the rest of Home's page, under the Recent row and the wide tiles. One row per Group, its name over
+        up to 6 tall game cards and a See all card, as the console's Home rows: Home's tiles, drawn and ringed and titled
+        on focus the same, but portrait and never growing. Only the Recent row's tiles grow. The page's scroll
+        (HomePage.Scroll, on this control) moves them with the Recent row as focus moves.
     -->
     <controls:PluginUserControl.Resources>
         <ResourceDictionary>
@@ -33,72 +33,72 @@
     </controls:PluginUserControl.Resources>
 
     <!--
-        At the Recent row's fixed 1080p width and scaled the same way, so the two line up at the same size. Short enough
-        that the width always sets the scale; Groups past its bottom, or scrolled past its top, are cut off there.
+        In the Recent row's slot, stacked as it is and with the same negative bottom margin, so that WPF never clips the
+        Groups to the slot as they run on down the page past the screen's foot.
     -->
-    <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,40,115,0">
+    <StackPanel Margin="0,0,0,-400">
         <!--
-            28 px wider each side than the row, cancelled by its margins, so the clip clears the focus ring, 6 px out from
-            a tile, and its glow band, some 26 px out.
+            At the Recent row's fixed 1080p width and scaled the same way, by the width alone, so the two line up at the
+            same size, from the same 53 down the slot.
         -->
-        <!--
-            750 tall, grown from 740 for the 36 px header (#203): two whole Groups, header (32.32 at Bahnschrift's 1.2 line,
-            and 16 under it) and 296 cards each with 40 between, are 2 x (38.8 + 16 + 296) + 40 = 742, so the second isn't
-            faded out. Scaled (750 x 1.1140 = 835.5) it still ends above the screen's foot from its place 240 down, so the
-            width still sets the scale.
-        -->
-        <Grid x:Name="View" Width="1582" Height="750" Margin="-28,0" ClipToBounds="True">
-            <!--
-                On a Canvas, which never cuts its content to its own size: the Groups run on past the bottom, and a layout
-                clip on them would slide up with them as they scroll, cutting off the Groups coming into view.
-            -->
-            <Canvas>
-                <ItemsControl x:Name="Rows" ItemsSource="{Binding Groups}" Focusable="False" Width="1526" Canvas.Left="28">
-                    <ItemsControl.RenderTransform>
-                        <TranslateTransform x:Name="Scroll" />
-                    </ItemsControl.RenderTransform>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="0,0,0,40">
-                                <!--
-                                    Bahnschrift SemiLight 36 px on a 1080p screen, as the console's: 36 / 1.1140 (the
-                                    Viewbox's scale at 1920x1080, HomeTiles.xaml) = 32.32 here, 16 over the cards.
-                                -->
-                                <TextBlock Text="{Binding Name}" Margin="0,0,0,16" TextTrimming="CharacterEllipsis"
-                                           FontFamily="{DynamicResource XboxHeaderFont}" FontWeight="350" FontSize="32.32"
-                                           Foreground="White" />
-                                <StackPanel Orientation="Horizontal">
-                                    <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource GroupCard}" Tag="{Binding Title}"
-                                                        Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
-                                                        Click="OnTileClick" GotKeyboardFocus="OnTileFocused"
-                                                        LostKeyboardFocus="OnTileLeft" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+        <Viewbox Stretch="Uniform" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="105,53,115,0">
+            <StackPanel Width="1526">
+                <!--
+                    Room for the Recent row (245) and the wide tiles (214) over the Groups (RecentRowControl.xaml), so the
+                    first Group starts 40 under the wide tiles, as each Group starts 40 under the one before. Empty and
+                    without a background, so the rows under it take the pointer.
+                -->
+                <Border x:Name="AboveGroups" Height="459" />
 
+                <!--
+                    On a Canvas, which never cuts its content to its own size: the Groups run on down the page past the
+                    screen's foot, and come up into view as it scrolls.
+                -->
+                <Canvas x:Name="View" Height="0" Margin="0,40,0,0">
+                    <ItemsControl x:Name="Rows" ItemsSource="{Binding Groups}" Focusable="False" Width="1526">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,40">
                                     <!--
-                                        See all: the whole Group, on My games & apps' Full library with its preset's tab
-                                        selected. A card as tall as the games', drawn like Play history's tile: a collage
-                                        of the Group's next games after its 6, or the library icon when they all fit.
+                                        Bahnschrift SemiLight 36 px on a 1080p screen, as the console's: 36 / 1.1140 (the
+                                        Viewbox's scale at 1920x1080, HomeTiles.xaml) = 32.32 here, 16 over the cards.
                                     -->
-                                    <Button Style="{StaticResource GroupCard}" Tag="See all" Margin="0"
-                                            Click="OnSeeAllClick" KeyDown="OnSeeAllKeyDown">
-                                        <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding SeeAll}" Tag="&#xE8F1;" />
-                                    </Button>
+                                    <TextBlock Text="{Binding Name}" Margin="0,0,0,16" TextTrimming="CharacterEllipsis"
+                                               FontFamily="{DynamicResource XboxHeaderFont}" FontWeight="350" FontSize="32.32"
+                                               Foreground="White" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <ItemsControl ItemsSource="{Binding Tiles}" Focusable="False">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource GroupCard}" Tag="{Binding Title}"
+                                                            Content="{Binding}" ContentTemplate="{StaticResource HomeTileArt}"
+                                                            Click="OnTileClick" GotKeyboardFocus="OnTileFocused"
+                                                            LostKeyboardFocus="OnTileLeft" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!--
+                                            See all: the whole Group, on My games & apps' Full library with its preset's tab
+                                            selected. A card as tall as the games', drawn like Play history's tile: a collage
+                                            of the Group's next games after its 6, or the library icon when they all fit.
+                                        -->
+                                        <Button Style="{StaticResource GroupCard}" Tag="See all" Margin="0"
+                                                Click="OnSeeAllClick" KeyDown="OnSeeAllKeyDown">
+                                            <ItemsControl Style="{StaticResource TileCollage}" ItemsSource="{Binding SeeAll}" Tag="&#xE8F1;" />
+                                        </Button>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Canvas>
-        </Grid>
-    </Viewbox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Canvas>
+            </StackPanel>
+        </Viewbox>
+    </StackPanel>
 </controls:PluginUserControl>
