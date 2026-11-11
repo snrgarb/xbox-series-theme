@@ -36,6 +36,9 @@ namespace XboxSeries.Core
         /// <summary>Show Play history as the player set it; null while they never have, and the default stands.</summary>
         private bool? showPlayHistoryChosen;
 
+        /// <summary>Show battery percentages as the player set it; null while they never have, and the default stands.</summary>
+        private bool? showBatteryPercentChosen;
+
         /// <summary>Signing you in's <see cref="SigningInDuration"/>, while it shows; null otherwise.</summary>
         private IDisposable signingInTimer;
 
@@ -194,6 +197,29 @@ namespace XboxSeries.Core
             RefreshHomeRows();
         }
 
+        /// <summary>
+        /// Settings' Show battery percentages box: whether the Status area writes the PC's and the pad's percent beside
+        /// their batteries. Saved at once, shared by every profile, and in force at once on Home's top bar and in the
+        /// Guide. Set again to what the player chose, nothing is saved.
+        /// </summary>
+        public void SetShowBatteryPercent(bool on)
+        {
+            if (showBatteryPercentChosen == on)
+            {
+                return;
+            }
+
+            showBatteryPercentChosen = on;
+            ApplyShowBatteryPercent(on);
+            SaveStartUp();
+        }
+
+        private void ApplyShowBatteryPercent(bool on)
+        {
+            Settings.StartUp.ShowBatteryPercent = on;
+            Status.ShowBatteryPercent = on;
+        }
+
         /// <summary>Settings' Profiles page: a new profile, after the others, wearing the Windows account picture.</summary>
         public Profile AddProfile(string gamertag)
         {
@@ -339,6 +365,8 @@ namespace XboxSeries.Core
             Settings.StartUp.ReduceMotion = reduceMotionChosen ?? StartUpSettingsState.ReduceMotionByDefault;
             showPlayHistoryChosen = saved?.ShowPlayHistory;
             Settings.StartUp.ShowPlayHistory = showPlayHistoryChosen ?? StartUpSettingsState.ShowPlayHistoryByDefault;
+            showBatteryPercentChosen = saved?.ShowBatteryPercent;
+            ApplyShowBatteryPercent(showBatteryPercentChosen ?? StartUpSettingsState.ShowBatteryPercentByDefault);
             ShowProfiles();
             RefreshGamerpics();
         }
@@ -350,6 +378,7 @@ namespace XboxSeries.Core
             BackgroundDelay = backgroundDelayChosen,
             ReduceMotion = reduceMotionChosen,
             ShowPlayHistory = showPlayHistoryChosen,
+            ShowBatteryPercent = showBatteryPercentChosen,
             Profiles = profiles.Select(p => new SavedProfile { Id = p.Id, Gamertag = p.Gamertag, RealName = p.RealName, Picture = p.Picture }).ToList(),
             LastProfileId = lastProfileId,
         }));
@@ -437,6 +466,9 @@ namespace XboxSeries.Core
 
             /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
             public bool? ShowPlayHistory { get; set; }
+
+            /// <summary>Null until the player sets it, as <see cref="BackgroundDelay"/>.</summary>
+            public bool? ShowBatteryPercent { get; set; }
 
             public List<SavedProfile> Profiles { get; set; }
 

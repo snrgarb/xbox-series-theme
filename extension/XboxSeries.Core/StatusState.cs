@@ -15,6 +15,7 @@ namespace XboxSeries.Core
         private string achievementsNote;
         private ControllerBattery battery = ControllerBattery.None;
         private PcBattery pcBattery = PcBattery.None;
+        private bool showBatteryPercent = StartUpSettingsState.ShowBatteryPercentByDefault;
         private int notificationCount;
         private bool isInDiscordCall;
         private bool isDiscordMuted;
@@ -70,6 +71,16 @@ namespace XboxSeries.Core
         {
             get => pcBattery;
             internal set => Set(ref pcBattery, value, nameof(PcBattery));
+        }
+
+        /// <summary>
+        /// Whether each battery's percent shows beside it, as Personalisation's Show battery percentages sets it
+        /// (<see cref="StartUpSettingsState.ShowBatteryPercent"/>); off, the batteries show alone.
+        /// </summary>
+        public bool ShowBatteryPercent
+        {
+            get => showBatteryPercent;
+            internal set => Set(ref showBatteryPercent, value, nameof(ShowBatteryPercent));
         }
 
         /// <summary>How many of Playnite's own notifications there are.</summary>

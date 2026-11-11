@@ -74,6 +74,31 @@ namespace XboxSeries.Core.Tests
             Assert.DoesNotContain(pc.Descendants(), e => ResourceKey((string)e.Attribute("ContentTemplate")) == "CellTemplate");
         }
 
+        // Personalisation's Show battery percentages off hides both percents and leaves the batteries.
+        [Theory]
+        [InlineData("PcBatteryTemplate", "PcPercent")]
+        [InlineData("BatteryTemplate", "Percent")]
+        public void Show_battery_percentages_off_hides_the_percent_and_not_the_battery(string template, string percent)
+        {
+            var off = Template(template).Descendants().Single(e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == "{Binding ShowBatteryPercent}" && (string)e.Attribute("Value") == "False");
+            var setter = off.Elements().Single();
+
+            Assert.Equal(percent, (string)setter.Attribute("TargetName"));
+            Assert.Equal("Visibility", (string)setter.Attribute("Property"));
+            Assert.Equal("Collapsed", (string)setter.Attribute("Value"));
+        }
+
+        // The Guide's batteries sit on a line of their own, clear of the large clock under them.
+        [Fact]
+        public void The_Guides_clock_stands_10_under_the_batteries()
+        {
+            var stacked = Template("StackedTemplate");
+            var clock = stacked.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Time}");
+
+            Assert.Equal("0,10,0,0", (string)clock.Attribute("Margin"));
+        }
+
         // What an indicator draws as its icon: the templates it nests, the geometries it paths, the glyphs it writes in the
         // icon font (literal or bound) and any shape it draws itself, by kind and size.
         private static IEnumerable<string> Icons(XElement template)

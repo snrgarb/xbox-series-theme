@@ -59,6 +59,7 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("4", (string)info.Attribute("Grid.Row"));
             Assert.Equal("1", (string)info.Attribute("Grid.Column"));
             Assert.Equal("2", (string)Named(pane, "ReduceMotionInfo").Attribute("Grid.RowSpan"));
+            Assert.Equal("2", (string)info.Attribute("Grid.RowSpan"));
         }
 
         [Fact]
@@ -66,7 +67,7 @@ namespace XboxSeries.Core.Tests
         {
             var pane = Code("PersonalisationPane.xaml.cs");
 
-            Assert.Matches(new Regex(@"new\[\] \{ ReduceMotionBox \},\s*new\[\] \{ ShowPlayHistoryBox \},\s*\};"), pane);
+            Assert.Matches(new Regex(@"new\[\] \{ ReduceMotionBox \},\s*new\[\] \{ ShowPlayHistoryBox \},"), pane);
             Assert.Matches(new Regex(@"button == ShowPlayHistoryBox\)\s*\{\s*core\.SetShowPlayHistory\(!State\.ShowPlayHistory\);"), pane);
         }
 
@@ -89,6 +90,32 @@ namespace XboxSeries.Core.Tests
             Assert.Contains("LogPlayHistory(settings.StartUp, \"is\");", log);
             Assert.Contains("LogPlayHistory(settings.StartUp, \"turned\");", log);
             Assert.Contains("[Settings] Play history {verb} {(state.ShowPlayHistory ? \"on\" : \"off\")}", log);
+        }
+
+        [Fact]
+        public void Show_battery_percentages_is_built_as_Background_delay_on_the_row_under_Show_Play_history()
+        {
+            var pane = Load("PersonalisationPane.xaml");
+            var box = Named(pane, "ShowBatteryPercentBox");
+            var check = Named(pane, "ShowBatteryPercentCheck");
+            var info = Named(pane, "ShowBatteryPercentInfo");
+
+            Assert.Null(box.Attribute("Tag"));
+            Assert.Equal((string)Named(pane, "BackgroundDelayBox").Attribute("Padding"), (string)box.Attribute("Padding"));
+            Assert.Equal("5", (string)box.Attribute("Grid.Row"));
+            var title = box.Descendants().Single(e => e.Name.LocalName == "TextBlock" && e != check);
+            Assert.Equal("Show battery percentages", (string)title.Attribute("Text"));
+            var on = check.Descendants().Single(e => e.Name.LocalName == "DataTrigger");
+            Assert.Equal("{Binding ShowBatteryPercent}", (string)on.Attribute("Binding"));
+            Assert.Equal("{Binding IsKeyboardFocused, ElementName=ShowBatteryPercentBox, Converter={StaticResource Visibility}}",
+                (string)info.Attribute("Visibility"));
+
+            var code = Code("PersonalisationPane.xaml.cs");
+            Assert.Matches(new Regex(@"new\[\] \{ ShowPlayHistoryBox \},\s*new\[\] \{ ShowBatteryPercentBox \},\s*\};"), code);
+            Assert.Matches(new Regex(@"button == ShowBatteryPercentBox\)\s*\{\s*core\.SetShowBatteryPercent\(!State\.ShowBatteryPercent\);"), code);
+
+            var log = Code("SettingsLog.cs");
+            Assert.Contains("[Settings] Battery percentages {verb} {(state.ShowBatteryPercent ? \"on\" : \"off\")}", log);
         }
     }
 }

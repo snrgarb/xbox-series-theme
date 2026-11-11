@@ -10,7 +10,10 @@
 #    (the VM's virtual pad is on a cable, so its battery is faked too, to show both side by side): the "faked" lines, and
 #    "PC battery: 57%, charging". Home's top bar and the Guide show 57% and Windows' upright charging battery, bolt inside,
 #    before the pad's 88% battery, which lies on its side (home-fake-topbar.jpg, guide-fake-status.jpg).
-# In both, everything on the top bar is centred on one line, within 1 px (Test-TopBarLine).
+# 3. Personalisation's Show battery percentages turned off with the pad: the "[Settings] Battery percentages turned off"
+#    line, and the top bar and the Guide show both batteries without their percents (home-nopercent-topbar.jpg,
+#    guide-nopercent-status.jpg), the top bar some 60 columns of ink lighter.
+# In each, everything on the top bar is centred on one line, within 1 px (Test-TopBarLine).
 # Screenshots are whole screens, with the top bar and the Guide's top right cut out of them beside.
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
@@ -70,6 +73,7 @@ function Test-TopBarLine([string] $Phase) {
         }
     }
     $bmp.Dispose()
+    $script:RightInk = @(($b.Width / 2)..($b.Width - 1) | Where-Object { $inkTop[$_] -ge 0 }).Count
     $middle = 114 * $scale
     $bad = @()
     $x = 0
@@ -86,6 +90,75 @@ function Test-TopBarLine([string] $Phase) {
         if ([Math]::Abs($off) -gt 1 * $scale) { $bad += ("${Phase}: top bar ink at x {0}-{1} is centred {2:+0.0;-0.0} px off the bar's line" -f $start, $end, $off) }
     }
     ,$bad
+}
+
+# Home's focus by the log's last word on it, as "the Recent tile Alan Wake 2"; $null with none.
+function Get-HomeFocus {
+    $last = Get-LogLines 'Home focus on ' | Select-Object -Last 1
+    if ($last) { $last -replace '^.*Home focus on ', '' }
+}
+
+# Puts focus in the Recent row: Down from the top bar until the log says a tile of the row has it.
+function Enter-Row {
+    foreach ($i in 1..3) {
+        if ((Get-HomeFocus) -like 'the Recent tile *') { return }
+        $mark = @(Get-ExtensionLog).Count
+        Push-Button Down | Out-Host
+        Wait-LogLine 'Home focus on ' $mark 2 | Out-Null
+        Start-Sleep -Milliseconds 400
+    }
+    if ((Get-HomeFocus) -notlike 'the Recent tile *') { Save-Screen 'no-recent-row' | Out-Host; throw "No Recent-row tile has focus on Home; it is on: $(Get-HomeFocus)" }
+}
+
+# Where Settings is, by its "[Settings]" lines after line $After of the log, as "Personalisation/ShowBatteryPercentBox".
+function Get-SettingsPlace([int] $After) {
+    $page = $null; $focus = $null
+    foreach ($line in Get-LogLines '\[Settings\]' $After) {
+        if ($line -match '\[Settings\] opened on \w+, page (\w+)') { $page = $Matches[1] }
+        elseif ($line -match '\[Settings\] page (\w+)') { $page = $Matches[1] }
+        elseif ($line -match '\[Settings\] focus on (\w+)') { $focus = $Matches[1] }
+    }
+    "$page/$focus"
+}
+
+# Takes Settings, wherever it opened, to Personalisation's Show battery percentages box, a press at a time chosen by
+# where the log says Settings is, as play-history-off reaches Show Play history. Throws when a press changes nothing.
+function Move-ToShowBatteryPercent([int] $After) {
+    $press = @{
+        'None/ThemeSettingsItem'             = 'Right'
+        'None/PlayniteSettingsItem'          = 'Up'
+        'None/MorePlayniteOptionsItem'       = 'Up'
+        'None/PersonalisationBox'            = 'A'
+        'None/IdleBox'                       = 'Left'
+        'None/GuideBox'                      = 'Up'
+        'None/DiscordBox'                    = 'Up'
+        'Personalisation/BootVideoBox'       = 'Down'
+        'Personalisation/ProfilesBox'        = 'Down'
+        'Personalisation/AskBox'             = 'Down'
+        'Personalisation/BackgroundDelayBox' = 'Down'
+        'Personalisation/ReduceMotionBox'    = 'Down'
+        'Personalisation/ShowPlayHistoryBox' = 'Down'
+    }
+    foreach ($i in 1..16) {
+        $place = Get-SettingsPlace $After
+        if ($place -eq 'Personalisation/ShowBatteryPercentBox') { return }
+        if ($place -eq 'Personalisation/PersonalisationBox') {
+            $waited = [Diagnostics.Stopwatch]::StartNew()
+            while ((Get-SettingsPlace $After) -eq $place -and $waited.ElapsedMilliseconds -lt 3000) { Start-Sleep -Milliseconds 200 }
+            if ((Get-SettingsPlace $After) -eq $place) { Save-Screen 'settings-stuck' | Out-Host; throw 'Personalisation opened but none of its boxes took focus' }
+            continue
+        }
+        $button = $press[$place]
+        if (-not $button) { Save-Screen 'settings-lost' | Out-Host; throw "Settings is at $place, from where the test knows no way to Show battery percentages" }
+        Say "Settings is at ${place}: $button" | Out-Host
+        Push-Button $button | Out-Host
+        $waited = [Diagnostics.Stopwatch]::StartNew()
+        while ((Get-SettingsPlace $After) -eq $place -and $waited.ElapsedMilliseconds -lt 3000) { Start-Sleep -Milliseconds 200 }
+        if ((Get-SettingsPlace $After) -eq $place) { Save-Screen 'settings-stuck' | Out-Host; throw "$button at $place changed nothing" }
+        Start-Sleep -Milliseconds 800
+    }
+    Save-Screen 'settings-lost' | Out-Host
+    throw "Settings is at $(Get-SettingsPlace $After) after 16 presses, not on Show battery percentages"
 }
 
 # Home's top bar, then the Guide opened over Home with its Status area at the top right, and closed again; what is
@@ -162,6 +235,44 @@ try {
         $failures += 'With the pad variable, no "pad battery faked" line'
     }
     $failures += Save-StatusArea 'fake'
+    $withPercents = $script:RightInk
+
+    # 3. Show battery percentages turned off with the pad, through Customise Home's Settings: both batteries alone.
+    Enter-Row
+    $mark = @(Get-ExtensionLog).Count
+    Push-Button Start
+    Start-Sleep -Milliseconds 1200
+    foreach ($i in 1..3) { Push-Button Down; Start-Sleep -Milliseconds 400 }
+    Push-Button A
+    if (-not (Wait-LogLine '\[Settings\] opened on ThemeSettings' $mark)) {
+        Save-Screen 'settings-not-opened'
+        throw 'Customise Home did not open Settings (Menu, Down x3, A on the focused tile)'
+    }
+    Start-Sleep -Milliseconds 1500
+    try { Move-ToShowBatteryPercent $mark } finally { Get-LogLines '\[Settings\]' $mark | ForEach-Object { Say "logged: $_" } }
+    Save-Screen 'show-battery-percent-focused'
+    $toggle = @(Get-ExtensionLog).Count
+    Push-Button A
+    if (-not (Wait-LogLine '\[Settings\] Battery percentages turned off' $toggle)) {
+        Save-Screen 'show-battery-percent-not-turned-off'
+        throw 'A on Show battery percentages did not turn it off'
+    }
+    Start-Sleep -Milliseconds 500
+    Save-Screen 'show-battery-percent-off'
+    $closed = $false
+    foreach ($i in 1..4) {
+        Push-Button B
+        if (Wait-LogLine '\[Settings\] closed' $mark 2) { $closed = $true; break }
+    }
+    if (-not $closed) { Save-Screen 'settings-not-closed'; throw 'Settings did not close after B four times' }
+    Start-Sleep -Seconds 2
+    $failures += Save-StatusArea 'nopercent'
+    # "57%" and "88%" are each some 45 columns of ink at 1080 lines: both gone is at least 60 fewer.
+    $scale = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height / 1080.0
+    Say "top bar's right half: $withPercents columns of ink with the percents, $($script:RightInk) without"
+    if ($withPercents - $script:RightInk -lt 60 * $scale) {
+        $failures += "With Show battery percentages off the top bar lost $($withPercents - $script:RightInk) columns of ink, not the percents' 60 or more"
+    }
 
     if (-not (Get-Process Playnite.FullscreenApp -ErrorAction SilentlyContinue)) { $failures += 'Playnite exited' }
     $errors = Get-LoggedErrors

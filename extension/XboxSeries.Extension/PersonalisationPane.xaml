@@ -119,7 +119,7 @@
     <Grid Margin="0,20,0,0">
         <!--
             Personalisation's boxes: Boot video, Profiles and Who's playing today?, each opening its page, then
-            Background delay, Reduce motion and Show Play history, checkbox settings as Playnite settings' Update after downloads: each on
+            Background delay, Reduce motion, Show Play history and Show battery percentages, checkbox settings as Playnite settings' Update after downloads: each on
             a row of its own, its name at the box's left and the checkbox at its right, and while it has focus its info
             beside it.
         -->
@@ -129,6 +129,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -236,12 +237,44 @@
                 </Grid>
             </Button>
 
-            <!-- Beside its box while it has focus, as Background delay's. -->
-            <TextBlock x:Name="ShowPlayHistoryInfo" Grid.Row="4" Grid.Column="1" Style="{StaticResource Text}"
+            <!-- Beside its box while it has focus, as Background delay's, over the row below's empty place too. -->
+            <TextBlock x:Name="ShowPlayHistoryInfo" Grid.Row="4" Grid.RowSpan="2" Grid.Column="1" Style="{StaticResource Text}"
                        Text="Ends Home's recent games with the Play history tile. Turn it off to show another recent game in its place; Play history stays in My games &amp; apps."
                        TextWrapping="Wrap" TextTrimming="None" Width="400" Margin="30,8,0,0" VerticalAlignment="Top"
                        HorizontalAlignment="Left"
                        Visibility="{Binding IsKeyboardFocused, ElementName=ShowPlayHistoryBox, Converter={StaticResource Visibility}}" />
+
+            <!--
+                Show battery percentages: whether the Status area, on Home's top bar and in the Guide, writes the PC's and
+                the pad's percent beside their batteries. Built as Background delay: no icon, the ticked box on, the empty
+                square off; A turns it over at once, saved, and the Status area follows.
+            -->
+            <Button x:Name="ShowBatteryPercentBox" Grid.Row="5" Grid.Column="0" Style="{StaticResource Box}" Padding="30,0,24,0"
+                    Click="OnBoxClick">
+                <Grid>
+                    <TextBlock Text="Show battery percentages" Style="{StaticResource Text}" VerticalAlignment="Center" Margin="0,0,50,0" />
+                    <TextBlock x:Name="ShowBatteryPercentCheck" HorizontalAlignment="Right">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                <Setter Property="FontSize" Value="34" />
+                                <Setter Property="Text" Value="&#xE739;" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowBatteryPercent}" Value="True">
+                                        <Setter Property="Text" Value="&#xE73A;" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </Button>
+
+            <!-- Beside its box while it has focus, as Background delay's. -->
+            <TextBlock x:Name="ShowBatteryPercentInfo" Grid.Row="5" Grid.Column="1" Style="{StaticResource Text}"
+                       Text="Shows how much charge is left beside the controller's battery, and this PC's on a laptop or handheld. Turn it off to show the batteries alone."
+                       TextWrapping="Wrap" TextTrimming="None" Width="400" Margin="30,8,0,0" VerticalAlignment="Top"
+                       HorizontalAlignment="Left"
+                       Visibility="{Binding IsKeyboardFocused, ElementName=ShowBatteryPercentBox, Converter={StaticResource Visibility}}" />
         </Grid>
 
         <!-- Boot video: each generation's, oldest first after Off, the one that plays ticked. -->
