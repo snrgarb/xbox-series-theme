@@ -126,7 +126,7 @@
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
                 <ContentControl x:Name="Battery" Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}"
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="22" Foreground="White"
+                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular" FontSize="22" Foreground="White"
                            VerticalAlignment="Center" />
             </StackPanel>
             <DataTemplate.Triggers>
@@ -156,7 +156,7 @@
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}" Focusable="False"
                                     VerticalAlignment="Center" />
                 </StackPanel>
-                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="56"
+                <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular" FontSize="56"
                            Foreground="White" HorizontalAlignment="Right" Margin="0,-2,0,0" />
             </StackPanel>
             <DataTemplate.Triggers>
