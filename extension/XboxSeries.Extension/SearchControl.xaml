@@ -167,16 +167,16 @@
                         <RowDefinition Height="132" />
                     </Grid.RowDefinitions>
                     <Grid Background="#FF1A1A1A">
-                        <ContentControl Style="{StaticResource TileArt}"
+                        <ContentControl x:Name="Cover" Style="{StaticResource TileArt}"
                                         Content="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=480}" />
-                        <!-- With no cover, its title in its place. -->
+                        <!-- With no cover, or one that won't load (on the picture, as HomeTileArt), its title in its place. -->
                         <TextBlock Text="{Binding Title}" Margin="12" TextWrapping="Wrap" TextAlignment="Center"
                                    VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="20" Foreground="White">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CoverImage}" Value="{x:Null}">
+                                        <DataTrigger Binding="{Binding Content, ElementName=Cover}" Value="{x:Null}">
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                     </Style.Triggers>

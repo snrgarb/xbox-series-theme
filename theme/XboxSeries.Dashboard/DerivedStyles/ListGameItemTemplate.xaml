@@ -30,7 +30,7 @@
                     <Grid>
                         <Image x:Name="PART_ImageCover" Visibility="Hidden" />
                         <ContentControl Style="{DynamicResource XboxTileArt}" Content="{Binding Source, ElementName=PART_ImageCover}" />
-                        <Border Background="#AA000000" CornerRadius="6" x:Name="BorderDarken" Visibility="Collapsed" />
+                        <Border Background="#AA000000" CornerRadius="{DynamicResource XboxTileArtCornerRadius}" x:Name="BorderDarken" Visibility="Collapsed" />
 
                         <!--
                             As Home's: its shadow a picture made once, under it, 8 out round it, not an effect, which is
