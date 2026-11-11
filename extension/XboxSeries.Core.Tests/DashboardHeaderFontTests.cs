@@ -63,9 +63,23 @@ namespace XboxSeries.Core.Tests
         public void Homes_body_text_stays_in_Segoe_UI()
         {
             Assert.Equal(Body, FontOfStyle(Main(), "XboxText"));
+        }
 
-            var clock = Main().Descendants().Single(e => (string)e.Attribute(X + "Name") == "PART_TextClock");
-            Assert.Equal("XboxFontSemibold", ResourceKey((string)clock.Attribute("FontFamily")));
+        // The theme-only clock on Home's top bar is the console's: Bahnschrift SemiBold 22 (#202), its weight the face's
+        // own rather than one laid over it.
+        [Fact]
+        public void Homes_theme_only_clock_is_Bahnschrift_SemiBold_22()
+        {
+            var main = Main();
+            var clock = main.Descendants().Single(e => (string)e.Attribute(X + "Name") == "PART_TextClock");
+
+            Assert.Equal(HeaderSemibold, ResourceKey((string)clock.Attribute("FontFamily")));
+            Assert.Null(clock.Attribute("FontWeight"));
+            var size = (string)clock.Attribute("FontSize")
+                       ?? StyleByKey(main, ResourceKey((string)clock.Attribute("Style"))).Elements()
+                           .Where(e => e.Name.LocalName == "Setter" && (string)e.Attribute("Property") == "FontSize")
+                           .Select(e => (string)e.Attribute("Value")).Single();
+            Assert.Equal("22", size);
         }
 
         [Theory]
