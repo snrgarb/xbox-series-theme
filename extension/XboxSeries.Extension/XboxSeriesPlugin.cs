@@ -28,6 +28,7 @@ namespace XboxSeries.Extension
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
         private readonly GamingInputController controller = new GamingInputController();
+        private readonly WindowsPcBattery pcBattery = new WindowsPcBattery();
         private readonly WindowsAudio audio = new WindowsAudio();
         private readonly WindowsMediaSessions mediaSessions = new WindowsMediaSessions();
         private readonly PlayniteAchievementsSource achievements;
@@ -100,7 +101,7 @@ namespace XboxSeries.Extension
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath(), popularGamerpics), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions,
-                achievements: achievements, inputActivity: inputActivity);
+                achievements: achievements, inputActivity: inputActivity, pcBattery: pcBattery);
             core.StartupEnded += () => startup?.End();
 
             // Reduce motion as it was saved, which the core has read, before any view or the Start-up sequence shows:
@@ -314,6 +315,23 @@ namespace XboxSeries.Extension
             };
             Guarded.Run("Saying whether there are achievements", core.OnAchievementsLookedFor);
 
+            // The PC's own battery in the Status area, read from now on, on the Dashboard alone. Logged as it starts,
+            // "none" on a desktop as the e2e VM, and again as one comes or goes or starts or stops charging, not as
+            // its percent moves.
+            core.StartPcBattery();
+            var pcLogged = core.Status.PcBattery;
+            logger.Info($"[Status] PC battery: {pcLogged}");
+            core.Status.PropertyChanged += (_, e) =>
+            {
+                var now = core.Status.PcBattery;
+                if (e.PropertyName == nameof(StatusState.PcBattery)
+                    && (now.IsPresent != pcLogged.IsPresent || now.IsCharging != pcLogged.IsCharging))
+                {
+                    pcLogged = now;
+                    logger.Info($"[Status] PC battery: {now}");
+                }
+            };
+
             // The Tile menu and its More options flyout, with their rows in order, as each opens and closes.
             core.Home.PropertyChanged += (_, e) =>
             {
@@ -494,9 +512,15 @@ namespace XboxSeries.Extension
             ShowStartup(core.OnStartup());
         }
 
-        /// <summary>Windows woke from sleep: Who's playing today? again, if it asks. Raised on a thread of its own.</summary>
+        /// <summary>
+        /// Windows' power changed, raised on a thread of its own: the PC's battery is read again, whatever changed
+        /// (plugged in, unplugged, the battery's state, or waking); and on waking from sleep, Who's playing today? again,
+        /// if it asks.
+        /// </summary>
         private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
+            // Plugged in, unplugged, the battery's state moved on, or waking: the PC's battery shows it now.
+            OnUiThread(core.OnPowerChanged);
             if (e.Mode == PowerModes.Resume)
             {
                 OnUiThread(() =>

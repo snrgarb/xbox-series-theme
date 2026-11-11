@@ -83,7 +83,7 @@ _Avoid_: overlay (the overlay is the window hosting the Guide, not the Guide its
 The topmost, full-screen, transparent window the extension draws the Guide into, above every other window.
 
 **Status area**:
-Pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears. In a **Call** it shows a Discord icon too, badged muted or deafened, and lit while the user speaks.
+The PC's own battery on a laptop or handheld (its percent, a cell filled to it, and a bolt while it charges; nothing on a desktop), pad 1's battery and the clock, shown on **Home**'s top bar and at the **Guide**'s top right alike, and the count of Playnite's notifications, which the Notifications **Utility** wears. In a **Call** it shows a Discord icon too, badged muted or deafened, and lit while the user speaks.
 _Avoid_: status bar, tray
 
 **Utility**:

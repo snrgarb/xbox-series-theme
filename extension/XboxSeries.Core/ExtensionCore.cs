@@ -59,6 +59,9 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan BatteryReadAfterGuideOpens = TimeSpan.FromMilliseconds(500);
 
+        /// <summary>How often the PC's own battery is read, besides as Windows says the power changed.</summary>
+        private static readonly TimeSpan PcBatteryReadEvery = TimeSpan.FromSeconds(30);
+
         /// <summary>
         /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it, when focus came there
         /// this soon after reaching another. Opening one has Playnite refilter its list and the page lay its content out
@@ -112,6 +115,7 @@ namespace XboxSeries.Core
         private readonly IUserAccount account;
         private readonly IAudio audio;
         private readonly IController controller;
+        private readonly IPcBattery pcBattery;
         private readonly IMediaSessions mediaSessions;
         private readonly IAchievements achievements;
 
@@ -178,6 +182,9 @@ namespace XboxSeries.Core
         private IDisposable tapTimer;
         private IDisposable heroTimer;
         private IDisposable guideBatteryTimer;
+
+        /// <summary>The PC's battery's next read; null until <see cref="StartPcBattery"/>, and once stopped.</summary>
+        private IDisposable pcBatteryTimer;
         private HomeTile focusedTile;
 
         /// <summary>
@@ -214,8 +221,10 @@ namespace XboxSeries.Core
             IMediaSessions mediaSessions = null,
             IAchievements achievements = null,
             Random random = null,
-            IInputActivity inputActivity = null)
+            IInputActivity inputActivity = null,
+            IPcBattery pcBattery = null)
         {
+            this.pcBattery = pcBattery ?? NoPcBattery.Instance;
             this.random = random ?? new Random();
             this.inputActivity = inputActivity ?? NoInputActivity.Instance;
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
@@ -419,6 +428,43 @@ namespace XboxSeries.Core
         public void OnControllersChanged()
         {
             Status.Battery = controller.Battery;
+        }
+
+        /// <summary>
+        /// The Dashboard is up: the PC's own battery is read now and every <see cref="PcBatteryReadEvery"/> from here on,
+        /// until <see cref="OnApplicationStopped"/>. Not before, so Desktop mode or another theme never reads it.
+        /// </summary>
+        public void StartPcBattery()
+        {
+            ReadPcBattery();
+        }
+
+        /// <summary>
+        /// Windows says the power changed, as the PC is plugged in or unplugged or its battery's state moves on: the PC's
+        /// battery shows it now, and the next read is a full <see cref="PcBatteryReadEvery"/> away. Nothing before
+        /// <see cref="StartPcBattery"/>.
+        /// </summary>
+        public void OnPowerChanged()
+        {
+            if (pcBatteryTimer != null)
+            {
+                ReadPcBattery();
+            }
+        }
+
+        /// <summary>
+        /// The PC's battery read, taken over what shows by <see cref="PcBattery.Update"/>, which keeps the last reading
+        /// while Windows can't say, and the next read set; a core given no port reads none and sets none.
+        /// </summary>
+        private void ReadPcBattery()
+        {
+            pcBatteryTimer?.Dispose();
+            pcBatteryTimer = null;
+            Status.PcBattery = PcBattery.Update(Status.PcBattery, pcBattery.Read());
+            if (pcBattery != NoPcBattery.Instance)
+            {
+                pcBatteryTimer = clock.After(PcBatteryReadEvery, ReadPcBattery);
+            }
         }
 
         private void RefreshStatus()
@@ -1793,6 +1839,8 @@ namespace XboxSeries.Core
         /// <summary>Playnite is leaving Fullscreen, or closing: the user's own filter and sort go back, and a game frozen under the Guide thaws.</summary>
         public void OnApplicationStopped()
         {
+            pcBatteryTimer?.Dispose();
+            pcBatteryTimer = null;
             ThawGame();
             ForgetLibraryName();
             GiveBackMainList();
