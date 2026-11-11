@@ -26,8 +26,8 @@ namespace XboxSeries.Core.Tests
         [InlineData("MyGamesControl.xaml", "Text=Play history", "XboxHeaderFont")]
         [InlineData("MyGamesControl.xaml", "Text=Full library", "XboxHeaderFont")]
         [InlineData("MyGamesControl.xaml", "Text=Manage", "XboxHeaderFont")]
-        // Home's Groups: each Group's heading, semibold as it was.
-        [InlineData("GroupsControl.xaml", "Text={Binding Name}", "XboxHeaderFontSemibold")]
+        // Home's Groups: each Group's heading, in the SemiLight as the console's (#203).
+        [InlineData("GroupsControl.xaml", "Text={Binding Name}", "XboxHeaderFont")]
         // The Guide's tab headings and its flyouts' titles.
         [InlineData("OverlayWindow.xaml", "Sets=Profile & system", "XboxHeaderFont")]
         [InlineData("OverlayWindow.xaml", "Text={Binding Flyout.Title}", "XboxHeaderFont")]
@@ -61,7 +61,7 @@ namespace XboxSeries.Core.Tests
         // Tile captions.
         [InlineData("PromoRow.xaml", "Text=Discord", "XboxFontSemibold")]
         [InlineData("PromoRow.xaml", "Sets=Nothing queued", "XboxFont")]
-        [InlineData("HomeTiles.xaml", "Text={TemplateBinding Tag}|FontSize=18", "XboxFont")]
+        [InlineData("HomeTiles.xaml", "Text={TemplateBinding Tag}|FontSize={DynamicResource HomeTileTitleSize}", "XboxFont")]
         // The Guide's entries, dialogs' options and prompts' messages.
         [InlineData("OverlayWindow.xaml", "Name=Calling", "XboxFont")]
         [InlineData("MenuPanel.xaml", "Text={Binding Label}", "XboxFont")]
@@ -78,7 +78,7 @@ namespace XboxSeries.Core.Tests
         }
 
         // The left navs' labels are in Bahnschrift SemiLight, as the page headings are, lighter than its Regular, which
-        // reads heavy at nav size; the headings' SemiBold stays for the Group names and the hub.
+        // reads heavy at nav size; the headings' SemiBold stays for the hub.
         [Theory]
         [InlineData("MyGamesControl.xaml", "NavLabel")]
         [InlineData("SettingsControl.xaml", "RailText")]

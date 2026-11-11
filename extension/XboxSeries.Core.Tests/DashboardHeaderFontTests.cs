@@ -39,6 +39,14 @@ namespace XboxSeries.Core.Tests
                 e => (string)e.Attribute("Style") == "{StaticResource XboxHubCardTitle}" && e.Attribute("FontFamily") != null);
         }
 
+        // The actions, Play or Install, Manage and the page toggle, in the header face as the console's (#203), bold.
+        [Fact]
+        public void The_Game_hubs_actions_are_headers()
+        {
+            Assert.Equal("XboxHeaderFont", FontOfStyle(GameDetails(), "XboxHubAction"));
+            Assert.Equal("XboxHeaderFont", FontOfStyle(GameDetails(), "XboxHubDefaultAction"));
+        }
+
         [Fact]
         public void Homes_theme_only_list_heading_is_a_header()
         {
@@ -54,7 +62,6 @@ namespace XboxSeries.Core.Tests
             Assert.Equal(Body, FontOfStyle(GameDetails(), "XboxHubText"));
             Assert.Equal(Body, FontOfStyle(GameDetails(), "XboxHubRowLabel"));
             Assert.Equal(Body, FontOfStyle(GameDetails(), "XboxHubRowValue"));
-            Assert.Equal("XboxFontSemibold", FontOfStyle(GameDetails(), "XboxHubAction"));
             Assert.All(GameDetails().Descendants().Where(e => e.Name.LocalName == "HtmlTextView"),
                 v => Assert.Equal(Body, ResourceKey((string)v.Attribute("HtmlFontFamily"))));
         }
