@@ -128,14 +128,9 @@
     </Style>
 
     <!--
-        A game's art on a tile, whole whatever its shape (#205), as every game tile in the extension shows it: the art
-        Uniform and centred, over a copy of it that fills the tile, blurred and under a 40% black layer. Art of the tile's
-        own shape covers the copy, so it looks as it always did. Content is the art, already decoded.
-        The copy is that same picture, not a second one decoded small: it is laid out 24 wide (in high quality, from the
-        art) and drawn once into a picture that size, which the Viewbox then stretches to fill the tile, so the stretch
-        blurs it. A blur effect would be worked out again on the CPU, at the 4K screen's size, whenever WPF loses the
-        graphics card (#95); this costs a picture 24 wide (times the screen's scaling), drawn as the art arrives.
-        The tile clips and rounds it: this only keeps the copy inside the tile's edges.
+        A game's art on a tile, as every game tile in the extension shows it: filling the tile, centred and cropped to the
+        tile's shape, with no bands, as on the console. Content is the art, already decoded. The tile rounds it; this only
+        crops it to the tile's edges.
     -->
     <Style x:Key="TileArt" TargetType="ContentControl">
         <Setter Property="Focusable" Value="False" />
@@ -143,27 +138,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
-                    <Grid x:Name="Pair" ClipToBounds="True">
-                        <Viewbox Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid>
-                                <Grid.CacheMode>
-                                    <BitmapCache RenderAtScale="1" />
-                                </Grid.CacheMode>
-                                <!-- RenderOptions stop at a cache, so set on the picture itself. -->
-                                <Image Width="24" Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
-                                       Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                            </Grid>
-                        </Viewbox>
-                        <Rectangle Fill="#66000000" />
-                        <Image Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Stretch="Uniform"
+                    <Grid ClipToBounds="True">
+                        <Image Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Stretch="UniformToFill"
                                HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" />
                     </Grid>
-                    <ControlTemplate.Triggers>
-                        <!-- No art: nothing, so whatever the tile shows for want of it (its title) is on its own background. -->
-                        <Trigger Property="Content" Value="{x:Null}">
-                            <Setter TargetName="Pair" Property="Visibility" Value="Collapsed" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
