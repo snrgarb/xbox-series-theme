@@ -40,7 +40,7 @@ namespace XboxSeries.Core.Tests
             var plugin = File.ReadAllText(Path.Combine(ExtensionDir, "XboxSeriesPlugin.cs"));
             var control = File.ReadAllText(Path.Combine(ExtensionDir, "TextEntryControl.xaml.cs"));
 
-            Assert.Contains("\"TextEntry\", \"Hints\" }", plugin);
+            Assert.Contains("\"TextEntry\", \"Hints\", ", plugin);
             Assert.Contains("case \"TextEntry\": return new TextEntryControl(core);", plugin);
             Assert.Contains("public TextEntryState State", control);
         }
