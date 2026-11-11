@@ -85,11 +85,27 @@ function Get-Foreground {
     [pscustomobject]@{ Pid = $pid_; Process = $name; Title = [E2EDesk]::ForegroundTitle() }
 }
 
+# Windows' own full-screen prompts after sign-in, as "Protect your files and memories by backing up your PC" (its
+# "finish setting up your device" screen, drawn by WebExperienceHostApp), turned off for this user and closed if up:
+# over Playnite they take the foreground, so the pad's presses never reach it.
+function Close-WindowsPrompts {
+    $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'
+    New-Item $key -Force | Out-Null
+    Set-ItemProperty $key ScoobeSystemSettingEnabled 0 -Type DWord
+    $prompts = @(Get-Process WebExperienceHostApp, UserOOBEBroker -ErrorAction SilentlyContinue)
+    if ($prompts.Count) {
+        $prompts | Stop-Process -Force -ErrorAction SilentlyContinue
+        Say "closed Windows' prompt ($(($prompts | ForEach-Object ProcessName | Sort-Object -Unique) -join ', '))"
+        Start-Sleep -Seconds 1
+    }
+}
+
 # Playnite as a new user has it, never run and with no add-on, but past Desktop's first-time wizard (no libraries
 # picked): without it Fullscreen refuses to start and sends the user to Desktop, and every real user has been through
 # it before they can install an add-on. Then the Bundle queued as Playnite installs an add-on the user agreed to:
 # installed as Playnite next starts, which also selects a newly installed Fullscreen theme.
 function Initialize-Playnite([string] $PayloadDir) {
+    Close-WindowsPrompts
     Get-Process Playnite.* -ErrorAction SilentlyContinue | Stop-Process -Force
     Remove-Item $script:Data -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory (Join-Path $script:Data 'library') -Force | Out-Null
@@ -270,6 +286,7 @@ function Start-Dashboard([string] $PayloadDir, [switch] $Library, [hashtable[]] 
 # Starts Fullscreen on Playnite as it is, without making it new, and takes Start-up through to Home: for a test that
 # stops Playnite and starts it again, after Save-PlayniteFiles -Move, so the logs waited on are the new start's alone.
 function Enter-Dashboard {
+    Close-WindowsPrompts
     Start-Fullscreen | Out-Null
     if (-not (Wait-PlayniteLog 'Xbox Series extension started on the Dashboard' 120)) {
         $dormant = Wait-PlayniteLog 'Xbox Series extension stays dormant[^\r\n]*' 1

@@ -76,18 +76,18 @@ function Move-ToGuideCheckbox([int] $After) {
 }
 
 # What is wrong when the Guide button, pressed for $HoldMs, opened something with the Guide off: a "Guide opened
-# over" line within 3 s, or the Overlay in front.
+# over" line within 3 s, or the Overlay in front; alone, what Say writes on the way going to the host.
 function Test-NothingOpens([string] $What, [int] $HoldMs) {
     $mark = @(Get-ExtensionLog).Count
-    Push-Button Guide $HoldMs
+    Push-Button Guide $HoldMs | Out-Host
     $opened = if (Wait-LogLine 'Guide opened over' $mark 3) { @(Get-LogLines 'Guide opened over' $mark)[0] } else { $null }
-    Save-Screen $What
+    Save-Screen $What | Out-Host
     $front = Get-Foreground
-    Say "${What}: $(if ($opened) { $opened.Trim() } else { 'no Guide opened line' }); foreground $($front.Process) '$($front.Title)'"
+    Say "${What}: $(if ($opened) { $opened.Trim() } else { 'no Guide opened line' }); foreground $($front.Process) '$($front.Title)'" | Out-Host
     $bad = @()
     if ($opened) { $bad += "${What}: the Overlay opened with the Guide off: $($opened.Trim())" }
     if ($front.Title -eq 'Xbox Series Guide') { $bad += "${What}: the Overlay is in front with the Guide off" }
-    if ($bad.Count) { Push-Button B; Start-Sleep -Milliseconds 800 }
+    if ($bad.Count) { Push-Button B | Out-Host; Start-Sleep -Milliseconds 800 }
     ,$bad
 }
 
