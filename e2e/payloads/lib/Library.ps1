@@ -76,13 +76,21 @@ try {
                     }
                 }
                 $files = $db.GetFileStoragePath($game.Id)
-                New-SeedImage (Join-Path $files 'cover.png') $game.Name 600 900 $hue 0.85
+                # A real game's poster where e2e/run.sh staged one for this place in the list (lib\posters\NN.jpg, from
+                # lib\posters.txt), so tiles look as they do on a real library; else a drawn one with the name on it.
+                $poster = Join-Path $PSScriptRoot ('posters\{0:D2}.jpg' -f $i)
+                if (Test-Path $poster) {
+                    Copy-Item $poster (Join-Path $files 'cover.jpg')
+                    $game.CoverImage = "$($game.Id)\cover.jpg"
+                } else {
+                    New-SeedImage (Join-Path $files 'cover.png') $game.Name 600 900 $hue 0.85
+                    $game.CoverImage = "$($game.Id)\cover.png"
+                }
                 if ($BackgroundWidth) {
                     New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" $BackgroundWidth ([int]($BackgroundWidth * 9 / 16)) $hue 0.45 -Grain
                 } else {
                     New-SeedImage (Join-Path $files 'background.jpg') "$($game.Name) background" 1920 1080 $hue 0.45
                 }
-                $game.CoverImage = "$($game.Id)\cover.png"
                 $game.BackgroundImage = "$($game.Id)\background.jpg"
                 $db.Games.Add($game)
                 # Playnite stamps Added as it adds; the Recent row pads itself with the most recently added. A minute

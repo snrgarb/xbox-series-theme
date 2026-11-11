@@ -179,12 +179,13 @@ function Push-Button([string] $Button, [int] $HoldMs = 120) {
 
 function Disconnect-Pad { if ($script:Pad) { try { $script:Pad.Disconnect() } catch {} } }
 
-# The seed library's games, A to N: made-up names, each with a cover and a background of a colour of its own with its
-# name on it. Six are favourites, eight installed, six tagged "E2E Picks"; the first six were played, Amber Circuit
-# last (an hour ago), so the Recent row starts Amber Circuit, Brass Lantern, Cobalt Run, Dune Signal, Ember Vale, Frost
-# Harbor, then the never played ones from Glass Orchard on. Amber Circuit has every fact the Game hub's header shows,
-# more than its line holds, so the line ends in an ellipsis before the age rating; Brass Lantern has a release year
-# and its source only, no publisher, features or rating, so its line is its year, one dot and Steam, no stray dot.
+# The seed library's games, A to N: made-up names, each with a real game's poster for its cover (lib\posters.txt) and a
+# background of a colour of its own with its name on it. Six are favourites, eight installed, six tagged "E2E Picks";
+# the first six were played, Amber Circuit last (an hour ago), so the Recent row starts Amber Circuit, Brass Lantern,
+# Cobalt Run, Dune Signal, Ember Vale, Frost Harbor, then the never played ones from Glass Orchard on. Amber Circuit has
+# every fact the Game hub's header shows, more than its line holds, so the line ends in an ellipsis before the age
+# rating; Brass Lantern has a release year and its source only, no publisher, features or rating, so its line is its
+# year, one dot and Steam, no stray dot.
 $script:SeedGames = @(
     @{ Name = 'Amber Circuit'; IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 1;   Playtime = 36000
        Publishers = 'Northwind Interactive Entertainment'; ReleaseYear = 2024; InstallSize = 52500000000; Platforms = 'PC (Windows)'
@@ -240,10 +241,11 @@ function Invoke-Library([string[]] $Arguments) {
 #   Start-Dashboard $PSScriptRoot -Library -Games @(
 #       @{ Name = 'Half-Life 2'; GameId = '220'; PluginId = 'cb91dfc9-b977-43bf-8e70-55f46e410fab'; IsInstalled = $true; Tags = 'E2E Picks' })
 #
-# Each game's id is Get-SeedId of its name, unless it gives an Id, and its pictures are library\files\<id>\cover.png
-# (600x900) and background.jpg (1920x1080, a darker shade of the same colour, reading "<name> background"). Games are
-# added in order, a minute apart, the first the most recently added. What was written is in $env:E2E_OUT\library.json,
-# as Get-Library reads it.
+# Each game's id is Get-SeedId of its name, unless it gives an Id, and its pictures are library\files\<id>\cover.jpg
+# (a real game's 600x900 poster, the next in lib\posters.txt; past the last, cover.png, drawn with its name on it) and
+# background.jpg (1920x1080, a darker shade of the same colour, reading "<name> background"). Games are added in order,
+# a minute apart, the first the most recently added. What was written is in $env:E2E_OUT\library.json, as Get-Library
+# reads it.
 #
 # With -BackgroundWidth, the backgrounds are that wide (3840 for 3840x2160) and grained, so as large and as slow to
 # read and decode as a player's own art, for a test that times it.

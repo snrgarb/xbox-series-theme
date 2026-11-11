@@ -59,6 +59,23 @@ if [[ ! -f "$vigem" ]] || ! echo "$vigem_sha256  $vigem" | sha256sum -c --quiet 
 fi
 cp "$vigem" "$stage/lib/Nefarius.ViGEm.Client.dll"
 
+# The seeded library's real covers, one a line in lib/posters.txt as "<url> <sha256>": fetched once, pinned by checksum,
+# kept under artifacts/e2e/.cache as poster-<Steam app id>.jpg, and staged in order as lib/posters/NN.jpg, where
+# Library.ps1 finds them.
+mkdir -p "$stage/lib/posters" "$repo/artifacts/e2e/.cache"
+n=0
+while read -r url sha256; do
+    [[ -z "$url" || "$url" == \#* ]] && continue
+    app="${url%/*}"; poster="$repo/artifacts/e2e/.cache/poster-${app##*/}.jpg"
+    if [[ ! -f "$poster" ]] || ! echo "$sha256  $poster" | sha256sum -c --quiet 2>/dev/null; then
+        curl -fsSL -o "$poster" "$url"
+        echo "$sha256  $poster" | sha256sum -c --quiet || { rm -f "$poster"; echo "checksum mismatch for $url" >&2; exit 1; }
+    fi
+    cp "$poster" "$stage/lib/posters/$(printf %02d "$n").jpg"
+    n=$((n + 1))
+done < "$here/payloads/lib/posters.txt"
+rm -f "$stage/lib/posters.txt"
+
 # The other add-ons a test installs beside the Bundle, one a line in its addons.txt as "<url> <sha256>": fetched once,
 # pinned by checksum, kept under artifacts/e2e/.cache, and staged as addons/, where Initialize-Playnite finds them.
 if [[ -f "$payload_src/addons.txt" ]]; then
