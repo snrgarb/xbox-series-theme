@@ -11,7 +11,8 @@
 #   Down     onto the second Group                                          Home rests at Group <another>
 #   Up, Up   back to My Picks, then the wide tiles                          Group My Picks, WideTiles
 #   Up       back onto the Recent row                                       Home rests at RecentRow
-#   Down x3  to My Picks again, then B: back to the Recent row's last game  WideTiles, Group My Picks, RecentRow
+#   Down x2  to the wide tiles, then My Picks again                         WideTiles, Group My Picks
+#   B        back to the Recent row's last game                             RecentRow
 #
 # The screenshots, judged by eye (the 300 ms slide is over by each):
 #   home.jpg, recent-row.jpg   Home as it always was, the top bar over the hero's gap

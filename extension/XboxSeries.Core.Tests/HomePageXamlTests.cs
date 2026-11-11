@@ -115,6 +115,43 @@ namespace XboxSeries.Core.Tests
             Assert.Contains("logger.Info(HomeRests.Says(now, ", Code("HomeRows.cs"));
         }
 
+        [Fact]
+        public void What_the_page_leaves_off_the_screen_cant_be_focused_until_it_comes_back()
+        {
+            var page = Code("HomeRows.cs");
+
+            Assert.Contains("page.TopBar = HomeRows.FindPart(this, \"XboxTopBar\");", Code("RecentRowControl.xaml.cs"));
+            Assert.Contains("page.Row = this;", Code("RecentRowControl.xaml.cs"));
+            // Turned on as the slide begins, off once it has ended, unless another slide began meanwhile.
+            Assert.Contains("Enable(TopBar, topBarShows, onlyOn: true);", page);
+            Assert.Matches(new Regex(@"if \(slide == slides\)\s*\{\s*Enable\(TopBar, topBarShows\);\s*Enable\(Row, rowsShow\);\s*Enable\(Groups as UIElement, groupsShow\);"), page);
+            // Up and B turn the row on before it takes focus; Down the Groups.
+            Assert.Matches(new Regex(@"public void LeaveGroups\(bool toWideTiles\)\s*\{\s*Enable\(Row, true\);"), page);
+            Assert.Matches(new Regex(@"public void EnterGroups\(\)\s*\{\s*Enable\(Groups as UIElement, true\);"), page);
+        }
+
+        [Fact]
+        public void The_page_follows_the_Groups_layout_as_it_changes_without_restarting_a_slide_for_less_than_half_a_pixel()
+        {
+            var groups = Code("GroupsControl.xaml.cs");
+            var page = Code("HomeRows.cs");
+
+            Assert.Contains("Rows.SizeChanged += (_, __) => LayoutChangedSoon();", groups);
+            Assert.Contains("Rows.ItemContainerGenerator.ItemsChanged += (_, __) => LayoutChangedSoon();", groups);
+            Assert.Contains("private const double SamePlace = 0.5;", page);
+            Assert.Contains("Math.Abs(next.PageOffset - rest.PageOffset) < SamePlace", page);
+            // Measured once, until the layout changes.
+            Assert.Contains("private HomePageLayout Layout() => layout ?? (layout = Groups?.Layout()", page);
+            Assert.Matches(new Regex(@"public void LayoutChanged\(\)\s*\{\s*layout = null;"), page);
+        }
+
+        [Fact]
+        public void The_Start_up_reveal_fades_the_Groups_in_with_the_row()
+        {
+            Assert.Contains("HomeRows.Reveal(this, page.Groups as UIElement);", Code("RecentRowControl.xaml.cs"));
+            Assert.Contains("groups?.BeginAnimation(UIElement.OpacityProperty, FadeIn(TimeSpan.Zero, RevealFade));", Code("HomeRows.cs"));
+        }
+
         private static XDocument Xaml(string file) => XDocument.Load(Path.Combine(ExtensionDir, file));
 
         private static string Code(string file) => File.ReadAllText(Path.Combine(ExtensionDir, file));

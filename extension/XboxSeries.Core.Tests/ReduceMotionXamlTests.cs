@@ -146,7 +146,9 @@ namespace XboxSeries.Core.Tests
         {
             // The row put in place without animating, then nothing more: the top bar's drop and its disabling never
             // begin.
-            Assert.Matches(new Regex(@"Settle\(row\);\s*if \(Motion\.Reduced\)\s*\{\s*return;\s*\}"), Code("HomeRows.cs"));
+            Assert.Matches(
+                new Regex(@"row\.BeginAnimation\(UIElement\.OpacityProperty, null\);\s*groups\?\.BeginAnimation\(UIElement\.OpacityProperty, null\);\s*if \(Motion\.Reduced\)\s*\{\s*return;\s*\}"),
+                Code("HomeRows.cs"));
 
             // The fade out, and the window hiding as it ends, stay outside the gate.
             Assert.Matches(

@@ -51,16 +51,19 @@ namespace XboxSeries.Core
 
     /// <summary>
     /// Home laid out with its page at rest on the Recent row, in the Dashboard's pixels (1080 tall, whatever the screen):
-    /// where each Group's header starts, and where its cards start under it and how tall they are. Measured by the view.
+    /// where each Group's header starts, where its cards start under it and how tall they are, and where the wide tiles
+    /// end. Measured by the view.
     /// </summary>
     public sealed class HomePageLayout
     {
-        public HomePageLayout(double screenHeight, IReadOnlyList<double> groupTops, double cardsTop, double cardHeight)
+        public HomePageLayout(double screenHeight, IReadOnlyList<double> groupTops, double cardsTop, double cardHeight,
+            double rowsBottom = double.PositiveInfinity)
         {
             ScreenHeight = screenHeight;
             GroupTops = groupTops ?? new double[0];
             CardsTop = cardsTop;
             CardHeight = cardHeight;
+            RowsBottom = rowsBottom;
         }
 
         public double ScreenHeight { get; }
@@ -72,6 +75,9 @@ namespace XboxSeries.Core
         public double CardsTop { get; }
 
         public double CardHeight { get; }
+
+        /// <summary>Where the Recent row and the wide tiles under it end, down the page; unmeasured, never.</summary>
+        public double RowsBottom { get; }
     }
 
     /// <summary>
@@ -105,6 +111,25 @@ namespace XboxSeries.Core
 
         /// <summary>Where the top bar ends, 84 from the screen's top and 60 tall: it is above the screen once risen this far.</summary>
         public const double TopBarBottom = 144;
+
+        /// <summary>
+        /// Where focus rests as far as the page goes: on a Group past the last laid out (as a Group still being built),
+        /// the last, which the page rests on and the log names.
+        /// </summary>
+        public static HomeFocus RestingFocus(HomeFocus focus, HomePageLayout layout) =>
+            focus.Kind == HomeRestKind.Group && layout.GroupTops.Count > 0 && focus.GroupIndex >= layout.GroupTops.Count
+                ? HomeFocus.Group(layout.GroupTops.Count - 1)
+                : focus;
+
+        /// <summary>Whether any of the top bar is on the screen at <paramref name="rest"/>.</summary>
+        public static bool TopBarShows(HomeRest rest) => rest.TopBarOffset < TopBarBottom;
+
+        /// <summary>Whether any of the Groups is on the screen at <paramref name="rest"/>: the first starts above its foot.</summary>
+        public static bool GroupsShow(HomeRest rest, HomePageLayout layout) =>
+            layout.GroupTops.Count > 0 && layout.GroupTops[0] - rest.PageOffset < layout.ScreenHeight;
+
+        /// <summary>Whether any of the Recent row and the wide tiles is on the screen at <paramref name="rest"/>: they end below its top.</summary>
+        public static bool RowsShow(HomeRest rest, HomePageLayout layout) => layout.RowsBottom - rest.PageOffset > 0;
 
         public static HomeRest At(HomeFocus focus, HomePageLayout layout)
         {

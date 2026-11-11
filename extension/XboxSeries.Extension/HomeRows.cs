@@ -20,9 +20,18 @@ namespace XboxSeries.Extension
         private static readonly ILogger logger = LogManager.GetLogger();
         private static readonly Duration SlideDuration = TimeSpan.FromMilliseconds(300);
 
+        /// <summary>How far an offset may be from the one sliding to and still count as the same: a measurement mid-slide doesn't restart it.</summary>
+        private const double SamePlace = 0.5;
+
         /// <summary>Where the page rests; null until focus first comes to Home, which rests on the Recent row until then.</summary>
         private HomeFocus? focus;
         private HomeRest rest;
+
+        /// <summary>The Groups' layout as last measured; null once it may have changed, to be measured again when next needed.</summary>
+        private HomePageLayout layout;
+
+        /// <summary>Counts the slides, so that one ending after another has begun leaves alone what the later one shows.</summary>
+        private int slides;
 
         // Made by the first row to ask, on Playnite's UI thread, where they are animated, rather than with the plugin.
         private TranslateTransform scroll;
@@ -45,6 +54,12 @@ namespace XboxSeries.Extension
         /// <summary>The Groups, which say where they are laid out and what each is called; null without them.</summary>
         public IHomeGroupsView Groups { get; set; }
 
+        /// <summary>The Recent row's control, with the wide tiles: disabled while it is wholly above the screen.</summary>
+        public UIElement Row { get; set; }
+
+        /// <summary>The theme's top bar, found by the Recent row: disabled while it is above the screen.</summary>
+        public UIElement TopBar { get; set; }
+
         /// <summary>
         /// Which of Home's rows (the Recent row or the Groups) last held focus, so that the one the Game hub was opened
         /// from takes focus back when the hub closes.
@@ -57,29 +72,57 @@ namespace XboxSeries.Extension
         /// <summary>Up from the first Group (true: onto the wide tiles), or B on the Groups (false: onto the Recent row's last game).</summary>
         public event Action<bool> RowWanted;
 
-        public void EnterGroups() => GroupsWanted?.Invoke(this, EventArgs.Empty);
+        public void EnterGroups()
+        {
+            Enable(Groups as UIElement, true);
+            GroupsWanted?.Invoke(this, EventArgs.Empty);
+        }
 
-        public void LeaveGroups(bool toWideTiles) => RowWanted?.Invoke(toWideTiles);
+        public void LeaveGroups(bool toWideTiles)
+        {
+            Enable(Row, true);
+            RowWanted?.Invoke(toWideTiles);
+        }
 
         /// <summary>
         /// Focus has come to <paramref name="now"/>: the page slides to its resting point there, saying so in the log
         /// when it is a new one. Called again for the same place, as a rebuilt row takes focus back, it only follows
-        /// the layout if that has changed.
+        /// the layout if that has moved it by more than <see cref="SamePlace"/>.
         /// </summary>
         public void RestOn(HomeFocus now)
         {
-            var layout = Groups?.Layout() ?? new HomePageLayout(1080, null, 0, 0);
-            var next = HomeRests.At(now, layout);
+            var measured = Layout();
+            now = HomeRests.RestingFocus(now, measured);
+            var next = HomeRests.At(now, measured);
             var moved = focus != now;
-            if (!moved && next.PageOffset == rest.PageOffset && next.TopBarOffset == rest.TopBarOffset)
+            if (!moved && Math.Abs(next.PageOffset - rest.PageOffset) < SamePlace && Math.Abs(next.TopBarOffset - rest.TopBarOffset) < SamePlace)
             {
                 return;
             }
 
             focus = now;
             rest = next;
-            Slide(Scroll, -next.PageOffset);
-            Slide(TopBarScroll, -next.TopBarOffset);
+            var slide = ++slides;
+
+            // What comes onto the screen can be focused again at once; what leaves it, once it has gone.
+            var topBarShows = HomeRests.TopBarShows(next);
+            var rowsShow = HomeRests.RowsShow(next, measured);
+            var groupsShow = now.Kind != HomeRestKind.RecentRow || HomeRests.GroupsShow(next, measured);
+            Enable(TopBar, topBarShows, onlyOn: true);
+            Enable(Row, rowsShow, onlyOn: true);
+            Enable(Groups as UIElement, groupsShow, onlyOn: true);
+            void Gone()
+            {
+                if (slide == slides)
+                {
+                    Enable(TopBar, topBarShows);
+                    Enable(Row, rowsShow);
+                    Enable(Groups as UIElement, groupsShow);
+                }
+            }
+
+            Slide(Scroll, -next.PageOffset, Gone);
+            Slide(TopBarScroll, -next.TopBarOffset, null);
             if (moved)
             {
                 logger.Info(HomeRests.Says(now, now.Kind == HomeRestKind.Group ? Groups?.NameOf(now.GroupIndex) : null));
@@ -87,14 +130,43 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Slides <paramref name="transform"/> to <paramref name="to"/> in 300 ms with the cubic ease Home has always
-        /// moved with, from wherever it has got to; there at once with Reduce motion on.
+        /// The Groups' layout may have changed (they were rebuilt, or the screen resized): measured again, and the page
+        /// follows it where focus rests, if it has come to rest anywhere yet.
         /// </summary>
-        private static void Slide(TranslateTransform transform, double to)
+        public void LayoutChanged()
         {
-            transform.BeginAnimation(
-                TranslateTransform.YProperty,
-                new DoubleAnimation(to, Motion.Of(SlideDuration)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            layout = null;
+            if (focus != null)
+            {
+                RestOn(focus.Value);
+            }
+        }
+
+        private HomePageLayout Layout() => layout ?? (layout = Groups?.Layout() ?? new HomePageLayout(1080, null, 0, 0));
+
+        /// <summary>Lets <paramref name="element"/> be focused and clicked, or not; with <paramref name="onlyOn"/>, only ever turns it on.</summary>
+        private static void Enable(UIElement element, bool enabled, bool onlyOn = false)
+        {
+            if (element != null && (enabled || !onlyOn))
+            {
+                element.IsEnabled = enabled;
+            }
+        }
+
+        /// <summary>
+        /// Slides <paramref name="transform"/> to <paramref name="to"/> in 300 ms with the cubic ease Home has always
+        /// moved with, from wherever it has got to; there at once with Reduce motion on. <paramref name="ended"/>, if
+        /// any, is called as it ends.
+        /// </summary>
+        private static void Slide(TranslateTransform transform, double to, Action ended)
+        {
+            var slide = new DoubleAnimation(to, Motion.Of(SlideDuration)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            if (ended != null)
+            {
+                slide.Completed += (_, __) => ended();
+            }
+
+            transform.BeginAnimation(TranslateTransform.YProperty, slide);
         }
     }
 
@@ -145,21 +217,6 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Puts <paramref name="row"/> where it rests, at once: in place, seen and enabled, stopping whatever an earlier
-        /// reveal had it doing.
-        /// </summary>
-        public static void Settle(FrameworkElement row)
-        {
-            var transform = Translate(row);
-            row.BeginAnimation(UIElement.OpacityProperty, null);
-            transform.BeginAnimation(TranslateTransform.YProperty, null);
-            row.Opacity = 1;
-            transform.Y = 0;
-            row.IsHitTestVisible = true;
-            row.IsEnabled = true;
-        }
-
-        /// <summary>
         /// Home revealed from under Start-up's swirl as it fades, as on the console: <paramref name="row"/> (the Recent
         /// row and the placeholder tiles under it) flies up into place from a little below, fading in, rises a little
         /// too high and drops back to settle; a moment after, the top bar's buttons (My games &amp; apps, Search and
@@ -167,16 +224,20 @@ namespace XboxSeries.Extension
         /// that Up from the row can't focus one no one can see. Both start where they start at once, while the Start-up
         /// window still covers Home, so nothing at rest shows first. The page sliding meanwhile, as on Down to the wide
         /// tiles, moves the row's content within it, so the two add up. With Reduce motion on, the row is in its place
-        /// at once and the top bar is left as it rests, there and enabled.
+        /// at once and the top bar is left as it rests, there and enabled. <paramref name="groups"/>, the Groups, fade in
+        /// with the row, as on the wide tiles' resting point some of them show under it.
         /// </summary>
         /// <remarks>
         /// Every animation is of a render transform, opacity or IsEnabled, never layout, and stops when it ends, leaving
         /// each element's own value, which is where it rests, so nothing is left hidden or disabled whatever happens to
         /// the row meanwhile. The top bar is the Dashboard's, found by its Search button's name; without it, only the row flies.
         /// </remarks>
-        public static void Reveal(FrameworkElement row)
+        public static void Reveal(FrameworkElement row, UIElement groups = null)
         {
-            Settle(row);
+            // Whatever an earlier reveal had the row doing, stopped: in place and seen, as it rests.
+            Translate(row).BeginAnimation(TranslateTransform.YProperty, null);
+            row.BeginAnimation(UIElement.OpacityProperty, null);
+            groups?.BeginAnimation(UIElement.OpacityProperty, null);
             if (Motion.Reduced)
             {
                 return;
@@ -188,6 +249,7 @@ namespace XboxSeries.Extension
             rise.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(RevealSettled), new SineEase { EasingMode = EasingMode.EaseInOut }));
             Translate(row).BeginAnimation(TranslateTransform.YProperty, rise);
             row.BeginAnimation(UIElement.OpacityProperty, FadeIn(TimeSpan.Zero, RevealFade));
+            groups?.BeginAnimation(UIElement.OpacityProperty, FadeIn(TimeSpan.Zero, RevealFade));
 
             // The StackPanel holding the top bar's middle buttons. Left alone with focus in it, which disabling would drop.
             var topBar = FindPart(row, "XboxTopBarSearch") is FrameworkElement search ? VisualTreeHelper.GetParent(search) as FrameworkElement : null;

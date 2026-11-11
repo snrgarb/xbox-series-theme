@@ -27,6 +27,8 @@ namespace XboxSeries.Extension
         private readonly HomePage page;
         private FrameworkElement gameDetails;
 
+        private bool layoutChangePending;
+
         /// <summary>Whether focus is in the Groups. Kept by hand: a rebuild removes the focused tile before this hears of it.</summary>
         private bool hasFocus;
 
@@ -49,6 +51,34 @@ namespace XboxSeries.Extension
             LostKeyboardFocus += OnLostKeyboardFocus;
             PreviewKeyDown += OnPreviewKeyDown;
             IsVisibleChanged += OnVisibleChanged;
+
+            // The Groups laid out anew: rebuilt, or grown or shrunk with the screen.
+            SizeChanged += (_, __) => LayoutChangedSoon();
+            Rows.SizeChanged += (_, __) => LayoutChangedSoon();
+            Rows.ItemContainerGenerator.ItemsChanged += (_, __) => LayoutChangedSoon();
+        }
+
+        /// <summary>
+        /// Tells the page the Groups' layout has changed, once their layout is done, however many changes came in the
+        /// meantime. The page's slide moves this control by a render transform, which changes no layout, so it never
+        /// comes back here.
+        /// </summary>
+        private void LayoutChangedSoon()
+        {
+            if (layoutChangePending)
+            {
+                return;
+            }
+
+            layoutChangePending = true;
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                layoutChangePending = false;
+                if (page.Groups == this)
+                {
+                    page.LayoutChanged();
+                }
+            }));
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -56,6 +86,7 @@ namespace XboxSeries.Extension
             core.Home.PropertyChanged += OnHomeChanged;
             page.GroupsWanted += OnGroupsWanted;
             page.Groups = this;
+            LayoutChangedSoon();
             gameDetails = HomeRows.FindGameDetails(this);
             if (gameDetails != null)
             {
@@ -124,8 +155,14 @@ namespace XboxSeries.Extension
             page.LastFocusedRow = this;
             if (e.NewFocus is Button tile && Rows.ContainerFromElement(tile) is FrameworkElement row)
             {
-                lastGroup = Rows.ItemContainerGenerator.IndexFromContainer(row);
-                page.RestOn(HomeFocus.Group(lastGroup));
+                // A row not yet known to the generator, as one being built, leaves the page where it rests.
+                var index = Rows.ItemContainerGenerator.IndexFromContainer(row);
+                if (index >= 0)
+                {
+                    lastGroup = index;
+                    page.RestOn(HomeFocus.Group(lastGroup));
+                }
+
                 lastGame = (tile.DataContext as HomeTile)?.GameId;
                 lastSeeAll = tile.DataContext is HomeGroup;
                 if (tile.DataContext is HomeGroup group)
@@ -201,8 +238,9 @@ namespace XboxSeries.Extension
 
         /// <summary>
         /// Where the Groups are laid out with the page resting on the Recent row, in the Dashboard's pixels: each Group's
-        /// top, and its cards' top under it and height, from the first Group's first card. Taken from where they are now,
-        /// less the page's scroll so far (on this control, so not in what is measured inside it).
+        /// top, its cards' top under it and height, from the first Group's first card, and where the wide tiles end above
+        /// them. Taken from where they are now, less the page's scroll so far (on this control, so not in what is
+        /// measured inside it).
         /// </summary>
         public HomePageLayout Layout()
         {
@@ -229,7 +267,9 @@ namespace XboxSeries.Extension
                 }
             }
 
-            return new HomePageLayout(screenHeight, tops, cardsTop, cardHeight);
+            // The room left for the Recent row and the wide tiles ends where they do.
+            var rowsBottom = origin + AboveGroups.TranslatePoint(new Point(0, AboveGroups.ActualHeight), this).Y;
+            return new HomePageLayout(screenHeight, tops, cardsTop, cardHeight, rowsBottom);
         }
 
         /// <summary>The name of the Group at <paramref name="group"/>, for the log.</summary>

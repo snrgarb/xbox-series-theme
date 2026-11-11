@@ -96,6 +96,8 @@ namespace XboxSeries.Extension
             core.Home.ReturnedFromGame += OnReturnedFromGame;
             core.Home.Revealed += OnRevealed;
             page.RowWanted += OnRowWanted;
+            page.Row = this;
+            page.TopBar = HomeRows.FindPart(this, "XboxTopBar");
             growth.Start();
 
             // Playnite focuses its main list on Home, which the Dashboard hides with the extension, and again when the
@@ -115,6 +117,12 @@ namespace XboxSeries.Extension
             core.Home.ReturnedFromGame -= OnReturnedFromGame;
             core.Home.Revealed -= OnRevealed;
             page.RowWanted -= OnRowWanted;
+            if (page.Row == this)
+            {
+                page.Row = null;
+                page.TopBar = null;
+            }
+
             growth.Stop();
             if (gameDetails != null)
             {
@@ -150,8 +158,8 @@ namespace XboxSeries.Extension
         }
 
         /// <summary>
-        /// Start-up has ended and Home is revealed from under its swirl: the row flies up into place and the top bar's
-        /// buttons drop in after it, but only with the page resting above the Groups. Down in the Groups, or under My
+        /// Start-up has ended and Home is revealed from under its swirl: the row flies up into place, the Groups fading
+        /// in with it, and the top bar's buttons drop in after it, but only with the page resting above the Groups. Down in the Groups, or under My
         /// games &amp; apps, Settings, Search (which all hide the row) or a Game hub, Home stays as it was left, nothing
         /// hidden. Focus stays where it is.
         /// </summary>
@@ -159,7 +167,7 @@ namespace XboxSeries.Extension
         {
             if (IsVisible && !page.RestsOnGroups && gameDetails?.IsVisible != true)
             {
-                HomeRows.Reveal(this);
+                HomeRows.Reveal(this, page.Groups as UIElement);
             }
         }
 
