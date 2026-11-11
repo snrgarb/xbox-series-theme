@@ -13,7 +13,7 @@ The Playnite Fullscreen-mode theme that restyles Playnite's own screens to look 
 _Avoid_: skin, home screen (Home is one page of the Dashboard)
 
 **Home**:
-The Dashboard's landing page, modelled on the Xbox Home screen. Behind it is the art of the **Recent row** game that has focus, once focus has rested on it as long as **Settings**' Background delay says, and the green swirl with focus anywhere else. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it, or with no totals why: "Needs PlayniteAchievements" without it, "Nothing recorded yet" while it has no game's achievements) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
+The Dashboard's landing page, modelled on the Xbox Home screen: one page that scrolls, as the console's, with the top bar, the hero's gap, the **Recent row**, the wide tiles and the **Groups** in that order. Where it rests follows focus: on the Recent row, as it first shows; on the wide tiles, risen until the first Group's header and the top of its cards show under them, the top bar still there; on a Group, that Group near the screen's top, the next one whole and part of the one after, the top bar gone. Up from the first Group goes back to the wide tiles, and B anywhere on the Groups to the Recent row. Behind it is the art of the **Recent row** game that has focus, once focus has rested on it as long as **Settings**' Background delay says, and the green swirl with focus anywhere else. Under its **Recent row**, four wide tiles in the console's store and promo places go somewhere the **Bundle** has instead: Discord (the **Discord tab**, or before one, **Settings** on Theme settings' Discord, focus on its Client ID), Playnite settings (**Settings** on **Playnite settings**, focus on its Playnite settings box), Achievements (the **Guide**'s Profile & system, the **Score** total under it, or with no totals why: "Needs PlayniteAchievements" without it, "Nothing recorded yet" while it has no game's achievements) and Downloads (**Manage Queue**, what the **Queue** holds under it, B back to Home).
 
 **Recent row**:
 The row of most recently played games on **Home**: seven, ending in the Play history tile, or eight and no tile with **Settings**' Show Play history off.
@@ -40,7 +40,7 @@ The page listing the **Queue**, each download with its speed, amount and share, 
 _Avoid_: download manager
 
 **Group**:
-A row on **Home** below the **Recent row**, showing the games of one Playnite filter preset. Users don't create Groups in the **Bundle**; they flag filter presets in Playnite.
+A row on **Home** below the **Recent row** and the wide tiles, showing the games of one Playnite filter preset. Home scrolls down through them, two whole Groups and part of a third on the screen at once. Users don't create Groups in the **Bundle**; they flag filter presets in Playnite.
 _Avoid_: pin, collection, category
 
 **Tile menu**:

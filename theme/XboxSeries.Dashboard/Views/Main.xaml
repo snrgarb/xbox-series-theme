@@ -458,8 +458,14 @@
 
                             <!-- Top bar: profile on the left, pages in the middle, status on the right. -->
                             <!-- With the extension, Left and Right move between its buttons only, as the console's. -->
+                            <!--
+                                With the extension, Home is one page that scrolls, and the top bar goes up off the screen with
+                                it as focus goes into the Groups: the extension's scroll for it, through the Recent row. Without
+                                it the binding finds nothing, and the bar stays where it is.
+                            -->
                             <Grid x:Name="XboxTopBar" Grid.Row="0" Margin="105,84,105,0" Height="60" VerticalAlignment="Top"
-                                  Style="{StaticResource XboxHomeOnly}">
+                                  Style="{StaticResource XboxHomeOnly}"
+                                  RenderTransform="{Binding Content.TopBarScroll, ElementName=XboxSeries_RecentRow}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
@@ -718,13 +724,13 @@
                                     </Grid>
 
                                     <!--
-                                        With the extension, Home has two screens, injected: the Recent row, where the theme-only list sits, and the
-                                        Groups below it, over the whole page under the top bar. Only one shows at a time; the extension flies one
-                                        out and the other in as focus moves between them. Empty, and so harmless, without it.
+                                        With the extension, Home is one page that scrolls, injected: the Recent row and the wide tiles, where
+                                        the theme-only list sits, and in the same slot the Groups, laid out to follow them on down the page.
+                                        The extension scrolls them, and the top bar, as focus moves. Empty, and so harmless, without it.
                                     -->
                                     <ContentControl x:Name="XboxSeries_RecentRow" Grid.Row="1" Focusable="False" IsTabStop="False"
                                                     Style="{StaticResource XboxHomeOnly}" />
-                                    <ContentControl x:Name="XboxSeries_Groups" Grid.RowSpan="3" Focusable="False" IsTabStop="False"
+                                    <ContentControl x:Name="XboxSeries_Groups" Grid.Row="1" Focusable="False" IsTabStop="False"
                                                     Style="{StaticResource XboxHomeOnly}" />
                                 </Grid>
                             </DockPanel>

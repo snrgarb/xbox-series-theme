@@ -16,8 +16,10 @@
 #    with focus) and checked to have moved it; A, which must log "Background delay turned off", once; then B until
 #    Settings closes.
 # 3. Background delay off, with no restart: six steps along the row. Each must have its art asked for within 250 ms
-#    of focus. Then Right held: no art is read for the tiles passed over. Then the Groups: no art asked for there, where
-#    the background is the swirl.
+#    of focus. Then Right held: no art is read for the tiles passed over. Then down the page to the wide tiles and into
+#    the Groups (Home is one page that scrolls, #206: "Home rests at WideTiles", then "Home rests at Group <name>"): no
+#    art asked for there, where the background is the swirl. Then B, back to the Recent row's last game ("Home rests at
+#    RecentRow"), whose art shows at once.
 #
 # In both states the art must be decoded off the UI thread, begin to fade in within 1000 ms of being asked for and be
 # fully in within 1500 ms of it. Those two are loose on purpose: decoding 4K art and drawing its first frame take as
@@ -285,8 +287,11 @@ try {
     Say-Worst 'Background delay off' $off
     $rows += $off
 
-    # The Groups: the swirl is behind them, whichever tile has focus. No art is asked for.
+    # The wide tiles, then the Groups: the swirl is behind them, whichever tile has focus. No art is asked for.
     $mark = @(Get-ExtensionLog).Count
+    Push-Button Down
+    Start-Sleep -Milliseconds 1500
+    Save-Screen 'wide-tiles'
     Push-Button Down
     Start-Sleep -Milliseconds 1500
     Push-Button Right
@@ -297,11 +302,18 @@ try {
     $onGroups = Read-HeroStep (Get-HeroLines $mark)
     Say "Groups: art asked for $($onGroups.ArtsAsked) time(s) while focus moved along a Group (the swirl is behind them)"
     if ($onGroups.ArtsAsked) { $failures += "Groups: art was asked for $($onGroups.ArtsAsked) time(s); the swirl should stay" }
+    $rests = @(Get-ExtensionLog | Select-Object -Skip $mark | ForEach-Object { if ($_ -match 'Home rests at (.+?)\s*$') { $Matches[1] } })
+    Say "down the page, Home rests at: $(if ($rests.Count) { $rests -join ', then ' } else { 'nothing new' })"
+    if (($rests -join '|') -notmatch '^WideTiles\|Group .+$') { $failures += "Down twice from the Recent row: Home rested at $($rests -join ', then '), not the wide tiles then a Group" }
 
-    # Back up into the Recent row from the swirl: the art shows at once, without the wait. Told, not judged: where
-    # focus lands coming back is the row's own business.
-    $up = Step-Hero 'off, back into the row (Up)' 'Up'
+    # Back into the Recent row from the swirl, with B from the Groups: the art shows at once, without the wait. Told,
+    # not judged: the game focus lands on is the row's last.
+    $back = @(Get-ExtensionLog).Count
+    $up = Step-Hero 'off, back into the row (B)' 'B'
     $rows += $up
+    if (-not @(Get-ExtensionLog | Select-Object -Skip $back | Where-Object { $_ -match 'Home rests at RecentRow' }).Count) {
+        $failures += 'B on the Groups: Home did not come back to rest on the Recent row'
+    }
     Save-Screen 'back'
 
     $rows | Select-Object What, Focus, Asked, Decode, Thread, Fading, Shown | Export-Csv (Join-Path $Out 'hero-timing.csv') -NoTypeInformation -Encoding UTF8

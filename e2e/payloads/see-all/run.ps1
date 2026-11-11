@@ -8,6 +8,10 @@
 # seed's library always has presets shown in Fullscreen, so the default Favourites Group, which has no preset and
 # shows only without any, isn't covered.
 #
+# Home is one page that scrolls (#206): the presses take focus down the Recent row, the wide tiles and the Groups, and
+# the page comes to rest on each Group whose See all is pressed ("Home rests at Group <name>"). Back from My games &
+# apps it must still rest there: nothing new is logged of where it rests from A on See all to focus back on the tile.
+#
 # Focus on Home moves a press at a time, until the log tells it is on the tile wanted (the Recent row wraps), and A
 # is pressed only with the log's last focus line on that tile.
 #
@@ -19,6 +23,7 @@
 #   Home focus on the Recent tile <game> / Home focus on the Group tile <game>
 #   Home focus on the Play history tile
 #   Home focus on See all of the Group <name>
+#   Home rests at RecentRow / Home rests at WideTiles / Home rests at Group <name>
 #   My games & apps shows <item> / My games & apps closed
 #   Filter preset <name> selected
 #   My games & apps nav focus on <item>, showing <item>
@@ -29,7 +34,7 @@
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
 $failures = @()
-$told = 'Home focus on|My games & apps (shows|closed|nav focus)|Filter preset .* selected|\[Settings\]'
+$told = 'Home focus on|Home rests at|My games & apps (shows|closed|nav focus)|Filter preset .* selected|\[Settings\]'
 
 # The extension's own log only, so a mark in it stays where it was as Playnite's log grows.
 function Get-ExtensionLog { @(Get-Content (Join-Path $Data 'extensions.log') -ErrorAction SilentlyContinue) }
@@ -148,6 +153,20 @@ function Test-Opens([string] $What, [string] $Item, [string] $FocusLine, [string
     if (-not $home_) { Restore-Home $back $What }
 }
 
+# Where Home's page rests by the log's last word on it since $After: 'RecentRow', 'WideTiles', 'Group <name>', or $null.
+function Get-Rest([int] $After = 0) {
+    $last = Get-LogLines $After 'Home rests at ' | Select-Object -Last 1
+    if ($last -match 'Home rests at (.+)$') { $Matches[1].Trim() }
+}
+
+# See all on $Group, opened and closed by Test-Opens since $After: Home must rest on that Group before and after, and
+# have said nothing new of where it rests in between.
+function Test-RestKept([string] $Group, [int] $After) {
+    $moved = @(Get-LogLines $After 'Home rests at ')
+    if ($moved.Count) { $script:failures += "See all on ${Group}: Home's page moved while My games & apps was up or as it closed ($($moved -join '; '))" }
+    if ((Get-Rest) -ne "Group $Group") { $script:failures += "See all on ${Group}: Home rests at $(Get-Rest), not Group $Group" }
+}
+
 # The Group whose See all tile has focus by the log's last focus line; $null when focus is elsewhere.
 function Get-SeeAllGroup {
     if ((Get-Focus) -match 'Home focus on See all of the Group (.*)$') { $Matches[1].Trim() }
@@ -212,7 +231,9 @@ try {
     Save-Screen '2-see-all'
     Say "focus on See all of the Group $first"
     $firstLine = "Home focus on See all of the Group $([regex]::Escape($first))`$"
+    $mark = Get-Mark
     Test-Opens "See all on $first" 'FullLibrary' $firstLine 'first' $first -BackOnTile
+    Test-RestKept $first $mark
 
     # The Group under it: one Down, which may keep the place in the row, then right to its See all.
     if (-not (Test-FocusOn $firstLine)) { $failures += "After See all on $first, focus is not back on it ($(Get-Focus)); the second Group is not tried" }
@@ -227,7 +248,9 @@ try {
             $second = Get-SeeAllGroup
             Save-Screen '3-see-all'
             Say "focus on See all of the Group $second"
+            $mark = Get-Mark
             Test-Opens "See all on $second" 'FullLibrary' "Home focus on See all of the Group $([regex]::Escape($second))`$" 'second' $second -BackOnTile
+            Test-RestKept $second $mark
         }
     }
 

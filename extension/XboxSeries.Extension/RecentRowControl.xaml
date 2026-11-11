@@ -21,11 +21,12 @@
     </controls:PluginUserControl.Resources>
 
     <!--
-        Home's first screen: the Recent row, and under it the placeholder tiles (PromoRow), which fly with it. Stacked,
-        so each is scaled by the width alone. They run below the row's slot in the Dashboard into the space under it;
-        the negative bottom margin keeps WPF from clipping them to the slot.
+        The top of Home's page: the Recent row, and under it the wide tiles (PromoRow). Stacked, so each is scaled by the
+        width alone. They run below the row's slot in the Dashboard into the space under it; the negative bottom margin
+        keeps WPF from clipping them to the slot. The page's scroll (HomePage.Scroll) moves them, and the Groups under
+        them (GroupsControl.xaml, laid out to follow them), as one; they fade out as it rises into the Groups.
     -->
-    <StackPanel Margin="0,0,0,-240">
+    <StackPanel x:Name="Page" Margin="0,0,0,-240">
         <!--
             Laid out at a fixed 1080p width, the row with a tile focused (8 tiles, 7 gaps and the focus growth), and scaled
             to the width there is, so with a tile focused it spans the top bar on 16:9 and 16:10 screens alike: from the
