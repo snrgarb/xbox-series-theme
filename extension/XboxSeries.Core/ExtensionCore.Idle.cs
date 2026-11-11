@@ -192,7 +192,7 @@ namespace XboxSeries.Core
                 }
 
                 playnite.BringToFront();
-                playnite.OpenGameHub(gameId);
+                OpenGameHub(gameId);
             }
 
             if (Guide.IsOpen)

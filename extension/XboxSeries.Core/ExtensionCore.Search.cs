@@ -192,7 +192,7 @@ namespace XboxSeries.Core
             if (SearchHasThePad && Search.RecentlyAdded.Concat(Search.Games).Any(t => t.GameId == gameId))
             {
                 ShowInMainList(GameListFilter.LastPlayed);
-                playnite.OpenGameHub(gameId);
+                OpenGameHub(gameId);
             }
         }
 

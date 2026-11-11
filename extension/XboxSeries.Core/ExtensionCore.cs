@@ -1308,7 +1308,7 @@ namespace XboxSeries.Core
             {
                 CancelTap();
                 ListPlayHistoryInMainList();
-                playnite.OpenGameHub(gameId);
+                OpenGameHub(gameId);
             });
         }
 
@@ -1447,8 +1447,8 @@ namespace XboxSeries.Core
         private void OpenMyGames(MyGamesItem item, Guid? returnsToGame)
         {
             CancelNavSettle();
-            queueLeavesForHome = false;
-            queueReturnsToHub = null;
+            queueOrigin = QueueOrigin.Manage;
+            hubQueueFocus = null;
 
             // Search goes first, giving back any filter of its own, before Games puts its filter on.
             CloseSearch();
@@ -1606,13 +1606,9 @@ namespace XboxSeries.Core
         {
             if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
-                if (MyGames.Item == MyGamesItem.ManageQueue && queueReturnsToHub is Guid hubGame)
+                if (MyGames.Item == MyGamesItem.ManageQueue)
                 {
-                    ReturnToHubFromQueue(hubGame);
-                }
-                else if (MyGames.Item == MyGamesItem.ManageQueue && !queueLeavesForHome)
-                {
-                    MyGames.Item = MyGamesItem.Manage;
+                    LeaveManageQueue();
                 }
                 else if (MyGames.ShowsFullLibrary && MyGames.HasNameFilter)
                 {
@@ -1679,11 +1675,8 @@ namespace XboxSeries.Core
         public void OpenQueueFromHome()
         {
             OpenMyGames(MyGamesItem.ManageQueue);
-            queueLeavesForHome = true;
+            queueOrigin = QueueOrigin.Home;
         }
-
-        /// <summary>Whether Manage Queue was opened from Home's Downloads tile, so B on it goes back to Home.</summary>
-        private bool queueLeavesForHome;
 
         /// <summary>The item My games &amp; apps showed as Settings took its place, which Customise games &amp; apps' B opens again.</summary>
         private MyGamesItem settingsReturnItem;
@@ -1804,6 +1797,7 @@ namespace XboxSeries.Core
         private void CloseMyGames()
         {
             CancelNavSettle();
+            hubQueueFocus = null;
             ForgetLibraryName();
             chosenLibrarySort = null;
             MyGames.IsShown = false;

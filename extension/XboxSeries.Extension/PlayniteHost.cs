@@ -185,14 +185,17 @@ namespace XboxSeries.Extension
                 ResourceProvider.GetString("LOCStartupError"));
         }
 
-        public void OpenGameHub(Guid gameId)
+        public bool OpenGameHub(Guid gameId)
         {
             // The hub is Playnite's details view of the main list's selected game, which opens with focus on Play.
             if (SelectInMainList(gameId) && api.MainView.ActiveFullscreenView == FullscreenView.List)
             {
                 api.MainView.ToggleFullscreenView();
                 logger.Info($"Game hub opened for {api.Database.Games.Get(gameId)?.Name}");
+                return true;
             }
+
+            return false;
         }
 
         public void RunGameAction(Guid gameId, int index)

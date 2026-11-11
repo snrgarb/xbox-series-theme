@@ -62,6 +62,33 @@ namespace XboxSeries.Core
             }
         }
 
+        /// <summary>
+        /// The game whose tile focus goes back to once the Game hub over the page closes, the page having changed item
+        /// behind the hub (B on Manage Queue opened from it); null otherwise. Taken once (<see cref="TakeTileBehindHub"/>).
+        /// </summary>
+        private Guid? tileBehindHub;
+
+        /// <summary>
+        /// Puts the page back on <paramref name="value"/> behind a Game hub opened over it: focus, which the hub has, stays
+        /// there, and goes to <paramref name="tile"/>'s tile once the hub closes, rather than the item's first.
+        /// </summary>
+        internal void SetItemBehindHub(MyGamesItem value, Guid? tile)
+        {
+            tileBehindHub = tile;
+            Item = value;
+        }
+
+        /// <summary>
+        /// The game whose tile takes focus as the page shows again from behind a Game hub (<see cref="SetItemBehindHub"/>),
+        /// once; null for none, the page then taking focus as it would.
+        /// </summary>
+        public Guid? TakeTileBehindHub()
+        {
+            var tile = tileBehindHub;
+            tileBehindHub = null;
+            return tile;
+        }
+
         /// <summary>Whether Playnite's main list shows beside the nav as the page's grid of games. Play history, Apps, Manage and Manage Queue show their own.</summary>
         public bool ShowsGameGrid => IsShown && (Item == MyGamesItem.Games || Item == MyGamesItem.FullLibrary);
 

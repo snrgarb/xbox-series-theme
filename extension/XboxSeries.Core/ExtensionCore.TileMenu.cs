@@ -89,7 +89,7 @@ namespace XboxSeries.Core
                 rows.Add(new DialogOption("Manage game", DialogIcon.Manage, () => FromTileMenu(() =>
                 {
                     ListPlayHistoryInMainList();
-                    playnite.OpenGameHub(gameId);
+                    OpenGameHub(gameId);
                 })));
             }
 

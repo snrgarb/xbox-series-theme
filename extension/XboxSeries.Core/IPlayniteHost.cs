@@ -18,8 +18,11 @@ namespace XboxSeries.Core
         /// <summary>Starts an App: its path with its arguments, as Playnite's own Software tools menu does.</summary>
         void StartApp(App app);
 
-        /// <summary>Opens the game's Game hub (Playnite's Game details) on the Dashboard, with focus on Play.</summary>
-        void OpenGameHub(Guid gameId);
+        /// <summary>
+        /// Opens the game's Game hub (Playnite's Game details) on the Dashboard, with focus on Play. Whether it opened: not
+        /// for a game the main list's filter leaves out, nor with a hub already open.
+        /// </summary>
+        bool OpenGameHub(Guid gameId);
 
         /// <summary>Closes <paramref name="gameId"/>'s Game hub, if it is the one open, back to the page it was opened from.</summary>
         void CloseGameHub(Guid gameId);

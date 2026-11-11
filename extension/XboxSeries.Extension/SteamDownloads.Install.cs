@@ -350,33 +350,42 @@ namespace XboxSeries.Extension
         }
 
 #if DEBUG
-        /// <summary>Whether the faked download has been logged, so it is logged once.</summary>
-        private bool fakeDownloadLogged;
+        /// <summary>The game XBOXSERIES_FAKE_DOWNLOAD names, once found; whether the variable has been settled.</summary>
+        private Guid? fakeDownload;
+        private bool fakeDownloadSettled;
 #endif
 
         /// <summary>
         /// For the e2e VM, which has no Steam to download with: in a Debug build with XBOXSERIES_FAKE_DOWNLOAD set to a
         /// game's name, that game, while Playnite lists it as not installed, reads as one Steam is installing, so it
-        /// joins the Queue, Queued, as an install started in Steam itself would. Null otherwise; a Release build never
-        /// reads the variable.
+        /// joins the Queue, Queued, as an install started in Steam itself would. The name is looked up until found, then
+        /// kept. Null otherwise; a Release build never reads the variable.
         /// </summary>
         private Guid? FakeDownload()
         {
 #if DEBUG
-            var name = Environment.GetEnvironmentVariable("XBOXSERIES_FAKE_DOWNLOAD");
-            if (string.IsNullOrEmpty(name))
+            if (!fakeDownloadSettled)
             {
-                return null;
+                var name = Environment.GetEnvironmentVariable("XBOXSERIES_FAKE_DOWNLOAD");
+                if (string.IsNullOrEmpty(name))
+                {
+                    fakeDownloadSettled = true;
+                    return null;
+                }
+
+                // Not found yet, as before Playnite has its library, it is looked for again on the next read.
+                var found = api.Database.Games.FirstOrDefault(g => g.Name == name);
+                if (found == null)
+                {
+                    return null;
+                }
+
+                fakeDownloadSettled = true;
+                fakeDownload = found.Id;
+                logger.Info($"[Queue] download faked by XBOXSERIES_FAKE_DOWNLOAD={name}: Steam reads as installing {found.Name}");
             }
 
-            var game = api.Database.Games.FirstOrDefault(g => g.Name == name && !g.IsInstalled);
-            if (game != null && !fakeDownloadLogged)
-            {
-                fakeDownloadLogged = true;
-                logger.Info($"[Queue] download faked by XBOXSERIES_FAKE_DOWNLOAD={name}: Steam reads as installing {game.Name}");
-            }
-
-            return game?.Id;
+            return fakeDownload is Guid id && api.Database.Games.Get(id)?.IsInstalled == false ? id : (Guid?)null;
 #else
             return null;
 #endif
@@ -397,13 +406,13 @@ namespace XboxSeries.Extension
         public IReadOnlyList<Guid> Installing()
         {
             var installing = new List<Guid>();
-            if (FakeDownload() is Guid fake)
-            {
-                installing.Add(fake);
-            }
-
             try
             {
+                if (FakeDownload() is Guid fake)
+                {
+                    installing.Add(fake);
+                }
+
                 var games = SteamGames();
                 if (games.Count == 0)
                 {

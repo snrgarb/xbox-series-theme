@@ -208,6 +208,18 @@ namespace XboxSeries.Extension
             ShowItem();
             ShowStorage();
             ShowName();
+
+            // Its item put back behind a Game hub while it was unloaded: the hub's game's tile takes focus.
+            var behindHub = core.MyGames.TakeTileBehindHub();
+            if (behindHub != null)
+            {
+                lastFocusedGridGame = null;
+                lastFocusedGame = behindHub;
+                lastFocusedApp = null;
+                lastFocusedQueueGame = behindHub;
+                lastFocusedCover = 0;
+            }
+
             if (core.MyGames.IsShown && !IsKeyboardFocusWithin)
             {
                 FocusContentSoon();
@@ -279,7 +291,17 @@ namespace XboxSeries.Extension
 
                     // Opened from Home, the top bar or the Guide: focus goes to the first tile. Moving through the nav keeps it there.
                     // Opened again by B from Settings, which Customise games & apps opened, it goes back to that menu's tile.
-                    if (core.MyGames.IsShown && !Nav.IsKeyboardFocusWithin)
+                    // Put back behind a Game hub, by B on Manage Queue opened from it, focus stays on the hub, and goes to the
+                    // hub's game's tile once the hub closes (the page's Loaded focuses it).
+                    var behindHub = core.MyGames.TakeTileBehindHub();
+                    if (behindHub != null)
+                    {
+                        lastFocusedGame = behindHub;
+                        lastFocusedApp = null;
+                        lastFocusedQueueGame = behindHub;
+                        lastFocusedCover = 0;
+                    }
+                    else if (core.MyGames.IsShown && !Nav.IsKeyboardFocusWithin)
                     {
                         var returnsTo = e.PropertyName == nameof(MyGamesState.IsShown) ? core.MyGames.ReturnsToGame : null;
                         lastFocusedGame = returnsTo;
