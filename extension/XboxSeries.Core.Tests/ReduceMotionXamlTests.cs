@@ -117,8 +117,8 @@ namespace XboxSeries.Core.Tests
 
             // Playnite's PluginSettings binds to the plugin, at SettingsRoot then the theme's Path.
             Assert.Contains("AddSettingsSupport(new AddSettingsSupportArgs { SourceName = \"XboxSeries\", SettingsRoot = nameof(DashboardSettings) });", plugin);
-            Assert.Contains("public SettingsState DashboardSettings => core.Settings;", plugin);
-            Assert.Contains("public StartUpSettingsState StartUp { get; }", File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Core", "SettingsState.cs")));
+            Assert.Contains("public DashboardBindings DashboardSettings => core.Dashboard;", plugin);
+            Assert.Contains("public StartUpSettingsState StartUp { get; }", File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Core", "DashboardBindings.cs")));
             Assert.Contains("public bool ReduceMotion", File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Core", "StartupState.cs")));
         }
 
@@ -173,7 +173,7 @@ namespace XboxSeries.Core.Tests
             var readings = Directory.GetFiles(DashboardDir, "*.xaml", SearchOption.AllDirectories)
                 .SelectMany(file => XDocument.Load(file).Descendants().Attributes())
                 .Select(a => a.Value)
-                .Where(value => value.Contains("Plugin=XboxSeries,"))
+                .Where(value => value.Contains("Plugin=XboxSeries, Path=StartUp.ReduceMotion"))
                 .ToList();
 
             // The top bar's icons, the name swap, and the title band fading and at once.

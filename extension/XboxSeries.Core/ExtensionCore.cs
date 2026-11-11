@@ -241,6 +241,7 @@ namespace XboxSeries.Core
             this.windowSystem = windowSystem;
             this.playnite = playnite;
             this.sounds = sounds;
+            Dashboard = new DashboardBindings(Settings.StartUp, HubBackdrop);
             TickStatus();
             LoadDiscordApp();
             LoadShortcuts();
@@ -266,6 +267,12 @@ namespace XboxSeries.Core
         public MyGamesState MyGames { get; } = new MyGamesState();
 
         public SettingsState Settings { get; } = new SettingsState();
+
+        /// <summary>The Game hub's backdrop: the screen it was opened from, held while it is open.</summary>
+        public HubBackdropState HubBackdrop { get; } = new HubBackdropState();
+
+        /// <summary>What the Dashboard's XAML reads of the extension through PluginSettings.</summary>
+        public DashboardBindings Dashboard { get; }
 
         public void OnLibraryChanged(LibrarySnapshot snapshot)
         {

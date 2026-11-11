@@ -12,6 +12,8 @@ namespace XboxSeries.Extension
     /// It also tells the core when focus is on Playnite's own parts with a menu, which no control of the extension's is
     /// on to report: a game in My games &amp; apps' grid (Playnite's main list) and the Game hub. Each loses focus as
     /// Playnite leaves the foreground, as when a dialog opens in its own window.
+    /// It sits over the whole page and the Game hub alike, so it also keeps the hub's backdrop (<see cref="HubBackdrop"/>):
+    /// the page under the hub, taken as the hub opens and let go as it closes.
     /// A <see cref="PluginUserControl"/>, because Playnite binds any other custom element's DataContext to the selected game.
     /// </summary>
     public partial class HintBarControl : PluginUserControl
@@ -19,6 +21,7 @@ namespace XboxSeries.Extension
         private readonly ExtensionCore core;
         private FrameworkElement mainList;
         private FrameworkElement gameHub;
+        private HubBackdrop backdrop;
 
         internal HintBarControl(ExtensionCore core)
         {
@@ -30,6 +33,8 @@ namespace XboxSeries.Extension
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            // Loaded again without an Unloaded between, it lets go of what it followed before following afresh.
+            Detach();
             core.Home.PropertyChanged += OnHomeChanged;
             Follow();
 
@@ -44,23 +49,42 @@ namespace XboxSeries.Extension
             {
                 gameHub.IsKeyboardFocusWithinChanged += OnGameHubFocusChanged;
             }
+
+            backdrop = HubBackdrop.Follow(core.HubBackdrop, gameHub, HomeRows.FindPart(this, "PART_ViewHost"));
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            var followedList = mainList != null;
+            var followedHub = gameHub != null;
+            Detach();
+            if (followedList)
+            {
+                core.LeaveGameGrid();
+            }
+
+            if (followedHub)
+            {
+                core.LeaveGameHub();
+            }
+        }
+
+        /// <summary>Stops following the core, Playnite's main list and the Game hub, letting go of the hub's backdrop.</summary>
+        private void Detach()
+        {
             core.Home.PropertyChanged -= OnHomeChanged;
+            backdrop?.Stop();
+            backdrop = null;
             if (mainList != null)
             {
                 mainList.IsKeyboardFocusWithinChanged -= OnMainListFocusChanged;
                 mainList = null;
-                core.LeaveGameGrid();
             }
 
             if (gameHub != null)
             {
                 gameHub.IsKeyboardFocusWithinChanged -= OnGameHubFocusChanged;
                 gameHub = null;
-                core.LeaveGameHub();
             }
         }
 
