@@ -128,11 +128,9 @@
     </Style>
 
     <!--
-        A game's art on a tile, as every game tile in the extension shows it: filling the tile, cropped to the tile's
-        shape, with no bands, as on the console. Content is the art, already decoded: the game's Xbox art of the tile's
-        shape when it has it (HomeTile.Art), which fits whole, else its cover, cropped from the top, not the middle, so a
-        2:3 cover's logo, most often at its top, stays on a square tile. The tile rounds it; this only crops it to the
-        tile's edges.
+        A game's art on a tile, as every game tile in the extension shows it: filling the tile, centred and cropped to the
+        tile's shape, with no bands, as on the console. Content is the art, already decoded. The tile rounds it; this only
+        crops it to the tile's edges.
     -->
     <Style x:Key="TileArt" TargetType="ContentControl">
         <Setter Property="Focusable" Value="False" />
@@ -142,18 +140,14 @@
                 <ControlTemplate TargetType="ContentControl">
                     <Grid ClipToBounds="True">
                         <Image Source="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Stretch="UniformToFill"
-                               HorizontalAlignment="Center" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="Fant" />
+                               HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="Fant" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
-    <!--
-        A game tile's face: its art (or title, with none), library source and Running badge. Content is a HomeTile, whose
-        Art the core chose for the tile's shape: box art for the Recent row's and Recently installed's square tiles, the
-        poster for a Group's tall cards.
-    -->
+    <!-- A game tile's face: its cover (or title, with no cover), library source and Running badge. Content is a HomeTile. -->
     <DataTemplate x:Key="HomeTileArt">
         <Grid>
             <!--
@@ -165,9 +159,9 @@
             <Viewbox Stretch="UniformToFill">
                 <ContentControl x:Name="Cover" Style="{StaticResource TileArt}"
                                 Width="{DynamicResource HomeTileCoverWidth}" Height="{DynamicResource HomeTileCoverHeight}"
-                                Content="{Binding Art, Converter={StaticResource Image}, ConverterParameter=300}" />
+                                Content="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}" />
             </Viewbox>
-            <!-- Only for want of art: none, or art that won't load (DataTemplate.Triggers, on the picture shown). -->
+            <!-- Only for want of a cover: none, or one that won't load (DataTemplate.Triggers, on the picture shown). -->
             <TextBlock x:Name="Title" Text="{Binding Title}" Margin="10" TextWrapping="Wrap" VerticalAlignment="Center"
                        TextAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White"
                        Visibility="Collapsed" />
@@ -231,9 +225,8 @@
     </DataTemplate>
 
     <!--
-        A collage of up to 4 games' art, 2 by 2, for the tiles that open a list of games: Play history and See all.
-        Items are HomeTiles, their art chosen for the tile's shape; a cover is cropped from the top, as TileArt crops it.
-        With none, it shows the icon glyph in Tag instead.
+        A collage of up to 4 games' covers, 2 by 2, for the tiles that open a list of games: Play history and See all.
+        Items are HomeTiles. With none, it shows the icon glyph in Tag instead.
     -->
     <Style x:Key="TileCollage" TargetType="ItemsControl">
         <Setter Property="Focusable" Value="False" />
@@ -247,8 +240,8 @@
         <Setter Property="ItemTemplate">
             <Setter.Value>
                 <DataTemplate>
-                    <Image Source="{Binding Art, Converter={StaticResource Image}, ConverterParameter=150}"
-                           Stretch="UniformToFill" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
+                    <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=150}"
+                           Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" Margin="3" />
                 </DataTemplate>
             </Setter.Value>
         </Setter>

@@ -144,13 +144,12 @@ namespace XboxSeries.Core
     /// <summary>One game tile on the Dashboard: on Home, or a game in My games &amp; apps' Play history.</summary>
     public sealed class HomeTile
     {
-        internal HomeTile(Guid gameId, string title, string coverImage, string source, bool isRunning, string status = null, string art = null)
+        internal HomeTile(Guid gameId, string title, string coverImage, string source, bool isRunning, string status = null)
         {
             Status = status;
             GameId = gameId;
             Title = title;
             CoverImage = coverImage;
-            Art = art ?? coverImage;
             Source = source;
             IsRunning = isRunning;
         }
@@ -160,12 +159,6 @@ namespace XboxSeries.Core
 
         /// <summary>The full path or URL of the game's cover art; null when it has none.</summary>
         public string CoverImage { get; }
-
-        /// <summary>
-        /// The full path or URL of the art the tile shows, chosen for its shape (<see cref="TileArt"/>): the game's Xbox
-        /// box art or poster, else its cover; null when it has none.
-        /// </summary>
-        public string Art { get; }
 
         /// <summary>The game's library source (Steam, Xbox, ...), shown as its icon; null for games without one.</summary>
         public string Source { get; }

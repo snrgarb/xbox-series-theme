@@ -6,8 +6,8 @@
              Focusable="False" KeyDown="OnPaneKeyDown">
     <!--
         Theme settings' Personalisation page, as the console's General and Account: a grid of dark boxes two wide, each
-        a line icon and its name alone, opening a page of its own in their place, and Xbox store art's, Background
-        delay's, Reduce motion's and Show Play history's checkboxes. Its DataContext is the core's StartUpSettingsState; the page showing and its header follow
+        a line icon and its name alone, opening a page of its own in their place, and Background delay's, Reduce
+        motion's and Show Play history's checkboxes. Its DataContext is the core's StartUpSettingsState; the page showing and its header follow
         the code-behind. In Settings' palette and 1080p units (SettingsControl.xaml).
     -->
     <UserControl.Resources>
@@ -147,32 +147,6 @@
             </Button>
 
             <!--
-                Xbox store art: whether game tiles show the game's own art from the Xbox store, its box art on a square
-                tile and its poster on a tall one, or only Playnite's covers. Built as Background delay: no icon, the
-                ticked box on, the empty square off; A turns it over at once, saved, and the tiles follow. Beside Who's
-                playing today?, the one place left: a sixth row would run off a 1080p screen.
-            -->
-            <Button x:Name="XboxArtBox" Grid.Row="1" Grid.Column="1" Style="{StaticResource Box}" Padding="30,0,24,0"
-                    Click="OnBoxClick">
-                <Grid>
-                    <TextBlock Text="Xbox store art" Style="{StaticResource Text}" VerticalAlignment="Center" Margin="0,0,50,0" />
-                    <TextBlock x:Name="XboxArtCheck" HorizontalAlignment="Right">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
-                                <Setter Property="FontSize" Value="34" />
-                                <Setter Property="Text" Value="&#xE739;" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding XboxArt}" Value="True">
-                                        <Setter Property="Text" Value="&#xE73A;" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Grid>
-            </Button>
-
-            <!--
                 Background delay: whether Home's background waits for focus to rest on a game before showing its art. No
                 icon, the ticked box on, the empty square off. A turns it over at once, saved; no page opens.
             -->
@@ -205,16 +179,6 @@
                        TextWrapping="Wrap" TextTrimming="None" Width="400" Margin="30,8,0,0" VerticalAlignment="Top"
                        HorizontalAlignment="Left"
                        Visibility="{Binding IsKeyboardFocused, ElementName=BackgroundDelayBox, Converter={StaticResource Visibility}}" />
-
-            <!--
-                Under Xbox store art's box while it has focus, in Background delay's info's place, which never shows with
-                it: there is no room beside it.
-            -->
-            <TextBlock x:Name="XboxArtInfo" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1" Style="{StaticResource Text}"
-                       Text="Shows each game's box art and poster from the Xbox store on its tiles, fetched once over the internet. Turn it off to show only Playnite's covers."
-                       TextWrapping="Wrap" TextTrimming="None" Width="400" Margin="0" VerticalAlignment="Top"
-                       HorizontalAlignment="Left"
-                       Visibility="{Binding IsKeyboardFocused, ElementName=XboxArtBox, Converter={StaticResource Visibility}}" />
 
             <!--
                 Reduce motion: whether the Dashboard's animations are turned off, for a PC they cost frames on. Built as

@@ -87,7 +87,7 @@ namespace XboxSeries.Core.Tests
         {
             var pane = Code("PersonalisationPane.xaml.cs");
 
-            Assert.Matches(new Regex(@"new\[\] \{ AskBox, XboxArtBox \},\s*new\[\] \{ BackgroundDelayBox \},\s*new\[\] \{ ReduceMotionBox \},"), pane);
+            Assert.Matches(new Regex(@"new\[\] \{ AskBox \},\s*new\[\] \{ BackgroundDelayBox \},\s*new\[\] \{ ReduceMotionBox \},"), pane);
             Assert.Matches(new Regex(@"button == ReduceMotionBox\)\s*\{\s*core\.SetReduceMotion\(!State\.ReduceMotion\);"), pane);
         }
 
