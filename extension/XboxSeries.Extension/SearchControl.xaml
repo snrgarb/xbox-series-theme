@@ -156,12 +156,15 @@
                 A game: its cover, whole over its blurred copy (TileArt) in a square, over a grey caption holding its title
                 and, while it's being installed, its state.
                 The cover is decoded at twice its 1080p size, for the 4K screen's 2 pixels to a 1080p one, and no larger.
+                The caption's text is the console's 26 px (#203): two lines of title (2 x 26 x 1.33, Segoe UI's line, = 69.2;
+                three would be 103.7, so a MaxHeight of 72 trims the second) and the state under them, 34.6, between 14 above
+                and below: 132.
             -->
             <DataTemplate x:Key="GameTile">
                 <Grid Background="{StaticResource CaptionBrush}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="240" />
-                        <RowDefinition Height="110" />
+                        <RowDefinition Height="132" />
                     </Grid.RowDefinitions>
                     <Grid Background="#FF1A1A1A">
                         <ContentControl x:Name="Cover" Style="{StaticResource TileArt}"
@@ -181,10 +184,12 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </Grid>
-                    <TextBlock Grid.Row="1" Text="{Binding Title}" Style="{StaticResource Text}" Margin="18,14,18,0"
-                               VerticalAlignment="Top" />
-                    <TextBlock Grid.Row="1" Text="{Binding Status}" Style="{StaticResource Text}" FontSize="18"
-                               Foreground="{StaticResource DimBrush}" Margin="18,0,18,14" VerticalAlignment="Bottom" />
+                    <StackPanel Grid.Row="1" Margin="18,14,18,14">
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text}" FontSize="26"
+                                   TextWrapping="Wrap" MaxHeight="72" />
+                        <TextBlock Text="{Binding Status}" Style="{StaticResource Text}" FontSize="26"
+                                   Foreground="{StaticResource DimBrush}" />
+                    </StackPanel>
                 </Grid>
             </DataTemplate>
 

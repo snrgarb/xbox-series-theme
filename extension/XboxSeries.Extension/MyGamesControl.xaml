@@ -20,6 +20,14 @@
 
             <BooleanToVisibilityConverter x:Key="Visibility" />
 
+            <!--
+                Manage Queue's Recently installed tiles are Home's, but on this unscaled page: a focused one's title at the
+                console's 26 px, over HomeTiles' size for the scaled Recent row, two lines of it (2 x 26 x 1.33 = 69.2) and
+                no third.
+            -->
+            <sys:Double x:Key="HomeTileTitleSize">26</sys:Double>
+            <sys:Double x:Key="HomeTileTitleMaxHeight">72</sys:Double>
+
             <!-- The console's My games & apps colours, sampled from #7's captures, so approximate. -->
             <SolidColorBrush x:Key="PageBrush" Color="#FF1F1F1F" />
             <SolidColorBrush x:Key="DividerBrush" Color="#FF303030" />
