@@ -15,8 +15,9 @@ namespace XboxSeries.Core
     }
 
     /// <summary>
-    /// The PC's battery: whether there is one, the charge left and whether it is charging. The Status area shows it as the
-    /// pad's battery is shown, the percent then a cell filled to it, with a bolt while it charges; with none, nothing.
+    /// The PC's battery: whether there is one, the charge left and whether it is charging. The Status area shows its percent
+    /// then Windows' upright battery (<see cref="Glyph"/>), so it never reads as the pad's, which lies on its side as the
+    /// console draws it; with none, nothing.
     /// </summary>
     public sealed class PcBattery : IEquatable<PcBattery>
     {
@@ -37,11 +38,36 @@ namespace XboxSeries.Core
         /// <summary>Whether the PC has a battery, and so whether the Status area shows one.</summary>
         public bool IsPresent { get; }
 
-        /// <summary>The charge left, 0 to 100, to which the cell is filled; 0 with no battery or no known charge.</summary>
+        /// <summary>The charge left, 0 to 100, to which the battery is filled; 0 with no battery or no known charge.</summary>
         public int Percent { get; }
 
-        /// <summary>Whether it is on mains and charging, which shows a bolt beside the cell.</summary>
+        /// <summary>Whether it is on mains and charging, which shows the charging battery, with its bolt.</summary>
         public bool IsCharging { get; }
+
+        /// <summary>
+        /// Segoe Fluent Icons' (and MDL2 Assets') upright battery, as Windows shows a handheld's: VerticalBattery0 to 10
+        /// (U+F5F2 to U+F5FC) filled to the nearest tenth, VerticalBatteryCharging0 to 10 (U+F5FD to U+F607), which
+        /// carry their own bolt, while charging, and VerticalBatteryUnknown (U+F608) when the charge isn't known; empty
+        /// with no battery.
+        /// </summary>
+        public string Glyph
+        {
+            get
+            {
+                if (!IsPresent)
+                {
+                    return "";
+                }
+
+                if (!HasPercent)
+                {
+                    return "\uF608";
+                }
+
+                var tenths = (Percent + 5) / 10;
+                return ((char)((IsCharging ? 0xF5FD : 0xF5F2) + tenths)).ToString();
+            }
+        }
 
         /// <summary>The percent as the Status area writes it, "57%"; empty with no battery, or no known charge.</summary>
         public string Text => HasPercent ? Percent.ToString(CultureInfo.InvariantCulture) + "%" : "";
@@ -50,7 +76,7 @@ namespace XboxSeries.Core
         public static PcBattery Of(int percent, bool charging) =>
             new PcBattery(true, true, Math.Max(0, Math.Min(100, percent)), charging);
 
-        /// <summary>A battery whose charge Windows doesn't know (it reports 255%): the cell shows, the percent doesn't.</summary>
+        /// <summary>A battery whose charge Windows doesn't know (it reports 255%): the unknown battery shows, the percent doesn't.</summary>
         public static PcBattery WithoutPercent(bool charging) => new PcBattery(true, false, 0, charging);
 
         /// <summary>

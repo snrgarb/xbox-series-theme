@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using XboxSeries.Core.Tests.Fakes;
 using Xunit;
 
@@ -50,10 +51,52 @@ namespace XboxSeries.Core.Tests
         }
 
         [Theory]
+        [InlineData(0, false, 0xF5F2)]
+        [InlineData(4, false, 0xF5F2)]
+        [InlineData(5, false, 0xF5F3)]
+        [InlineData(57, false, 0xF5F8)]
+        [InlineData(77, false, 0xF5FA)]
+        [InlineData(100, false, 0xF5FC)]
+        [InlineData(0, true, 0xF5FD)]
+        [InlineData(57, true, 0xF603)]
+        [InlineData(100, true, 0xF607)]
+        public void A_battery_is_Windows_upright_battery_filled_to_the_nearest_tenth(int percent, bool charging, int glyph)
+        {
+            Assert.Equal(((char)glyph).ToString(), PcBattery.Of(percent, charging).Glyph);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void A_charge_Windows_does_not_know_is_the_unknown_upright_battery(bool charging)
+        {
+            Assert.Equal("\uF608", PcBattery.WithoutPercent(charging).Glyph);
+        }
+
+        [Fact]
+        public void No_battery_has_no_glyph()
+        {
+            Assert.Equal("", PcBattery.None.Glyph);
+        }
+
+        // Every glyph the PC's battery can show is one of Windows' upright batteries (U+F5F2 to U+F608), never a battery
+        // on its side as the pad's is, so the two can't be mistaken for each other.
+        [Fact]
+        public void Every_PC_battery_glyph_is_upright()
+        {
+            var glyphs = Enumerable.Range(0, 101)
+                .SelectMany(p => new[] { PcBattery.Of(p, false), PcBattery.Of(p, true) })
+                .Concat(new[] { PcBattery.WithoutPercent(false), PcBattery.WithoutPercent(true) })
+                .Select(b => b.Glyph);
+
+            Assert.All(glyphs, g => Assert.InRange(g.Single(), '\uF5F2', '\uF608'));
+        }
+
+        [Theory]
         [InlineData(0, "0%")]
         [InlineData(50, "50%")]
         [InlineData(100, "100%")]
-        public void A_battery_shows_its_cell_filled_to_the_charge_and_the_percent(int percent, string text)
+        public void A_battery_shows_its_charge_and_the_percent(int percent, string text)
         {
             pc.Battery = PcBattery.Of(percent, charging: false);
 
@@ -66,7 +109,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_battery_charging_shows_the_bolt_beside_its_cell()
+        public void A_battery_charging_shows_the_charging_battery()
         {
             pc.Battery = PcBattery.Of(57, charging: true);
 
@@ -105,7 +148,7 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void A_charge_Windows_does_not_know_shows_the_cell_without_a_percent()
+        public void A_charge_Windows_does_not_know_shows_no_percent()
         {
             pc.Battery = PcBattery.WithoutPercent(charging: false);
 

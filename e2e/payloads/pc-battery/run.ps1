@@ -7,8 +7,8 @@
 # 1. No variable, as the VM is: "PC battery: none", and no "faked" line. Home's top bar and the Guide show the Status
 #    area as today, with no PC battery: compare home-plain-topbar.jpg and guide-plain-status.jpg with guide-over-game's.
 # 2. Playnite closed, and started again with XBOXSERIES_FAKE_BATTERY=57,charging: the "faked" line, and
-#    "PC battery: 57%, charging". Home's top bar and the Guide show 57%, a cell a little over half full and a bolt,
-#    before the pad's battery (home-fake-topbar.jpg, guide-fake-status.jpg).
+#    "PC battery: 57%, charging". Home's top bar and the Guide show 57% and Windows' upright charging battery, bolt inside,
+#    before the pad's battery, which lies on its side (home-fake-topbar.jpg, guide-fake-status.jpg).
 # Screenshots are whole screens, with the top bar and the Guide's top right cut out of them beside.
 Import-Module (Join-Path $PSScriptRoot 'lib\E2E.psm1') -Force
 $result = 'FAIL'
