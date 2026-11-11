@@ -117,8 +117,8 @@ namespace XboxSeries.Core.Tests
 
             // Playnite's PluginSettings binds to the plugin, at SettingsRoot then the theme's Path.
             Assert.Contains("AddSettingsSupport(new AddSettingsSupportArgs { SourceName = \"XboxSeries\", SettingsRoot = nameof(DashboardSettings) });", plugin);
-            Assert.Contains("public SettingsState DashboardSettings => core.Settings;", plugin);
-            Assert.Contains("public StartUpSettingsState StartUp { get; }", File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Core", "SettingsState.cs")));
+            Assert.Contains("public DashboardBindings DashboardSettings => core.Dashboard;", plugin);
+            Assert.Contains("public StartUpSettingsState StartUp { get; }", File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Core", "DashboardBindings.cs")));
             Assert.Contains("public bool ReduceMotion", File.ReadAllText(Path.Combine(RepoRoot, "extension", "XboxSeries.Core", "StartupState.cs")));
         }
 
