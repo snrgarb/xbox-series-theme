@@ -56,6 +56,9 @@ namespace XboxSeries.Core
         /// </summary>
         private static readonly TimeSpan BatteryReadAfterGuideOpens = TimeSpan.FromMilliseconds(500);
 
+        /// <summary>How often the PC's own battery is read, besides as Windows says the power changed.</summary>
+        private static readonly TimeSpan PcBatteryReadEvery = TimeSpan.FromSeconds(30);
+
         /// <summary>
         /// How long focus has to stay on a nav item of My games &amp; apps before the page opens it, when focus came there
         /// this soon after reaching another. Opening one has Playnite refilter its list and the page lay its content out
@@ -109,6 +112,7 @@ namespace XboxSeries.Core
         private readonly IUserAccount account;
         private readonly IAudio audio;
         private readonly IController controller;
+        private readonly IPcBattery pcBattery;
         private readonly IMediaSessions mediaSessions;
         private readonly IAchievements achievements;
 
@@ -211,8 +215,10 @@ namespace XboxSeries.Core
             IMediaSessions mediaSessions = null,
             IAchievements achievements = null,
             Random random = null,
-            IInputActivity inputActivity = null)
+            IInputActivity inputActivity = null,
+            IPcBattery pcBattery = null)
         {
+            this.pcBattery = pcBattery ?? NoPcBattery.Instance;
             this.random = random ?? new Random();
             this.inputActivity = inputActivity ?? NoInputActivity.Instance;
             this.mediaSessions = mediaSessions ?? NoMediaSessions.Instance;
@@ -230,6 +236,7 @@ namespace XboxSeries.Core
             this.playnite = playnite;
             this.sounds = sounds;
             TickStatus();
+            TickPcBattery();
             LoadDiscordApp();
             LoadShortcuts();
             LoadRecentServers();
@@ -416,6 +423,25 @@ namespace XboxSeries.Core
         public void OnControllersChanged()
         {
             Status.Battery = controller.Battery;
+        }
+
+        /// <summary>The PC's own battery, read afresh and again in <see cref="PcBatteryReadEvery"/>.</summary>
+        private void TickPcBattery()
+        {
+            Status.PcBattery = pcBattery.Read();
+            if (pcBattery != NoPcBattery.Instance)
+            {
+                clock.After(PcBatteryReadEvery, TickPcBattery);
+            }
+        }
+
+        /// <summary>
+        /// Windows says the power changed, as the PC is plugged in or unplugged or its battery's state moves on: the PC's
+        /// battery shows it now, not on the next read.
+        /// </summary>
+        public void OnPowerChanged()
+        {
+            Status.PcBattery = pcBattery.Read();
         }
 
         private void RefreshStatus()

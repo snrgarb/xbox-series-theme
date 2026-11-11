@@ -10,8 +10,8 @@ using XboxSeries.Core;
 namespace XboxSeries.Extension
 {
     /// <summary>
-    /// Home's top bar's status area, injected as a custom element: the controller's battery and the clock, in place of
-    /// Playnite's PC battery and clock. The Dashboard's profile shows the profile signed in, <see cref="State"/>'s
+    /// Home's top bar's status area, injected as a custom element: the PC's own battery on a PC with one, the
+    /// controller's battery and the clock, in place of Playnite's PC battery and clock. The Dashboard's profile shows the profile signed in, <see cref="State"/>'s
     /// Profile, and opens the Guide on Profile &amp; system with <see cref="OpenProfileCommand"/>. A <see cref="PluginUserControl"/>, because Playnite binds any other custom
     /// element's DataContext to the selected game.
     /// </summary>

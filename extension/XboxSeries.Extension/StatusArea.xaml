@@ -4,35 +4,65 @@
              xmlns:local="clr-namespace:XboxSeries.Extension"
              Focusable="False" IsHitTestVisible="False">
     <!--
-        The status area (a StatusState): Discord while in a call, the controller's battery and the clock, as on the
-        console's top right. Shared
+        The status area (a StatusState): Discord while in a call, the PC's own battery on a PC with one, the controller's
+        battery and the clock, as on the console's top right. Shared
         by Home's top bar, which has them in a row, and the Guide, which has the battery above a large clock, so the two
         can't drift apart. Sized at 1080p.
     -->
     <UserControl.Resources>
+        <!-- A battery's cell, filled to the percent it is given, 0 to 100: the pad's and the PC's alike. -->
+        <DataTemplate x:Key="CellTemplate">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding Mode=OneWay}" Focusable="False">
+                        <ProgressBar.Template>
+                            <ControlTemplate TargetType="ProgressBar">
+                                <Grid>
+                                    <Border x:Name="PART_Track" />
+                                    <Border x:Name="PART_Indicator" Background="White" CornerRadius="1" HorizontalAlignment="Left" />
+                                </Grid>
+                            </ControlTemplate>
+                        </ProgressBar.Template>
+                    </ProgressBar>
+                </Border>
+                <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>
+
         <!--
-            The battery's percentage, then a battery filled to it; a pad on a cable shows the pad instead, and no pad shows
-            nothing.
+            The PC's own battery, on a laptop or handheld: its percentage, then a cell filled to it as the pad's, and a bolt
+            while it charges. A PC with no battery, as a desktop, shows nothing and takes no room.
+        -->
+        <DataTemplate x:Key="PcBatteryTemplate">
+            <StackPanel x:Name="PcBattery" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                <TextBlock Text="{Binding PcBattery.Text}" FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="White"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ContentControl Content="{Binding PcBattery.Percent}" ContentTemplate="{StaticResource CellTemplate}" Focusable="False"
+                                VerticalAlignment="Center" />
+                <!-- Segoe Fluent Icons / MDL2 Assets' lightning bolt. -->
+                <TextBlock x:Name="Bolt" Text="&#xE945;" FontFamily="{DynamicResource XboxIconFont}" FontSize="14" Foreground="White"
+                           VerticalAlignment="Center" Margin="4,0,0,0" Visibility="Collapsed" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding PcBattery.IsPresent}" Value="True">
+                    <Setter TargetName="PcBattery" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding PcBattery.IsCharging}" Value="True">
+                    <Setter TargetName="Bolt" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!--
+            The pad's battery: its percentage, then a cell filled to it; a pad on a cable shows the pad instead, and no pad
+            shows nothing.
         -->
         <DataTemplate x:Key="BatteryTemplate">
             <StackPanel x:Name="Battery" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock x:Name="Percent" Text="{Binding Battery.Percent, StringFormat={}{0}%}" FontFamily="{DynamicResource XboxFont}"
                            FontSize="18" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <StackPanel x:Name="Cell" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="30" Height="16" BorderBrush="White" BorderThickness="2" CornerRadius="3" Padding="2">
-                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding Battery.Percent, Mode=OneWay}" Focusable="False">
-                            <ProgressBar.Template>
-                                <ControlTemplate TargetType="ProgressBar">
-                                    <Grid>
-                                        <Border x:Name="PART_Track" />
-                                        <Border x:Name="PART_Indicator" Background="White" CornerRadius="1" HorizontalAlignment="Left" />
-                                    </Grid>
-                                </ControlTemplate>
-                            </ProgressBar.Template>
-                        </ProgressBar>
-                    </Border>
-                    <Border Width="3" Height="7" Background="White" CornerRadius="0,1.5,1.5,0" VerticalAlignment="Center" />
-                </StackPanel>
+                <ContentControl x:Name="Cell" Content="{Binding Battery.Percent}" ContentTemplate="{StaticResource CellTemplate}"
+                                Focusable="False" VerticalAlignment="Center" />
                 <!-- Segoe Fluent Icons / MDL2 Assets' game controller. -->
                 <TextBlock x:Name="Wired" Text="&#xE7FC;" FontFamily="{DynamicResource XboxIconFont}" FontSize="24"
                            Foreground="White" VerticalAlignment="Center" Visibility="Collapsed" />
@@ -87,10 +117,12 @@
             </DataTemplate.Triggers>
         </DataTemplate>
 
-        <!-- Home's top bar: Discord in a call, the battery, then the clock, in a row. -->
+        <!-- Home's top bar: Discord in a call, the PC's battery, the pad's, then the clock, in a row. -->
         <DataTemplate x:Key="RowTemplate">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <ContentControl x:Name="Discord" Content="{Binding}" ContentTemplate="{StaticResource DiscordTemplate}"
+                                Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
+                <ContentControl x:Name="PcBattery" Content="{Binding}" ContentTemplate="{StaticResource PcBatteryTemplate}"
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
                 <ContentControl x:Name="Battery" Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}"
                                 Focusable="False" Margin="0,0,16,0" VerticalAlignment="Center" />
@@ -101,6 +133,9 @@
                 <DataTrigger Binding="{Binding Battery.Connection}" Value="None">
                     <Setter TargetName="Battery" Property="Margin" Value="0" />
                 </DataTrigger>
+                <DataTrigger Binding="{Binding PcBattery.IsPresent}" Value="False">
+                    <Setter TargetName="PcBattery" Property="Margin" Value="0" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsInDiscordCall}" Value="False">
                     <Setter TargetName="Discord" Property="Margin" Value="0" />
                 </DataTrigger>
@@ -108,13 +143,15 @@
         </DataTemplate>
 
         <!--
-            The Guide: Discord in a call and the battery on a line of their own, over the clock large, all to the
+            The Guide: Discord in a call, the PC's battery and the pad's on a line of their own, over the clock large, all to the
             right, as on the console.
         -->
         <DataTemplate x:Key="StackedTemplate">
             <StackPanel HorizontalAlignment="Right">
                 <StackPanel Orientation="Horizontal" Height="28" HorizontalAlignment="Right" Margin="0,0,4,0">
                     <ContentControl x:Name="Discord" Content="{Binding}" ContentTemplate="{StaticResource DiscordTemplate}"
+                                    Focusable="False" Margin="0,0,12,0" VerticalAlignment="Center" />
+                    <ContentControl x:Name="PcBattery" Content="{Binding}" ContentTemplate="{StaticResource PcBatteryTemplate}"
                                     Focusable="False" Margin="0,0,12,0" VerticalAlignment="Center" />
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource BatteryTemplate}" Focusable="False"
                                     VerticalAlignment="Center" />
@@ -125,6 +162,9 @@
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsInDiscordCall}" Value="False">
                     <Setter TargetName="Discord" Property="Margin" Value="0" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding PcBattery.IsPresent}" Value="False">
+                    <Setter TargetName="PcBattery" Property="Margin" Value="0" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>

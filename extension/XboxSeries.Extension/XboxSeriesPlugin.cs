@@ -28,6 +28,7 @@ namespace XboxSeries.Extension
         private readonly PlayniteSounds sounds;
         private readonly PlayniteHost host;
         private readonly GamingInputController controller = new GamingInputController();
+        private readonly WindowsPcBattery pcBattery = new WindowsPcBattery();
         private readonly WindowsAudio audio = new WindowsAudio();
         private readonly WindowsMediaSessions mediaSessions = new WindowsMediaSessions();
         private readonly PlayniteAchievementsSource achievements;
@@ -100,7 +101,7 @@ namespace XboxSeries.Extension
 #endif
             core = new ExtensionCore(new DispatcherClock(), windows, host, sounds, new WindowsDrives(), new WindowsUserAccount(GetPluginUserDataPath(), popularGamerpics), audio, controller,
                 discordPipe, discordOAuth, new DpapiSecretStore(GetPluginUserDataPath()), downloads, mediaSessions,
-                achievements: achievements, inputActivity: inputActivity);
+                achievements: achievements, inputActivity: inputActivity, pcBattery: pcBattery);
             core.StartupEnded += () => startup?.End();
 
             // Reduce motion as it was saved, which the core has read, before any view or the Start-up sequence shows:
@@ -314,6 +315,16 @@ namespace XboxSeries.Extension
             };
             Guarded.Run("Saying whether there are achievements", core.OnAchievementsLookedFor);
 
+            // The PC's own battery in the Status area, as it starts and as it changes: "none" on a desktop, as the e2e VM.
+            logger.Info($"[Status] PC battery: {core.Status.PcBattery}");
+            core.Status.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(StatusState.PcBattery))
+                {
+                    logger.Info($"[Status] PC battery: {core.Status.PcBattery}");
+                }
+            };
+
             // The Tile menu and its More options flyout, with their rows in order, as each opens and closes.
             core.Home.PropertyChanged += (_, e) =>
             {
@@ -497,6 +508,8 @@ namespace XboxSeries.Extension
         /// <summary>Windows woke from sleep: Who's playing today? again, if it asks. Raised on a thread of its own.</summary>
         private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
         {
+            // Plugged in, unplugged, the battery's state moved on, or waking: the PC's battery shows it now.
+            OnUiThread(core.OnPowerChanged);
             if (e.Mode == PowerModes.Resume)
             {
                 OnUiThread(() =>
