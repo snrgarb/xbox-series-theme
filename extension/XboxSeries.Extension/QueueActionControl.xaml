@@ -1,0 +1,15 @@
+<controls:PluginUserControl x:Class="XboxSeries.Extension.QueueActionControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+             Focusable="False" Visibility="Collapsed">
+    <!--
+        The Game hub's Queue, placed by the Dashboard after Manage: an icon action drawn by the theme's own style, as
+        Manage is, the download glyph with Queue named above it while it has focus. Shown only while the game is in the
+        Queue (QueueActionControl.xaml.cs); collapsed, and so never in the way, for any other game.
+    -->
+    <Button x:Name="QueueButton"
+            Style="{DynamicResource XboxHubIconAction}"
+            Tag="Queue" Content="&#xE896;"
+            Click="OnClick" KeyDown="OnKeyDown" GotKeyboardFocus="OnGotKeyboardFocus" />
+</controls:PluginUserControl>

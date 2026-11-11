@@ -36,7 +36,7 @@ The page under **My games & apps**' nav line. Its Queue box opens **Manage Queue
 _Avoid_: Manage game (that is the **Tile menu**'s way to the **Game hub**)
 
 **Manage Queue**:
-The page listing the **Queue**, each download with its speed, amount and share, below a row of recently installed games. View opens the focused game's **Tile menu**. B goes back to **Manage**.
+The page listing the **Queue**, each download with its speed, amount and share, below a row of recently installed games. View opens the focused game's **Tile menu**. B goes back to **Manage**, or to where it was opened from: Home's Downloads tile, or a **Game hub**'s Queue, focus on Queue.
 _Avoid_: download manager
 
 **Group**:
@@ -48,7 +48,7 @@ The theme's one menu for a game, with the console's main rows. Menu opens it on 
 _Avoid_: context menu, game menu (that is Playnite's own, which the theme no longer shows; without the extension, Menu and Manage still open it)
 
 **Game hub**:
-The Dashboard's page for one game, modelled on the Xbox game hub: a header, a row of cards about the game, and its actions. It replaces Playnite's Game details view. It is a panel over the screen it was opened from: a band across the screen shows the game's art, darkened, and above and below it, with the extension, that screen shows, blurred and darkened (with the theme alone, the game's art).
+The Dashboard's page for one game, modelled on the Xbox game hub: a header, a row of cards about the game, and its actions. It replaces Playnite's Game details view. It is a panel over the screen it was opened from: a band across the screen shows the game's art, darkened, and above and below it, with the extension, that screen shows, blurred and darkened (with the theme alone, the game's art). Its actions: Play (Install, Running), Manage, then, with the extension and only while the game is in the **Queue**, Queue, which opens **Manage Queue**; then the page toggle.
 _Avoid_: game page, game card, Manage game
 
 **Achievements page**:

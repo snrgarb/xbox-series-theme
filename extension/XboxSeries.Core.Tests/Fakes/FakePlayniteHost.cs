@@ -43,7 +43,19 @@ namespace XboxSeries.Core.Tests.Fakes
 
         public void StartApp(App app) => StartedApps.Add(app);
 
-        public void OpenGameHub(Guid gameId) => OpenedHubs.Add(gameId);
+        /// <summary>Games whose hub won't open, as one the main list's filter leaves out.</summary>
+        public HashSet<Guid> HubsThatWontOpen { get; } = new HashSet<Guid>();
+
+        public bool OpenGameHub(Guid gameId)
+        {
+            if (HubsThatWontOpen.Contains(gameId))
+            {
+                return false;
+            }
+
+            OpenedHubs.Add(gameId);
+            return true;
+        }
 
         /// <summary>How many times Playnite was asked to close the Game hub.</summary>
         public List<Guid> ClosedGameHubs { get; } = new List<Guid>();

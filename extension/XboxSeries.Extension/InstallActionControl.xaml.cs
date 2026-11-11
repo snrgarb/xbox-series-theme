@@ -140,7 +140,9 @@ namespace XboxSeries.Extension
             }
 
             Refresh();
-            if (Visibility == Visibility.Visible)
+
+            // Opened again by B on Manage Queue, the hub's Queue takes focus instead (QueueActionControl).
+            if (Visibility == Visibility.Visible && !(game != null && core.HubReturnsToQueue(game.Id) && core.HubShowsQueue(game.Id)))
             {
                 Defer(() =>
                 {

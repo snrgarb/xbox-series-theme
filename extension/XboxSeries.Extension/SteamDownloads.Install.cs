@@ -349,6 +349,48 @@ namespace XboxSeries.Extension
             timer.Start();
         }
 
+#if DEBUG
+        /// <summary>The game XBOXSERIES_FAKE_DOWNLOAD names, once found; whether the variable has been settled.</summary>
+        private Guid? fakeDownload;
+        private bool fakeDownloadSettled;
+#endif
+
+        /// <summary>
+        /// For the e2e VM, which has no Steam to download with: in a Debug build with XBOXSERIES_FAKE_DOWNLOAD set to a
+        /// game's name, that game, while Playnite lists it as not installed, reads as one Steam is installing, so it
+        /// joins the Queue, Queued, as an install started in Steam itself would. The name is looked up until found, then
+        /// kept. Null otherwise; a Release build never reads the variable.
+        /// </summary>
+        private Guid? FakeDownload()
+        {
+#if DEBUG
+            if (!fakeDownloadSettled)
+            {
+                var name = Environment.GetEnvironmentVariable("XBOXSERIES_FAKE_DOWNLOAD");
+                if (string.IsNullOrEmpty(name))
+                {
+                    fakeDownloadSettled = true;
+                    return null;
+                }
+
+                // Not found yet, as before Playnite has its library, it is looked for again on the next read.
+                var found = api.Database.Games.FirstOrDefault(g => g.Name == name);
+                if (found == null)
+                {
+                    return null;
+                }
+
+                fakeDownloadSettled = true;
+                fakeDownload = found.Id;
+                logger.Info($"[Queue] download faked by XBOXSERIES_FAKE_DOWNLOAD={name}: Steam reads as installing {found.Name}");
+            }
+
+            return fakeDownload is Guid id && api.Database.Games.Get(id)?.IsInstalled == false ? id : (Guid?)null;
+#else
+            return null;
+#endif
+        }
+
         /// <summary>Whether the window is Steam's: the client's own, or its web helper's, which draws the main window.</summary>
         private static bool IsSteamWindow(IntPtr window)
         {
@@ -359,12 +401,18 @@ namespace XboxSeries.Extension
         /// <summary>
         /// Asked once a second on the UI thread, so it lists each library's steamapps once and reads only the
         /// manifests of Steam games Playnite has as not installed, which are few; the rest are known by name alone.
+        /// A Debug build adds the game XBOXSERIES_FAKE_DOWNLOAD names (<see cref="FakeDownload"/>).
         /// </summary>
         public IReadOnlyList<Guid> Installing()
         {
             var installing = new List<Guid>();
             try
             {
+                if (FakeDownload() is Guid fake)
+                {
+                    installing.Add(fake);
+                }
+
                 var games = SteamGames();
                 if (games.Count == 0)
                 {

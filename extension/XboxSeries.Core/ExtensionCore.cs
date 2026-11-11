@@ -1357,7 +1357,7 @@ namespace XboxSeries.Core
             {
                 CancelTap();
                 ListPlayHistoryInMainList();
-                playnite.OpenGameHub(gameId);
+                OpenGameHub(gameId);
             });
         }
 
@@ -1504,7 +1504,8 @@ namespace XboxSeries.Core
         private void OpenMyGames(MyGamesItem item, Guid? returnsToGame)
         {
             CancelNavSettle();
-            queueLeavesForHome = false;
+            queueOrigin = QueueOrigin.Manage;
+            hubQueueFocus = null;
 
             // Search goes first, giving back any filter of its own, before Games puts its filter on.
             CloseSearch();
@@ -1653,7 +1654,8 @@ namespace XboxSeries.Core
         }
 
         /// <summary>
-        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it (Home, from its Downloads tile), or on Full library narrowed by
+        /// B on the page: back to Home, or from Manage Queue back to Manage, which opened it (Home, from its Downloads tile;
+        /// the Game hub, from its Queue, focus on Queue: <see cref="OpenQueueFromHub"/>), or on Full library narrowed by
         /// name, back to its whole tab. Playnite's own B reaches the page before the pad's reaches the core, so a menu or
         /// prompt still showing answers the B instead.
         /// </summary>
@@ -1661,9 +1663,9 @@ namespace XboxSeries.Core
         {
             if (MyGames.IsShown && ActiveDialog == null && !Guide.IsOverlayShown && !TextEntry.IsShown)
             {
-                if (MyGames.Item == MyGamesItem.ManageQueue && !queueLeavesForHome)
+                if (MyGames.Item == MyGamesItem.ManageQueue)
                 {
-                    MyGames.Item = MyGamesItem.Manage;
+                    LeaveManageQueue();
                 }
                 else if (MyGames.ShowsFullLibrary && MyGames.HasNameFilter)
                 {
@@ -1730,11 +1732,8 @@ namespace XboxSeries.Core
         public void OpenQueueFromHome()
         {
             OpenMyGames(MyGamesItem.ManageQueue);
-            queueLeavesForHome = true;
+            queueOrigin = QueueOrigin.Home;
         }
-
-        /// <summary>Whether Manage Queue was opened from Home's Downloads tile, so B on it goes back to Home.</summary>
-        private bool queueLeavesForHome;
 
         /// <summary>The item My games &amp; apps showed as Settings took its place, which Customise games &amp; apps' B opens again.</summary>
         private MyGamesItem settingsReturnItem;
@@ -1857,6 +1856,7 @@ namespace XboxSeries.Core
         private void CloseMyGames()
         {
             CancelNavSettle();
+            hubQueueFocus = null;
             ForgetLibraryName();
             chosenLibrarySort = null;
             MyGames.IsShown = false;
