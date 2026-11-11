@@ -34,7 +34,8 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("White", (string)name.Attribute("Foreground"));
             Assert.Equal("{DynamicResource XboxFont}", (string)name.Attribute("FontFamily"));
             Assert.Equal("Wrap", (string)name.Attribute("TextWrapping"));
-            Assert.Equal("52", (string)name.Attribute("MaxHeight"));
+            Assert.Equal("26", (string)name.Attribute("FontSize"));
+            Assert.Equal("72", (string)name.Attribute("MaxHeight"));  // two lines of 26 (2 x 26 x 1.33 = 69.2), not three
         }
 
         [Fact]
