@@ -161,6 +161,23 @@ namespace XboxSeries.Core.Tests
             Assert.NotEqual("False", (string)line.Attribute("LastChildFill"));
         }
 
+        // The rating's box hides on its text being empty, so a game whose ratings are none, not an empty list, shows no
+        // empty box.
+        [Fact]
+        public void The_rating_box_hides_when_its_text_is_empty()
+        {
+            var rating = Rating();
+            var text = rating.Elements().Single(e => e.Name.LocalName == "TextBlock");
+            var trigger = Assert.Single(rating.Descendants().Where(e => e.Name.LocalName == "DataTrigger"));
+
+            Assert.Equal("HeaderRatingText", Name(text));
+            Assert.Contains("AgeRatings", (string)text.Attribute("Text"));
+            Assert.Equal("{Binding Text, ElementName=HeaderRatingText, Converter={StaticResource StringNullOrEmptyToBoolConverter}, ConverterParameter=Inverted}",
+                (string)trigger.Attribute("Binding"));
+            Assert.Equal("True", (string)trigger.Attribute("Value"));
+            Assert.Equal("Collapsed", Setter(trigger, "Visibility"));
+        }
+
         // With no facts or features the rating starts the line: the gap before it is the facts' own, which go with them.
         [Fact]
         public void The_rating_leads_the_line_when_there_are_no_facts()

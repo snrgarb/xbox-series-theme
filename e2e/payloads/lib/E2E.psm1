@@ -185,12 +185,12 @@ function Disconnect-Pad { if ($script:Pad) { try { $script:Pad.Disconnect() } ca
 # Harbor, then the never played ones from Glass Orchard on. Amber Circuit has every fact the Game hub's header shows,
 # more than its line holds, so the line ends in an ellipsis before the age rating; Brass Lantern has a release year
 # and its source only, no publisher, features or rating, so its line is its year, one dot and Steam, no stray dot.
-$amberFeatures = 'Single Player', 'Online Multiplayer', 'Local Co-op', 'Full Controller Support', 'Cloud Saves',
-    'Achievements', 'HDR', 'Steam Workshop', 'Steam Trading Cards', 'VR Supported'
 $script:SeedGames = @(
     @{ Name = 'Amber Circuit'; IsInstalled = $true;  Favorite = $true;  Tags = 'E2E Picks'; Source = 'Steam'; PlayedHoursAgo = 1;   Playtime = 36000
        Publishers = 'Northwind Interactive Entertainment'; ReleaseYear = 2024; InstallSize = 52500000000; Platforms = 'PC (Windows)'
-       Features = $amberFeatures; AgeRatings = 'PEGI 12' }
+       Features = 'Single Player', 'Online Multiplayer', 'Local Co-op', 'Full Controller Support', 'Cloud Saves', 'Achievements',
+           'HDR', 'Steam Workshop', 'Steam Trading Cards', 'VR Supported'
+       AgeRatings = 'PEGI 12' }
     @{ Name = 'Brass Lantern'; IsInstalled = $true;  Favorite = $false;                     Source = 'Steam'; PlayedHoursAgo = 24;  Playtime = 7200
        ReleaseYear = 2019 }
     @{ Name = 'Cobalt Run';    IsInstalled = $true;  Favorite = $true;                      Source = 'GOG';   PlayedHoursAgo = 48;  Playtime = 144000 }
