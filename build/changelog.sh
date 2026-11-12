@@ -4,11 +4,23 @@
 # title with its number, which GitHub links. Release PRs (chore(release)) are left out: they change versions, nothing
 # else. Run from anywhere in the repository; reads the history, changes nothing. Tested by build/changelog.test.sh.
 #
-#   build/changelog.sh [<base>]   <base>: the tag of the last full release; without one, every commit on HEAD
+#   build/changelog.sh [<base>]           <base>: the tag of the last full release; without one, every commit on HEAD
+#   build/changelog.sh --fixes <base>     the fixes (fix, perf) since <base> only, the previous pre-release for #builds
+#                                         on Discord: one "- <description> (#n)" line each, type and scope left out and
+#                                         the first letter capitalised, oldest first; nothing when there are none
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+fixes_only=false
+if [[ ${1:-} == --fixes ]]; then
+    fixes_only=true
+    shift
+    if [[ -z ${1:-} ]]; then
+        echo "--fixes needs a base to list the fixes since" >&2
+        exit 1
+    fi
+fi
 base="${1:-}"
 if [[ -n $base ]] && ! git rev-parse -q --verify "$base^{commit}" > /dev/null; then
     echo "No commit $base to list the changes since" >&2
@@ -25,6 +37,14 @@ while IFS= read -r header; do
         *) others+=("$header") ;;
     esac
 done < <(git log --reverse --format=%s ${base:+"$base..HEAD"})
+
+if $fixes_only; then
+    for header in ${fixes[@]+"${fixes[@]}"}; do
+        description="$(sed -E 's/^[a-z]+(\([^)]*\))?!?: *//' <<< "$header")"
+        echo "- ${description^}"
+    done
+    exit 0
+fi
 
 if [[ -n $base ]]; then echo "## Changes since $base"; else echo "## Changes"; fi
 if ((${#features[@]} + ${#fixes[@]} + ${#others[@]} == 0)); then

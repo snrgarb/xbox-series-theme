@@ -10,6 +10,9 @@
 #   Release   builds and checks what changed, scans each built file on VirusTotal (build/VirusTotal.ps1), creates the
 #             release as a draft, pushes the dated tag and the built components' tags at once, publishes it as a
 #             pre-release, then deletes the pre-releases before it (their tags stay: a released tag is never deleted).
+#   Builds    posts to Discord's #builds (build/discord.sh, the DISCORD_WEBHOOK_BUILDS secret): "is being built" once
+#             the plan passes, then "is now available" with the fixes since the previous pre-release, or that the
+#             build failed. A post that can't be made only warns. #announcements, for a full release, is by hand.
 # A failure before the tags are pushed leaves nothing behind but, at most, a draft, deleted on the way out. Should
 # publishing fail after the push, publish the draft by hand: the tags can't be moved (the `release tags` ruleset).
 name: Release
@@ -50,6 +53,8 @@ jobs:
       bootshell_tag: ${{ steps.plan.outputs.bootshell_tag }}
       bootshell_from: ${{ steps.plan.outputs.bootshell_from }}
       changelog: ${{ steps.changelog.outputs.changelog }}
+      previous: ${{ steps.fixes.outputs.previous }}
+      fixes: ${{ steps.fixes.outputs.fixes }}
     steps:
       - name: Refuse a branch other than main
         if: github.ref != 'refs/heads/main'
@@ -109,6 +114,25 @@ jobs:
           changelog="$(build/changelog.sh $base)"
           { echo 'changelog<<END_OF_CHANGELOG'; echo "$changelog"; echo 'END_OF_CHANGELOG'; } >> "$GITHUB_OUTPUT"
           { echo; echo "$changelog"; } >> "$GITHUB_STEP_SUMMARY"
+
+      # For #builds: the fixes since the previous pre-release, the newest dated tag. That pre-release is deleted once
+      # this one is out, but its tag stays, as does a full release's.
+      - name: List the fixes since the previous pre-release
+        id: fixes
+        shell: bash
+        run: |
+          previous="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
+          if [[ -n $previous ]]; then fixes="$(build/changelog.sh --fixes "$previous")"; else fixes=""; fi
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+          { echo 'fixes<<END_OF_FIXES'; echo "$fixes"; echo 'END_OF_FIXES'; } >> "$GITHUB_OUTPUT"
+          echo "Fixes since ${previous:-the start}:"; echo "${fixes:-none}"
+
+      - name: Tell #builds it's being built
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_BUILDS }}
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: echo "🔨 Pre-release **$TAG** is being built." | build/discord.sh
 
   release:
     name: Build, scan and release
@@ -371,3 +395,43 @@ jobs:
           if ($remote) { "The tags are pushed; leaving the draft $env:TAG to publish by hand"; exit 0 }
           gh release delete $env:TAG --yes 2>&1 | Out-Host
           $global:LASTEXITCODE = 0
+
+  builds:
+    name: 'Discord: #builds'
+    needs: [plan, release]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: build
+
+      - name: Tell #builds how it went
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_BUILDS }}
+          RESULT: ${{ needs.release.result }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          PREVIOUS: ${{ needs.plan.outputs.previous }}
+          FIXES: ${{ needs.plan.outputs.fixes }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PULLS: ${{ github.server_url }}/${{ github.repository }}/pull
+          RELEASES: ${{ github.server_url }}/${{ github.repository }}/releases/tag
+        run: |
+          if [[ $RESULT != success ]]; then
+            echo "❌ Pre-release **$TAG** failed to build ($RESULT): <$RUN>" | build/discord.sh
+            exit 0
+          fi
+          {
+            echo "✅ Pre-release **$TAG** is now available at $RELEASES/$TAG"
+            echo
+            if [[ -z $PREVIOUS ]]; then
+              echo "The first release."
+            elif [[ -z $FIXES ]]; then
+              echo "No fixes since $PREVIOUS."
+            else
+              echo "**Fixes since $PREVIOUS**"
+              # (#229) becomes a link to the PR, in <> so Discord doesn't preview it.
+              sed -E "s|\(#([0-9]+)\)\$|([#\1](<$PULLS/\1>))|" <<< "$FIXES"
+            fi
+          } | build/discord.sh
