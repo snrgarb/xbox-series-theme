@@ -114,5 +114,32 @@ run v9999.1.0
 expect_status 1
 expect_text "No commit v9999.1.0"
 
+test "--fixes lists only the fixes, as plain descriptions"
+repo
+git tag v2026.11.0
+commit "fix(theme,extension): set Segoe UI 26 body text (#3)"
+commit "feat(extension): add a Background delay setting (#4)"
+commit "chore(release): theme 0.4.2, extension 0.4.2 (#5)"
+commit "perf!: decode covers once (#6)"
+commit "docs: add the Discord invite (#7)"
+run --fixes v2026.11.0
+expect_status 0
+expect_output "- Set Segoe UI 26 body text (#3)
+- Decode covers once (#6)"
+
+test "--fixes with no fixes since the base prints nothing"
+repo
+git tag v2026.11.0
+commit "feat(theme): a feature (#2)"
+run --fixes v2026.11.0
+expect_status 0
+expect_output ""
+
+test "--fixes without a base is refused"
+repo
+run --fixes
+expect_status 1
+expect_text "--fixes needs a base"
+
 echo "$passes passed, $failures failed"
 ((failures == 0))

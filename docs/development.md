@@ -78,6 +78,11 @@ To release, once the milestone's issues are closed:
    Otherwise its Release job builds what changed (tests first), checks the `.pext` holds the release's own `.pthm`, scans each built file on VirusTotal (`build/VirusTotal.ps1`), and re-attaches each unchanged component's file byte for byte from the release that built it, or, when that was a pre-release since replaced, from the newest release, which carries the same file. It creates the release as a draft, pushes the dated tag and each built component's tag at once, publishes it as a pre-release, then deletes the pre-releases before it, with a table of each file's version, origin, and VirusTotal report.
 3. Close the milestone.
 
+**Discord.** The [XST Development](https://discord.gg/tC7b6tVYVP) server has two announcement channels:
+
+- **#builds** is release.yml's. Once its plan passes, it posts that the pre-release is being built. When the run ends, it posts that the pre-release is available, with the fixes since the previous pre-release ([`build/changelog.sh --fixes`](../build/changelog.sh)), or that the build failed. It posts through the channel's webhook, the `DISCORD_WEBHOOK_BUILDS` secret ([`build/discord.sh`](../build/discord.sh)). A post that fails, or a missing secret, only warns: Discord never fails a release.
+- **#announcements** is by hand, for each full release, and only for that. Once a pre-release is a full release, post its full changelog: every change since the full release before it, written in ASD-STE100 Simplified Technical English, under New, Fixed and Changed. Post it as the XST Bot, and publish it to the channel's followers. Nothing posts there by itself.
+
 `.github/workflows/downloads.yml` builds all three files from any branch, as an Actions artifact, for a try between releases; it releases and tags nothing.
 
 **A botched release**: a released tag can't be moved or deleted, by anyone. To take one back, set the `release tags` ruleset to Disabled (Settings > Rules > Rulesets), `gh release delete <tag> --cleanup-tag`, and set it back to Active straight after. Prefer releasing the next patch.
