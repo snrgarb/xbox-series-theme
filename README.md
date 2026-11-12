@@ -84,3 +84,9 @@ If the Dashboard does not show, select it in Fullscreen mode's Settings, in Appe
 5. Sign out of Windows, then sign in.
 
 To remove the Boot shell, type `.\XboxSeries.BootShell.exe --uninstall | Out-Host`. Then sign out and sign in. This puts back all the settings that `--install` changed.
+
+## License
+
+The Xbox Series Theme is free for non-commercial use under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). You may use, change and share it, but you may not sell it, and copies you share must keep the copyright notice. It is provided as is, without warranty.
+
+This is an unofficial fan project, not affiliated with or endorsed by Microsoft. Xbox and the Xbox logo are trademarks of Microsoft. The console sounds, boot animations and logos in this project belong to their owners and are not covered by the license. See [NOTICE.md](NOTICE.md).
