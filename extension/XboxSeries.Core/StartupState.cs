@@ -193,11 +193,15 @@ namespace XboxSeries.Core
         /// <summary>Whether Show Play history is on until the player sets it: on, the Recent row ending in it as since 0.1.0.</summary>
         public const bool ShowPlayHistoryByDefault = true;
 
+        /// <summary>Whether Show battery percentages is on until the player sets it: on, as the Status area has shown them.</summary>
+        public const bool ShowBatteryPercentByDefault = true;
+
         private BootVideo bootVideo = BootVideo.XboxSeriesX;
         private bool askWhosPlaying = true;
         private bool backgroundDelay = BackgroundDelayByDefault;
         private bool reduceMotion = ReduceMotionByDefault;
         private bool showPlayHistory = ShowPlayHistoryByDefault;
+        private bool showBatteryPercent = ShowBatteryPercentByDefault;
         private IReadOnlyList<Profile> profiles = new Profile[0];
         private IReadOnlyList<string> gamerpics = new string[0];
 
@@ -246,6 +250,17 @@ namespace XboxSeries.Core
         {
             get => showPlayHistory;
             internal set => Set(ref showPlayHistory, value, nameof(ShowPlayHistory));
+        }
+
+        /// <summary>
+        /// Whether the Status area, on Home's top bar and in the Guide, writes each battery's percent beside it, the PC's
+        /// and the pad's; off, the batteries show alone, filled to their charge. <see cref="ShowBatteryPercentByDefault"/>
+        /// until set.
+        /// </summary>
+        public bool ShowBatteryPercent
+        {
+            get => showBatteryPercent;
+            internal set => Set(ref showBatteryPercent, value, nameof(ShowBatteryPercent));
         }
 
         /// <summary>Every profile, in the order Who's playing today? shows them. There is always at least one.</summary>

@@ -21,6 +21,9 @@ namespace XboxSeries.Extension
 
         private bool unavailable;
 
+        /// <summary>The battery XBOXSERIES_FAKE_PAD_BATTERY fakes in a Debug build, read once; null to read the real pad.</summary>
+        private readonly ControllerBattery fake = Fake();
+
         /// <summary>Whether a reading has failed already, so the failure is logged once, whichever thread reads.</summary>
         private volatile bool readingFailed;
 
@@ -85,6 +88,11 @@ namespace XboxSeries.Extension
         {
             get
             {
+                if (fake != null)
+                {
+                    return fake;
+                }
+
                 if (unavailable)
                 {
                     return ControllerBattery.None;
@@ -127,6 +135,24 @@ namespace XboxSeries.Extension
                     return ControllerBattery.None;
                 }
             }
+        }
+
+        /// <summary>
+        /// The pad battery XBOXSERIES_FAKE_PAD_BATTERY fakes, in a Debug build with it set, as "88" or "wired"
+        /// (<see cref="ControllerBattery.FromFake"/>), for the e2e VM, whose pad is a virtual one on a cable; null otherwise.
+        /// </summary>
+        private static ControllerBattery Fake()
+        {
+#if DEBUG
+            var variable = Environment.GetEnvironmentVariable("XBOXSERIES_FAKE_PAD_BATTERY");
+            var fake = ControllerBattery.FromFake(variable);
+            if (fake != null)
+            {
+                logger.Info($"[Status] pad battery faked by XBOXSERIES_FAKE_PAD_BATTERY={variable}: {fake}");
+                return fake;
+            }
+#endif
+            return null;
         }
     }
 }

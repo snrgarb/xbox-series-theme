@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace XboxSeries.Core
 {
@@ -41,6 +42,21 @@ namespace XboxSeries.Core
 
         public static ControllerBattery Wireless(int percent) =>
             new ControllerBattery(ControllerConnection.Wireless, Math.Max(0, Math.Min(100, percent)));
+
+        /// <summary>
+        /// A pad battery faked for a Debug build, as its XBOXSERIES_FAKE_PAD_BATTERY variable gives it: a percent, as "88",
+        /// for a wireless pad, or "wired". Anything else, no variable included, is null, so the real pad shows.
+        /// </summary>
+        public static ControllerBattery FromFake(string variable)
+        {
+            var value = (variable ?? "").Trim();
+            if (string.Equals(value, "wired", StringComparison.OrdinalIgnoreCase))
+            {
+                return Wired;
+            }
+
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var percent) ? Wireless(percent) : null;
+        }
 
         public bool Equals(ControllerBattery other) =>
             other != null && Connection == other.Connection && Percent == other.Percent;

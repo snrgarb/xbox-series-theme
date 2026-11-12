@@ -23,6 +23,7 @@ namespace XboxSeries.Extension
             LogBackgroundDelay(settings.StartUp, "is");
             LogReduceMotion(settings.StartUp, "is");
             LogPlayHistory(settings.StartUp, "is");
+            LogBatteryPercent(settings.StartUp, "is");
             LogGuide(settings.Guide, "is");
             settings.Opened += (s, e) => logger.Info($"[Settings] opened on {settings.Category}, page {settings.ThemePage}");
             settings.PropertyChanged += (s, e) =>
@@ -57,6 +58,10 @@ namespace XboxSeries.Extension
                 {
                     LogPlayHistory(settings.StartUp, "turned");
                 }
+                else if (e.PropertyName == nameof(StartUpSettingsState.ShowBatteryPercent))
+                {
+                    LogBatteryPercent(settings.StartUp, "turned");
+                }
             };
         }
 
@@ -74,6 +79,9 @@ namespace XboxSeries.Extension
                 }
             }), handledEventsToo: true);
         }
+
+        private static void LogBatteryPercent(StartUpSettingsState state, string verb) =>
+            logger.Info($"[Settings] Battery percentages {verb} {(state.ShowBatteryPercent ? "on" : "off")}");
 
         private static void LogBackgroundDelay(StartUpSettingsState state, string verb) =>
             logger.Info($"[Settings] Background delay {verb} {(state.BackgroundDelay ? "on" : "off")}");

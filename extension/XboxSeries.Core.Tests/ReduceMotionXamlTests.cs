@@ -78,7 +78,7 @@ namespace XboxSeries.Core.Tests
 
             // A row for each box's row, and the info above spanning this row's empty place, so its height isn't its
             // row's.
-            Assert.Equal(5, Named(pane, "PersonalisationPage").Descendants().Count(e => e.Name.LocalName == "RowDefinition"));
+            Assert.Equal(6, Named(pane, "PersonalisationPage").Descendants().Count(e => e.Name.LocalName == "RowDefinition"));
             Assert.Equal("2", (string)Named(pane, "BackgroundDelayInfo").Attribute("Grid.RowSpan"));
         }
 

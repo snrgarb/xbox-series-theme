@@ -23,7 +23,7 @@
     <Style x:Key="XboxText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontSize" Value="26" />
     </Style>
 
     <Style x:Key="XboxIcon" TargetType="TextBlock">
@@ -112,7 +112,7 @@
                                 <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1" />
                             </ContentPresenter.RenderTransform>
                         </ContentPresenter>
-                        <TextBlock x:Name="Label" Style="{StaticResource XboxText}" FontSize="18"
+                        <TextBlock x:Name="Label" Style="{StaticResource XboxText}" FontSize="26"
                                    Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
                                    TextAlignment="Center" VerticalAlignment="Top"
                                    Margin="-150,70,-150,-40" Visibility="Collapsed" />
@@ -205,11 +205,18 @@
                                 </Border>
                             </Border>
                         </Grid>
+                        <!--
+                            Raised 2 px, as all the top bar's Segoe UI text is: its ink sits 2 px under its line's middle, and
+                            so under the icons' and the picture's centre, which the bar lines up on.
+                        -->
                         <Grid VerticalAlignment="Center" Margin="16,0,0,0">
+                            <Grid.RenderTransform>
+                                <TranslateTransform Y="-2" />
+                            </Grid.RenderTransform>
                             <!-- The gamertag and the Score under it show and fade together, taking turns with the real name. -->
                             <StackPanel x:Name="GamertagAndScore" VerticalAlignment="Center">
                                 <TextBlock x:Name="Gamertag" Text="{Binding Tag.Profile.Gamertag, RelativeSource={RelativeSource TemplatedParent}, FallbackValue={x:Static sys:Environment.UserName}}"
-                                           Style="{StaticResource XboxText}" FontSize="19" />
+                                           Style="{StaticResource XboxText}" FontSize="26" />
                                 <StackPanel x:Name="Score" Orientation="Horizontal">
                                     <Grid Width="19" Height="19" VerticalAlignment="Center">
                                         <Ellipse Fill="White" />
@@ -235,7 +242,7 @@
                         -->
                         <DataTrigger Binding="{Binding Tag.Achievements, RelativeSource={RelativeSource Self}, FallbackValue={x:Null}}" Value="{x:Null}">
                             <Setter TargetName="Score" Property="Visibility" Value="Collapsed" />
-                            <Setter TargetName="Gamertag" Property="FontSize" Value="22" />
+                            <Setter TargetName="Gamertag" Property="FontSize" Value="26" />
                         </DataTrigger>
 
                         <!--
@@ -426,7 +433,7 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <TextBlock Text="{Binding ProgressStatus}" Style="{StaticResource XboxText}" FontSize="16"
+                                <TextBlock Text="{Binding ProgressStatus}" Style="{StaticResource XboxText}" FontSize="26"
                                            Foreground="{DynamicResource XboxTextDimBrush}"
                                            VerticalAlignment="Center" Margin="0,0,12,0" />
                                 <ContentControl Style="{DynamicResource ProgressIndicator}" Focusable="False"
@@ -494,9 +501,9 @@
                                         </Border.Style>
                                         <StackPanel>
                                             <TextBlock Text="Install the extension for the full Home"
-                                                       Style="{StaticResource XboxText}" FontSize="16" />
+                                                       Style="{StaticResource XboxText}" FontSize="26" />
                                             <TextBlock Text="Xbox Series extension: github.com/snrgarb/xbox-series-theme"
-                                                       Style="{StaticResource XboxText}" FontSize="14"
+                                                       Style="{StaticResource XboxText}" FontSize="26"
                                                        Foreground="{DynamicResource XboxTextDimBrush}" />
                                         </StackPanel>
                                     </Border>
@@ -570,9 +577,14 @@
 
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                     <StackPanel x:Name="PART_ElemProgressIndicator" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
-                                        <TextBlock x:Name="PART_TextProgressTooltip" Style="{StaticResource XboxText}" FontSize="16"
+                                        <!-- Raised 2 px onto the icons' centre, as the profile's text is. -->
+                                        <TextBlock x:Name="PART_TextProgressTooltip" Style="{StaticResource XboxText}" FontSize="26"
                                                    Foreground="{DynamicResource XboxTextDimBrush}"
-                                                   VerticalAlignment="Center" Margin="0,0,12,0" />
+                                                   VerticalAlignment="Center" Margin="0,0,12,0">
+                                            <TextBlock.RenderTransform>
+                                                <TranslateTransform Y="-2" />
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
                                         <ContentControl Style="{DynamicResource ProgressIndicator}" Focusable="False"
                                                         Height="26" Width="26" VerticalAlignment="Center" />
                                     </StackPanel>
@@ -614,11 +626,21 @@
                                                 </Style>
                                             </ContentControl.Style>
                                         </ContentControl>
+                                        <!-- Raised 2 px onto the icons' centre, as the profile's text is. -->
                                         <TextBlock x:Name="PART_TextBatteryPercentage" Style="{StaticResource XboxText}"
-                                                   VerticalAlignment="Center" Margin="0,0,16,0" />
+                                                   VerticalAlignment="Center" Margin="0,0,16,0">
+                                            <TextBlock.RenderTransform>
+                                                <TranslateTransform Y="-2" />
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
 
-                                        <TextBlock x:Name="PART_TextClock" Style="{StaticResource XboxText}" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular"
-                                                   VerticalAlignment="Center" Margin="10,0,10,0" />
+                                        <!-- Bahnschrift's ink sits 2 px over its line's middle: lowered onto the icons' centre. -->
+                                        <TextBlock x:Name="PART_TextClock" Style="{StaticResource XboxText}" FontSize="22" FontFamily="{DynamicResource XboxHeaderFontSemibold}" Typography.NumeralAlignment="Tabular"
+                                                   VerticalAlignment="Center" Margin="10,0,10,0">
+                                            <TextBlock.RenderTransform>
+                                                <TranslateTransform Y="2" />
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
                                     </StackPanel>
 
                                     <ButtonEx x:Name="PART_ButtonNotifications" Tag="Notifications" Style="{StaticResource XboxTopBarButton}">

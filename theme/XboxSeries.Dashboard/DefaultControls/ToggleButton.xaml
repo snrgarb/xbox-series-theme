@@ -19,7 +19,7 @@
                 <ControlTemplate TargetType="ToggleButton">
                     <Grid>
                         <Border x:Name="Back" CornerRadius="2" Background="{TemplateBinding Background}" />
-                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="{DynamicResource FontSize}"
+                        <TextBlock FontFamily="{DynamicResource XboxFont}" FontSize="26"
                                    Foreground="{TemplateBinding Foreground}" TextTrimming="CharacterEllipsis"
                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"

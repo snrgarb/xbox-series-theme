@@ -21,7 +21,7 @@
             <Style x:Key="Text" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="Foreground" Value="White" />
-                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontSize" Value="26" />
                 <Setter Property="VerticalAlignment" Value="Center" />
             </Style>
 

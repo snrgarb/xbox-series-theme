@@ -44,12 +44,12 @@
         <Style x:Key="Title" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource XboxFontSemibold}" />
             <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontSize" Value="23.34" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
         <Style x:Key="Subtitle" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
-            <Setter Property="FontSize" Value="19" />
+            <Setter Property="FontSize" Value="23.34" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
         <Style x:Key="Caption" TargetType="StackPanel">

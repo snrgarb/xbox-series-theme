@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -38,6 +39,100 @@ namespace XboxSeries.Core.Tests
             Assert.Equal("Collapsed", (string)panel.Attribute("Visibility"));
             Assert.Contains(pc.Descendants(), e => e.Name.LocalName == "DataTrigger"
                 && (string)e.Attribute("Binding") == "{Binding PcBattery.IsPresent}" && (string)e.Attribute("Value") == "True");
+        }
+
+        // Each thing the Status area shows has an icon of its own, so no two read as the same: the PC's battery once drew
+        // the pad's cell, and a laptop on its pad showed two identical batteries side by side.
+        [Theory]
+        [InlineData("PcBatteryTemplate", "BatteryTemplate")]
+        [InlineData("PcBatteryTemplate", "DiscordTemplate")]
+        [InlineData("BatteryTemplate", "DiscordTemplate")]
+        public void No_two_indicators_share_an_icon(string one, string other)
+        {
+            var shared = Icons(Template(one)).Intersect(Icons(Template(other))).ToList();
+
+            Assert.True(shared.Count == 0, $"{one} and {other} both draw {string.Join(", ", shared)}");
+        }
+
+        [Fact]
+        public void Every_indicator_has_an_icon()
+        {
+            foreach (var key in new[] { "PcBatteryTemplate", "BatteryTemplate", "DiscordTemplate" })
+            {
+                Assert.True(Icons(Template(key)).Any(), $"{key} draws no icon");
+            }
+        }
+
+        [Fact]
+        public void The_PC_battery_is_Windows_upright_battery_and_not_the_pads_cell()
+        {
+            var pc = Template("PcBatteryTemplate");
+            var glyph = pc.Descendants().Single(e => (string)e.Attribute(X + "Name") == "PcGlyph");
+
+            Assert.Equal("{Binding PcBattery.Glyph}", (string)glyph.Attribute("Text"));
+            Assert.Equal("XboxIconFont", ResourceKey((string)glyph.Attribute("FontFamily")));
+            Assert.DoesNotContain(pc.Descendants(), e => ResourceKey((string)e.Attribute("ContentTemplate")) == "CellTemplate");
+        }
+
+        // Personalisation's Show battery percentages off hides both percents and leaves the batteries.
+        [Theory]
+        [InlineData("PcBatteryTemplate", "PcPercent")]
+        [InlineData("BatteryTemplate", "Percent")]
+        public void Show_battery_percentages_off_hides_the_percent_and_not_the_battery(string template, string percent)
+        {
+            var off = Template(template).Descendants().Single(e => e.Name.LocalName == "DataTrigger"
+                && (string)e.Attribute("Binding") == "{Binding ShowBatteryPercent}" && (string)e.Attribute("Value") == "False");
+            var setter = off.Elements().Single();
+
+            Assert.Equal(percent, (string)setter.Attribute("TargetName"));
+            Assert.Equal("Visibility", (string)setter.Attribute("Property"));
+            Assert.Equal("Collapsed", (string)setter.Attribute("Value"));
+        }
+
+        // The Guide's batteries sit on a line of their own, clear of the large clock under them.
+        [Fact]
+        public void The_Guides_clock_stands_10_under_the_batteries()
+        {
+            var stacked = Template("StackedTemplate");
+            var clock = stacked.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Time}");
+
+            Assert.Equal("0,10,0,0", (string)clock.Attribute("Margin"));
+        }
+
+        // What an indicator draws as its icon: the templates it nests, the geometries it paths, the glyphs it writes in the
+        // icon font (literal or bound) and any shape it draws itself, by kind and size.
+        private static IEnumerable<string> Icons(XElement template)
+        {
+            foreach (var e in template.Descendants())
+            {
+                var nested = ResourceKey((string)e.Attribute("ContentTemplate"));
+                if (nested != null)
+                {
+                    yield return "template " + nested;
+                    foreach (var icon in Icons(Template(nested)))
+                    {
+                        yield return icon;
+                    }
+                }
+
+                var data = (string)e.Attribute("Data");
+                if (e.Name.LocalName == "Path" && data != null)
+                {
+                    yield return "path " + (ResourceKey(data) ?? data);
+                }
+
+                var font = ResourceKey((string)e.Attribute("FontFamily"));
+                var text = (string)e.Attribute("Text");
+                if (font == "XboxIconFont" && text != null)
+                {
+                    yield return "glyph " + text;
+                }
+
+                if (e.Name.LocalName == "ProgressBar")
+                {
+                    yield return "fill bar";
+                }
+            }
         }
 
         private static XElement Template(string key) => StatusArea.Descendants()

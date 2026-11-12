@@ -64,7 +64,7 @@
     <Style x:Key="TextInputTextbox" BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
         <Setter Property="Margin" Value="0,0,0,36" />
         <Setter Property="Height" Value="54" />
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="Padding" Value="28,0,28,0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">

@@ -30,8 +30,8 @@ namespace XboxSeries.Core.Tests
             var title = Assert.Single(row);
             Assert.Equal("TextBlock", title.Name.LocalName);
             Assert.Equal("{Binding DisplayName}", (string)title.Attribute("Text"));
-            Assert.Equal("XboxHeaderFontSemibold", ResourceKey((string)title.Attribute("FontFamily")));
-            Assert.Equal("52", (string)title.Attribute("FontSize"));
+            Assert.Equal("XboxHeaderFont", ResourceKey((string)title.Attribute("FontFamily")));
+            Assert.Equal("47", (string)title.Attribute("FontSize"));
         }
 
         [Fact]

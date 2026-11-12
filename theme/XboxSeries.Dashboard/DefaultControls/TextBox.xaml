@@ -16,7 +16,7 @@
         <Setter Property="Padding" Value="14,8,14,8" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="Template">
             <Setter.Value>

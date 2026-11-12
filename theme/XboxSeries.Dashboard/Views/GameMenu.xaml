@@ -32,7 +32,7 @@
                         <!-- The panel's full width, the ring's overhang in from the row's sides; 4 inside the ring's 4 above and below, 56 tall. -->
                         <Border x:Name="Fill" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowFocusBrush}" Visibility="Hidden" />
                         <Border x:Name="Lit" Margin="8,8,8,8" CornerRadius="2" Background="{DynamicResource XboxRowLitBrush}" Visibility="Hidden" />
-                        <TextBlock Style="{DynamicResource TextBlockBaseStyle}" FontSize="22"
+                        <TextBlock Style="{DynamicResource TextBlockBaseStyle}" FontSize="26"
                                    Foreground="{TemplateBinding Foreground}"
                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"

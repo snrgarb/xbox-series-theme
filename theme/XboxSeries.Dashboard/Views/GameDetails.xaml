@@ -33,7 +33,7 @@
         <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
-        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
 
@@ -42,23 +42,24 @@
     </Style>
 
     <!--
-        The cards' text at the console's sizes (#203): titles Bahnschrift SemiBold 24, labels, values and About Segoe UI
-        Regular 24. The cards keep their 500: Your game stats with all five lines is 30 + 16 (title) + 4 x 79.8 (label,
-        value and their 2 and 14) + 81.8 (Achievements' label, count and bar) = 447 of the 456 inside its padding.
+        The cards' text at the console's sizes: titles Segoe UI Bold 20, labels, values and About Segoe UI Regular 26,
+        the console's text everywhere. The cards keep their 500: Your game stats with all five lines is 26.6 + 12 (title)
+        + 4 x 81.2 (label, value and their 2 and 10) + 87.2 (Achievements' label, count and bar) = 450.4 of the 456
+        inside its padding.
     -->
     <Style x:Key="XboxHubCardTitle" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
-        <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFontSemibold}" />
-        <Setter Property="FontSize" Value="24" />
-        <Setter Property="Margin" Value="0,0,0,16" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="Margin" Value="0,0,0,12" />
     </Style>
 
     <!-- One label/value line of a card. -->
     <Style x:Key="XboxHubRowLabel" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="26" />
     </Style>
     <Style x:Key="XboxHubRowValue" TargetType="TextBlock" BasedOn="{StaticResource XboxHubText}">
-        <Setter Property="FontSize" Value="24" />
-        <Setter Property="Margin" Value="0,2,16,14" />
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="Margin" Value="0,2,16,10" />
     </Style>
 
     <!--
@@ -90,7 +91,7 @@
             <Border x:Name="Label" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="-150,-48,-150,0"
                     Padding="10,4" CornerRadius="3" Background="{DynamicResource XboxChipBrush}"
                     BorderBrush="#80FFFFFF" BorderThickness="1" Visibility="Collapsed">
-                <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource XboxHubText}" FontSize="17" />
+                <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource XboxHubText}" FontSize="26" />
             </Border>
         </Grid>
         <ControlTemplate.Triggers>
@@ -105,13 +106,13 @@
         </ControlTemplate.Triggers>
     </ControlTemplate>
 
-    <!-- Its label in Bahnschrift Bold 24, the console's hub buttons' (#203). -->
+    <!-- Its label in Bahnschrift Bold 26, the console's hub buttons'. -->
     <Style x:Key="XboxHubAction" TargetType="ButtonBase">
         <Setter Property="Background" Value="#33FFFFFF" />
         <Setter Property="Foreground" Value="{DynamicResource XboxTextBrush}" />
         <Setter Property="FontFamily" Value="{DynamicResource XboxHeaderFont}" />
         <Setter Property="FontWeight" Value="Bold" />
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="26" />
         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Height" Value="80" />
@@ -243,7 +244,7 @@
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
                     <Border Background="#40FFFFFF" CornerRadius="16" Padding="14,4" Margin="0,8,8,0">
-                        <TextBlock Text="{Binding Name}" Style="{StaticResource XboxHubText}" FontSize="18" />
+                        <TextBlock Text="{Binding Name}" Style="{StaticResource XboxHubText}" FontSize="26" />
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -602,16 +603,16 @@
                             </StackPanel>
 
                             <!--
-                                Header, as the console's: the title alone, then one line of facts under it, Publisher • Release year •
-                                Install size (installed games only) • Platform • Source, then the features, • between them too, then the age
-                                rating's box. A part with nothing to show has empty text, and the dot before a part shows only while that part
+                                Header, as the console's: the title alone, in Bahnschrift Regular 47, then one line of facts under it in Segoe
+                                UI Regular 20, Publisher • Release year • Install size (installed games only) • Platform • Source, then the
+                                features, • between them too, then the age rating's box. A part with nothing to show has empty text, and the dot before a part shows only while that part
                                 and one before it do, so the line never starts with a dot or doubles one. The line trims with an ellipsis rather
                                 than wrapping: the rating is docked first, so it keeps its whole width and the facts get what is left, and the
                                 line keeps to its content, so a short one has the rating straight after it. Above the cards, so both pages
                                 show it.
                             -->
                             <TextBlock Grid.Row="0" Text="{Binding DisplayName}" Style="{StaticResource XboxHubText}"
-                                       FontFamily="{DynamicResource XboxHeaderFontSemibold}" FontSize="52" />
+                                       FontFamily="{DynamicResource XboxHeaderFont}" FontSize="47" />
 
                             <DockPanel Grid.Row="1" HorizontalAlignment="Left" Margin="0,6,0,0" MinHeight="48">
                                 <Border x:Name="HeaderRating" DockPanel.Dock="Right" VerticalAlignment="Center" Padding="10,3"
@@ -630,7 +631,7 @@
                                                Style="{StaticResource XboxHubText}" FontSize="20" />
                                 </Border>
                                 <!-- Its gap before the rating goes with it when there are no facts at all, so the rating starts the line. -->
-                                <TextBlock x:Name="HeaderFacts" FontSize="24" VerticalAlignment="Center" Margin="0,0,24,0"
+                                <TextBlock x:Name="HeaderFacts" FontSize="20" VerticalAlignment="Center" Margin="0,0,24,0"
                                            TextWrapping="NoWrap" TextTrimming="CharacterEllipsis">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource XboxHubDimText}">
@@ -910,14 +911,14 @@
                                                     </StackPanel.Style>
                                                     <TextBlock Text="Achievements" Style="{StaticResource XboxHubRowLabel}" />
                                                     <DockPanel Margin="0,2,0,10">
-                                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource XboxHubDimText}" FontSize="24"
+                                                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource XboxHubDimText}" FontSize="26"
                                                                    Text="{PluginSettings Plugin=PlayniteAchievements, Path=Percent, StringFormat='{}{0:0}%'}" />
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{PluginSettings Plugin=PlayniteAchievements, Path=Unlocked}"
-                                                                       Style="{StaticResource XboxHubText}" FontSize="24" />
-                                                            <TextBlock Text=" / " Style="{StaticResource XboxHubText}" FontSize="24" />
+                                                                       Style="{StaticResource XboxHubText}" FontSize="26" />
+                                                            <TextBlock Text=" / " Style="{StaticResource XboxHubText}" FontSize="26" />
                                                             <TextBlock Text="{PluginSettings Plugin=PlayniteAchievements, Path=Total}"
-                                                                       Style="{StaticResource XboxHubText}" FontSize="24" />
+                                                                       Style="{StaticResource XboxHubText}" FontSize="26" />
                                                         </StackPanel>
                                                     </DockPanel>
                                                     <ProgressBar Style="{StaticResource XboxHubProgressBar}"
@@ -943,7 +944,7 @@
                                                 <!-- Shown only: disabled so it takes no focus of its own. -->
                                                 <HtmlTextView HtmlText="{Binding Description}" IsEnabled="False" IsHitTestVisible="False" Margin="0,0,0,12"
                                                               ClipToBounds="True"
-                                                              HtmlFontSize="24"
+                                                              HtmlFontSize="26"
                                                               HtmlFontFamily="{DynamicResource XboxFont}"
                                                               HtmlForeground="#E6FFFFFF"
                                                               LinkForeground="{DynamicResource GlyphLightColor}" />
@@ -989,7 +990,7 @@
                                                                 Focusable="True" FocusVisualStyle="{x:Null}"
                                                                 VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
                                                     <HtmlTextView x:Name="PART_HtmlDescription"
-                                                                  HtmlFontSize="24"
+                                                                  HtmlFontSize="26"
                                                                   HtmlFontFamily="{DynamicResource XboxFont}"
                                                                   HtmlForeground="#E6FFFFFF"
                                                                   LinkForeground="{DynamicResource GlyphLightColor}"

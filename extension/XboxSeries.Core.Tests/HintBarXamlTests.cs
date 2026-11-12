@@ -78,12 +78,12 @@ namespace XboxSeries.Core.Tests
         }
 
         [Fact]
-        public void Each_hint_is_a_36_ring_then_a_25_label()
+        public void Each_hint_is_a_36_ring_then_a_26_label()
         {
             var xaml = HintBar();
             var label = xaml.Descendants().Single(e => e.Name.LocalName == "TextBlock" && (string)e.Attribute("Text") == "{Binding Text}");
 
-            Assert.Equal("25", (string)label.Attribute("FontSize"));
+            Assert.Equal("26", (string)label.Attribute("FontSize"));
             Assert.Equal("{DynamicResource XboxFont}", (string)label.Attribute("FontFamily"));
             Assert.All(new[] { "MenuGlyph", "YGlyph" }, name =>
             {

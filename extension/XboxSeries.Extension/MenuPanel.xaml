@@ -54,7 +54,7 @@
             </TextBlock>
             <!-- A prompt's message, under the title. -->
             <TextBlock Text="{Binding Message}" Margin="28,-14,28,20" TextWrapping="Wrap"
-                       FontFamily="{DynamicResource XboxFont}" FontSize="18" Foreground="#B3FFFFFF">
+                       FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="#B3FFFFFF">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Style.Triggers>
@@ -75,7 +75,7 @@
                                 <TextBlock x:Name="Icon" Width="24" FontFamily="{DynamicResource XboxIconFont}" FontSize="22"
                                            Foreground="White" TextAlignment="Center" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding Label}" Margin="32,0,0,0" VerticalAlignment="Center"
-                                           FontFamily="{DynamicResource XboxFont}" FontSize="22" Foreground="White" />
+                                           FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="White" />
                             </StackPanel>
                             <!--
                                 As the console's: the row's full 72 tall, 4 thick, standing 4 off the fill all round, so 8 out

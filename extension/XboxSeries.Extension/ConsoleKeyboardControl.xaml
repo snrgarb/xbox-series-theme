@@ -131,7 +131,7 @@
                             <Setter TargetName="Label" Property="Visibility" Value="Collapsed" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Kind}" Value="Symbols">
-                            <Setter TargetName="Label" Property="FontSize" Value="20" />
+                            <Setter TargetName="Label" Property="FontSize" Value="26" />
                             <Setter TargetName="Hint" Property="Visibility" Value="Visible" />
                             <Setter TargetName="Hint" Property="Width" Value="28" />
                             <Setter TargetName="Hint" Property="Height" Value="22" />

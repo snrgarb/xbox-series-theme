@@ -150,7 +150,7 @@ namespace XboxSeries.Core.Tests
             Assert.Contains(none.Elements(), e => (string)e.Attribute("TargetName") == "Score"
                 && (string)e.Attribute("Property") == "Visibility" && (string)e.Attribute("Value") == "Collapsed");
             Assert.Contains(none.Elements(), e => (string)e.Attribute("TargetName") == "Gamertag"
-                && (string)e.Attribute("Property") == "FontSize" && (string)e.Attribute("Value") == "22");
+                && (string)e.Attribute("Property") == "FontSize" && (string)e.Attribute("Value") == "26");
         }
 
         [Fact]

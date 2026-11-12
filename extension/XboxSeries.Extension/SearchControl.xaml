@@ -27,7 +27,7 @@
             <Style x:Key="Text" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="{DynamicResource XboxFont}" />
                 <Setter Property="Foreground" Value="White" />
-                <Setter Property="FontSize" Value="22" />
+                <Setter Property="FontSize" Value="26" />
                 <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             </Style>
 
@@ -171,7 +171,7 @@
                                         Content="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=480}" />
                         <!-- With no cover, or one that won't load (on the picture, as HomeTileArt), its title in its place. -->
                         <TextBlock Text="{Binding Title}" Margin="12" TextWrapping="Wrap" TextAlignment="Center"
-                                   VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="20" Foreground="White">
+                                   VerticalAlignment="Center" FontFamily="{DynamicResource XboxFont}" FontSize="26" Foreground="White">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -226,13 +226,13 @@
         <Button x:Name="SearchBox" Style="{StaticResource SearchBox}" Width="960" Height="54" Margin="0,77,0,0"
                 HorizontalAlignment="Center" Click="OnSearchBoxClick" KeyDown="OnSearchBoxKeyDown">
             <Grid>
-                <TextBlock x:Name="Prompt" Text="Search for games and apps" Style="{StaticResource Text}" FontSize="24"
+                <TextBlock x:Name="Prompt" Text="Search for games and apps" Style="{StaticResource Text}" FontSize="26"
                            Foreground="{StaticResource DimBrush}" Margin="4,0,0,0" />
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="BeforeCaret" Style="{StaticResource Text}" FontSize="24" TextTrimming="None" />
+                    <TextBlock x:Name="BeforeCaret" Style="{StaticResource Text}" FontSize="26" TextTrimming="None" />
                     <Rectangle x:Name="Caret" Width="2" Height="30" Fill="White" Margin="1,0"
                                Visibility="{Binding IsKeyboardShown, Converter={StaticResource Visibility}}" />
-                    <TextBlock x:Name="AfterCaret" Style="{StaticResource Text}" FontSize="24" TextTrimming="None" />
+                    <TextBlock x:Name="AfterCaret" Style="{StaticResource Text}" FontSize="26" TextTrimming="None" />
                 </StackPanel>
             </Grid>
         </Button>

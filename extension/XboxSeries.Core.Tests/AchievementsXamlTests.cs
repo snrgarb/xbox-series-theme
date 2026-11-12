@@ -98,7 +98,7 @@ namespace XboxSeries.Core.Tests
             var card = KindTrigger(entry, "Profile");
             Assert.Equal("96", Set(card, "Entry", "Height"));
             Assert.Equal("Visible", Set(card, "Avatar", "Visibility"));
-            Assert.Equal("24", Set(card, "Title", "FontSize"));
+            Assert.Equal("26", Set(card, "Title", "FontSize"));
 
             // Switch profile: the Switch user glyph on a Settings-sized row.
             var switchProfile = KindTrigger(entry, "SwitchProfile");

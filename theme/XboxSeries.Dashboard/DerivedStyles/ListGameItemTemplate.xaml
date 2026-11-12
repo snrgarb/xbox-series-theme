@@ -58,7 +58,7 @@
                                 </LinearGradientBrush>
                             </Border.Background>
                             <TextBlock Text="Installing..." Margin="12,28,12,10" TextTrimming="CharacterEllipsis"
-                                       FontFamily="{DynamicResource XboxFont}" FontSize="20"
+                                       FontFamily="{DynamicResource XboxFont}" FontSize="26"
                                        Foreground="{DynamicResource XboxTextBrush}" />
                         </Border>
 

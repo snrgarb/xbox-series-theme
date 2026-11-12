@@ -26,7 +26,7 @@ namespace XboxSeries.Core.Tests
         [InlineData("MyGamesControl.xaml", "Text=Play history", "XboxHeaderFont")]
         [InlineData("MyGamesControl.xaml", "Text=Full library", "XboxHeaderFont")]
         [InlineData("MyGamesControl.xaml", "Text=Manage", "XboxHeaderFont")]
-        // Home's Groups: each Group's heading, in the SemiLight as the console's (#203).
+        // Home's Groups: each Group's heading, in the header face's Regular as the console's.
         [InlineData("GroupsControl.xaml", "Text={Binding Name}", "XboxHeaderFont")]
         // The Guide's tab headings and its flyouts' titles.
         [InlineData("OverlayWindow.xaml", "Sets=Profile & system", "XboxHeaderFont")]
@@ -55,7 +55,7 @@ namespace XboxSeries.Core.Tests
         [InlineData("MyGamesControl.xaml", "Name=Count", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text={Binding SortLabel}", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text=Filter", "XboxFont")]
-        [InlineData("MyGamesControl.xaml", "Text={Binding Tile.Title}|FontSize=28", "XboxFontSemibold")]
+        [InlineData("MyGamesControl.xaml", "Text={Binding Tile.Title}|FontFamily={DynamicResource XboxFontSemibold}", "XboxFontSemibold")]
         [InlineData("MyGamesControl.xaml", "Text=Games you play show up here.", "XboxFont")]
         [InlineData("MyGamesControl.xaml", "Text=All storage", "XboxFont")]
         // Tile captions.

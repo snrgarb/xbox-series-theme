@@ -44,7 +44,7 @@
                             </Grid>
                         </Grid>
                         <!-- Raised a little so the lower case sits centred on the ring, as on the console. -->
-                        <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="25"
+                        <TextBlock Text="{Binding Text}" FontFamily="{DynamicResource XboxFont}" FontSize="26"
                                    Foreground="{DynamicResource XboxTextBrush}" VerticalAlignment="Center"
                                    Margin="12,0,0,6" />
                     </StackPanel>
