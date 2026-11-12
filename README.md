@@ -16,6 +16,13 @@ All three are early-access releases. For older versions, and what changed in eac
 
 The theme and the extension are the Bundle. Install the two together, from the same release. The Boot shell is optional.
 
+## Discord
+
+Join the [Xbox Series Theme Discord](https://discord.gg/tC7b6tVYVP) to follow development:
+
+- Report issues, give feedback and suggest features.
+- See announcements for new builds.
+
 ## What it does
 
 ### The Dashboard theme
